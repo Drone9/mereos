@@ -1,0 +1,21 @@
+{
+  "name": "mereos",
+  "version": "1.0.4",
+  "description": "This is an ai-proctoring library for online assessments.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mereos",
+    "proctoring",
+    "ai",
+    "online",
+    "assessment"
+  ],
+  "author": "DT Education, France",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.2"
+  }
+}

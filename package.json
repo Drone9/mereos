@@ -14,7 +14,7 @@
     "assessment"
   ],
   "author": "DT Education, France",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "axios": "^1.7.2"
   }

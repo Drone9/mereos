@@ -20,7 +20,7 @@ var mereos = require('mereos');
 
 ```js
 var {init} = require('mereos');
-var resp = init(school_id, assessment_id);
+var profile = init(school_id, assessment_id);
 ```
 
 2. `start_prechecks` function is used to start prechecks. All the prechecks are based on profile assigned to a school or assessment.

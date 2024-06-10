@@ -36,7 +36,7 @@ var {start_recording} = require('mereos');
 var resp = start_recording();
 ```
 
-3. `stop_recording` function is used to stop the video recording.
+4. `stop_recording` function is used to stop the video recording.
 
 ```js
 var {stop_recording} = require('mereos');

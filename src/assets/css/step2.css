@@ -1,0 +1,155 @@
+
+.ivst-container {
+    margin: auto;
+}
+
+.ivst-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.ivst-header-img-container {
+    position: relative;
+    margin: 30px auto 0px;
+}
+
+@media (max-width: 720px) {
+    .ivst-header-img-container {
+        width: 98%;
+    }
+    .ivst-header-img-container video {
+        width: 98%;
+    }
+}
+
+.ivst-header-img {
+    height: 300px;
+    border-radius: 5px;
+}
+
+@media (max-width: 720px) {
+    .ivst-header-img {
+        width: 100%;
+        object-fit: cover;
+    }
+}
+
+.ivst-header-img-result {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    height: 20px;
+}
+
+@media (max-width: 720px) {
+    .ivst-header-img-result {
+        top: 28px;
+    }
+}
+
+.ivst-screen-grid {
+    position: absolute;
+    left: 28px;
+    top: 50px;
+    height: 333px;
+}
+
+@media (max-width: 720px) {
+    .ivst-screen-grid {
+        width: 85%;
+    }
+}
+
+.ivst-header-title {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 42px;
+    line-height: 63px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #222222;
+    margin: 26px auto 0px;
+}
+
+.ivst-msg {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+    line-height: 160%;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #8D979F;
+    margin: 10px auto 0px;
+}
+
+.ivst-instructions-container {
+    text-align: center;
+    display: flex;
+    flex-direction: row;
+    margin: 20px auto 0px;
+}
+
+.ivst-instructions-img {
+    height: 48px;
+    width: 48px;
+    border-radius: 0px;
+}
+
+.ivst-instruction-step-container {
+    margin: 0px 25px 0px 5px;
+}
+
+.ivst-instruction-step {
+    display: flex;
+    align-items: center;
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 13px;
+    line-height: 19px;
+    color: #B7C5D1;
+}
+
+.ivst-instruction-txt {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 24px;
+    display: flex;
+    align-items: center;
+    color: #222222;
+}
+
+.ivst-btn-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 30px auto;
+}
+
+@media (max-width: 720px) {
+    .ivst-btn-container {
+        flex-direction: column;
+        margin: 30px 0 0 0;
+    }
+}
+
+.ivst-query-msg {
+    font-size: 14px;
+    line-height: 21px;
+    text-align: center;
+    color: #8D979F;
+    margin: 16px auto 0px;
+    max-width: 600px;
+}
+
+.ivst-file {
+    text-decoration: underline;
+    color: orange; /* Assuming $primaryColor is defined in colors.scss */
+    cursor: pointer;
+}

@@ -306,3 +306,21 @@ export const uploadFileInS3Folder = async (data) => {
 	// };
 	return axios.post(`${BASE_URL}/general/upload_file/`, formData);
 };
+
+export const findConfigs = (configs, entities) => {
+	let result = [];
+	for (const entity of entities) {
+		for (const config of configs) {
+			if (config === entity.name) {
+				result.push(entity);
+				break;
+			}
+		}
+	}
+	return result;
+};
+
+export const getSecureFeatures = () => {
+	const secureFeatures = JSON.parse(localStorage.getItem('secureFeatures'))
+	return secureFeatures;
+}

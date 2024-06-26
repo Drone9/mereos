@@ -14,7 +14,7 @@ const translations = {
 };
 
 const t = (key) => translations[key];
-
+export let newStream;
 export const IdentityVerificationScreenFive = async (tabContent) => {
   if (!tabContent) {
       console.error('tabContent is not defined or is not a valid DOM element');
@@ -31,7 +31,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
   const shareScreen = async () => {
       try {
           console.log('Attempting to share screen...');
-          const newStream = await shareScreenFromContent();
+        newStream = await shareScreenFromContent();
           console.log('Screen sharing stream obtained:', newStream);
 
           if (newStream.getVideoTracks()[0].getSettings().displaySurface === 'monitor') {

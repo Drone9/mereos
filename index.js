@@ -9,16 +9,19 @@
 
 import axios from 'axios';
 window.openModal = openModal;
+import {v4} from 'uuid';
 
 import { openModal } from './src/ExamPrepreation/examPrechecks';
+import { getRoomSid, getToken } from './src/services/twilio.services';
+import { startRecording } from './src/StartRecording/startRecording';
+import { registerPublicCandidate } from './src/services/auth.services';
+import { generateRandomData } from './src/utils/constant';
+import { stopAllRecordings } from './src/StopRecording/stopRecording';
 
     async function init(host) {
-        const formData = new FormData();
-        formData.append('email', host.username);
-        formData.append('password', host.password);
-
-        const resp = await axios.post('https://dashboard-api.mereos-datasafe.com/auth/token/',  formData);
-        localStorage.setItem('token', resp.data?.access);
+        const resp = await registerPublicCandidate(generateRandomData());
+        localStorage.setItem('token', resp.data?.token);
+        localStorage.setItem('secureFeatures',JSON.stringify(resp.data?.candidate_invite_assessment_section?.section?.secure_feature_profile?.entity_relation));
         return resp.data;
     };
     
@@ -42,8 +45,15 @@ import { openModal } from './src/ExamPrepreation/examPrechecks';
     
     async function start_recording() {
         try{
-            const resp = await axios.get('https://corder-api.mereos.eu/twilio/get_token');
-            return resp;
+            const newRoomSessionId = v4();
+            let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
+            let twilioToken = await getToken({ room_sid: resp.data.room_sid });
+            console.log('twilioToken',twilioToken?.data?.token);
+            if(twilioToken){
+                startRecording(twilioToken?.data?.token);
+            };
+            // const resp = await axios.get('https://corder-api.mereos.eu/twilio/get_token');
+            // return resp;
         }catch(err){
             console.log('error',err);
             throw err;
@@ -53,6 +63,8 @@ import { openModal } from './src/ExamPrepreation/examPrechecks';
     
     async function stop_recording(session) {
         try{
+            stopAllRecordings();
+            return
             const sessionResp = await submit_session(session);
             if (sessionResp?.data) {
                 const resp = await axios.get('https://corder-api.mereos.eu/twilio/stop_recording');

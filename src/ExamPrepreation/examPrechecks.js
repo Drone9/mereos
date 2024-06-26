@@ -6,6 +6,7 @@ import { IdentityVerificationScreenThree } from './identityVerificationScreenThr
 import { IdentityVerificationScreenFour } from './identityVerificationScreenFour';
 import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
 import { ExamPreparation } from './examPreprationScreen';
+import { getSecureFeatures } from '../utils/functions';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -64,7 +65,7 @@ const tab7 = document.createElement('div');
 tab7.className = 'tab';
 tab7.textContent = 'Screen Share';
 tab7.dataset.tab = 'tab7';
-// tab7.onclick = () => showTab('tab7');
+tab7.onclick = () => showTab('tab7');
 
 tabsContainer.appendChild(tab1);
 tabsContainer.appendChild(tab2);
@@ -152,6 +153,8 @@ const showTab = async (tabId) => {
         }
     });
     
+    const secureFeatures = getSecureFeatures();
+
     if(tabId === 'tab1') {
         await ExamPreparation(tabContent1);
     }

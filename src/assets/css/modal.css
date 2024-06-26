@@ -26,14 +26,17 @@
   font-size: 1.1rem;
   padding: 25px;
   overflow: auto;
+  padding-top: 10px;
 }
 
 .close {
   color: #aaa;
-  float: right;
   font-size: 28px;
   font-weight: bold;
+  display: flex;
   cursor: pointer;
+  align-items: end;
+  justify-content: end;
 }
 
 .close:hover,

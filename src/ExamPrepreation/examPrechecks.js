@@ -1,4 +1,4 @@
-import './modal.css';
+import '../assets/css/modal.css';
 import { runSystemDiagnostics } from './systemdiagnostic';
 import { IdentityVerificationScreenOne } from './identityVerificationScreenOne';
 import { IdentityVerificationScreenTwo } from './identityVerificationScreenTwo';

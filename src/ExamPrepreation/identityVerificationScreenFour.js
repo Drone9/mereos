@@ -68,7 +68,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
             }, 1000);
         } catch (error) {
             console.error('Error accessing media devices:', error);
-            // Handle error (e.g., display message to user)
         }
     };
 
@@ -87,12 +86,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
     const nextStep = async () => {
         showTab('tab7');
-        // Example navigation or state update
-        console.log('Navigate to next step');
     };
 
     const prevStep = () => {
-        // Example navigation or state update
+        showTab('tab5');
         console.log('Navigate to previous step');
     };
 
@@ -139,7 +136,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
             container.className = 'ivsf-container';
             tabContent.appendChild(container);
         }
-        container.innerHTML = ''; // Clear existing content
+        container.innerHTML = '';
 
         const wrapper = document.createElement('div');
         wrapper.className = 'ivsf-wrapper';

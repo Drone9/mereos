@@ -1,7 +1,7 @@
 import { shareScreenFromContent } from '../utils/functions';
 import mockImage from '../assets/images/screen-recorder-mock.svg'
 import '../assets/css/step5.css';
-import { closeModal } from './examPrechecks';
+import { closeModal, showTab } from './examPrechecks';
 
 const translations = {
   verification_completed: 'Verification Completed',
@@ -64,6 +64,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
       if (stream) {
           stream.getVideoTracks()[0].stop();
       }
+      showTab('tab6');
       console.log('Navigating to previous step');
   };
 
@@ -137,10 +138,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
   `;
   container.appendChild(styleElement);
 
-  tabContent.innerHTML = ''; // Clear previous content
+  tabContent.innerHTML = '';
   tabContent.appendChild(container);
 
-  // Automatically initiate screen sharing when component is rendered
   shareScreen();
 
   return container;

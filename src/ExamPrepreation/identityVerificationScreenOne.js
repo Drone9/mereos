@@ -1,15 +1,13 @@
 import { dataURIToBlob, registerEvent, uploadFileInS3Folder } from '../utils/functions';
-import * as tf from '@tensorflow/tfjs';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import { ASSET_URL } from '../utils/constant';
 import '../assets/css/step1.css';
 import greenCheckMark from '../assets/images/checkmark-green.svg';
 import closeRed from '../assets/images/close-red.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
+import * as tf from '@tensorflow/tfjs';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
-  // Initial state setup
   let state = {
       captureMode: 'take',
       imageSrc: null,
@@ -35,12 +33,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       FACE: 'person',
   };
 
-  // Function to load models asynchronously
   const loadModelsAsync = async () => {
       try {
-          loadModels = true;
-          const liveNet = await cocoSsd?.load();
-          net = liveNet;
+            loadModels = true;
+            await tf.setBackend('webgl');
+		    await tf.ready();
+            const liveNet = await cocoSsd?.load();
+            net = liveNet;
       } catch (e) {
           console.log('Error loading models:', e);
       } finally {
@@ -48,22 +47,20 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       }
   };
 
-  // Function to start webcam
   const startWebcam = async () => {
       try {
           videoElement = document.createElement('video');
           videoElement.width = state.videoConstraints.width;
           videoElement.height = state.videoConstraints.height;
           videoElement.autoplay = true;
-          videoElement.style.transform = 'scaleX(-1)'; // Mirror the video for natural viewing
+          videoElement.style.transform = 'scaleX(-1)';
           const stream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
           videoElement.srcObject = stream;
           webcamStream = stream;
-          // Check if tabContent still exists before appending videoElement
           if (tabContent) {
               const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');
               if (ivsoWebcamContainer) {
-                  ivsoWebcamContainer.innerHTML = ''; // Clear previous content
+                  ivsoWebcamContainer.innerHTML = '';
                   ivsoWebcamContainer.appendChild(videoElement);
               }
           }
@@ -72,7 +69,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       }
   };
 
-  // Function to capture photo from webcam
   const capturePhoto = async () => {
       const canvas = document.createElement('canvas');
       canvas.width = videoElement.videoWidth;
@@ -94,7 +90,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       handleImageProcessing();
   };
 
-  // Function to handle image processing
   const handleImageProcessing = async () => {
       if (state.imageSrc) {
           // Use TensorFlow model to detect faces
@@ -149,7 +144,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       // registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
   };
 
-  // Function to upload captured photo
   const uploadUserCapturedPhoto = async () => {
     console.log('uploadUserCapturedPhoto');
       try {
@@ -193,7 +187,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       renderUI();
   };
 
-  // Function to render UI
   const renderUI = () => {
       let ivsoContainer = tabContent.querySelector('.ivso-container');
       if (!ivsoContainer) {

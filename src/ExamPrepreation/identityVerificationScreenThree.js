@@ -16,9 +16,9 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
         text: 'Be loud and clear'
     };
 
-    const schoolInfo = {}; // This would normally come from Redux, you'll need to implement your own state management
+    const schoolInfo = {};
 
-    let animationFrameId = null; // To keep track of the requestAnimationFrame ID
+    let animationFrameId = null;
 
     const drawAudioSpikes = async () => {
         try {
@@ -53,17 +53,16 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
                         x += barWidth + 1;
                     }
 
-                    animationFrameId = requestAnimationFrame(drawOnCanvas); // Continue the loop
+                    animationFrameId = requestAnimationFrame(drawOnCanvas);
                 };
 
-                drawOnCanvas(); // Start the drawing loop
+                drawOnCanvas();
             } else {
                 throw audioPermission.state;
             }
 
         } catch (error) {
             console.error('Error accessing microphone:', error);
-            // Implement your own error handling mechanism if needed
         }
     };
 
@@ -72,8 +71,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
             drawAudioSpikes();
         }
 
-        msg.type = ''; // Update msg type
-        msg.text = 'Recording...'; // Update msg text
+        msg.type = ''; 
+        msg.text = 'Recording...'; 
         disabledBtn = true;
         updateUI();
 
@@ -92,12 +91,12 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
                 }
                 const rms = Math.sqrt(sumSquares / bufferLength);
                 console.log('rms____', rms);
-                const requiredLevel = 0.15; // This would normally come from section.secure_feature_profile.settings.audio_level
+                const requiredLevel = 0.15;
                 if (rms > requiredLevel) {
                     clearInterval(timer);
                     disabledBtn = false;
-                    msg.type = 'successful'; // Update msg type
-                    msg.text = 'Audio test passed'; // Update msg text
+                    msg.type = 'successful';
+                    msg.text = 'Audio test passed'; 
                     updateUI();
                 } else if (counter >= 15) {
                     throw 'error';
@@ -105,8 +104,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
             } catch (err) {
                 clearInterval(timer);
                 disabledBtn = false;
-                msg.type = 'unsuccessful'; // Update msg type
-                msg.text = 'Audio test failed'; // Update msg text
+                msg.type = 'unsuccessful';
+                msg.text = 'Audio test failed';
                 updateUI();
                 console.error('Audio test failed');
             }
@@ -115,8 +114,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
     };
 
     const stopRecording = () => {
-        cancelAnimationFrame(animationFrameId); // Stop the animation frame loop
-        animationFrameId = null; // Reset animationFrameId
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
         if (stream) {
             stream.getTracks().forEach(track => {
                 track.stop();
@@ -125,13 +124,12 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
     };
 
     const nextStep = async () => {
-        // Implement your navigation logic
         showTab('tab6');
         console.log('Navigate to IDENTITY_VERIFICATION_SCREEN_FOUR');
     };
 
     const prevStep = () => {
-        // Implement your navigation logic
+        showTab('tab4');
         console.log('Navigate to IDENTITY_VERIFICATION_SCREEN_TWO');
     };
 
@@ -176,7 +174,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
             if (msg.type === 'unsuccessful') {
                 messageElement.style.color = '#E95E5E';
             } else {
-                messageElement.style.color = ''; // Reset color if not unsuccessful
+                messageElement.style.color = '';
             }
         }
 
@@ -186,7 +184,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
             btnContainer.className = 'ivst-btn-container';
             wrapper.appendChild(btnContainer);
         } else {
-            btnContainer.innerHTML = ''; // Clear existing buttons
+            btnContainer.innerHTML = '';
         }
 
         if (msg.type === '') {
@@ -217,11 +215,9 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
         return button;
     };
 
-    // Initialize
     drawAudioSpikes();
     updateUI();
 
-    // Cleanup function (call this when the component should be destroyed)
     const cleanup = () => {
         if (audioContext) {
             audioContext.close();
@@ -230,6 +226,6 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
     };
 
     return {
-        cleanup // Return the cleanup function so it can be called when needed
+        cleanup
     };
 };

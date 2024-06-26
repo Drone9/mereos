@@ -273,6 +273,38 @@
   }
 }
 
+.orange-hollow-btn{
+  border-style: none;
+	font-size: 1em;
+	color: orange;
+	font-weight: 500;
+	border-radius: 5px;
+	padding: 10px 20px;
+  background-color: #ffffff; 
+  border: 1px solid orange;
+  cursor: pointer;
+	&:disabled {
+		background-image: linear-gradient(#F6F6F9, #F6F6F9) !important;
+		color: #A7ABB2 !important;
+		border: 1px solid #F6F6F9 !important;
+		background-color: #F6F6F9 !important;
+	}
+	&:hover {
+		box-shadow: 1px 1px 2px rgb(32 33 36 / 28%)
+	}
+
+	&:focus {
+		outline: none;
+	}
+
+	&:disabled {
+		background-image: none;
+	}
+
+	&:active {
+		transform: scale(0.98); 
+	}
+}
 
 .orange-filled-btn {
 	border-style: none;

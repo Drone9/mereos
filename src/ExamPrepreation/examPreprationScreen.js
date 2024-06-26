@@ -28,11 +28,10 @@ const vectors = [
   { name: 'img8', src: `${vector1}`, alt: '' }
 ];
 
-const getDateTime = () => new Date().toISOString(); // Simplified example of getDateTime function
+const getDateTime = () => new Date().toISOString();
 
 const registerEvent = (event) => {
   console.log('Event registered:', event);
-  // Implement the actual event registration logic here
 };
 
 const nextPage = () => {
@@ -47,14 +46,11 @@ export const ExamPreparation = async (tabContent) => {
       return;
   }
 
-  // Clear previous content
   tabContent.innerHTML = '';
 
-  // Main container
   const container = document.createElement('div');
   container.className = 'exam-preparation';
 
-  // Exam preparation container
   const examPreparationContainer = document.createElement('div');
   examPreparationContainer.className = 'exam-preparation-container';
 
@@ -83,7 +79,6 @@ export const ExamPreparation = async (tabContent) => {
 
   container.appendChild(examPreparationContainer);
 
-  // Background images container
   const bgImagesContainer = document.createElement('div');
   bgImagesContainer.className = 'bg-images';
 
@@ -97,10 +92,8 @@ export const ExamPreparation = async (tabContent) => {
 
   container.appendChild(bgImagesContainer);
 
-  // Append the constructed component into the specified tabContent container
   tabContent.appendChild(container);
 
-  // Append CSS styles (add them to a style tag or a separate stylesheet in actual implementation)
   const styleElement = document.createElement('style');
   styleElement.textContent = `
       .exam-preparation {

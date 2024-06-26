@@ -1,6 +1,4 @@
 import { acceptableLabels, acceptableText, dataURIToBlob, srcToData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
-import { ASSET_URL } from '../utils/constant';
-// import { uploadFileInS3Folder } from '../../../global/services/configuration.services';
 import '../assets/css/step2.css';
 import greenCheckMark from '../assets/images/checkmark-green.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
@@ -40,7 +38,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                 }
             };
             renderUI();
-            verifyImage(); // Call verifyImage after setting currentState
+            verifyImage();
         } else {
             currentState = {
                 ...currentState,
@@ -81,7 +79,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                     }
                 };
                 renderUI();
-                verifyImage(); // Call verifyImage after setting currentState
+                verifyImage();
             } else {
                 currentState = {
                     ...currentState,
@@ -159,7 +157,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
             });
 
             if (resp?.data?.file_url) {
-                // Implement state management as needed
                 currentState = {
                     ...currentState,
                     captureMode: 'uploaded_photo',
@@ -188,7 +185,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
     };
 
     const prevStep = () => {
-        // Implement navigation and state management as needed
+        showTab('tab3');
     };
 
     const renderUI = () => {
@@ -198,7 +195,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
             container.className = 'ivso-container';
             tabContent.appendChild(container);
         }
-        container.innerHTML = ''; // Clear existing content
+        container.innerHTML = '';
 
         const wrapper = document.createElement('div');
         wrapper.className = 'ivst-wrapper';
@@ -211,7 +208,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
         message.className = 'ivst-msg';
         message.textContent = 'Initial system check passed. Get ready for identity validation.';
 
-        // Add IdentityVerificationSteps component here
 
         const headerImgContainer = document.createElement('div');
         headerImgContainer.className = 'ivst-header-img-container';
@@ -314,6 +310,5 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
         return button;
     };
 
-    // Initial render
     renderUI();
 };

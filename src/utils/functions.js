@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ASSET_URL } from './constant';
+import { ASSET_URL, BASE_URL } from './constant';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -178,7 +178,7 @@ export const getNetworkUploadSpeed = async () => {
 };
 
 const testUploadSpeed = async (text) => {
-	return axios.post('https://dashboard-api.mereos-datasafe.com/general/test-upload-speed', { 'test': text });
+	return axios.post(`${BASE_URL}/general/test-upload-speed`, { 'test': text });
 };
 
 export const registerEvent = ({ notify, eventType, eventName, eventValue }) => {
@@ -200,7 +200,7 @@ export const registerEvent = ({ notify, eventType, eventName, eventValue }) => {
 							'm-preferred-language': 'en'
 					},
 			};
-			return axios.post('https://dashboard-api.mereos-datasafe.com/section_session/post_event/', event,config);
+			return axios.post(`${BASE_URL}/section_session/post_event/`, event,config);
 	}catch(error){
 			console.log(error);
 	}
@@ -215,7 +215,7 @@ export const userRekognitionInfo = async (data) => {
 	// 		'm-preferred-language': language
 	// 	},
 	// };
-	return axios.post('https://dashboard-api.mereos-datasafe.com/general/rekognition/', data);
+	return axios.post(`${BASE_URL}/general/rekognition/`, data);
 };
 
 export const srcToData = async (src) => {
@@ -285,4 +285,24 @@ export const shareScreenFromContent = () => {
 				reject(err);
 			});
 	});
+};
+
+
+export const uploadFileInS3Folder = async (data) => {
+	// const token = await getAuthenticationToken();
+	// const language = getPreferredLanguage();
+	
+	// const myHeaders = new Headers();
+	const formData = new FormData();
+	formData.append('files', data.file, `${Date.now()}`);
+	formData.append('folder_name',data.folderName);
+	
+	// const config = {
+	// 	headers: {
+	// 		...myHeaders, 
+	// 		token: token,
+	// 		'm-preferred-language': language
+	// 	},
+	// };
+	return axios.post(`${BASE_URL}/general/upload_file/`, formData);
 };

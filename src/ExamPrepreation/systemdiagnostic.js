@@ -22,9 +22,10 @@ import notificationRed from '../assets/images/bell-ringing-maroon.svg'
 import multipleScreenRed from '../assets/images/multiple-screen-red.svg'
 import multipleScreenGreen from '../assets/images//multiple-screen-green.svg'
 import prompMessage from '../assets/images/user-permission-english.svg'
+import { showTab } from './examPrechecks';
 
 export const runSystemDiagnostics = async () => {
-    const tab1Content = document.getElementById('tab1');
+    const tab1Content = document.getElementById('tab2');
     tab1Content.innerHTML = `
         <div class="system-diagnostic-test-screen">
             <h1 class="heading">System Diagnostics</h1>
@@ -140,7 +141,7 @@ export const runSystemDiagnostics = async () => {
         continueBtn.disabled = !allActivated;
         if (allActivated) {
             continueBtn.addEventListener('click', () => {
-                // Navigate to the next screen or perform the next action
+                showTab('tab3');
             });
         }
     } catch (error) {

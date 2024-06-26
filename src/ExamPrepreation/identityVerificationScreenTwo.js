@@ -1,9 +1,10 @@
-import { acceptableLabels, acceptableText, dataURIToBlob, srcToData, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, srcToData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 // import { uploadFileInS3Folder } from '../../../global/services/configuration.services';
 import '../assets/css/step2.css';
 import greenCheckMark from '../assets/images/checkmark-green.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
+import { showTab } from './examPrechecks';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
     let photo;
@@ -138,8 +139,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
     };
 
     const nextStep = async () => {
-        // registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_verified_successfully', eventValue: getDateTime()});
-        // Implement navigation and state management as needed
+        showTab('tab5')
     };
 
     const uploadCandidateIdentityCard = async () => {

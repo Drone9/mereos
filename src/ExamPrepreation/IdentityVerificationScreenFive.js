@@ -1,6 +1,7 @@
 import { shareScreenFromContent } from '../utils/functions';
 import mockImage from '../assets/images/screen-recorder-mock.svg'
 import '../assets/css/step5.css';
+import { closeModal } from './examPrechecks';
 
 const translations = {
   verification_completed: 'Verification Completed',
@@ -41,11 +42,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
                   text: t('screen_shared_successfully')
               };
               console.log('Screen shared successfully');
-              // Dispatch logic if needed
-              // dispatch({
-              //     type: SET_SESSION_DETAILS,
-              //     screenRecordingStream: stream
-              // });
           } else {
               newStream.getVideoTracks()[0].stop();
               throw t('please_share_entire_screen');
@@ -61,8 +57,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
   };
 
   const nextStep = () => {
-      console.log('Navigating to next step');
-      // Implement navigation logic here
+      closeModal();
   };
 
   const prevStep = () => {
@@ -70,7 +65,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
           stream.getVideoTracks()[0].stop();
       }
       console.log('Navigating to previous step');
-      // Implement navigation logic here
   };
 
   const container = document.createElement('div');

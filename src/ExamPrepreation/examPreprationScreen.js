@@ -1,5 +1,13 @@
-import { ASSET_URL } from '../utils/constant';
-
+import '../assets/css/exam-prepration.css';
+import readingBook from '../assets/images/oc-reading-book.png';
+import addressIcon from '../assets/images/oc-address.svg';
+import lightBulb from '../assets/images/oc-lightbulb.svg';
+import megaphone from '../assets/images/oc-megaphone.svg';
+import stackBook from '../assets/images/stacked-up-books.svg';
+import vector1 from '../assets/images/vector-1.png';
+import vector2 from '../assets/images/vector-2.png';
+import vector3 from '../assets/images/vector-3.png';
+import { showTab } from './examPrechecks';
 
 const translations = {
   exam_preparation: 'Exam Preparation',
@@ -7,18 +15,17 @@ const translations = {
   continue: 'Continue'
 };
 
-
 const t = (key) => translations[key];
 
 const vectors = [
-  { name: 'img1', src: `${ASSET_URL}/oc-address.svg`, alt: '' },
-  { name: 'img2', src: `${ASSET_URL}/oc-lightbulb.svg`, alt: '' },
-  { name: 'img3', src: `${ASSET_URL}/oc-megaphone.svg`, alt: '' },
-  { name: 'img4', src: `${ASSET_URL}/stacked-up-books.svg`, alt: '' },
-  { name: 'img5', src: `${ASSET_URL}/vector-2.png`, alt: '' },
-  { name: 'img6', src: `${ASSET_URL}/vector-1.png`, alt: '' },
-  { name: 'img7', src: `${ASSET_URL}/vector-3.png`, alt: '' },
-  { name: 'img8', src: `${ASSET_URL}/vector-1.png`, alt: '' }
+  { name: 'img1', src: `${addressIcon}`, alt: '' },
+  { name: 'img2', src: `${lightBulb}`, alt: '' },
+  { name: 'img3', src: `${megaphone}`, alt: '' },
+  { name: 'img4', src: `${stackBook}`, alt: '' },
+  { name: 'img5', src: `${vector2}`, alt: '' },
+  { name: 'img6', src: `${vector1}`, alt: '' },
+  { name: 'img7', src: `${vector3}`, alt: '' },
+  { name: 'img8', src: `${vector1}`, alt: '' }
 ];
 
 const getDateTime = () => new Date().toISOString(); // Simplified example of getDateTime function
@@ -28,16 +35,9 @@ const registerEvent = (event) => {
   // Implement the actual event registration logic here
 };
 
-const SYSTEM_DIAGNOSTIC = 'SYSTEM_DIAGNOSTIC'; // Mock constant
-
-
-const navigate = (route) => {
-  console.log('Navigating to:', route);
-};
-
 const nextPage = () => {
   registerEvent({ eventType: 'success', notify: false, eventName: 'terms_and_conditions_read', eventValue: getDateTime() });
-  navigate(SYSTEM_DIAGNOSTIC);
+  showTab('tab2')
 };
 
 
@@ -60,7 +60,7 @@ export const ExamPreparation = async (tabContent) => {
 
   const headerImg = document.createElement('img');
   headerImg.className = 'header-img';
-  headerImg.src = `${ASSET_URL}/oc-reading-book.png`;
+  headerImg.src = `${readingBook}`;
   headerImg.alt = 'header-img';
   examPreparationContainer.appendChild(headerImg);
 

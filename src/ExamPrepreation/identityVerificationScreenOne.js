@@ -1,4 +1,4 @@
-import { dataURIToBlob, registerEvent } from '../utils/functions';
+import { dataURIToBlob, registerEvent, uploadFileInS3Folder } from '../utils/functions';
 import * as tf from '@tensorflow/tfjs';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import { ASSET_URL } from '../utils/constant';
@@ -6,6 +6,7 @@ import '../assets/css/step1.css';
 import greenCheckMark from '../assets/images/checkmark-green.svg';
 import closeRed from '../assets/images/close-red.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
+import { showTab } from './examPrechecks';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
   // Initial state setup
@@ -144,11 +145,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
   };
 
   const nextStep = () => {
+    showTab('tab4');
       // registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
   };
 
   // Function to upload captured photo
   const uploadUserCapturedPhoto = async () => {
+    console.log('uploadUserCapturedPhoto');
       try {
           state = {
               ...state,
@@ -157,15 +160,12 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
                   text: 'File is being uploaded',
               },
           };
+          console.log('in the try function');
           let resp = await uploadFileInS3Folder({
               folderName: 'candidate_images',
               file: dataURIToBlob(state.imageSrc),
           });
           if (resp?.data?.file_url) {
-              // dispatch({
-              //     type: 'SET_SESSION_DETAILS',
-              //     candidatePhoto: resp.data.file_url,
-              // });
               state = {
                   ...state,
                   captureMode: 'uploaded_photo',
@@ -256,7 +256,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
           takePhotoBtn.className = 'orange-filled-btn';
           takePhotoBtn.addEventListener('click', capturePhoto);
           ivsoBtnContainer.appendChild(takePhotoBtn);
-      } else {
+      } else if(state.captureMode === 'uploaded_photo'){
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Next';
+        nextBtn.className = 'orange-filled-btn';
+        nextBtn.addEventListener('click', nextStep);
+        ivsoBtnContainer.appendChild(nextBtn);
+      }else {
         const retakePhotoBtn = document.createElement('button');
         retakePhotoBtn.textContent = 'Retake Photo';
         retakePhotoBtn.className = 'orange-hollow-btn';
@@ -299,10 +305,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       ivsoContainer.appendChild(ivsoWrapper);
   };
 
-  // Initial render
   renderUI();
 
-  // Load models on component mount
   await loadModelsAsync();
 };
 

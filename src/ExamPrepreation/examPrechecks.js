@@ -139,6 +139,7 @@ const showTab = async (tabId) => {
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
     
+    // Deactivate all tabs and tab contents
     tabs.forEach(tab => {
         tab.classList.remove('active');
         if (tab.dataset.tab === tabId) {
@@ -152,30 +153,59 @@ const showTab = async (tabId) => {
             content.classList.add('active');
         }
     });
-    
+
+    const navigate = (newTabId) => {
+        showTab(newTabId);
+    };
+    const candidateAssessment = getCandidateAssessment()
+    const secureFeatures = candidateAssessment?.section?.secure_feature_profile?.entity_relation || [];
+    console.log('secureFeatures',secureFeatures);
+	const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio','Verify Connection','Track Location','Enable Notifications'];
 
     if(tabId === 'ExamPreparation') {
+        if (!secureFeatures?.find(entity => entity.name === 'Exam Preparation')) {
+            navigate('runSystemDiagnostics');
+            return;
+        }
         await ExamPreparation(tabContent1);
-    }
-    if (tabId === 'runSystemDiagnostics') {
+    } else if (tabId === 'runSystemDiagnostics') {
+        if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length) {
+            navigate('IdentityVerificationScreenOne');
+            return;
+        }
         runSystemDiagnostics();
-    }
-    if (tabId === 'IdentityVerificationScreenOne') {
+    } else if (tabId === 'IdentityVerificationScreenOne') {
+        if (!secureFeatures?.find(entity => entity.name === 'Verify Candidate')) {
+            navigate('IdentityVerificationScreenTwo');
+            return;
+        }
         await IdentityVerificationScreenOne(tabContent3);
-    }
-    if (tabId === 'IdentityVerificationScreenTwo') {
+    } else if (tabId === 'IdentityVerificationScreenTwo') {
+        if (!secureFeatures?.find(entity => entity.name === 'Verify Id')) {
+            navigate('IdentityVerificationScreenThree');
+            return;
+        }
         await IdentityVerificationScreenTwo(tabContent4);
-    } 
-    if(tabId === 'IdentityVerificationScreenThree') {
+    } else if (tabId === 'IdentityVerificationScreenThree') {
+        if (!secureFeatures?.find(entity => entity.name === 'Record Audio')) {
+            navigate('IdentityVerificationScreenFour');
+            return;
+        }
         await IdentityVerificationScreenThree(tabContent5);
-    }
-    if(tabId === 'IdentityVerificationScreenFour') {
+    } else if (tabId === 'IdentityVerificationScreenFour') {
+        if (!secureFeatures?.find(entity => entity.name === 'Record Room')) {
+            navigate('IdentityVerificationScreenSix');
+            return;
+        }
         await IdentityVerificationScreenFour(tabContent6);
-    }
-    if(tabId === 'IdentityVerificationScreenFive') {
+    } else if (tabId === 'IdentityVerificationScreenFive') {
+        if (!secureFeatures?.find(entity => entity.name === 'Record Screen')) {
+            navigate('IdentityVerificationScreenFive');
+            return;
+        }
         await IdentityVerificationScreenFive(tabContent7);
     }
-    
-}
+};
+
 
 export { openModal, closeModal, modalContent, showTab };

@@ -66,7 +66,7 @@ export const startRecording = async (token) => {
         ];
 
         updatePersistData('session',{ cameraRecordings: cameraRecordings, audioRecordings:audioRecordings ,room_id: room?.sid })
-        if(newStream && (findConfigs(['Record Screen'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length)){
+        if(session?.screenRecordingStream && (findConfigs(['Record Screen'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length)){
           screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
           let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
           screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];

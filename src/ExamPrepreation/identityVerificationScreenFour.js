@@ -4,7 +4,7 @@ import '../assets/css/step4.css';
 import redDot from '../assets/images/red-dot.svg';
 import whiteDot from '../assets/images/white-dot.svg';
 import { showTab } from './examPrechecks';
-import { getDateTime, registerEvent, uploadFileInS3Folder } from '../utils/functions';
+import { getDateTime, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
     let recordingMode = 'startRecording';
@@ -115,7 +115,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			});
             if(url?.data?.file_url){
                 const fileUrl = 'https://example.com/path/to/uploaded/video.mp4';
-
+                updatePersistData('session',{ roomScanRecordings: url.data.file_url })
                 console.log('Room scan recording uploaded:', fileUrl);
                 recordingMode = 'uploaded_file';
                 textMessage = 'candidate_video_is_uploaded_successfully';

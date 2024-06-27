@@ -1,4 +1,4 @@
-import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, registerEvent, srcToData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step2.css';
 import greenCheckMark from '../assets/images/checkmark-green.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
@@ -171,6 +171,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
             });
 
             if (resp?.data?.file_url) {
+                 updatePersistData('session',{ identityCard: resp.data.file_url })
                 currentState = {
                     ...currentState,
                     captureMode: 'uploaded_photo',

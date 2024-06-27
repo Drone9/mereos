@@ -1,4 +1,4 @@
-import { checkCamera, checkForMultipleMicrophones, checkMicrophone, checkNotification, detectMultipleScreens, getCandidateAssessment, getLocation, getMultipleCameraDevices, getNetworkUploadSpeed, registerEvent } from '../utils/functions';
+import { checkCamera, checkForMultipleMicrophones, checkMicrophone, checkNotification, detectMultipleScreens, getCandidateAssessment, getLocation, getMultipleCameraDevices, getNetworkUploadSpeed, registerEvent, updatePersistData } from '../utils/functions';
 import '../assets/css/systemDiagnostic.css';
 import loadingGray from '../assets/images/loading-gray.svg';
 import checkMarkIcon from '../assets/images/checkmark-rounded-green.png';
@@ -152,6 +152,8 @@ export const runSystemDiagnostics = async () => {
     
         if (trackLocation) {
           location = await getLocation();
+          updatePersistData('session',{ location: location })
+
           setElementStatus('location', { success: locationGreen, failure: locationRed }, location);
         } else {
           location = true;

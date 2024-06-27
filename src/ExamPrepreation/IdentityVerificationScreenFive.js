@@ -1,4 +1,4 @@
-import { detectMultipleScreens, getCandidateAssessment, getDateTime, registerEvent, shareScreenFromContent } from '../utils/functions';
+import { detectMultipleScreens, getCandidateAssessment, getDateTime, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
 import mockImage from '../assets/images/screen-recorder-mock.svg'
 import '../assets/css/step5.css';
 import { closeModal, showTab } from './examPrechecks';
@@ -44,6 +44,7 @@ let multipleScreens;
           console.log('Attempting to share screen...');
         newStream = await shareScreenFromContent();
           console.log('Screen sharing stream obtained:', newStream);
+          updatePersistData('session',{ screenRecordingStream: location })
 
           if (newStream.getVideoTracks()[0].getSettings().displaySurface === 'monitor') {
               stream = newStream;

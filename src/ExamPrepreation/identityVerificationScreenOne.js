@@ -1,4 +1,4 @@
-import { dataURIToBlob, registerEvent, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { dataURIToBlob, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step1.css';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
@@ -165,7 +165,10 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
               folderName: 'candidate_images',
               file: dataURIToBlob(state.imageSrc),
           });
+          console.log('resp_____',resp);
           if (resp?.data?.file_url) {
+            console.log('in the if condition');
+            updatePersistData('session',{ candidatePhoto: resp.data.file_url })
               state = {
                   ...state,
                   captureMode: 'uploaded_photo',
@@ -175,10 +178,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
                   },
               };
               registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_uploaded_successfully' });
-          } else {
-              throw 'internet_connection_unstable';
           }
       } catch (e) {
+        console.log('erorororor',e);
           state = {
               ...state,
               captureMode: 'take',

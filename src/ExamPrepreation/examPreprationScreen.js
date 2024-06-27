@@ -45,11 +45,11 @@ export const ExamPreparation = async (tabContent) => {
       console.error('tabContent is not defined or is not a valid DOM element');
       return;
   }
+  const session = convertDataIntoParse('session')
 
-  localStorage.setItem('session',JSON.stringify(initialSessionData));
+  !session && localStorage.setItem('session',JSON.stringify(initialSessionData))
   const startSession = async () => {
     const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-    const session = convertDataIntoParse('session')
     console.log('session___',session);
     const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
     if (resp?.data) {

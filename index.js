@@ -17,6 +17,7 @@ import { startRecording } from './src/StartRecording/startRecording';
 import { registerPublicCandidate } from './src/services/auth.services';
 import { stopAllRecordings } from './src/StopRecording/stopRecording';
 import { addSectionSessionRecord, convertDataIntoParse } from './src/utils/functions';
+import { changeCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 
     async function init(host) {
         const resp = await registerPublicCandidate(host);
@@ -87,7 +88,10 @@ import { addSectionSessionRecord, convertDataIntoParse } from './src/utils/funct
             let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
             if(resp){
                 console.log('submit_session');
-                localStorage.clear();
+				let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
+                if(completedRes){
+                    localStorage.clear();
+                }
             }
             return 
             // const resp = await axios.post('https://corder-api.mereos.eu/session/session', session);

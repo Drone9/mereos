@@ -8,6 +8,10 @@ import vector1 from '../assets/images/vector-1.png';
 import vector2 from '../assets/images/vector-2.png';
 import vector3 from '../assets/images/vector-3.png';
 import { showTab } from './examPrechecks';
+import { addSectionSessionRecord, convertDataIntoParse, registerEvent, updatePersistData } from '../utils/functions';
+import { initialSessionData } from '../utils/constant';
+import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 
 const translations = {
   exam_preparation: 'Exam Preparation',
@@ -30,13 +34,9 @@ const vectors = [
 
 const getDateTime = () => new Date().toISOString();
 
-const registerEvent = (event) => {
-  console.log('Event registered:', event);
-};
-
 const nextPage = () => {
   registerEvent({ eventType: 'success', notify: false, eventName: 'terms_and_conditions_read', eventValue: getDateTime() });
-  showTab('tab2')
+  showTab('runSystemDiagnostics')
 };
 
 
@@ -45,6 +45,32 @@ export const ExamPreparation = async (tabContent) => {
       console.error('tabContent is not defined or is not a valid DOM element');
       return;
   }
+
+  localStorage.setItem('session',JSON.stringify(initialSessionData));
+  const startSession = async () => {
+    const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+    const session = convertDataIntoParse('session')
+    console.log('session___',session);
+    const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+    if (resp?.data) {
+      updatePersistData('session',{ sessionId: resp?.data?.session_id,id: resp?.data?.id })
+      registerEvent({eventType: 'success', notify: false, eventName: 'session_initiated'});
+    }
+
+    const candidateAssessmentResp = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Attending'});
+						
+    // Updating Invite status
+    const candidateInviteAssessmentSectionResp = await changeCandidateInviteAssessmentSectionStatus({id: candidateInviteAssessmentSection.id, status: 'Initiated'});
+
+    console.log(resp, candidateAssessmentResp, candidateInviteAssessmentSectionResp);
+    updatePersistData('session',
+      { 
+      id: resp.data.id,
+      sessionStatus: candidateInviteAssessmentSectionResp.data.status
+      });
+  }
+
+  startSession();
 
   tabContent.innerHTML = '';
 

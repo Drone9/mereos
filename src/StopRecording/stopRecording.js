@@ -1,6 +1,5 @@
 import {  roomInstance } from '../StartRecording/startRecording';
 
-
 export const cleanupLocalVideo = (cameraTrack) => {
   if (cameraTrack) {
       cameraTrack.stop();

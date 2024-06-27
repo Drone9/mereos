@@ -1,4 +1,4 @@
-import { checkCamera, checkMicrophone, checkNotification, detectMultipleScreens, getLocation, getMultipleCameraDevices, getNetworkUploadSpeed } from '../utils/functions';
+import { checkCamera, checkForMultipleMicrophones, checkMicrophone, checkNotification, detectMultipleScreens, getCandidateAssessment, getLocation, getMultipleCameraDevices, getNetworkUploadSpeed, registerEvent } from '../utils/functions';
 import '../assets/css/systemDiagnostic.css';
 import loadingGray from '../assets/images/loading-gray.svg';
 import checkMarkIcon from '../assets/images/checkmark-rounded-green.png';
@@ -25,7 +25,7 @@ import prompMessage from '../assets/images/user-permission-english.svg'
 import { showTab } from './examPrechecks';
 
 export const runSystemDiagnostics = async () => {
-    const tab1Content = document.getElementById('tab2');
+    const tab1Content = document.getElementById('runSystemDiagnostics');
     tab1Content.innerHTML = `
         <div class="system-diagnostic-test-screen">
             <h1 class="heading">System Diagnostics</h1>
@@ -107,42 +107,98 @@ export const runSystemDiagnostics = async () => {
     `;
 
     try {
-        const camera = await checkCamera();
-        document.getElementById('cameraStatusIcon').src = camera ? `${videoGreen}` : `${videoRed}`;
-        document.getElementById('cameraStatusLoading').src = camera ? `${checkMarkIcon}` : `${XCircle}`;
+        const candidateAssessment = getCandidateAssessment()
+        const secureFeatures = candidateAssessment?.section?.secure_feature_profile?.entity_relation || [];
+        console.log('secureFeatures',secureFeatures);
+    
+        let recordVideo = secureFeatures.find(entity => entity.name === 'Record Video');
+        let recordAudio = secureFeatures.find(entity => entity.name === 'Record Audio');
+        let checkNetwork = secureFeatures.find(entity => entity.name === 'Verify Connection');
+        let trackLocation = secureFeatures.find(entity => entity.name === 'Track Location');
+        let enableNotifications = secureFeatures.find(entity => entity.name === 'Enable Notifications');
+        let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
+    
+        const setElementStatus = (id, status, isSuccess) => {
+          document.getElementById(`${id}StatusIcon`).src = isSuccess ? `${status.success}` : `${status.failure}`;
+          document.getElementById(`${id}StatusLoading`).src = isSuccess ? `${checkMarkIcon}` : `${XCircle}`;
+        };
+    
+        let camera, microphone, location, notification, screens, network;
 
-        const microphone = await checkMicrophone();
-        document.getElementById('microphoneStatusIcon').src = microphone ? `${microPhoneGreen}` : `${microPhoneRed}`;
-        document.getElementById('microphoneStatusLoading').src = microphone ? `${checkMarkIcon}` : `${XCircle}`;
-
-        const network = await getNetworkUploadSpeed();
-        document.getElementById('networkStatusIcon').src = network.speedMbps > 0.168 ? `${networkGreen}` : `${networkRed}`;
-        document.getElementById('networkStatusLoading').src = network.speedMbps > 0.168 ? `${checkMarkIcon}` : `${XCircle}`;
-
-        const location = await getLocation();
-        document.getElementById('locationStatusIcon').src = location ? `${locationGreen}` : `${locationRed}`;
-        document.getElementById('locationStatusLoading').src = location ? `${checkMarkIcon}` : `${XCircle}`;
-
-        const notification = await checkNotification();
-        document.getElementById('notificationStatusIcon').src = notification ? `${notificationGreen}` : `${notificationRed}`;
-        document.getElementById('notificationStatusLoading').src = notification ? `${checkMarkIcon}` : `${XCircle}`;
-
-        const screens = detectMultipleScreens();
-        document.getElementById('screenStatusIcon').src = screens ? `${multipleScreenRed}` : `${multipleScreenGreen}`;
-        document.getElementById('screenStatusLoading').src = screens ? `${XCircle}` : `${checkMarkIcon}`;
-
+        if (recordVideo) {
+          camera = await checkCamera();
+          setElementStatus('camera', { success: videoGreen, failure: videoRed }, camera);
+        } else {
+          camera = true;
+          setElementStatus('camera', { success: videoGreen, failure: videoRed }, true);
+        }
+    
+        if (recordAudio) {
+          microphone = await checkMicrophone();
+          setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, microphone);
+        } else {
+          microphone = true;
+          setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, true);
+        }
+    
+        if (checkNetwork) {
+          network = await getNetworkUploadSpeed();
+          const isNetworkGood = network.speedMbps > 0.168;
+          setElementStatus('network', { success: networkGreen, failure: networkRed }, isNetworkGood);
+        } else {
+            network=true;
+          setElementStatus('network', { success: networkGreen, failure: networkRed }, true);
+        }
+    
+        if (trackLocation) {
+          location = await getLocation();
+          setElementStatus('location', { success: locationGreen, failure: locationRed }, location);
+        } else {
+          location = true;
+          setElementStatus('location', { success: locationGreen, failure: locationRed }, true);
+        }
+    
+        if (enableNotifications) {
+          notification = await checkNotification();
+          setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, notification);
+        } else {
+          notification = true;
+          setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, true);
+        }
+    
+        if (multipleScreensCheck) {
+          screens = detectMultipleScreens();
+          setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, !screens);
+        } else {
+          screens = false;
+          setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, true);
+        }
+    
         const videoDevices = await getMultipleCameraDevices();
         console.log('videoDevices', videoDevices);
         localStorage.setItem('deviceId', videoDevices && videoDevices[0]?.deviceId);
-
-        const allStatuses = [camera, microphone, network.speedMbps > 0.168, location, notification, !screens];
+    
+        const microphones = await checkForMultipleMicrophones();
+        console.log('microphones', microphones);
+        localStorage.setItem('microphoneID', microphones && microphones[0]?.deviceId);
+    
+        const allStatuses = [
+            camera,
+            microphone,
+            network,
+            location,
+            notification,
+            !screens,
+        ];
+    
         const allActivated = allStatuses.every(status => status);
         const continueBtn = document.getElementById('diagnosticContinueBtn');
         continueBtn.disabled = !allActivated;
         if (allActivated) {
-            continueBtn.addEventListener('click', () => {
-                showTab('tab3');
-            });
+          continueBtn.addEventListener('click', () => {
+			registerEvent({eventType: 'success', notify: false, eventName: 'system_diagnostic_passed'});
+            showTab('IdentityVerificationScreenOne');
+          });
         }
     } catch (error) {
         console.error('Error during diagnostics:', error);

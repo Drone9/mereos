@@ -4,7 +4,7 @@ import '../assets/css/step4.css';
 import redDot from '../assets/images/red-dot.svg';
 import whiteDot from '../assets/images/white-dot.svg';
 import { showTab } from './examPrechecks';
-import { uploadFileInS3Folder } from '../utils/functions';
+import { getDateTime, registerEvent, uploadFileInS3Folder } from '../utils/functions';
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
     let recordingMode = 'startRecording';
@@ -85,11 +85,12 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
     };
 
     const nextStep = async () => {
-        showTab('tab7');
+		registerEvent({eventType: 'success', notify: false, eventName: 'room_scan_completed', eventValue: getDateTime()});
+        showTab('IdentityVerificationScreenFive');
     };
 
     const prevStep = () => {
-        showTab('tab5');
+        showTab('IdentityVerificationScreenThree');
         console.log('Navigate to previous step');
     };
 
@@ -115,7 +116,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
             if(url?.data?.file_url){
                 const fileUrl = 'https://example.com/path/to/uploaded/video.mp4';
 
-                // Example state update or action dispatch
                 console.log('Room scan recording uploaded:', fileUrl);
                 recordingMode = 'uploaded_file';
                 textMessage = 'candidate_video_is_uploaded_successfully';

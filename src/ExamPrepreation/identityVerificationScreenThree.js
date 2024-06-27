@@ -1,3 +1,4 @@
+import { getDateTime, registerEvent } from '../utils/functions';
 import { showTab } from './examPrechecks';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
@@ -124,12 +125,13 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
     };
 
     const nextStep = async () => {
-        showTab('tab6');
+		registerEvent({eventType: 'success', notify: false, eventName: 'audio_check_completed', eventValue: getDateTime()});
+        showTab('IdentityVerificationScreenFour');
         console.log('Navigate to IDENTITY_VERIFICATION_SCREEN_FOUR');
     };
 
     const prevStep = () => {
-        showTab('tab4');
+        showTab('IdentityVerificationScreenTwo');
         console.log('Navigate to IDENTITY_VERIFICATION_SCREEN_TWO');
     };
 

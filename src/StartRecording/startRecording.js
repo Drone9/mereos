@@ -1,7 +1,8 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
 import { cleanupLocalVideo } from '../StopRecording/stopRecording';
-import { getSecureFeatures } from '../utils/functions';
+import { convertDataIntoParse, findConfigs, getCandidateAssessment, getTimeInSeconds, registerEvent, updatePersistData } from '../utils/functions';
+import { v4 } from 'uuid';
 
 export let roomInstance = null; 
 export const startRecording = async (token) => {
@@ -10,30 +11,47 @@ export const startRecording = async (token) => {
     let cameraRecordings = [];
     let audioRecordings = [];
     let screenRecordings = [];
-    const secureFeatures = getSecureFeatures();
-    console.log('secureFeatures',secureFeatures);
+    const secureFeatures = getCandidateAssessment();
+    const session = convertDataIntoParse('session');
+    console.log('secureFeatures',secureFeatures?.section?.secure_feature_profile?.entity_relation);
 
     let twilioOptions = {
-      audio: findConfigs(['Record Audio'], secureFeatures).length ? 
-        (deviceIDs?.microphoneID !== null ? {
-          deviceId: { exact: deviceIDs?.microphoneID },
+      audio: findConfigs(['Record Audio'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ? 
+        (localStorage.getItem(' microphoneID') !== null ? {
+          deviceId: { exact: localStorage.getItem('microphoneID')  },
         } : true )
         :
         false,
-      video : findConfigs(['Record Video'], secureFeatures).length ? 
-        (deviceIDs?.videoDeviceID !== null ? {
-          deviceId: { exact: deviceIDs?.videoDeviceID },
+      video : findConfigs(['Record Video'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ? 
+        (localStorage.getItem('deviceId') !== null ? {
+          deviceId: { exact: localStorage.getItem('deviceId') },
         } : true )
         : 
         false
     };
 
     try {
+      const dateTime = new Date();
+      const newRoomSessionId = v4();
+			const newSessionId = session?.sessionId ? session?.sessionId : v4();
+
+      updatePersistData('session',{
+        roomSessionId: newRoomSessionId,
+        sessionId: newSessionId,
+        sessionStartTime: getTimeInSeconds({ inputDate: dateTime, isUTC: true })
+      })
+
+      console.log('twilioOptions',twilioOptions);
         let room = await TwilioVideo.connect(token, twilioOptions);
         roomInstance = room;
         console.log('Room connected:', room);
 
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: true });
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
+          deviceId: { exact: localStorage.getItem('microphoneID') },
+        } : true ) });
+
+        displayLocalCameraVideo(mediaStream);
+
         cameraTrack = new TwilioVideo.LocalVideoTrack(mediaStream.getVideoTracks()[0]);
         await room.localParticipant.publishTrack(cameraTrack);
         console.log('Local camera track published:', cameraTrack);
@@ -46,15 +64,18 @@ export const startRecording = async (token) => {
             ...audioRecordings,
             ...Array.from(room?.localParticipant?.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
         ];
-        if(newStream && (findConfigs(['Record Screen'], section?.secure_feature_profile?.entity_relation).length)){
+
+        updatePersistData('session',{ cameraRecordings: cameraRecordings, audioRecordings:audioRecordings ,room_id: room?.sid })
+        if(newStream && (findConfigs(['Record Screen'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length)){
           screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
-          await room.localParticipant.publishTrack(screenTrack);
+          let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
           screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];
+          updatePersistData('session',{ screenRecordings: screenRecordings });
         }
+
+        registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
         
         console.log('Local screen share track published:', screenTrack);
-
-        displayLocalCameraVideo(mediaStream);
 
         room.on('disconnected', () => {
             cleanupLocalVideo(cameraTrack);

@@ -1,11 +1,7 @@
-import { dataURIToBlob, registerEvent, uploadFileInS3Folder } from '../utils/functions';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import { dataURIToBlob, registerEvent, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step1.css';
-import greenCheckMark from '../assets/images/checkmark-green.svg';
-import closeRed from '../assets/images/close-red.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
-import * as tf from '@tensorflow/tfjs';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
   let state = {
@@ -25,27 +21,27 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
   };
 
   let net = null;
-  let loadModels = false;
+//   let loadModels = false;
   let webcamStream = null;
   let videoElement = null;
 
-  const PREDICTION = {
-      FACE: 'person',
-  };
+//   const PREDICTION = {
+//       FACE: 'person',
+//   };
 
-  const loadModelsAsync = async () => {
-      try {
-            loadModels = true;
-            await tf.setBackend('webgl');
-		    await tf.ready();
-            const liveNet = await cocoSsd?.load();
-            net = liveNet;
-      } catch (e) {
-          console.log('Error loading models:', e);
-      } finally {
-          loadModels = false;
-      }
-  };
+//   const loadModelsAsync = async () => {
+//       try {
+//             loadModels = true;
+//             await tf.setBackend('webgl');
+// 		    await tf.ready();
+//             const liveNet = await cocoSsd?.load();
+//             net = liveNet;
+//       } catch (e) {
+//           console.log('Error loading models:', e);
+//       } finally {
+//           loadModels = false;
+//       }
+//   };
 
   const startWebcam = async () => {
       try {
@@ -90,17 +86,25 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       handleImageProcessing();
   };
 
+  const dataURLtoFile = async (dataurl, filename = 'screenshot.png') => {
+    const res = await fetch(dataurl);
+    const blob = await res.blob();
+    return new File([blob], filename, { type: blob.type });
+};
+
   const handleImageProcessing = async () => {
       if (state.imageSrc) {
-          // Use TensorFlow model to detect faces
           const img = new Image();
+          const data = new FormData();
+          const imageUrl = await dataURLtoFile(state.imageSrc)
+          data.append('image', imageUrl);
+          const resp = await userRekognitionInfo(data);
+          const predictions = resp?.data?.face?.FaceDetails;
+
           img.onload = async function () {
-              const predictions = await net?.detect(img);
+            //   const predictions = await net?.detect(img);
 
-              const isFaceDetected = predictions?.find(prediction => prediction.class === PREDICTION.FACE && prediction.score > 0.67);
-              const isMultipleFacesDetected = predictions?.filter(prediction => prediction.class === PREDICTION.FACE).length > 1;
-
-              if (isFaceDetected) {
+              if (predictions?.length && predictions?.length === 1) {
                   state = {
                       ...state,
                       imageSrc: state.imageSrc,
@@ -109,8 +113,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
                           text: 'Detected face successfully',
                       },
                   };
-                  // registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
-              } else if (isMultipleFacesDetected) {
+                  registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
+              } else if (predictions?.length > 1) {
                   state = {
                       ...state,
                       imageSrc: null,
@@ -120,7 +124,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
                           text: 'Multiple faces detected',
                       },
                   };
-                  // registerEvent({ eventType: 'success', notify: false, eventName: 'multiple_face_detected' });
+                  startWebcam();
+                  registerEvent({ eventType: 'success', notify: false, eventName: 'multiple_face_detected' });
               } else {
                   state = {
                       ...state,
@@ -131,7 +136,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
                           text: 'Face not detected',
                       },
                   };
-                  // registerEvent({ eventType: 'success', notify: false, eventName: 'face_not_detected' });
+                  startWebcam();
+                  registerEvent({ eventType: 'success', notify: false, eventName: 'face_not_detected' });
               }
               renderUI();
           };
@@ -140,8 +146,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
   };
 
   const nextStep = () => {
-    showTab('tab4');
-      // registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
+    showTab('IdentityVerificationScreenTwo');
+      registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
   };
 
   const uploadUserCapturedPhoto = async () => {
@@ -168,7 +174,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
                       text: 'Candidate photo uploaded successfully',
                   },
               };
-              // registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_uploaded_successfully' });
+              registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_uploaded_successfully' });
           } else {
               throw 'internet_connection_unstable';
           }
@@ -182,80 +188,75 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
                   text: 'Something went wrong. Please upload again.',
               },
           };
-          // registerEvent({ eventType: 'error', notify: false, eventName: 'internet_connection_unstable' });
+          registerEvent({ eventType: 'error', notify: false, eventName: 'internet_connection_unstable' });
       }
       renderUI();
   };
 
   const renderUI = () => {
-      let ivsoContainer = tabContent.querySelector('.ivso-container');
-      if (!ivsoContainer) {
-          ivsoContainer = document.createElement('div');
-          ivsoContainer.className = 'ivso-container';
-          tabContent.appendChild(ivsoContainer);
-      }
+    let ivsoContainer = tabContent.querySelector('.ivso-container');
+    if (!ivsoContainer) {
+        ivsoContainer = document.createElement('div');
+        ivsoContainer.className = 'ivso-container';
+        tabContent.appendChild(ivsoContainer);
+    }
 
-      ivsoContainer.innerHTML = '';
+    ivsoContainer.innerHTML = '';
 
-      const ivsoWrapper = document.createElement('div');
-      ivsoWrapper.className = 'ivso-wrapper';
+    const ivsoWrapper = document.createElement('div');
+    ivsoWrapper.className = 'ivso-wrapper';
 
-      const ivsHeaderTitle = document.createElement('div');
-      ivsHeaderTitle.className = 'ivso-header-title';
-      ivsHeaderTitle.textContent = 'Identity Verification';
+    const ivsHeaderTitle = document.createElement('div');
+    ivsHeaderTitle.className = 'ivso-header-title';
+    ivsHeaderTitle.textContent = 'Identity Verification';
 
-      const ivsMsg = document.createElement('div');
-      ivsMsg.className = 'ivso-msg';
-      ivsMsg.textContent = state.msg.text;
+    const ivsMsg = document.createElement('div');
+    ivsMsg.className = 'ivso-msg';
+    ivsMsg.textContent = state.msg.text;
 
-      if (!webcamStream) {
-          startWebcam();
-      }
-      
-      const ivsoWebcamContainer = document.createElement('div');
-      ivsoWebcamContainer.className = 'ivso-webcam-container';
+    const ivsoWebcamContainer = document.createElement('div');
+    ivsoWebcamContainer.className = 'ivso-webcam-container';
 
-      const ivsoHeaderImgContainer = document.createElement('div');
-      ivsoHeaderImgContainer.className = 'ivso-header-img-container';
+    const ivsoHeaderImgContainer = document.createElement('div');
+    ivsoHeaderImgContainer.className = 'ivso-header-img-container';
 
-      const ivsoBtnContainer = document.createElement('div');
-      ivsoBtnContainer.className = 'ivso-btn-container';
+    const ivsoBtnContainer = document.createElement('div');
+    ivsoBtnContainer.className = 'ivso-btn-container';
 
-      const ivsoQueryMsg = document.createElement('div');
-      ivsoQueryMsg.className = 'ivso-query-msg';
-      ivsoQueryMsg.textContent = 'Did the photo turn out to be a bit blurry? Please try again.';
+    const ivsoQueryMsg = document.createElement('div');
+    ivsoQueryMsg.className = 'ivso-query-msg';
+    ivsoQueryMsg.textContent = 'Did the photo turn out to be a bit blurry? Please try again.';
 
-      if (state.msg.type === 'successful' || state.msg.type === 'unsuccessful') {
-          const resultImg = document.createElement('img');
-          resultImg.className = 'ivso-header-img-result';
-          if (state.msg.type === 'successful') {
-              resultImg.src = `${greenCheckMark}`;
-          } else if (state.msg.type === 'unsuccessful') {
-              resultImg.src = `${closeRed}`;
-          }
-          ivsoHeaderImgContainer.appendChild(resultImg);
-      } else {
-          ivsoWebcamContainer.appendChild(videoElement);
+    if (state.imageSrc) {
+        const img = document.createElement('img');
+        img.src = state.imageSrc;
+        img.className = 'ivso-captured-img';
+        ivsoHeaderImgContainer.appendChild(img);
+    } else {
+        if (!webcamStream) {
+            startWebcam();
+        }
+        ivsoWebcamContainer.appendChild(videoElement);
 
-          const gridImg = document.createElement('img');
-          gridImg.src = `${screenCenter}`;
-          gridImg.className = 'ivso-screen-grid';
-          ivsoHeaderImgContainer.appendChild(gridImg);
-      }
+        const gridImg = document.createElement('img');
+        gridImg.src = `${screenCenter}`;
+        gridImg.className = 'ivso-screen-grid';
+        ivsoHeaderImgContainer.appendChild(gridImg);
+    }
 
-      if (state.captureMode === 'take') {
-          const takePhotoBtn = document.createElement('button');
-          takePhotoBtn.textContent = 'Take Photo';
-          takePhotoBtn.className = 'orange-filled-btn';
-          takePhotoBtn.addEventListener('click', capturePhoto);
-          ivsoBtnContainer.appendChild(takePhotoBtn);
-      } else if(state.captureMode === 'uploaded_photo'){
+    if (state.captureMode === 'take') {
+        const takePhotoBtn = document.createElement('button');
+        takePhotoBtn.textContent = 'Take Photo';
+        takePhotoBtn.className = 'orange-filled-btn';
+        takePhotoBtn.addEventListener('click', capturePhoto);
+        ivsoBtnContainer.appendChild(takePhotoBtn);
+    } else if (state.captureMode === 'uploaded_photo') {
         const nextBtn = document.createElement('button');
         nextBtn.textContent = 'Next';
         nextBtn.className = 'orange-filled-btn';
         nextBtn.addEventListener('click', nextStep);
         ivsoBtnContainer.appendChild(nextBtn);
-      }else {
+    } else {
         const retakePhotoBtn = document.createElement('button');
         retakePhotoBtn.textContent = 'Retake Photo';
         retakePhotoBtn.className = 'orange-hollow-btn';
@@ -274,32 +275,32 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
                 },
             };
             renderUI();
-        
-            startWebcam();        
-          });
-          ivsoBtnContainer.appendChild(retakePhotoBtn);
+            startWebcam();
+        });
+        ivsoBtnContainer.appendChild(retakePhotoBtn);
 
-          const uploadPhotoBtn = document.createElement('button');
-          uploadPhotoBtn.textContent = 'Upload Photo';
-          uploadPhotoBtn.className = 'orange-filled-btn';
-          uploadPhotoBtn.addEventListener('click', uploadUserCapturedPhoto);
-          ivsoBtnContainer.appendChild(uploadPhotoBtn);
-      }
+        const uploadPhotoBtn = document.createElement('button');
+        uploadPhotoBtn.textContent = 'Upload Photo';
+        uploadPhotoBtn.className = 'orange-filled-btn';
+        uploadPhotoBtn.addEventListener('click', uploadUserCapturedPhoto);
+        ivsoBtnContainer.appendChild(uploadPhotoBtn);
+    }
 
-      ivsoWrapper.appendChild(ivsHeaderTitle);
-      ivsoWrapper.appendChild(ivsMsg);
-      ivsoWrapper.appendChild(ivsoHeaderImgContainer);
-      ivsoWrapper.appendChild(ivsoWebcamContainer);
-      ivsoWrapper.appendChild(ivsoBtnContainer);
-      if (state.captureMode === 'retake') {
-          ivsoWrapper.appendChild(ivsoQueryMsg);
-      }
+    ivsoWrapper.appendChild(ivsHeaderTitle);
+    ivsoWrapper.appendChild(ivsMsg);
+    ivsoWrapper.appendChild(ivsoHeaderImgContainer);
+    ivsoWrapper.appendChild(ivsoWebcamContainer);
+    ivsoWrapper.appendChild(ivsoBtnContainer);
+    if (state.captureMode === 'retake') {
+        ivsoWrapper.appendChild(ivsoQueryMsg);
+    }
 
-      ivsoContainer.appendChild(ivsoWrapper);
-  };
+    ivsoContainer.appendChild(ivsoWrapper);
+};
+
 
   renderUI();
 
-  await loadModelsAsync();
+//   await loadModelsAsync();
 };
 

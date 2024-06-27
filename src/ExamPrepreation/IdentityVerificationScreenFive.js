@@ -1,4 +1,4 @@
-import { shareScreenFromContent } from '../utils/functions';
+import { detectMultipleScreens, getCandidateAssessment, getDateTime, registerEvent, shareScreenFromContent } from '../utils/functions';
 import mockImage from '../assets/images/screen-recorder-mock.svg'
 import '../assets/css/step5.css';
 import { closeModal, showTab } from './examPrechecks';
@@ -16,6 +16,7 @@ const translations = {
 const t = (key) => translations[key];
 export let newStream;
 export const IdentityVerificationScreenFive = async (tabContent) => {
+let multipleScreens;
   if (!tabContent) {
       console.error('tabContent is not defined or is not a valid DOM element');
       return;
@@ -27,6 +28,16 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
       type: 'successful',
       text: t('please_share_entire_screen')
   };
+
+  const checkMutipleScreens = async () => {
+    const resp = detectMultipleScreens();
+    if (resp) {
+        multipleScreens = (true);
+    } else {
+        multipleScreens = (false);
+        registerEvent({eventType: 'error', notify: false, eventName: 'multiple_screens_detected'});
+    }
+    };
 
   const shareScreen = async () => {
       try {
@@ -57,6 +68,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
   };
 
   const nextStep = () => {
+	  registerEvent({eventType: 'success', notify: false, eventName: 'screen_recording_window_shared', eventValue: getDateTime()});
       closeModal();
   };
 
@@ -64,7 +76,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
       if (stream) {
           stream.getVideoTracks()[0].stop();
       }
-      showTab('tab6');
+      showTab('IdentityVerificationScreenFour');
       console.log('Navigating to previous step');
   };
 
@@ -113,6 +125,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
       const doneButton = document.createElement('button');
       doneButton.className = 'orange-filled-btn';
       doneButton.textContent = t('done');
+      doneButton.disabled = multipleScreens;
       doneButton.addEventListener('click', nextStep);
       btnContainer.appendChild(doneButton);
   } else if (mode === 'rerecordScreen') {
@@ -142,6 +155,12 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
   tabContent.appendChild(container);
 
   shareScreen();
+  const candidateAssessment = getCandidateAssessment()
+  const secureFeatures = candidateAssessment?.section?.secure_feature_profile?.entity_relation || [];
+  console.log('secureFeatures',secureFeatures);
+  let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
+  console.log('multipleScreensCheck',multipleScreensCheck);
 
+  multipleScreensCheck && checkMutipleScreens();
   return container;
 };

@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { ASSET_URL, BASE_URL } from './constant';
+import { addSectionSession, editSectionSession } from '../services/sessions.service';
+import { getRecordingSid } from '../services/twilio.services';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -181,16 +183,15 @@ const testUploadSpeed = async (text) => {
 	return axios.post(`${BASE_URL}/general/test-upload-speed`, { 'test': text });
 };
 
-export const registerEvent = ({ notify, eventType, eventName, eventValue }) => {
+export const registerEvent = ({ eventType, eventName, eventValue }) => {
 	try{
-			const session = {
-					id:'9',
-					sessionStartTime:0
-			};
+			const session = convertDataIntoParse('session');
+			console.log('session',session);
+
 			const event = {
 					name: eventName,
 					value: eventName,
-					section_session: '55',
+					section_session: session?.id,
 					start_at: session.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session.sessionStartTime) / 1000) : 0
 			};
 			const token = localStorage.getItem('token');
@@ -206,6 +207,10 @@ export const registerEvent = ({ notify, eventType, eventName, eventValue }) => {
 	}
 }
 
+export const getAuthenticationToken = () => {
+	return localStorage.getItem('token');
+};
+
 export const userRekognitionInfo = async (data) => {
 	// const token = await localStorage.getItem('token');
 	// let language = getPreferredLanguage();
@@ -216,6 +221,10 @@ export const userRekognitionInfo = async (data) => {
 	// 	},
 	// };
 	return axios.post(`${BASE_URL}/general/rekognition/`, data);
+};
+
+export const convertDataIntoParse = (key) => {
+	return JSON.parse(localStorage.getItem(key));
 };
 
 export const srcToData = async (src) => {
@@ -289,22 +298,20 @@ export const shareScreenFromContent = () => {
 
 
 export const uploadFileInS3Folder = async (data) => {
-	// const token = await getAuthenticationToken();
-	// const language = getPreferredLanguage();
+	const token = localStorage.getItem('token');
 	
-	// const myHeaders = new Headers();
+	const myHeaders = new Headers();
 	const formData = new FormData();
 	formData.append('files', data.file, `${Date.now()}`);
 	formData.append('folder_name',data.folderName);
 	
-	// const config = {
-	// 	headers: {
-	// 		...myHeaders, 
-	// 		token: token,
-	// 		'm-preferred-language': language
-	// 	},
-	// };
-	return axios.post(`${BASE_URL}/general/upload_file/`, formData);
+	const config = {
+		headers: {
+			...myHeaders, 
+			token: token,
+		},
+	};
+	return axios.post(`${BASE_URL}/general/upload_file/`, formData,config);
 };
 
 export const findConfigs = (configs, entities) => {
@@ -320,7 +327,110 @@ export const findConfigs = (configs, entities) => {
 	return result;
 };
 
-export const getSecureFeatures = () => {
-	const secureFeatures = JSON.parse(localStorage.getItem('secureFeatures'))
+export const getCandidateAssessment = () => {
+	const secureFeatures = JSON.parse(localStorage.getItem('candidateAssessment'))
 	return secureFeatures;
 }
+
+
+export const checkForMultipleMicrophones = async () => {
+	try {
+		await navigator.mediaDevices.getUserMedia({ audio: true });
+
+		const devices = await navigator.mediaDevices.enumerateDevices();
+
+		const microphones = devices.filter(device => device.kind === 'audioinput');
+		console.log('Microphones found:', microphones);
+
+		const defaultMicrophone = microphones.find(device => device.deviceId === 'default');
+
+		if (defaultMicrophone) {
+			return [defaultMicrophone];
+		}
+
+		if (microphones.length > 0) {
+			return [microphones[0]];
+		}
+
+		return [];
+	} catch (err) {
+		if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+			console.error('Permission denied:', err);
+		} else {
+			console.error('Error:', err);
+		}
+		return [];
+	}
+};
+
+export const updatePersistData = (key, updates) => {
+	let storedItemJSON = localStorage.getItem(key);
+
+	if (storedItemJSON) {
+			let storedItem = JSON.parse(storedItemJSON);
+
+			for (let prop in updates) {
+					if (updates.hasOwnProperty(prop)) {
+							storedItem[prop] = updates[prop];
+					}
+			}
+
+			let updatedItemJSON = JSON.stringify(storedItem);
+
+			localStorage.setItem(key, updatedItemJSON);
+	} else {
+			console.warn(`No item found in localStorage with key "${key}"`);
+	}
+}
+
+export const addSectionSessionRecord = (session, candidateInviteAssessmentSection) => {
+	return new Promise(async (resolve, _reject) => {
+		const sourceIds = [...session.cameraRecordings, ...session.audioRecordings, ...session.screenRecordings];
+		const recordings = sourceIds?.length
+			? await getRecordingSid({'source_id': [...session.cameraRecordings, ...session.audioRecordings, ...session.screenRecordings]})
+			: [];
+		let sectionSessionDetails = {
+			start_time: session.sessionStartTime,
+			duration_taken: session.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
+			candidate_identity_card: session.identityCard,
+			candidate_photo: session.candidatePhoto,
+			school: candidateInviteAssessmentSection?.candidate_assessment.candidate.school,
+			section: candidateInviteAssessmentSection.section.id,
+			candidate: candidateInviteAssessmentSection.candidate_assessment.candidate.id,
+			candidate_invite_assessment_section: candidateInviteAssessmentSection.id,
+			camera_recordings: recordings?.data?.filter(recording => session.cameraRecordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			audio_recordings: recordings?.data?.filter(recording => session.audioRecordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			screen_recordings: recordings?.data?.filter(recording => session.screenRecordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			roomscan_recordings: session.roomScanRecordings,
+			room_id:session?.room_id || '',
+			room_session_id: session.roomSessionId || '',
+			session_id: session.sessionId,
+			collected_details: {
+				location: session.location,
+			},
+			browser_events: session.browserEvents,
+			video_codec: null,
+			video_extension: null,
+			mobile_audio_recordings: session.mobileAudios,
+			mobile_recordings: session.mobileRecordings
+		};
+
+		if (session.id) {
+			sectionSessionDetails['id'] = session.id;
+		}
+		
+		const resp = session.id ? await editSectionSession(sectionSessionDetails) : await addSectionSession(sectionSessionDetails);
+		resolve(resp);
+	});
+};
+
+export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _differentiator_ = ' ', inputDate = new Date()) => {
+	const currentDate = new Date(inputDate);
+	const year = currentDate.getUTCFullYear();
+	const date = ('0' + currentDate.getUTCDate()).substr(-2);
+	const month = ('0' + (currentDate.getUTCMonth() + 1)).substr(-2);
+	const hours = ('0' + currentDate.getUTCHours()).substr(-2);
+	const minutes = ('0' + currentDate.getUTCMinutes()).substr(-2);
+	const seconds = ('0' + currentDate.getUTCSeconds()).substr(-2);
+	return `${year}${_dateBreaker_}${date}${_dateBreaker_}${month}${_differentiator_}${hours}${_timeBreaker_}${minutes}${_timeBreaker_}${seconds}`;
+};

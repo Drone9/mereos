@@ -49,9 +49,9 @@
 
 .ivst-screen-grid {
     position: absolute;
-    left: 28px;
-    top: 50px;
-    height: 333px;
+    left: 19px;
+    top: 37px;
+    height: 211px;
 }
 
 @media (max-width: 720px) {

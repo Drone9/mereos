@@ -1,10 +1,12 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
 import { cleanupLocalVideo } from '../StopRecording/stopRecording';
-import { convertDataIntoParse, findConfigs, getCandidateAssessment, getTimeInSeconds, registerEvent, updatePersistData } from '../utils/functions';
-import { v4 } from 'uuid';
+import { convertDataIntoParse, findConfigs, getCandidateAssessment, getTimeInSeconds, registerAIEvent, registerEvent, showNotification, updatePersistData } from '../utils/functions';
+import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import * as tf from '@tensorflow/tfjs';
 
-export let roomInstance = null; 
+export let roomInstance = null;
+
 export const startRecording = async (token) => {
     let cameraTrack = null;
     let screenTrack = null;
@@ -13,64 +15,63 @@ export const startRecording = async (token) => {
     let screenRecordings = [];
     const secureFeatures = getCandidateAssessment();
     const session = convertDataIntoParse('session');
-    console.log('secureFeatures',secureFeatures?.section?.secure_feature_profile?.entity_relation);
 
     let twilioOptions = {
-      audio: findConfigs(['Record Audio'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ? 
-        (localStorage.getItem(' microphoneID') !== null ? {
-          deviceId: { exact: localStorage.getItem('microphoneID')  },
-        } : true )
-        :
-        false,
-      video : findConfigs(['Record Video'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ? 
-        (localStorage.getItem('deviceId') !== null ? {
-          deviceId: { exact: localStorage.getItem('deviceId') },
-        } : true )
-        : 
-        false
+        audio: findConfigs(['Record Audio'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ? 
+            (localStorage.getItem('microphoneID') !== null ? {
+                deviceId: { exact: localStorage.getItem('microphoneID')  },
+            } : true )
+            :
+            false,
+        video : findConfigs(['Record Video'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ? 
+            (localStorage.getItem('deviceId') !== null ? {
+                deviceId: { exact: localStorage.getItem('deviceId') },
+            } : true )
+            : 
+            false
     };
 
     try {
-      const dateTime = new Date();
-      const newRoomSessionId = v4();
-			const newSessionId = session?.sessionId ? session?.sessionId : v4();
+        const dateTime = new Date();
+        const newRoomSessionId = dateTime.getTime();
+        const newSessionId = session?.sessionId ? session?.sessionId : dateTime.getTime();
 
-      updatePersistData('session',{
-        roomSessionId: newRoomSessionId,
-        sessionId: newSessionId,
-        sessionStartTime: getTimeInSeconds({ inputDate: dateTime, isUTC: true })
-      })
+        updatePersistData('session',{
+            roomSessionId: newRoomSessionId,
+            sessionId: newSessionId,
+            sessionStartTime: getTimeInSeconds({  isUTC: true, inputDate: dateTime })
+        });
 
-      console.log('twilioOptions',twilioOptions);
+        console.log('twilioOptions', twilioOptions);
         let room = await TwilioVideo.connect(token, twilioOptions);
         roomInstance = room;
         console.log('Room connected:', room);
 
         const mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
-          deviceId: { exact: localStorage.getItem('microphoneID') },
+            deviceId: { exact: localStorage.getItem('microphoneID') },
         } : true ) });
 
-        displayLocalCameraVideo(mediaStream);
+        startAIWebcam(mediaStream);
 
         cameraTrack = new TwilioVideo.LocalVideoTrack(mediaStream.getVideoTracks()[0]);
         await room.localParticipant.publishTrack(cameraTrack);
         console.log('Local camera track published:', cameraTrack);
 
         cameraRecordings = [
-          ...cameraRecordings,
-          ...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
+            ...cameraRecordings,
+            ...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
         ];
         audioRecordings = [
             ...audioRecordings,
             ...Array.from(room?.localParticipant?.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
         ];
 
-        updatePersistData('session',{ cameraRecordings: cameraRecordings, audioRecordings:audioRecordings ,room_id: room?.sid })
-        if(session?.screenRecordingStream && (findConfigs(['Record Screen'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length)){
-          screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
-          let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
-          screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];
-          updatePersistData('session',{ screenRecordings: screenRecordings });
+        updatePersistData('session',{ cameraRecordings: cameraRecordings, audioRecordings:audioRecordings ,room_id: room?.sid });
+        if (session?.screenRecordingStream && findConfigs(['Record Screen'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length) {
+            screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
+            let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
+            screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];
+            updatePersistData('session',{ screenRecordings: screenRecordings });
         }
 
         registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
@@ -85,21 +86,133 @@ export const startRecording = async (token) => {
     }
 };
 
-const displayLocalCameraVideo = (mediaStream) => {
-    const localVideoContainer = document.createElement('div');
-    localVideoContainer.classList.add('local-video-container');
+const PREDICTION = ['cell phone', 'book'];
+let aiEvents = [];
 
-    const cameraVideoElement = document.createElement('video');
-    cameraVideoElement.autoplay = true;
-    cameraVideoElement.muted = true;
-    cameraVideoElement.srcObject = mediaStream;
-    localVideoContainer.appendChild(cameraVideoElement);
+const setupWebcam = async (mediaStream) => {
+    let webcamContainer = document.getElementById('webcam-container');
+    if (!webcamContainer) {
+        webcamContainer = document.createElement('div');
+        webcamContainer.id = 'webcam-container';
+        webcamContainer.style.position = 'relative';
+        webcamContainer.style.width = '200px';
+        webcamContainer.style.height = '150px';
+        document.body.appendChild(webcamContainer);
+    }
 
-    document.body.appendChild(localVideoContainer);
+    const videoElement = document.createElement('video');
+    videoElement.autoplay = true;
+    videoElement.muted = true;
+    videoElement.srcObject = mediaStream;
+    videoElement.width = 200;
+    videoElement.height = 200 * (3 / 4);
+    videoElement.style.position = 'absolute';
+    videoElement.style.width = '100%';
+    videoElement.style.height = 'auto';
+    videoElement.style.maxWidth = '100%';
 
-    cameraVideoElement.style.position = 'fixed';
-    cameraVideoElement.style.top = '10px';
-    cameraVideoElement.style.right = '10px';
-    cameraVideoElement.style.width = '200px';
-    cameraVideoElement.style.height = 'auto';
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'canvas';
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.width = 200;
+    canvas.height = 200 * (3 / 4);
+    canvas.style.maxWidth = '100%';
+    canvas.style.width = '100%';
+    canvas.style.height = 'auto';
+    
+    webcamContainer.appendChild(videoElement);
+    webcamContainer.appendChild(canvas);
+
+    videoElement.addEventListener('loadedmetadata', () => {
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+    });
+
+    return { videoElement, canvas };
+};
+
+const handleVideoResize = (predictions, context) => {
+    predictions.forEach(prediction => {
+        if (PREDICTION.includes(prediction.class) || prediction.class === 'person') {
+            const [x, y, width, height] = prediction.bbox;
+            context.beginPath();
+            context.rect(x, y, width, height);
+            context.lineWidth = 2;
+            context.strokeStyle = 'red';
+            context.fillStyle = 'red';
+            context.stroke();
+            context.font = '16px Arial';
+            context.fillText(`${prediction.class}`, x, y > 10 ? y - 5 : 10);
+        }
+    });
+};
+
+const startAIWebcam = async (mediaStream) => {
+    await tf.setBackend('webgl');
+    await tf.ready();
+    const net = await cocoSsd.load();
+    const { videoElement, canvas } = await setupWebcam(mediaStream);
+    const context = canvas.getContext('2d');
+
+    const session = convertDataIntoParse('session');
+
+    let seconds = session?.quizStartTime ? parseInt((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) : 0;
+    
+    setInterval(async () => {
+        try {
+            if (videoElement.readyState === 4) {
+                const image = tf.browser.fromPixels(videoElement);
+                const predictions = await net.detect(image);
+                
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                
+                handleVideoResize(predictions, context, canvas);
+                
+                let log = {}, person = {}, multiplePersonFound = false;
+                predictions.forEach(prediction => {
+                    if (prediction.class === 'person' && person?.class) {
+                        if (!multiplePersonFound) {
+                            log = { ...log, 'multiple_people': (log['multiple_people'] || 0) + 1 };
+                            multiplePersonFound = true;
+                        }
+                    } else if (prediction.class === 'person') {
+                        person = prediction;
+                    } else if (PREDICTION.includes(prediction.class)) {
+                        log = { ...log, ['object_detected']: (log[prediction.class] || 0) + 1 };
+                    }
+                });
+                
+                if (!person.class) {
+                    log = { ...log, 'person_missing': (log['person_missing'] || 0) + 1 };
+                }
+                
+                ['person_missing', 'object_detected', 'multiple_people'].forEach(key => {
+                  let lastLogIndex = aiEvents.findIndex(lg => lg[key]);
+                  let lastLog = lastLogIndex > -1 ? aiEvents.splice(lastLogIndex, 1)[0] : undefined;
+                  if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
+                    const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
+                    aiEvents.push(newLog);
+                  } else if (log[key] && lastLog?.[key]) {
+                    lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
+                    aiEvents.push(lastLog);
+                    if (lastLog.time_span > 10) {
+                      showNotification({
+                        title: 'Warning!',
+                        body: `Alert: ${key} detected for more than 10 seconds!`,
+                        icon: `${ASSET_URL}/mereos.png`
+                      });
+                    }
+                  } else if (!log[key] && lastLog?.[key]) {
+                    lastLog = { ...lastLog, end_time: Number(lastLog.start_time) + Number(lastLog.time_span) };
+                    registerAIEvent({ eventType: 'success', notify: false, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) });
+                  }
+                });
+            }
+        } catch (error) {
+            console.error('Error in AI processing:', error);
+        }
+    }, 1000);
 };

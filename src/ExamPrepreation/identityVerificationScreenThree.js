@@ -159,6 +159,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 
             const audioText = document.createElement('div');
             audioText.className = 'ivst-audio-text';
+            audioText.style.textAlign = 'center';
             audioText.textContent = 'No point in running, leave in time';
 
             canvasRef = document.createElement('canvas');

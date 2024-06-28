@@ -18,8 +18,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
     };
 
     const videoConstraints = {
-        width: 640,
-        height: 480,
+        width: 400,
+        height: 300,
         facingMode: 'user',
         deviceId: localStorage.getItem('deviceId') || undefined,
     };

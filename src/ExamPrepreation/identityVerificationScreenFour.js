@@ -1,4 +1,3 @@
-import RecordRTC from 'recordrtc';
 import { ASSET_URL } from '../utils/constant';
 import '../assets/css/step4.css';
 import redDot from '../assets/images/red-dot.svg';
@@ -15,7 +14,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
     let recordingTimer = null;
     let blob = null;
     let refVideo = null;
-    let recorderRef = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
 
     const videoConstraints = {
         width: 640,
@@ -46,13 +46,26 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
         try {
             const mediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
 
-            recorderRef = new RecordRTC(mediaStream, {
-                type: 'video',
-                mimeType: 'video/mp4',
+            mediaRecorder = new MediaRecorder(mediaStream, {
+                mimeType: 'video/webm; codecs=vp9'
             });
 
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                blob = new Blob(recordedChunks, {
+                    type: 'video/webm'
+                });
+                refVideo.src = URL.createObjectURL(blob);
+                recordedChunks = [];
+            };
+
             startRecordingTimer();
-            recorderRef.startRecording();
+            mediaRecorder.start();
 
             recordingMode = 'beingRecorded';
 
@@ -73,19 +86,14 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
     const handleStopRecording = async () => {
         showPlayer = true;
-        recorderRef.stopRecording(() => {
-            refVideo.srcObject = null;
-            blob = recorderRef.getBlob();
-            refVideo.src = URL.createObjectURL(recorderRef.getBlob());
-        });
-
-        recordingMode = 'stopRecording';
+        mediaRecorder.stop();
         stopRecordingTimer();
+        recordingMode = 'stopRecording';
         updateUI();
     };
 
     const nextStep = async () => {
-		registerEvent({eventType: 'success', notify: false, eventName: 'room_scan_completed', eventValue: getDateTime()});
+        registerEvent({ eventType: 'success', notify: false, eventName: 'room_scan_completed', eventValue: getDateTime() });
         showTab('IdentityVerificationScreenFive');
     };
 
@@ -110,12 +118,13 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
             updateUI();
 
             let url = await uploadFileInS3Folder({
-				file: blob,
-				folderName:'videos'
-			});
-            if(url?.data?.file_url){
-                const fileUrl = 'https://example.com/path/to/uploaded/video.mp4';
-                updatePersistData('session',{ roomScanRecordings: url.data.file_url })
+                file: blob,
+                folderName: 'videos'
+            });
+
+            if (url?.data?.file_url) {
+                const fileUrl = url.data.file_url;
+                updatePersistData('session', { roomScanRecordings: fileUrl });
                 console.log('Room scan recording uploaded:', fileUrl);
                 recordingMode = 'uploaded_file';
                 textMessage = 'candidate_video_is_uploaded_successfully';
@@ -239,8 +248,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
     updateUI();
 
     const cleanup = () => {
-        if (recorderRef) {
-            recorderRef.destroy();
+        if (mediaRecorder) {
+            mediaRecorder.stop();
         }
         stopRecordingTimer();
     };

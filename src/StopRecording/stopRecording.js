@@ -1,41 +1,49 @@
 import {  roomInstance } from '../StartRecording/startRecording';
+import { registerEvent, showNotification, updatePersistData } from '../utils/functions';
 
-export const cleanupLocalVideo = (cameraTrack) => {
-  if (cameraTrack) {
-      cameraTrack.stop();
-  }
-  const localVideoContainer = document.querySelector('.local-video-container');
-  if (localVideoContainer) {
-      localVideoContainer.remove();
-  }
+export const cleanupLocalVideo = () => {
+    const webcamContainer = document.getElementById('webcam-container');
+    if (webcamContainer) {
+        const videoElement = webcamContainer.querySelector('video');
+        if (videoElement) {
+            videoElement.pause();
+            videoElement.srcObject.getTracks().forEach(track => track.stop());
+            videoElement.remove();
+        }
+
+        const canvas = webcamContainer.querySelector('canvas');
+        if (canvas) {
+            canvas.remove();
+        }
+
+        webcamContainer.remove();
+    }
 };
 
 export const stopAllRecordings = () => {
-  console.log('roomInstance', roomInstance);
+    if (roomInstance) {
+        roomInstance.localParticipant.tracks.forEach(publication => {
+            const track = publication.track;
+            if (track) {
+                track.stop();
+                roomInstance.localParticipant.unpublishTrack(track);
+            }
+        });
+        roomInstance.disconnect();
+    }
 
-  if (roomInstance) {
-      roomInstance.localParticipant.tracks.forEach(publication => {
-          const track = publication.track;
-          if (track) {
-              track.stop();
-              roomInstance.localParticipant.unpublishTrack(track);
-          }
-      });
-      roomInstance.disconnect();
-  }
+    cleanupLocalVideo();
+    
+    const dateTime = new Date();
+    
+    registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 
-  // Stop any media streams that might still be active
-  const activeMediaStreams = document.querySelectorAll('video');
-  activeMediaStreams.forEach(videoElement => {
-      const mediaStream = videoElement.srcObject;
-      if (mediaStream) {
-          mediaStream.getTracks().forEach(track => track.stop());
-      }
-  });
+    showNotification({
+        title: 'Recording Stopped',
+        body: 'Recording session has ended.',
+    });
 
-  const localVideoContainer = document.querySelector('.local-video-container');
-  if (localVideoContainer) {
-      localVideoContainer.remove();
-  }
+    updatePersistData('session', {
+        recordingEnded: true
+    });
 };
-

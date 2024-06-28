@@ -9,7 +9,6 @@ import vector2 from '../assets/images/vector-2.png';
 import vector3 from '../assets/images/vector-3.png';
 import { showTab } from './examPrechecks';
 import { addSectionSessionRecord, convertDataIntoParse, registerEvent, updatePersistData } from '../utils/functions';
-import { initialSessionData } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 
@@ -39,38 +38,11 @@ const nextPage = () => {
   showTab('runSystemDiagnostics')
 };
 
-
 export const ExamPreparation = async (tabContent) => {
   if (!tabContent) {
       console.error('tabContent is not defined or is not a valid DOM element');
       return;
   }
-  const session = convertDataIntoParse('session')
-
-  !session && localStorage.setItem('session',JSON.stringify(initialSessionData))
-  const startSession = async () => {
-    const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-    console.log('session___',session);
-    const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
-    if (resp?.data) {
-      updatePersistData('session',{ sessionId: resp?.data?.session_id,id: resp?.data?.id })
-      registerEvent({eventType: 'success', notify: false, eventName: 'session_initiated'});
-    }
-
-    const candidateAssessmentResp = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Attending'});
-						
-    // Updating Invite status
-    const candidateInviteAssessmentSectionResp = await changeCandidateInviteAssessmentSectionStatus({id: candidateInviteAssessmentSection.id, status: 'Initiated'});
-
-    console.log(resp, candidateAssessmentResp, candidateInviteAssessmentSectionResp);
-    updatePersistData('session',
-      { 
-      id: resp.data.id,
-      sessionStatus: candidateInviteAssessmentSectionResp.data.status
-      });
-  }
-
-  startSession();
 
   tabContent.innerHTML = '';
 

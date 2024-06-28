@@ -9,8 +9,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       imageSrc: null,
       videoConstraints: {
           video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
-          width: 640,
-          height: 480,
+          width: 400,
+          height: 300,
           facingMode: 'user',
           deviceId: localStorage.getItem('deviceId') || undefined,
       },

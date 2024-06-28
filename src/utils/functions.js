@@ -2,6 +2,7 @@ import axios from 'axios';
 import { ASSET_URL, BASE_URL } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
+import { createAiEvent } from '../services/ai-event.servicer';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -385,7 +386,8 @@ export const updatePersistData = (key, updates) => {
 
 export const addSectionSessionRecord = (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {
-		const sourceIds = [...session.cameraRecordings, ...session.audioRecordings, ...session.screenRecordings];
+		console.log('session',session);
+		const sourceIds = [...session?.cameraRecordings, ...session?.audioRecordings, ...session?.screenRecordings];
 		const recordings = sourceIds?.length
 			? await getRecordingSid({'source_id': [...session.cameraRecordings, ...session.audioRecordings, ...session.screenRecordings]})
 			: [];
@@ -433,4 +435,28 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 	const minutes = ('0' + currentDate.getUTCMinutes()).substr(-2);
 	const seconds = ('0' + currentDate.getUTCSeconds()).substr(-2);
 	return `${year}${_dateBreaker_}${date}${_dateBreaker_}${month}${_differentiator_}${hours}${_timeBreaker_}${minutes}${_timeBreaker_}${seconds}`;
+};
+
+
+export const registerAIEvent = async ({ notify, eventType, eventName, eventValue, startTime,endTime }) => {
+	try{
+		const session = convertDataIntoParse('session');
+
+		const event = {
+			name: eventName,
+			start_at: startTime,
+			end_at:endTime,
+			value: eventName,
+			created_at: getDateTime(),
+			section_session: session?.id
+		};
+		console.log('event',event);
+	
+		// event['end_at'] = Number(event?.start_at) + Number(endTime);
+		
+		await createAiEvent(event);
+		notify && showNotification({eventType, eventName, eventValue});
+	}catch(e){
+		console.log('error',e);
+	}
 };

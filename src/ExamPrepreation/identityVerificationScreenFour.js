@@ -34,14 +34,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
     const handleStartRecording = async () => {
         const mediaOptions = {
-            audio: true,  // Ensure audio is always requested
-        };
-
-        if (localStorage.getItem('deviceId') !== null) {
-            mediaOptions.video = { deviceId: { exact: localStorage.getItem('deviceId') } };
-        } else {
-            mediaOptions.video = true;  // Request video if device ID is not available
-        }
+			audio: localStorage.getItem('microphoneID') !== null ? { deviceId: { exact: localStorage.getItem('microphoneID') }} : true,
+			video: localStorage.getItem('deviceId') !== null ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
+		};
 
         try {
             const mediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
@@ -115,7 +110,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
         try {
             loading = true;
             textMessage = 'file_is_being_uploaded';
-            updateUI();
 
             let url = await uploadFileInS3Folder({
                 file: blob,

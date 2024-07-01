@@ -8,6 +8,9 @@ import vector1 from '../assets/images/vector-1.png';
 import vector2 from '../assets/images/vector-2.png';
 import vector3 from '../assets/images/vector-3.png';
 import { showTab } from './examPrechecks';
+import { addSectionSessionRecord, convertDataIntoParse, registerEvent, updatePersistData } from '../utils/functions';
+import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 
 const translations = {
   exam_preparation: 'Exam Preparation',
@@ -30,15 +33,10 @@ const vectors = [
 
 const getDateTime = () => new Date().toISOString();
 
-const registerEvent = (event) => {
-  console.log('Event registered:', event);
-};
-
 const nextPage = () => {
   registerEvent({ eventType: 'success', notify: false, eventName: 'terms_and_conditions_read', eventValue: getDateTime() });
-  showTab('tab2')
+  showTab('runSystemDiagnostics')
 };
-
 
 export const ExamPreparation = async (tabContent) => {
   if (!tabContent) {

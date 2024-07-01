@@ -20,7 +20,7 @@
 	align-items: center;
 	text-align: center;
 	color: #222222;
-	margin: 26px auto 0px;
+	margin: 10px auto 0px;
 }
 
 .ivso-msg {
@@ -39,6 +39,11 @@
 .ivso-header-img-container {
 	position: relative;
 	margin: 30px auto 0px;
+}
+.ivso-captured-img{
+	width: 400px;
+	height: 300px;
+	object-fit: cover;
 }
 
 .ivso-header-img {
@@ -121,7 +126,7 @@
 }
 
 .ivso-btn-container {
-	margin: 30px auto;
+	margin: 30px auto 10px;
 	display: flex;
 	flex-direction: row;
 	column-gap: 20px;

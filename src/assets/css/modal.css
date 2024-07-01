@@ -13,7 +13,7 @@
 .modal-content {
   display: flex;
   flex-direction: column;
-  width: 1000px;
+  width: 750px;
   position: fixed;
   top: 50%;
   height: 500px;
@@ -37,6 +37,9 @@
   cursor: pointer;
   align-items: end;
   justify-content: end;
+  position: absolute;
+  right: 13px;
+  top: 2px;
 }
 
 .close:hover,
@@ -50,31 +53,31 @@
   cursor: pointer;
   padding: 10px;
   display: inline-block;
-  border-bottom: 1px solid #ccc;
+  /* border-bottom: 1px solid #ccc; */
 }
 
 .tab.active {
-  border-bottom: 2px solid orange;
+  /* border-bottom: 2px solid orange; */
   color: orange;
 }
 
 /* Tab Content */
 .tab-content {
   display: none;
-  padding: 20px;
-  border-top: 1px solid #ccc;
+  /* padding: 20px; */
+  /* border-top: 1px solid #ccc; */
 }
 
 .tab-content.active {
   display: block;
 }
 
-.tabs-container{
+/* .tabs-container{
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-}
+} */
 .tabs-container > div{
   white-space: nowrap;
   font-size: 15px;

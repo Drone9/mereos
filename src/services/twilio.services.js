@@ -23,3 +23,13 @@ export const getToken = async (params) => {
 	};
 	return axios.get(`${BASE_URL}/twilio/get-token/`, config);
 };
+
+export const getRecordingSid = async (data) => {
+	const token = localStorage.getItem('token');
+	const config = {
+		headers: {
+			token: `${token}`,
+		}
+	};
+	return axios.post(`${BASE_URL}/twilio/get_SID/`, data, config);
+};

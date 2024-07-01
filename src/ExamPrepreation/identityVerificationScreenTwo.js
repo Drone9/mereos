@@ -1,4 +1,4 @@
-import { acceptableLabels, acceptableText, dataURIToBlob, srcToData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step2.css';
 import greenCheckMark from '../assets/images/checkmark-green.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
@@ -18,40 +18,53 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
     };
 
     const videoConstraints = {
-        width: 640,
-        height: 480,
+        width: 400,
+        height: 300,
         facingMode: 'user',
         deviceId: localStorage.getItem('deviceId') || undefined,
     };
 
-    const capturePhoto = async () => {
-        const imageSrc = photo.getScreenshot();
-        const imageFile = await dataURLtoFile(imageSrc);
-        fileObj = imageFile;
-        if (imageSrc) {
-            currentState = {
-                ...currentState,
-                imageSrc: imageSrc,
-                msg: {
-                    type: 'checking',
-                    text: 'ID being verified'
-                }
-            };
-            renderUI();
-            verifyImage();
-        } else {
-            currentState = {
-                ...currentState,
-                captureMode: 'retake',
-                msg: {
-                    type: 'unsuccessful',
-                    text: 'Error capturing picture'
-                }
-            };
-            renderUI();
-        }
+    const capturePhoto = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoConstraints.width;
+        canvas.height = videoConstraints.height;
+        const context = canvas.getContext('2d');
+        context.drawImage(photo, 0, 0, canvas.width, canvas.height);
+        const imageSrc = canvas.toDataURL('image/png');
+
+        dataURLtoFile(imageSrc).then(imageFile => {
+            fileObj = imageFile;
+            if (imageSrc) {
+                currentState = {
+                    ...currentState,
+                    imageSrc: imageSrc,
+                    msg: {
+                        type: 'checking',
+                        text: 'ID being verified'
+                    }
+                };
+                renderUI();
+                verifyImage();
+            } else {
+                currentState = {
+                    ...currentState,
+                    captureMode: 'retake',
+                    msg: {
+                        type: 'unsuccessful',
+                        text: 'Error capturing picture'
+                    }
+                };
+                renderUI();
+            }
+        });
     };
-    
+
+    const dataURLtoFile = async (dataurl, filename = 'screenshot.png') => {
+        const res = await fetch(dataurl);
+        const blob = await res.blob();
+        return new File([blob], filename, { type: blob.type });
+    };
+
     const handleRestart = () => {
         currentState = {
             ...currentState,
@@ -93,7 +106,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
             }
         }
     };
-    
 
     const verifyImage = async () => {
         if (currentState.imageSrc) {
@@ -103,6 +115,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
             try {
                 const resp = await userRekognitionInfo(data);
                 const userImageData = resp?.data;
+                console.log('userImageData',userImageData);
 
                 if (userImageData) {
                     if (acceptableLabels(userImageData?.label, 80) && acceptableText(userImageData?.text, 59) && userImageData?.face?.FaceDetails.length > 0) {
@@ -115,7 +128,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                             }
                         };
                         disabledBtn = false;
-                        // registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
+                        registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
                     } else {
                         currentState = {
                             ...currentState,
@@ -126,7 +139,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                             }
                         };
                         disabledBtn = false;
-                        // registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
+                        registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
                     }
                 }
             } catch (error) {
@@ -137,7 +150,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
     };
 
     const nextStep = async () => {
-        showTab('tab5')
+		registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_verified_successfully', eventValue: getDateTime()});
+        showTab('IdentityVerificationScreenThree');
     };
 
     const uploadCandidateIdentityCard = async () => {
@@ -157,6 +171,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
             });
 
             if (resp?.data?.file_url) {
+                 updatePersistData('session',{ identityCard: resp.data.file_url })
                 currentState = {
                     ...currentState,
                     captureMode: 'uploaded_photo',
@@ -165,7 +180,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                         text: 'Candidate ID is uploaded successfully'
                     }
                 };
-                // registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_uploaded_successfully'});
+                registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_uploaded_successfully'});
             } else {
                 throw 'something_went_wrong_please_upload_again';
             }
@@ -179,13 +194,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                     text: 'Something went wrong. Please upload again.'
                 }
             };
-            // registerEvent({eventType: 'success', notify: false, eventName: 'internet_connection_unstable'});
+			registerEvent({eventType: 'success', notify: false, eventName: 'internet_connection_unstable'});
         }
         renderUI();
     };
 
     const prevStep = () => {
-        showTab('tab3');
+        showTab('IdentityVerificationScreenOne');
     };
 
     const renderUI = () => {
@@ -207,7 +222,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
         const message = document.createElement('div');
         message.className = 'ivst-msg';
         message.textContent = 'Initial system check passed. Get ready for identity validation.';
-
 
         const headerImgContainer = document.createElement('div');
         headerImgContainer.className = 'ivst-header-img-container';

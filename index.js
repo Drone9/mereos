@@ -9,19 +9,21 @@
 
 import axios from 'axios';
 window.openModal = openModal;
-import {v4} from 'uuid';
 
 import { openModal } from './src/ExamPrepreation/examPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { startRecording } from './src/StartRecording/startRecording';
 import { registerPublicCandidate } from './src/services/auth.services';
-import { generateRandomData } from './src/utils/constant';
 import { stopAllRecordings } from './src/StopRecording/stopRecording';
+import { addSectionSessionRecord, convertDataIntoParse } from './src/utils/functions';
+import { changeCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
+import { initialSessionData } from './src/utils/constant';
 
     async function init(host) {
-        const resp = await registerPublicCandidate(generateRandomData());
+        const resp = await registerPublicCandidate(host);
         localStorage.setItem('token', resp.data?.token);
-        localStorage.setItem('secureFeatures',JSON.stringify(resp.data?.candidate_invite_assessment_section?.section?.secure_feature_profile?.entity_relation));
+        localStorage.setItem('candidateAssessment',JSON.stringify(resp.data?.candidate_invite_assessment_section));
+        localStorage.setItem('session',JSON.stringify(initialSessionData))
         return resp.data;
     };
     
@@ -45,7 +47,8 @@ import { stopAllRecordings } from './src/StopRecording/stopRecording';
     
     async function start_recording() {
         try{
-            const newRoomSessionId = v4();
+            const newDate = new Date();
+            const newRoomSessionId = newDate.getTime();
             let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
             let twilioToken = await getToken({ room_sid: resp.data.room_sid });
             console.log('twilioToken',twilioToken?.data?.token);
@@ -81,8 +84,19 @@ import { stopAllRecordings } from './src/StopRecording/stopRecording';
 
     async function submit_session(session) {
         try{
-            const resp = await axios.post('https://corder-api.mereos.eu/session/session', session);
-            return resp;
+            const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+            const session = convertDataIntoParse('session');
+            let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+            if(resp){
+                console.log('submit_session');
+				let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
+                if(completedRes){
+                    localStorage.clear();
+                }
+            }
+            return 
+            // const resp = await axios.post('https://corder-api.mereos.eu/session/session', session);
+            // return resp;
         }catch(err){
             console.error(err);
             throw err;

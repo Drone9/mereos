@@ -128,7 +128,7 @@
 }
 
 .exam-preparation .exam-preparation-container {
-  margin: 40px auto 0px;
+  margin: 12px auto 0px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -144,7 +144,6 @@
   text-align: center;
   color: #8D979F;
   width: 650px;
-  margin: 30px auto 0px;
 }
 
 @media (max-width: 720px) {

@@ -8,9 +8,7 @@ import vector1 from '../assets/images/vector-1.png';
 import vector2 from '../assets/images/vector-2.png';
 import vector3 from '../assets/images/vector-3.png';
 import { showTab } from './examPrechecks';
-import { addSectionSessionRecord, convertDataIntoParse, registerEvent, updatePersistData } from '../utils/functions';
-import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
-import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
+import { registerEvent } from '../utils/functions';
 
 const translations = {
   exam_preparation: 'Exam Preparation',

@@ -1,5 +1,7 @@
-import {  roomInstance } from '../StartRecording/startRecording';
-import { registerEvent, showNotification, updatePersistData } from '../utils/functions';
+import { roomInstance } from '../StartRecording/startRecording';
+import { registerEvent, showNotification, submitSession, updatePersistData } from '../utils/functions';
+
+let recordingActive = false;
 
 export const cleanupLocalVideo = () => {
     const webcamContainer = document.getElementById('webcam-container');
@@ -33,9 +35,11 @@ export const stopAllRecordings = () => {
     }
 
     cleanupLocalVideo();
-    
+
+    recordingActive = false;
+
     const dateTime = new Date();
-    
+
     registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 
     showNotification({
@@ -46,4 +50,7 @@ export const stopAllRecordings = () => {
     updatePersistData('session', {
         recordingEnded: true
     });
+
+    submitSession();
 };
+

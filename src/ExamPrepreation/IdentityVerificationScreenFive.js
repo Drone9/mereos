@@ -15,6 +15,7 @@ const translations = {
 
 const t = (key) => translations[key];
 export let newStream;
+
 export const IdentityVerificationScreenFive = async (tabContent) => {
 let multipleScreens;
   if (!tabContent) {
@@ -41,7 +42,6 @@ let multipleScreens;
 
   const shareScreen = async () => {
       try {
-          console.log('Attempting to share screen...');
         newStream = await shareScreenFromContent();
           console.log('Screen sharing stream obtained:', newStream);
           updatePersistData('session',{ screenRecordingStream: location })
@@ -78,7 +78,6 @@ let multipleScreens;
           stream.getVideoTracks()[0].stop();
       }
       showTab('IdentityVerificationScreenFour');
-      console.log('Navigating to previous step');
   };
 
   const container = document.createElement('div');

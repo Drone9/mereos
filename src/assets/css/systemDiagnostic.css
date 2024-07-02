@@ -76,8 +76,8 @@
 .system-diagnostic-test-screen .grey-box {
   border: 1px solid #f6f6f9;
   border-radius: 4px;
-  width: 200px;
-  height: 120px;
+  width: 118px;
+  height: 100px;
   display: flex;
   position: relative;
 }
@@ -110,7 +110,7 @@
 }
 
 .system-diagnostic-test-screen .grey-box .grey-box-left img {
-  width: 28px;
+  width: 21px;
 }
 
 .system-diagnostic-test-screen .red-box {
@@ -212,6 +212,13 @@
   margin: auto;
   align-items: center;
 }
+.system-diagnostic-test-screen .grey-box-right  img{
+    width: 35px;
+}
+
+.system-diagnostic-test-screen .grey-box-right  label{
+  font-size: 16px;
+}
 
 .system-diagnostic-test-screen .box-section {
   display: flex;
@@ -229,7 +236,6 @@
 .system-diagnostic-test-screen .button-section {
   display: flex;
   justify-content: center;
-  margin-top: 40px;
 }
 
 @media (max-width: 720px) {

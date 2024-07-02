@@ -29,7 +29,6 @@
 .my-recorded-video {
 	width: 400px;
 	height: 300px;
-	margin: 1em;
 }
 
 .ivsf-header-img {
@@ -71,7 +70,7 @@
 	align-items: center;
 	text-align: center;
 	color: #222222;
-	margin: 26px auto 0px;
+	margin: 0px auto 0px !important;
 }
 
 .ivsf-msg {
@@ -84,7 +83,7 @@
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 10px auto 0px;
+	margin: 0px auto 0px !important;
 }
 
 .ivsf-instructions-container {
@@ -128,7 +127,7 @@
 
 .ivsf-btn-container {
 	display: flex;
-	margin: 30px auto;
+	margin: 2px auto 0px !important;
 	gap: 20px;
 }
 
@@ -149,7 +148,7 @@
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 16px auto 0px;
+	margin: 2px auto 0px !important;
 }
 
 .ivsf-btn {

@@ -20,28 +20,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       },
   };
 
-  let net = null;
-//   let loadModels = false;
   let webcamStream = null;
   let videoElement = null;
-
-//   const PREDICTION = {
-//       FACE: 'person',
-//   };
-
-//   const loadModelsAsync = async () => {
-//       try {
-//             loadModels = true;
-//             await tf.setBackend('webgl');
-// 		    await tf.ready();
-//             const liveNet = await cocoSsd?.load();
-//             net = liveNet;
-//       } catch (e) {
-//           console.log('Error loading models:', e);
-//       } finally {
-//           loadModels = false;
-//       }
-//   };
 
   const startWebcam = async () => {
       try {
@@ -66,24 +46,28 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
   };
 
   const capturePhoto = async () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    const ctx = canvas.getContext('2d');
 
-      const imageSrc = canvas.toDataURL('image/jpeg');
-      state = {
-          ...state,
-          captureMode: 'retake',
-          imageSrc: imageSrc,
-          msg: {
-              type: 'checking',
-              text: 'Please wait, we are processing',
-          },
-      };
-      renderUI();
-      handleImageProcessing();
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+    const imageSrc = canvas.toDataURL('image/jpeg');
+    state = {
+        ...state,
+        captureMode: 'retake',
+        imageSrc: imageSrc,
+        msg: {
+            type: 'checking',
+            text: 'Please wait, we are processing',
+        },
+    };
+    renderUI();
+    handleImageProcessing();
   };
 
   const dataURLtoFile = async (dataurl, filename = 'screenshot.png') => {
@@ -102,8 +86,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
           const predictions = resp?.data?.face?.FaceDetails;
 
           img.onload = async function () {
-            //   const predictions = await net?.detect(img);
-
               if (predictions?.length && predictions?.length === 1) {
                   state = {
                       ...state,
@@ -151,7 +133,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
   };
 
   const uploadUserCapturedPhoto = async () => {
-    console.log('uploadUserCapturedPhoto');
       try {
           state = {
               ...state,
@@ -160,12 +141,10 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
                   text: 'File is being uploaded',
               },
           };
-          console.log('in the try function');
           let resp = await uploadFileInS3Folder({
               folderName: 'candidate_images',
               file: dataURIToBlob(state.imageSrc),
           });
-          console.log('resp_____',resp);
           if (resp?.data?.file_url) {
             console.log('in the if condition');
             updatePersistData('session',{ candidatePhoto: resp.data.file_url })
@@ -246,19 +225,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
         ivsoHeaderImgContainer.appendChild(gridImg);
     }
 
-    if (state.captureMode === 'take') {
-        const takePhotoBtn = document.createElement('button');
-        takePhotoBtn.textContent = 'Take Photo';
-        takePhotoBtn.className = 'orange-filled-btn';
-        takePhotoBtn.addEventListener('click', capturePhoto);
-        ivsoBtnContainer.appendChild(takePhotoBtn);
-    } else if (state.captureMode === 'uploaded_photo') {
-        const nextBtn = document.createElement('button');
-        nextBtn.textContent = 'Next';
-        nextBtn.className = 'orange-filled-btn';
-        nextBtn.addEventListener('click', nextStep);
-        ivsoBtnContainer.appendChild(nextBtn);
-    } else {
+    // Create the Retake Photo button
+    if (state.captureMode !== 'take') {
         const retakePhotoBtn = document.createElement('button');
         retakePhotoBtn.textContent = 'Retake Photo';
         retakePhotoBtn.className = 'orange-hollow-btn';
@@ -280,7 +248,28 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
             startWebcam();
         });
         ivsoBtnContainer.appendChild(retakePhotoBtn);
+    }
 
+    // Create the Next button
+    if (state.captureMode === 'uploaded_photo') {
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Next step';
+        nextBtn.className = 'orange-filled-btn';
+        nextBtn.addEventListener('click', nextStep);
+        ivsoBtnContainer.appendChild(nextBtn);
+    }
+
+    // Always create the Take Photo button if in 'take' mode
+    if (state.captureMode === 'take') {
+        const takePhotoBtn = document.createElement('button');
+        takePhotoBtn.textContent = 'Take Photo';
+        takePhotoBtn.className = 'orange-filled-btn';
+        takePhotoBtn.addEventListener('click', capturePhoto);
+        ivsoBtnContainer.appendChild(takePhotoBtn);
+    }
+
+    // Create the Upload Photo button if in 'retake' or 'take' mode
+    if (state.captureMode === 'retake') {
         const uploadPhotoBtn = document.createElement('button');
         uploadPhotoBtn.textContent = 'Upload Photo';
         uploadPhotoBtn.className = 'orange-filled-btn';
@@ -298,11 +287,10 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
     }
 
     ivsoContainer.appendChild(ivsoWrapper);
-};
+    };
 
 
   renderUI();
 
-//   await loadModelsAsync();
 };
 

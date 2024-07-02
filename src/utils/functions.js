@@ -3,6 +3,7 @@ import { ASSET_URL, BASE_URL } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
+import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -458,5 +459,17 @@ export const registerAIEvent = async ({ notify, eventType, eventName, eventValue
 		notify && showNotification({eventType, eventName, eventValue});
 	}catch(e){
 		console.log('error',e);
+	}
+};
+
+export const submitSession = async () => {
+	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+	const session = convertDataIntoParse('session');
+	let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+	if(resp){
+	let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
+		if(completedRes){
+				localStorage.clear();
+		}
 	}
 };

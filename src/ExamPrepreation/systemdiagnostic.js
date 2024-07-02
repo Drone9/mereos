@@ -28,7 +28,7 @@ export const runSystemDiagnostics = async () => {
     const tab1Content = document.getElementById('runSystemDiagnostics');
     tab1Content.innerHTML = `
         <div class="system-diagnostic-test-screen">
-            <h1 class="heading">System Diagnostics</h1>
+           
             <div class="diagnostic-status container-box">
                 <div class="container">
                     <div class="container-top">
@@ -38,7 +38,7 @@ export const runSystemDiagnostics = async () => {
 							<img
 								src=${prompMessage}
 								alt=''
-								width='400px'
+								width='330px'
 								className='prompt-image'
 							></img>
 					</div>

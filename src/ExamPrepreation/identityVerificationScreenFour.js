@@ -1,7 +1,5 @@
-import { ASSET_URL } from '../utils/constant';
 import '../assets/css/step4.css';
 import redDot from '../assets/images/red-dot.svg';
-import whiteDot from '../assets/images/white-dot.svg';
 import { showTab } from './examPrechecks';
 import { getDateTime, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
 
@@ -9,7 +7,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
     let recordingMode = 'startRecording';
     let showPlayer = false;
     let textMessage = 'Scan Your Room';
-    let dotImg = whiteDot;
     let loading = false;
     let recordingTimer = null;
     let blob = null;
@@ -29,14 +26,15 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
         showPlayer = false;
         loading = false;
         recordingMode = 'startRecording';
+        blob = null;
         updateUI();
     };
 
     const handleStartRecording = async () => {
         const mediaOptions = {
-			audio: localStorage.getItem('microphoneID') !== null ? { deviceId: { exact: localStorage.getItem('microphoneID') }} : true,
-			video: localStorage.getItem('deviceId') !== null ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
-		};
+            audio: localStorage.getItem('microphoneID') !== null ? { deviceId: { exact: localStorage.getItem('microphoneID') }} : true,
+            video: localStorage.getItem('deviceId') !== null ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
+        };
 
         try {
             const mediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
@@ -55,14 +53,17 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
                 blob = new Blob(recordedChunks, {
                     type: 'video/webm'
                 });
-                refVideo.src = URL.createObjectURL(blob);
+                showPlayer = true;
                 recordedChunks = [];
+                updateUI();
+                if (refVideo) {
+                    refVideo.src = URL.createObjectURL(blob);
+                }
             };
 
-            startRecordingTimer();
             mediaRecorder.start();
-
             recordingMode = 'beingRecorded';
+            updateUI();
 
             const startTime = Date.now();
             const intervalId = setInterval(() => {
@@ -80,8 +81,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
     };
 
     const handleStopRecording = async () => {
-        showPlayer = true;
-        mediaRecorder.stop();
+        if (mediaRecorder) {
+            mediaRecorder.stop();
+        }
         stopRecordingTimer();
         recordingMode = 'stopRecording';
         updateUI();
@@ -97,19 +99,13 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
         console.log('Navigate to previous step');
     };
 
-    const startRecordingTimer = () => {
-        recordingTimer = setInterval(() => {
-            dotImg = dotImg.includes('white-dot') ? redDot : whiteDot;
-            updateUI();
-        }, 1000);
-    };
-
     const stopRecordingTimer = () => clearInterval(recordingTimer);
 
     const uploadUserRoomVideo = async () => {
         try {
             loading = true;
             textMessage = 'file_is_being_uploaded';
+            updateUI();
 
             let url = await uploadFileInS3Folder({
                 file: blob,
@@ -155,13 +151,16 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
         const headerImgContainer = document.createElement('div');
         headerImgContainer.className = 'ivsf-header-img-container';
 
-        if (showPlayer) {
+        if (showPlayer && blob) {
             refVideo = document.createElement('video');
             refVideo.id = 'myVideo';
             refVideo.className = 'my-recorded-video';
             refVideo.controls = true;
             refVideo.autoplay = true;
             headerImgContainer.appendChild(refVideo);
+            if (refVideo && blob) {
+                refVideo.src = URL.createObjectURL(blob);
+            }
         } else {
             if (recordingMode === 'beingRecorded') {
                 const recordingBadge = document.createElement('div');
@@ -169,8 +168,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
                 const dot = document.createElement('img');
                 dot.className = 'ivsf-recording-dot';
-                dot.src = `${ASSET_URL}/${dotImg}`;
-                dot.alt = 'white-dot';
+                dot.src = redDot; 
+                dot.alt = 'red-dot';
+
+                recordingBadge.appendChild(dot);
 
                 recordingBadge.appendChild(dot);
                 recordingBadge.appendChild(document.createTextNode('Recording'));

@@ -16,12 +16,6 @@ modal.className = 'modal';
 const modalContent = document.createElement('div');
 modalContent.className = 'modal-content';
 
-const closeModalButton = document.createElement('span');
-closeModalButton.className = 'close';
-closeModalButton.textContent = '×';
-closeModalButton.onclick = closeModal;
-
-modalContent.appendChild(closeModalButton);
 modal.appendChild(modalContent);
 
 const tabsContainer = document.createElement('div');

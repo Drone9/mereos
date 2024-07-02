@@ -20,7 +20,7 @@
 	align-items: center;
 	text-align: center;
 	color: #222222;
-	margin: 10px auto 0px;
+	margin: 0px auto 0px;
 }
 
 .ivso-msg {
@@ -33,12 +33,12 @@
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 10px auto 0px;
+	margin: 0px auto 0px;
 }
 
 .ivso-header-img-container {
 	position: relative;
-	margin: 30px auto 0px;
+	margin: 10px auto 0px;
 }
 .ivso-captured-img{
 	width: 400px;
@@ -126,7 +126,7 @@
 }
 
 .ivso-btn-container {
-	margin: 30px auto 10px;
+	margin: 15px auto 10px;
 	display: flex;
 	flex-direction: row;
 	column-gap: 20px;
@@ -142,7 +142,7 @@
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 16px auto 0px;
+	margin: 0px auto 0px;
 }
 
 .ivso-retake-btn,

@@ -1,5 +1,6 @@
 import { getDateTime, registerEvent } from '../utils/functions';
 import { showTab } from './examPrechecks';
+import '../assets/css/step3.css';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
     if (!tabContent) {

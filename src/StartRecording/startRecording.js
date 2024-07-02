@@ -202,7 +202,6 @@ const startAIWebcam = async (mediaStream) => {
                       showNotification({
                         title: 'Warning!',
                         body: `Alert: ${key} detected for more than 10 seconds!`,
-                        icon: `${ASSET_URL}/mereos.png`
                       });
                     }
                   } else if (!log[key] && lastLog?.[key]) {

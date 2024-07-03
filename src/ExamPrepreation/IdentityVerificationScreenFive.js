@@ -87,7 +87,7 @@ let multipleScreens;
   wrapper.classList.add('ivsf-wrapper');
 
   const headerTitle = document.createElement('div');
-  headerTitle.classList.add('ivsf-header-title');
+  headerTitle.classList.add('ivsf-header-titles');
   headerTitle.textContent = t('verification_completed');
   wrapper.appendChild(headerTitle);
 

@@ -68,7 +68,7 @@ export const ExamPreparation = async (tabContent) => {
   const continueButton = document.createElement('button');
   continueButton.className = 'orange-filled-btn';
   continueButton.textContent = t('continue');
-  continueButton.style.marginTop = '30px';
+  continueButton.style.marginTop = '40px';
   continueButton.style.justifyContent = 'center';
   continueButton.addEventListener('click', nextPage);
   examPreparationContainer.appendChild(continueButton);

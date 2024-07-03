@@ -20,7 +20,7 @@
 	align-items: center;
 	text-align: center;
 	color: #222222;
-	margin: 0px auto 0px;
+	margin: 15px auto 7px;
 }
 
 .ivso-msg {
@@ -33,7 +33,7 @@
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 0px auto 0px;
+	margin: 1px auto 7px;
 }
 
 .ivso-header-img-container {
@@ -60,9 +60,9 @@
 
 .ivso-screen-grid {
 	position: absolute;
-	left: 28px;
-	top: 50px;
-	height: 200px;
+	right: -177px;
+	top: 37px;
+	height: 218px;
 }
 
 @media (max-width: 720px) {
@@ -126,7 +126,7 @@
 }
 
 .ivso-btn-container {
-	margin: 15px auto 10px;
+	margin: 20px auto 10px;
 	display: flex;
 	flex-direction: row;
 	column-gap: 20px;

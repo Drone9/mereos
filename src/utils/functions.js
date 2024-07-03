@@ -27,20 +27,30 @@ export const getTimeInSeconds = ({ isUTC = false, inputDate = new Date() }) => {
 };
 
 export const checkCamera = () => {
-	return new Promise((resolve, _reject) => {
-		navigator.getMedia = (
-			navigator.getUserMedia ||
-			navigator.webkitGetUserMedia ||
-			navigator.mozGetUserMedia ||
-			navigator.msGetUserMedia
-		);
-	
-		navigator.getMedia({ video: true }, stream => {
-			resolve(stream);
-		}, (err) => {
-			console.log(err);
+	return new Promise((resolve) => {
+		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+			navigator.mediaDevices.getUserMedia({ video: true })
+				.then((stream) => {
+					console.log('Camera stream:', stream);
+					resolve(stream);
+				})
+				.catch((err) => {
+					console.log('Error checking camera:', err);
+					resolve(false);
+				});
+		} else if (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia) {
+			const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+			getUserMedia({ video: true }, (stream) => {
+				console.log('Camera stream:', stream);
+				resolve(stream);
+			}, (err) => {
+				console.log('Error checking camera:', err);
+				resolve(false);
+			});
+		} else {
+			console.log('getUserMedia is not supported');
 			resolve(false);
-		});
+		}
 	});
 };
 
@@ -132,8 +142,7 @@ export const showNotification = ({title = 'New Message', body = 'How you doing?'
 	const notification = new Notification(title, { body: body, icon: icon, });
 	console.log(notification);
 };
-export const detectMultipleScreens = () => {
-	console.log('window.screen',window.screen);
+export const detectMultipleScreens = async () => {
 	if (window.screen.isExtended) {
 		return true;
 	}else {
@@ -142,20 +151,30 @@ export const detectMultipleScreens = () => {
 };
 
 export const checkMicrophone = () => {
-	return new Promise((resolve, _reject) => {
-		navigator.getMedia = (
-			navigator.getUserMedia ||
-			navigator.webkitGetUserMedia ||
-			navigator.mozGetUserMedia ||
-			navigator.msGetUserMedia
-		);
-	
-		navigator.getMedia({audio: true}, (stream) => {
-			resolve(stream);
-		}, (err) => {
-			console.log(err);
+	return new Promise((resolve) => {
+		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+			navigator.mediaDevices.getUserMedia({ audio: true })
+				.then((stream) => {
+					console.log('Microphone stream:', stream);
+					resolve(stream);
+				})
+				.catch((err) => {
+					console.log('Error checking microphone:', err);
+					resolve(false);
+				});
+		} else if (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia) {
+			const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+			getUserMedia({ audio: true }, (stream) => {
+				console.log('Microphone stream:', stream);
+				resolve(stream);
+			}, (err) => {
+				console.log('Error checking microphone:', err);
+				resolve(false);
+			});
+		} else {
+			console.log('getUserMedia is not supported');
 			resolve(false);
-		});
+		}
 	});
 };
 

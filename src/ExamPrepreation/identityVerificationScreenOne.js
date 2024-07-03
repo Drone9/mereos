@@ -29,7 +29,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
           videoElement.width = state.videoConstraints.width;
           videoElement.height = state.videoConstraints.height;
           videoElement.autoplay = true;
-          videoElement.style.transform = 'scaleX(-1)';
           const stream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
           videoElement.srcObject = stream;
           webcamStream = stream;
@@ -51,8 +50,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
     canvas.height = videoElement.videoHeight;
     const ctx = canvas.getContext('2d');
 
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
+    // ctx.translate(canvas.width, 0);
+    // ctx.scale(-1, 1);
     
     ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 

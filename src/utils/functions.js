@@ -482,13 +482,341 @@ export const registerAIEvent = async ({ notify, eventType, eventName, eventValue
 };
 
 export const submitSession = async () => {
-	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-	const session = convertDataIntoParse('session');
-	let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
-	if(resp){
-	let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
-		if(completedRes){
-				localStorage.clear();
+	try{
+		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+		const session = convertDataIntoParse('session');
+		let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+		if(resp){
+		let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
+			if(completedRes){
+					localStorage.clear();
+			}
 		}
+	}catch(error){
+		console.error(error);
 	}
+};
+
+
+
+export const lockBrowserFromContent = (entities) => {
+	return new Promise(async (resolve, _reject) => {
+		let result = {};
+		for (const entity of entities) {
+			switch (entity.name) {
+				case 'Disable Right Click': {
+					const disableRightClick = await preventRightClick();
+					if (disableRightClick) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Disable Clipboard': {
+					const copyPasteCutDisabled = await disableCopyPasteCut();
+					if (copyPasteCutDisabled) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Disable function keys': {
+					const disableShortcuts = await preventShortCuts();
+					if (disableShortcuts) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Disable Printing': {
+					const disablePrinting = await stopPrinting();
+					if (disablePrinting) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Detect unfocus': {
+					const defocusDisabled = await detectUnfocusOfTab();
+					if (defocusDisabled) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Disable switch to other Apps': {
+					const detectPageLeaving = await preventPreClosure();
+					if (detectPageLeaving) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Detect resizing of window': {
+					const disableWindowResize = await detectWindowResize(null);
+					if (disableWindowResize) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Verify Desktop': {
+					const dualDisplay = await detectDualDisplay();
+					if (dualDisplay) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Force Full Screen': {
+					const fullScreen = await forceFullScreen();
+					if (fullScreen) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+				
+				default:
+					null;
+			}
+		}
+
+		resolve(result);
+	});
+};
+
+export const preventRightClick = () => {
+	return new Promise((resolve, _reject) => {
+		document.addEventListener('contextmenu', handleDefaultEvent);
+		resolve(true);
+	});
+};
+
+export const disableCopyPasteCut = () => {
+	return new Promise((resolve, _reject) => {
+		'cut copy paste'.split(' ').forEach((eventName) => {
+			window.addEventListener(eventName, handleDefaultEvent);
+		});
+		resolve(true);
+	});
+};
+
+export const restoreRightClick = () => {
+	return new Promise((resolve, _reject) => {
+		document.removeEventListener('contextmenu', handleDefaultEvent, true);
+		resolve(true);
+	});
+};
+
+export const preventPreClosure = () => {
+	return new Promise((resolve, _reject) => {
+		// window.onbeforeunload = (_error) => {
+		// 	return 'Really want to quit the exam, may lead to failure?';
+		// };
+		resolve(true);
+	});
+};
+
+export const detectDualDisplay = () => {
+	return new Promise((resolve, _reject) => {
+		resolve(window.screen.isExtended);
+	});
+};
+
+export const detectUnfocusOfTab = () => {
+	return new Promise(async (resolve, _reject) => {
+		try {
+			document.addEventListener('visibilitychange', () => {
+				if (document.hidden) {
+					showNotification({
+						title: 'Warning',
+						body: t('moved_away_from_page'),
+						icon: `${ASSET_URL}/mereos.png`
+					});
+					registerEvent({ eventType: 'error', notify: false, eventName: 'moved_away_from_page' });
+				} else {
+					showNotification({
+						title: 'Welcome Back',
+						body: t('moved_back_to_page'),
+						icon: `${ASSET_URL}/mereos.png`
+					});
+					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });
+				}
+			});
+
+			resolve(true);
+		} catch (error) {
+			console.error('Notification permission error:', error);
+			resolve(false);
+		}
+	});
+};
+
+export const preventShortCuts = (allowedFunctionKeys = []) => {
+	return new Promise((resolve, _reject) => {
+		document.onkeydown = (event) => {
+			console.log('preventShortCuts', event);
+			event = event || window.event;
+
+			// List of key codes to be blocked
+			const blockedKeys = [
+				27,  // Escape
+				91,  // Meta (Windows key, Command key on Mac)
+				112, // F1
+				113, // F2
+				114, // F3
+				115, // F4
+				116, // F5
+				117, // F6
+				118, // F7
+				119, // F8
+				120, // F9
+				121, // F10
+				122, // F11
+				123, // F12
+				91, // window btn
+				44,   // Print Screen,
+				173,
+				174,
+				114,
+				145,
+				91
+			];
+
+			// Check for Ctrl/Meta + any alphabet key
+			if (
+				(event.ctrlKey || event.metaKey) && 
+							'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(event.key) !== -1
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+			}
+
+			// Check for Ctrl + Shift + any alphabet key
+			if (
+				(event.ctrlKey || event.metaKey) && event.shiftKey &&
+							'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(event.key) !== -1
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+			}
+
+			// Check for specific function keys and other special keys
+			if (blockedKeys.includes(event.keyCode)) {
+				// Allow specific function key combinations if they are in the allowed list
+				if (event.keyCode >= 112 && event.keyCode <= 123 && allowedFunctionKeys.includes(event.keyCode)) {
+					return; // Allow the function key if it is in the allowed list
+				}
+
+				event.preventDefault();
+				event.stopPropagation();
+			}
+		};
+		resolve(true);
+	});
+};
+
+
+export const stopPrinting = () => {
+	return new Promise((resolve, _reject) => {
+		let css = `
+			body {
+				display: none;
+				visibility: hidden;
+			}
+		`;
+		let head = document.head || document.getElementsByTagName('head')[0];
+		let style = document.createElement('style');
+
+		head.appendChild(style);
+
+		style.type = 'text/css';
+		style.media = 'print';
+		if (style.styleSheet) {
+			// This is required for IE8 and below.
+			style.styleSheet.cssText = css;
+		} else {
+			style.appendChild(document.createTextNode(css));
+		}
+		resolve(true);
+	});
+};
+
+export const detectWindowResize = () => {
+	return new Promise((resolve, _reject) => {
+		let resizeTimeout;
+		let isResizing = false;
+
+		const handleResize = () => {
+			if (!isResizing) {
+				registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+				console.log('Resize started');
+				isResizing = true;
+			}
+
+			clearTimeout(resizeTimeout);
+
+			resizeTimeout = setTimeout(() => {
+				registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+				console.log('Resize ended');
+				isResizing = false;
+			}, 500);
+		};
+
+		window.addEventListener('resize', handleResize);
+		resolve(true);
+	});
+};
+
+
+export const createATab = (url) => {
+	return new Promise((resolve, _reject) => {
+		window.open(url);
+		resolve(true);
+	});
+};
+
+export const forceFullScreen = (element = document.documentElement) => {
+	try {
+		if (typeof element?.requestFullscreen === 'function') {
+			element.requestFullscreen();
+		} else if (typeof element.webkitRequestFullscreen === 'function') { /* Safari */
+			element.webkitRequestFullscreen();
+		} else if (typeof element.msRequestFullscreen === 'function') { /* IE11 */
+			element.msRequestFullscreen();
+		}
+
+		const whiteBackgroundElement = document.createElement('div');
+		whiteBackgroundElement.style.backgroundColor = 'white';
+		whiteBackgroundElement.style.top = '0';
+		whiteBackgroundElement.style.left = '0';
+		whiteBackgroundElement.style.width = '100%';
+		whiteBackgroundElement.style.height = '100%';
+		whiteBackgroundElement.style.overflow = 'auto'; // Enable scrolling
+		whiteBackgroundElement.style.zIndex = '1000'; // Ensure it's on top
+
+		document.body.appendChild(whiteBackgroundElement);
+
+		// Add event listener to handle exiting fullscreen
+		document.addEventListener('fullscreenchange', () => {
+			if (!document.fullscreenElement) {
+				document.body.removeChild(whiteBackgroundElement);
+			}
+		});
+	} catch (error) {
+		console.log(error);
+	}
+};
+
+
+export const getCPUInfo = () => {
+	return new Promise((resolve, _reject) => {
+		resolve(navigator.hardwareConcurrency);
+	});
+};
+
+export const getRAMInfo = () => {
+	return new Promise((resolve, _reject) => {
+		resolve(navigator.deviceMemory);
+	});
 };

@@ -2,11 +2,12 @@ import '../assets/css/step4.css';
 import redDot from '../assets/images/red-dot.svg';
 import { showTab } from './examPrechecks';
 import { getDateTime, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
+import i18next from 'i18next';
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
     let recordingMode = 'startRecording';
     let showPlayer = false;
-    let textMessage = 'Scan Your Room';
+    let textMessage = 'scan_your_room';
     let loading = false;
     let recordingTimer = null;
     let blob = null;
@@ -142,11 +143,11 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
         const headerTitle = document.createElement('div');
         headerTitle.className = 'ivsf-header-title';
-        headerTitle.textContent = 'Workspace Checking';
+        headerTitle.textContent = i18next.t('workspace_checking');
 
         const message = document.createElement('div');
         message.className = 'ivsf-msg';
-        message.textContent = 'Workspace checking message';
+        message.textContent = i18next.t('workspace_checking_msg');
 
         const headerImgContainer = document.createElement('div');
         headerImgContainer.className = 'ivsf-header-img-container';
@@ -174,7 +175,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
                 recordingBadge.appendChild(dot);
 
                 recordingBadge.appendChild(dot);
-                recordingBadge.appendChild(document.createTextNode('Recording'));
+                recordingBadge.appendChild(document.createTextNode(`${i18next.t('recording')}`));
 
                 headerImgContainer.appendChild(recordingBadge);
             }
@@ -195,7 +196,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
         const queryMsg = document.createElement('div');
         queryMsg.className = 'ivsf-query-msg';
-        queryMsg.textContent = textMessage;
+        queryMsg.textContent = i18next.t(textMessage);
         if (textMessage === 'something_went_wrong_please_upload_again') {
             queryMsg.style.color = '#E95E5E';
         }
@@ -205,13 +206,13 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
         btnContainer.className = 'ivsf-btn-container';
 
         if (recordingMode === 'startRecording') {
-            const prevButton = createButton('Previous Step', 'orange-hollow-btn', prevStep);
-            const recordButton = createButton('Record Video', 'orange-filled-btn', handleStartRecording);
+            const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
+            const recordButton = createButton(`${i18next.t('record_video')}`, 'orange-filled-btn', handleStartRecording);
             btnContainer.appendChild(prevButton);
             btnContainer.appendChild(recordButton);
         } else if (recordingMode === 'beingRecorded') {
-            const prevButton = createButton('Previous Step', 'orange-hollow-btn', prevStep);
-            const stopButton = createButton('Stop Recording', 'orange-filled-btn', handleStopRecording);
+            const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
+            const stopButton = createButton(`${i18next.t('stop_recording')}`, 'orange-filled-btn', handleStopRecording);
             btnContainer.appendChild(prevButton);
             btnContainer.appendChild(stopButton);
         } else if (recordingMode === 'stopRecording' || recordingMode === 'uploaded_file') {
@@ -219,11 +220,11 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
             btnContainer.appendChild(resetButton);
 
             if (recordingMode !== 'uploaded_file') {
-                const uploadButton = createButton('Upload', 'orange-filled-btn', uploadUserRoomVideo);
+                const uploadButton = createButton(`${i18next.t('Upload')}`, 'orange-filled-btn', uploadUserRoomVideo);
                 uploadButton.disabled = loading;
                 btnContainer.appendChild(uploadButton);
             } else {
-                const nextButton = createButton('Next Step', 'orange-filled-btn', nextStep);
+                const nextButton = createButton(`${i18next.t('next_step')}`, 'orange-filled-btn', nextStep);
                 btnContainer.appendChild(nextButton);
             }
         }
@@ -241,6 +242,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
     };
 
     updateUI();
+
+    i18next.on('languageChanged', () => {
+        updateUI();
+    });
 
     const cleanup = () => {
         if (mediaRecorder) {

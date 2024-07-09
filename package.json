@@ -19,6 +19,7 @@
     "@tensorflow-models/coco-ssd": "2.2.3",
     "@tensorflow/tfjs": "4.20.0",
     "axios": "1.7.2",
+    "i18next": "^23.11.5",
     "twilio-video": "2.28.1"
   }
 }

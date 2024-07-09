@@ -22,35 +22,40 @@ export const cleanupLocalVideo = () => {
     }
 };
 
-export const stopAllRecordings = () => {
-    if (roomInstance) {
-        roomInstance.localParticipant.tracks.forEach(publication => {
-            const track = publication.track;
-            if (track) {
-                track.stop();
-                roomInstance.localParticipant.unpublishTrack(track);
-            }
+export const stopAllRecordings = async () => {
+    try{
+        if (roomInstance) {
+            roomInstance.localParticipant.tracks.forEach(publication => {
+                const track = publication.track;
+                if (track) {
+                    track.stop();
+                    roomInstance.localParticipant.unpublishTrack(track);
+                }
+            });
+            roomInstance.disconnect();
+        }
+    
+        cleanupLocalVideo();
+    
+        recordingActive = false;
+    
+        const dateTime = new Date();
+    
+        registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
+    
+        showNotification({
+            title: 'Recording Stopped',
+            body: 'Recording session has ended.',
         });
-        roomInstance.disconnect();
+    
+        updatePersistData('session', {
+            recordingEnded: true
+        });
+    
+        await submitSession();
+
+        return 'stop recording';
+    }catch (e) {
+        console.error(e);
     }
-
-    cleanupLocalVideo();
-
-    recordingActive = false;
-
-    const dateTime = new Date();
-
-    registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
-
-    showNotification({
-        title: 'Recording Stopped',
-        body: 'Recording session has ended.',
-    });
-
-    updatePersistData('session', {
-        recordingEnded: true
-    });
-
-    submitSession();
 };
-

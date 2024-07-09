@@ -190,24 +190,25 @@ const startAIWebcam = async (mediaStream) => {
                 }
                 
                 ['person_missing', 'object_detected', 'multiple_people'].forEach(key => {
-                  let lastLogIndex = aiEvents.findIndex(lg => lg[key]);
-                  let lastLog = lastLogIndex > -1 ? aiEvents.splice(lastLogIndex, 1)[0] : undefined;
-                  if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
-                    const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
-                    aiEvents.push(newLog);
-                  } else if (log[key] && lastLog?.[key]) {
-                    lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
-                    aiEvents.push(lastLog);
-                    if (lastLog.time_span > 10) {
-                      showNotification({
-                        title: 'Warning!',
-                        body: `Alert: ${key} detected for more than 10 seconds!`,
-                      });
+                    let lastLogIndex = aiEvents.findIndex(lg => lg[key]);
+                    let lastLog = lastLogIndex > -1 ? aiEvents.splice(lastLogIndex, 1)[0] : undefined;
+                    if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
+                        const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
+                        aiEvents.push(newLog);
+                    } else if (log[key] && lastLog?.[key]) {
+                        lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
+                        aiEvents.push(lastLog);
+                        if (lastLog.time_span > 10) {
+                            console.log('lastLog');
+                            showNotification({
+                                title: 'Warning!',
+                                icon: `${ASSET_URL}/mereos.png`
+                            });
+                        }
+                    } else if (!log[key] && lastLog?.[key]) {
+                        lastLog = { ...lastLog, end_time: Number(lastLog.start_time) + Number(lastLog.time_span) };
+                        registerAIEvent({ eventType: 'success', notify: false, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) });
                     }
-                  } else if (!log[key] && lastLog?.[key]) {
-                    lastLog = { ...lastLog, end_time: Number(lastLog.start_time) + Number(lastLog.time_span) };
-                    registerAIEvent({ eventType: 'success', notify: false, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) });
-                  }
                 });
             }
         } catch (error) {

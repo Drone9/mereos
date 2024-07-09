@@ -59,27 +59,22 @@ import { initialSessionData } from './src/utils/constant';
             // return resp;
         }catch(err){
             console.log('error',err);
-            throw err;
+            // throw err;
         }
        
     };
     
     async function stop_recording(session) {
         try{
-            stopAllRecordings();
-            return
-            const sessionResp = await submit_session(session);
-            if (sessionResp?.data) {
-                const resp = await axios.get('https://corder-api.mereos.eu/twilio/stop_recording');
-                return resp;
-            } else {
-                throw 'session data is incomplete';
+            const stop_recordingResp  = await stopAllRecordings();
+            if(stop_recordingResp){
+                return 'Recording Stops'
             }
+            //     const resp = await axios.get('https://corder-api.mereos.eu/twilio/stop_recording');
+            //     return resp;
         }catch(err){
             console.error(err);
-            throw err;
         }
-        
     }
 
     async function submit_session(session) {
@@ -99,7 +94,7 @@ import { initialSessionData } from './src/utils/constant';
             // return resp;
         }catch(err){
             console.error(err);
-            throw err;
+            // throw err;
         }
        
     }

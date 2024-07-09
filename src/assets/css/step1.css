@@ -9,7 +9,11 @@
 	display: flex;
 	flex-direction: column;
 }
-
+.ivso-webcam-container{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
 .ivso-header-title {
 	font-family: Poppins;
 	font-style: normal;
@@ -20,7 +24,7 @@
 	align-items: center;
 	text-align: center;
 	color: #222222;
-	margin: 15px auto 7px;
+	margin: 4px auto 7px;
 }
 
 .ivso-msg {
@@ -126,7 +130,7 @@
 }
 
 .ivso-btn-container {
-	margin: 20px auto 10px;
+	margin: 40px auto 10px;
 	display: flex;
 	flex-direction: row;
 	column-gap: 20px;

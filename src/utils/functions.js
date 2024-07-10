@@ -820,3 +820,8 @@ export const getRAMInfo = () => {
 		resolve(navigator.deviceMemory);
 	});
 };
+
+const handleDefaultEvent = e => {
+	e.preventDefault();
+	e.stopPropagation();
+};

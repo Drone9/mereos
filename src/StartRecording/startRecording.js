@@ -1,7 +1,7 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
 import { cleanupLocalVideo } from '../StopRecording/stopRecording';
-import { convertDataIntoParse, findConfigs, getCandidateAssessment, getTimeInSeconds, registerAIEvent, registerEvent, showNotification, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, findConfigs, getCandidateAssessment, getDateTime, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 
@@ -15,6 +15,10 @@ export const startRecording = async (token) => {
     let screenRecordings = [];
     const secureFeatures = getCandidateAssessment();
     const session = convertDataIntoParse('session');
+
+    if(secureFeatures?.section?.secure_feature_profile !== null){
+        await lockBrowserFromContent(secureFeatures?.section?.secure_feature_profile?.entity_relation || []);
+    }
 
     let twilioOptions = {
         audio: findConfigs(['Record Audio'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ? 
@@ -51,7 +55,9 @@ export const startRecording = async (token) => {
             deviceId: { exact: localStorage.getItem('microphoneID') },
         } : true ) });
 
-        startAIWebcam(mediaStream);
+        if(secureFeatures?.section?.secure_feature_profile?.entity_relation.find(entity => entity.key === 'record_video') ){
+            startAIWebcam(mediaStream);
+        }
 
         cameraTrack = new TwilioVideo.LocalVideoTrack(mediaStream.getVideoTracks()[0]);
         await room.localParticipant.publishTrack(cameraTrack);
@@ -73,6 +79,8 @@ export const startRecording = async (token) => {
             screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];
             updatePersistData('session',{ screenRecordings: screenRecordings });
         }
+        
+        registerEvent({ eventType: 'success', notify: false, eventName: 'browser_locked_successfully', eventValue: getDateTime() });
 
         registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
         
@@ -202,7 +210,7 @@ const startAIWebcam = async (mediaStream) => {
                             console.log('lastLog');
                             showNotification({
                                 title: 'Warning!',
-                                icon: `${ASSET_URL}/mereos.png`
+                                body: `Alert: ${t(key)} detected for more than 10 seconds!`,
                             });
                         }
                     } else if (!log[key] && lastLog?.[key]) {

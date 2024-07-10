@@ -134,9 +134,10 @@ const showTab = async (tabId) => {
     const navigate = (newTabId) => {
         showTab(newTabId);
     };
+    
     const candidateAssessment = getCandidateAssessment();
     const secureFeatures = candidateAssessment?.section?.secure_feature_profile?.entity_relation || [];
-    console.log('secureFeatures', secureFeatures);
+    
     const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications'];
 
     if (tabId === 'ExamPreparation') {
@@ -186,7 +187,7 @@ const showTab = async (tabId) => {
 
 const startSession = async (session) => {
     const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-    console.log('session___', session);
+
     try {
         const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
         if (resp?.data) {
@@ -213,7 +214,7 @@ const updateTranslations = () => {
         const key = element.getAttribute('data-i18n');
         element.textContent = i18next.t(key);
     });
-    console.log('Translations updated'); // Debugging log
+    console.log('Translations updated');
 };
 
 i18next.init({

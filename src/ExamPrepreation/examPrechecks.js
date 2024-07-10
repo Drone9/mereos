@@ -7,7 +7,7 @@ import { IdentityVerificationScreenThree } from './identityVerificationScreenThr
 import { IdentityVerificationScreenFour } from './identityVerificationScreenFour';
 import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
 import { ExamPreparation } from './examPreprationScreen';
-import {LanguageDropdown} from './languageDropdown';
+import { LanguageDropdown } from './languageDropdown';
 import { addSectionSessionRecord, convertDataIntoParse, getCandidateAssessment, registerEvent, updatePersistData } from '../utils/functions';
 import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
@@ -134,7 +134,7 @@ const showTab = async (tabId) => {
     const navigate = (newTabId) => {
         showTab(newTabId);
     };
-    
+
     const candidateAssessment = getCandidateAssessment();
     const secureFeatures = candidateAssessment?.section?.secure_feature_profile?.entity_relation || [];
     

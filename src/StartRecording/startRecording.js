@@ -18,8 +18,7 @@ export const startRecording = async (token) => {
 
     if(secureFeatures?.section?.secure_feature_profile !== null){
         await lockBrowserFromContent(secureFeatures?.section?.secure_feature_profile?.entity_relation || []);
-    }
-
+        
     let twilioOptions = {
         audio: findConfigs(['Record Audio'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ? 
             (localStorage.getItem('microphoneID') !== null ? {
@@ -91,6 +90,7 @@ export const startRecording = async (token) => {
         });
     } catch (error) {
         console.error('Error starting recording:', error);
+    }
     }
 };
 

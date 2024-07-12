@@ -4,6 +4,7 @@ import { addSectionSession, editSectionSession } from '../services/sessions.serv
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+import i18next from 'i18next';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -489,6 +490,7 @@ export const submitSession = async () => {
 		if(resp){
 		let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
 			if(completedRes){
+					// location.reload();
 					localStorage.clear();
 			}
 		}
@@ -630,14 +632,14 @@ export const detectUnfocusOfTab = () => {
 				if (document.hidden) {
 					showNotification({
 						title: 'Warning',
-						body: t('moved_away_from_page'),
+						body: i18next.t('moved_away_from_page'),
 						icon: `${ASSET_URL}/mereos.png`
 					});
 					registerEvent({ eventType: 'error', notify: false, eventName: 'moved_away_from_page' });
 				} else {
 					showNotification({
 						title: 'Welcome Back',
-						body: t('moved_back_to_page'),
+						body: i18next.t('moved_back_to_page'),
 						icon: `${ASSET_URL}/mereos.png`
 					});
 					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });

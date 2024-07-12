@@ -12,9 +12,8 @@ window.openModal = openModal;
 
 import { openModal } from './src/ExamPrepreation/examPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
-import { startRecording } from './src/StartRecording/startRecording';
+import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
 import { registerPublicCandidate } from './src/services/auth.services';
-import { stopAllRecordings } from './src/StopRecording/stopRecording';
 import { addSectionSessionRecord, convertDataIntoParse } from './src/utils/functions';
 import { changeCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 import { initialSessionData } from './src/utils/constant';

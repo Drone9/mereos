@@ -5,6 +5,7 @@ import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import i18next from 'i18next';
+import { createEvent } from '../services/event.service';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -206,7 +207,6 @@ const testUploadSpeed = async (text) => {
 };
 
 export const registerEvent = ({ eventType, eventName, eventValue }) => {
-	return
 	try{
 			const session = convertDataIntoParse('session');
 			console.log('session',session);
@@ -217,14 +217,8 @@ export const registerEvent = ({ eventType, eventName, eventValue }) => {
 					session_id: session?.id,
 					start_at: session.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session.sessionStartTime) / 1000) : 0
 			};
-			const token = localStorage.getItem('token');
-			const config = {
-					headers: {
-							token: token,
-							'm-preferred-language': 'en'
-					},
-			};
-			return axios.post(`${BASE_URL}/sessions/event/`, event,config);
+			
+			return createEvent(event);
 	}catch(error){
 			console.log(error);
 	}

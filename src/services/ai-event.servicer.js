@@ -18,7 +18,7 @@ export const createAiEvent = async (data) => {
 			token: token,
 		},
 	};
-	return axios.post('/sessions/ai_event/', data, config);
+	return axios.post('/sessions/candidate_ai_event/', data, config);
 };
 
 export const editAiEvent = async (data) => {

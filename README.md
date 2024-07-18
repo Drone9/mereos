@@ -16,7 +16,7 @@ var mereos = require('mereos');
 
 1. `init` function is used to initiate a session of proctoring. It takes `school_id` and `assessment_id`. In response, it returns the profile of the features to take assessment with.
 
-**Note:** assessment_id is optional. In case of assessment_id not provided. Default profile of the school will be retured.
+**Note:** 'assessment_id' is optional. In case 'assessment_id' is not provided. Default profile of the school will be retured.
 
 ```js
 var {init} = require('mereos');

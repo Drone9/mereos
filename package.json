@@ -1,7 +1,7 @@
 {
   "name": "mereos",
-  "version": "1.0.4",
-  "description": "This is an ai-proctoring library for online assessments.",
+  "version": "1.0.7",
+  "description": "This is an ai-empowered proctoring solution for online assessments.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -15,6 +15,10 @@
   ],
   "author": "DT Education, France",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Drone9/mereos.git"
+  },
   "dependencies": {
     "@tensorflow-models/coco-ssd": "2.2.3",
     "@tensorflow/tfjs": "4.20.0",

@@ -115,7 +115,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
             if (url?.data?.file_url) {
                 const fileUrl = url.data.file_url;
-                updatePersistData('session', { roomScanRecordings: fileUrl });
+                updatePersistData('session', { room_scan_video: fileUrl });
                 console.log('Room scan recording uploaded:', fileUrl);
                 recordingMode = 'uploaded_file';
                 textMessage = 'candidate_video_is_uploaded_successfully';

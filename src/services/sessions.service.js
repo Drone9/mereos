@@ -8,7 +8,7 @@ export const addSectionSession = async (data) => {
 			token: token,
 		},
 	};
-	return axiosInstance.post('/section_session/get_or_create_section_session/', data, config);
+	return axiosInstance.post('/sessions/candidate_session/', data, config);
 };
 
 export const editSectionSession = async (data) => {
@@ -18,5 +18,5 @@ export const editSectionSession = async (data) => {
 			token: token,
 		},
 	};
-	return axiosInstance.put('/section_session/candidate_edit_section_session/', data, config);
+	return axiosInstance.put('/sessions/candidate_session/', data, config);
 };

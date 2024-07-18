@@ -150,7 +150,7 @@ const runDiagnostics = async () => {
 
     try {
         const candidateAssessment = await getCandidateAssessment();
-        const secureFeatures = candidateAssessment?.section?.secure_feature_profile?.entity_relation || [];
+        const secureFeatures = candidateAssessment?.school?.entities || [];
         console.log('secureFeatures', secureFeatures);
 
         let recordVideo = secureFeatures.find(entity => entity.name === 'Record Video');

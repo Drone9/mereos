@@ -136,12 +136,12 @@ const showTab = async (tabId) => {
     };
 
     const candidateAssessment = getCandidateAssessment();
-    const secureFeatures = candidateAssessment?.section?.secure_feature_profile?.entity_relation || [];
+    const secureFeatures = candidateAssessment?.school?.entities || [];
     
     const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications'];
 
     if (tabId === 'ExamPreparation') {
-        if (!secureFeatures?.find(entity => entity.name === 'Exam Preparation')) {
+        if (!secureFeatures?.find(entity => entity.name === "Examination Window")) {
             navigate('runSystemDiagnostics');
             return;
         }
@@ -159,7 +159,7 @@ const showTab = async (tabId) => {
         }
         await IdentityVerificationScreenOne(tabContent3);
     } else if (tabId === 'IdentityVerificationScreenTwo') {
-        if (!secureFeatures?.find(entity => entity.name === 'Verify Id')) {
+        if (!secureFeatures?.find(entity => entity.key === 'identity_card_requirement')) {
             navigate('IdentityVerificationScreenThree');
             return;
         }
@@ -187,6 +187,7 @@ const showTab = async (tabId) => {
 
 const startSession = async (session) => {
     const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+    console.log('candidateInviteAssessmentSection',candidateInviteAssessmentSection,'session',session);
 
     try {
         const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
@@ -194,15 +195,15 @@ const startSession = async (session) => {
             updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
             registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
         }
-        const candidateAssessmentResp = await changeCandidateAssessmentStatus({ id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Attending' });
+        // const candidateAssessmentResp = await changeCandidateAssessmentStatus({ id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Attending' });
 
-        const candidateInviteAssessmentSectionResp = await changeCandidateInviteAssessmentSectionStatus({ id: candidateInviteAssessmentSection.id, status: 'Initiated' });
+        // const candidateInviteAssessmentSectionResp = await changeCandidateInviteAssessmentSectionStatus({ id: candidateInviteAssessmentSection.id, status: 'Initiated' });
 
-        console.log(resp, candidateAssessmentResp, candidateInviteAssessmentSectionResp);
+        // console.log(resp, candidateAssessmentResp, candidateInviteAssessmentSectionResp);
         updatePersistData('session',
             {
                 id: resp.data.id,
-                sessionStatus: candidateInviteAssessmentSectionResp.data.status
+                sessionStatus: 'Initiated'
             });
     } catch (e) {
         console.log('error', e);

@@ -19,17 +19,17 @@ export const startRecording = async (token) => {
     const secureFeatures = getCandidateAssessment();
     const session = convertDataIntoParse('session');
 
-    if (secureFeatures?.section?.secure_feature_profile !== null) {
-        await lockBrowserFromContent(secureFeatures?.section?.secure_feature_profile?.entity_relation || []);
+    if (secureFeatures?.school?.entities !== null) {
+        await lockBrowserFromContent(secureFeatures?.school?.entities || []);
 
         let twilioOptions = {
-            audio: findConfigs(['Record Audio'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ?
+            audio: findConfigs(['Record Audio'], secureFeatures?.school?.entities).length ?
                 (localStorage.getItem('microphoneID') !== null ? {
                     deviceId: { exact: localStorage.getItem('microphoneID') },
                 } : true)
                 :
                 false,
-            video: findConfigs(['Record Video'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length ?
+            video: findConfigs(['Record Video'], secureFeatures?.school?.entities).length ?
                 (localStorage.getItem('deviceId') !== null ? {
                     deviceId: { exact: localStorage.getItem('deviceId') },
                 } : true)
@@ -57,7 +57,7 @@ export const startRecording = async (token) => {
                 deviceId: { exact: localStorage.getItem('microphoneID') },
             } : true) });
 
-            if (secureFeatures?.section?.secure_feature_profile?.entity_relation.find(entity => entity.key === 'record_video')) {
+            if (secureFeatures?.school?.entities.find(entity => entity.key === 'record_video')) {
                 startAIWebcam(mediaStream);
             }
 
@@ -74,12 +74,12 @@ export const startRecording = async (token) => {
                 ...Array.from(room?.localParticipant?.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
             ];
 
-            updatePersistData('session', { cameraRecordings: cameraRecordings, audioRecordings: audioRecordings, room_id: room?.sid });
-            if (session?.screenRecordingStream && findConfigs(['Record Screen'], secureFeatures?.section?.secure_feature_profile?.entity_relation).length) {
+            updatePersistData('session', { user_video_name: cameraRecordings, user_audio_name: audioRecordings, room_id: room?.sid });
+            if (session?.screenRecordingStream && findConfigs(['Record Screen'], secureFeatures?.school?.entities).length) {
                 screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
                 let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
                 screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];
-                updatePersistData('session', { screenRecordings: screenRecordings });
+                updatePersistData('session', { screen_sharing_video_name: screenRecordings });
             }
 
             registerEvent({ eventType: 'success', notify: false, eventName: 'browser_locked_successfully', eventValue: getDateTime() });

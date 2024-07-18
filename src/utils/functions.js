@@ -206,6 +206,7 @@ const testUploadSpeed = async (text) => {
 };
 
 export const registerEvent = ({ eventType, eventName, eventValue }) => {
+	return
 	try{
 			const session = convertDataIntoParse('session');
 			console.log('session',session);
@@ -213,7 +214,7 @@ export const registerEvent = ({ eventType, eventName, eventValue }) => {
 			const event = {
 					name: eventName,
 					value: eventName,
-					section_session: session?.id,
+					session_id: session?.id,
 					start_at: session.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session.sessionStartTime) / 1000) : 0
 			};
 			const token = localStorage.getItem('token');
@@ -223,7 +224,7 @@ export const registerEvent = ({ eventType, eventName, eventValue }) => {
 							'm-preferred-language': 'en'
 					},
 			};
-			return axios.post(`${BASE_URL}/section_session/post_event/`, event,config);
+			return axios.post(`${BASE_URL}/sessions/event/`, event,config);
 	}catch(error){
 			console.log(error);
 	}
@@ -333,7 +334,7 @@ export const uploadFileInS3Folder = async (data) => {
 			token: token,
 		},
 	};
-	return axios.post(`${BASE_URL}/general/upload_file/`, formData,config);
+	return axios.post(`${BASE_URL}/general/candidate_upload_file/`, formData,config);
 };
 
 export const findConfigs = (configs, entities) => {
@@ -407,35 +408,34 @@ export const updatePersistData = (key, updates) => {
 
 export const addSectionSessionRecord = (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {
-		console.log('session',session);
-		const sourceIds = [...session?.cameraRecordings, ...session?.audioRecordings, ...session?.screenRecordings];
+		console.log('session',session,'candidateInviteAssessmentSection',candidateInviteAssessmentSection);
+	
+		const sourceIds = [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name];
 		const recordings = sourceIds?.length
-			? await getRecordingSid({'source_id': [...session.cameraRecordings, ...session.audioRecordings, ...session.screenRecordings]})
+			? await getRecordingSid({'source_id': [...session.user_video_name, ...session.audio_recordings, ...session.screen_sharing_video_name]})
 			: [];
 		let sectionSessionDetails = {
 			start_time: session.sessionStartTime,
+			submission_time: session.submissionTime,
 			duration_taken: session.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
-			candidate_identity_card: session.identityCard,
-			candidate_photo: session.candidatePhoto,
-			school: candidateInviteAssessmentSection?.candidate_assessment.candidate.school,
-			section: candidateInviteAssessmentSection.section.id,
-			candidate: candidateInviteAssessmentSection.candidate_assessment.candidate.id,
-			candidate_invite_assessment_section: candidateInviteAssessmentSection.id,
-			camera_recordings: recordings?.data?.filter(recording => session.cameraRecordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			audio_recordings: recordings?.data?.filter(recording => session.audioRecordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			screen_recordings: recordings?.data?.filter(recording => session.screenRecordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			identity_card: session.identityCard,
+			room_scan_video:session?.room_scan_video,
+			identity_photo: session.candidatePhoto,
+			school: candidateInviteAssessmentSection?.school?.id || '',
+			assessment: candidateInviteAssessmentSection?.assessment?.id || 1,
+			candidate: candidateInviteAssessmentSection.id,
+			user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			audio_recordings: recordings?.data?.filter(recording => session.audio_recordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			roomscan_recordings: session.roomScanRecordings,
-			room_id:session?.room_id || '',
-			room_session_id: session.roomSessionId || '',
 			session_id: session.sessionId,
 			collected_details: {
 				location: session.location,
 			},
-			browser_events: session.browserEvents,
 			video_codec: null,
 			video_extension: null,
-			mobile_audio_recordings: session.mobileAudios,
-			mobile_recordings: session.mobileRecordings
+			archive_id:null,
+			attempt_id:null,
 		};
 
 		if (session.id) {
@@ -469,7 +469,7 @@ export const registerAIEvent = async ({ notify, eventType, eventName, eventValue
 			end_at:endTime,
 			value: eventName,
 			created_at: getDateTime(),
-			section_session: session?.id
+			session_id: session?.id
 		};
 		console.log('event',event);
 	
@@ -488,11 +488,12 @@ export const submitSession = async () => {
 		const session = convertDataIntoParse('session');
 		let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if(resp){
-		let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
-			if(completedRes){
-					// location.reload();
-					localStorage.clear();
-			}
+			localStorage.clear();
+		// let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
+			// if(completedRes){
+			// 		// location.reload();
+			// 		localStorage.clear();
+			// }
 		}
 	}catch(error){
 		console.error(error);

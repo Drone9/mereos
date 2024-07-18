@@ -12,9 +12,8 @@ window.openModal = openModal;
 
 import { openModal } from './src/ExamPrepreation/examPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
-import { startRecording } from './src/StartRecording/startRecording';
+import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
 import { registerPublicCandidate } from './src/services/auth.services';
-import { stopAllRecordings } from './src/StopRecording/stopRecording';
 import { addSectionSessionRecord, convertDataIntoParse } from './src/utils/functions';
 import { changeCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 import { initialSessionData } from './src/utils/constant';
@@ -22,8 +21,8 @@ import { initialSessionData } from './src/utils/constant';
     async function init(host) {
         const resp = await registerPublicCandidate(host);
         localStorage.setItem('token', resp.data?.token);
-        localStorage.setItem('candidateAssessment',JSON.stringify(resp.data?.candidate_invite_assessment_section));
-        localStorage.setItem('session',JSON.stringify(initialSessionData))
+        localStorage.setItem('candidateAssessment',JSON.stringify(resp.data?.user_data));
+        localStorage.setItem('session',JSON.stringify(initialSessionData));
         return resp.data;
     };
     
@@ -59,27 +58,22 @@ import { initialSessionData } from './src/utils/constant';
             // return resp;
         }catch(err){
             console.log('error',err);
-            throw err;
+            // throw err;
         }
        
     };
     
     async function stop_recording(session) {
         try{
-            stopAllRecordings();
-            return
-            const sessionResp = await submit_session(session);
-            if (sessionResp?.data) {
-                const resp = await axios.get('https://corder-api.mereos.eu/twilio/stop_recording');
-                return resp;
-            } else {
-                throw 'session data is incomplete';
+            const stop_recordingResp  = await stopAllRecordings();
+            if(stop_recordingResp){
+                return 'Recording Stops'
             }
+            //     const resp = await axios.get('https://corder-api.mereos.eu/twilio/stop_recording');
+            //     return resp;
         }catch(err){
             console.error(err);
-            throw err;
         }
-        
     }
 
     async function submit_session(session) {
@@ -99,7 +93,7 @@ import { initialSessionData } from './src/utils/constant';
             // return resp;
         }catch(err){
             console.error(err);
-            throw err;
+            // throw err;
         }
        
     }

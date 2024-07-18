@@ -8,7 +8,7 @@ export const getAllAiEvents = async () => {
 			Authorization: `Basic ${token}`,
 		},
 	};
-	return axios.get(`/section_session/ai_event/`, config);
+	return axios.get(`/sessions/ai_event/`, config);
 };
 
 export const createAiEvent = async (data) => {
@@ -18,7 +18,7 @@ export const createAiEvent = async (data) => {
 			token: token,
 		},
 	};
-	return axios.post('/section_session/post_ai_events/', data, config);
+	return axios.post('/sessions/candidate_ai_event/', data, config);
 };
 
 export const editAiEvent = async (data) => {
@@ -28,7 +28,7 @@ export const editAiEvent = async (data) => {
 			Authorization: `Basic ${token}`,
 		},
 	};
-	return axios.put('/section_session/ai_event/', data, config);
+	return axios.put('/sessions/ai_event/', data, config);
 };
 
 export const deleteEvent = async (id) => {
@@ -39,5 +39,5 @@ export const deleteEvent = async (id) => {
 			'm-preferred-language': language
 		},
 	};
-	return axios.delete(`/section_session/ai_event/?id=${id}`, config);
+	return axios.delete(`/sessions/ai_event/?id=${id}`, config);
 };

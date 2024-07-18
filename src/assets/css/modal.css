@@ -65,7 +65,6 @@ body {
   color: orange;
 }
 
-/* Tab Content */
 .tab-content {
   display: none;
 }
@@ -77,4 +76,57 @@ body {
 .tabs-container > div{
   white-space: nowrap;
   font-size: 15px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.dropdown {
+  position: relative;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.dropdown .select {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dropdown .select div {
+  margin-right: 5px;
+}
+
+.dropdown .dropdown-content {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  display: none;
+}
+
+.dropdown .dropdown-content.active {
+  display: block;
+  z-index: 999;
+}
+
+.dropdown .option {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.dropdown .option:hover {
+  background-color: #f0f0f0;
 }

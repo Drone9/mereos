@@ -2,7 +2,7 @@ import axios from '../utils/axios.js';
 import { getAuthenticationToken } from '../utils/functions.js';
 
 export const getAllEvents = async () => {
-	const token = await getAuthenticationToken();
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,
@@ -12,17 +12,17 @@ export const getAllEvents = async () => {
 };
 
 export const createEvent = async (data) => {
-	const token = await getAuthenticationToken();
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
-			token: token,
+			Authorization: `Basic ${token}`,
 		},
 	};
-	return axios.post('/section_session/post_event/', data, config);
+	return axios.post('/sessions/candidate_event/', data, config);
 };
 
 export const editEvent = async (data) => {
-	const token = await getAuthenticationToken();
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,
@@ -32,7 +32,7 @@ export const editEvent = async (data) => {
 };
 
 export const deleteEvent = async (id) => {
-	const token = await getAuthenticationToken();
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,

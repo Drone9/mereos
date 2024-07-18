@@ -35,30 +35,30 @@ import multipleScreenRed from '../assets/images/multiple-screen-red.svg';
 import multipleScreenGreen from '../assets/images/multiple-screen-green.svg';
 import prompMessage from '../assets/images/user-permission-english.svg';
 import { showTab } from './examPrechecks';
+import i18next from 'i18next';
 
-export const runSystemDiagnostics = async () => {
+const runDiagnostics = async () => {
     const tab1Content = document.getElementById('runSystemDiagnostics');
+    if (!tab1Content) {
+        console.error('Element with id "runSystemDiagnostics" not found.');
+        return;
+    }
     tab1Content.innerHTML = `
         <div class="system-diagnostic-test-screen">
-           <h1 class="heading">System Diagnostics</h1>
+            <h1 class="heading">${i18next.t('system_diagnostic')}</h1>
             <div class="diagnostic-status container-box">
                 <div class="container">
                     <div class="container-top">
-                        <label class="description">System Diagnostic Message</label>
+                        <label class="description">${i18next.t('system_diagnostic_msg')}</label>
                     </div>
-                    <div className='container-prompt'>
-                            <img
-                                src=${prompMessage}
-                                alt=''
-                                width='330px'
-                                className='prompt-image'
-                            ></img>
+                    <div class="container-prompt">
+                        <img src=${prompMessage} alt="" width="330px" class="prompt-image"></img>
                     </div>
                     <div class="container-middle box-section">
                         <div class="diagnostic-item grey-box" id="cameraDiagnosticItem">
                             <div class="grey-box-right">
                                 <img id="cameraStatusIcon" src="${videoCameraGray}" alt="" />
-                                <label>Camera</label>
+                                <label>${i18next.t('webcam')}</label>
                             </div>
                             <div class="grey-box-left">
                                 <img id="cameraStatusLoading" src="${loadingGray}" alt="" />
@@ -67,7 +67,7 @@ export const runSystemDiagnostics = async () => {
                         <div class="diagnostic-item grey-box" id="microphoneDiagnosticItem">
                             <div class="grey-box-right">
                                 <img id="microphoneStatusIcon" src="${microPhoneGray}" alt="" />
-                                <label>Microphone</label>
+                                <label>${i18next.t('microphone')}</label>
                             </div>
                             <div class="grey-box-left">
                                 <img id="microphoneStatusLoading" src="${loadingGray}" alt="" />
@@ -76,7 +76,7 @@ export const runSystemDiagnostics = async () => {
                         <div class="diagnostic-item grey-box" id="networkDiagnosticItem">
                             <div class="grey-box-right">
                                 <img id="networkStatusIcon" src="${networkGray}" alt="" />
-                                <label>Network Speed</label>
+                                <label>${i18next.t('connection')}</label>
                             </div>
                             <div class="grey-box-left">
                                 <img id="networkStatusLoading" src="${loadingGray}" alt="" />
@@ -85,7 +85,7 @@ export const runSystemDiagnostics = async () => {
                         <div class="diagnostic-item grey-box" id="locationDiagnosticItem">
                             <div class="grey-box-right">
                                 <img id="locationStatusIcon" src="${locationGray}" alt="" />
-                                <label>Location</label>
+                                <label>${i18next.t('location')}</label>
                             </div>
                             <div class="grey-box-left">
                                 <img id="locationStatusLoading" src="${loadingGray}" alt="" />
@@ -94,7 +94,7 @@ export const runSystemDiagnostics = async () => {
                         <div class="diagnostic-item grey-box" id="notificationDiagnosticItem">
                             <div class="grey-box-right">
                                 <img id="notificationStatusIcon" src="${notificationGray}" alt="" />
-                                <label>Notifications</label>
+                                <label>${i18next.t('notification')}</label>
                             </div>
                             <div class="grey-box-left">
                                 <img id="notificationStatusLoading" src="${loadingGray}" alt="" />
@@ -103,7 +103,7 @@ export const runSystemDiagnostics = async () => {
                         <div class="diagnostic-item grey-box" id="screenDiagnosticItem">
                             <div class="grey-box-right">
                                 <img id="screenStatusIcon" src="${multipleScreenGray}" alt="" />
-                                <label>Multiple Screens</label>
+                                <label>${i18next.t('multiple_screens')}</label>
                             </div>
                             <div class="grey-box-left">
                                 <img id="screenStatusLoading" src="${loadingGray}" alt="" />
@@ -130,15 +130,6 @@ export const runSystemDiagnostics = async () => {
         });
     };
 
-    const iconMap = {
-        camera: { icon: videoCameraGray, loading: loadingGray, checkFunction: checkCamera },
-        microphone: { icon: microPhoneGray, loading: loadingGray, checkFunction: checkMicrophone },
-        network: { icon: networkGray, loading: loadingGray, checkFunction: getNetworkUploadSpeed },
-        location: { icon: locationGray, loading: loadingGray, checkFunction: getLocation },
-        notification: { icon: notificationGray, loading: loadingGray, checkFunction: checkNotification },
-        screen: { icon: multipleScreenGray, loading: loadingGray, checkFunction: detectMultipleScreens }
-    };
-
     const successIconMap = {
         camera: videoGreen,
         microphone: microPhoneGreen,
@@ -158,8 +149,8 @@ export const runSystemDiagnostics = async () => {
     };
 
     try {
-        const candidateAssessment = getCandidateAssessment();
-        const secureFeatures = candidateAssessment?.section?.secure_feature_profile?.entity_relation || [];
+        const candidateAssessment = await getCandidateAssessment();
+        const secureFeatures = candidateAssessment?.school?.entities || [];
         console.log('secureFeatures', secureFeatures);
 
         let recordVideo = secureFeatures.find(entity => entity.name === 'Record Video');
@@ -256,3 +247,11 @@ export const runSystemDiagnostics = async () => {
         console.error('Error during diagnostics:', error);
     }
 };
+
+export const runSystemDiagnostics = async () => {
+    await runDiagnostics();
+};
+
+i18next.on('languageChanged', () => {
+    runDiagnostics();
+});

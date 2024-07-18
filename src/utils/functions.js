@@ -4,6 +4,8 @@ import { addSectionSession, editSectionSession } from '../services/sessions.serv
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+import i18next from 'i18next';
+import { createEvent } from '../services/event.service';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -212,17 +214,11 @@ export const registerEvent = ({ eventType, eventName, eventValue }) => {
 			const event = {
 					name: eventName,
 					value: eventName,
-					section_session: session?.id,
+					session_id: session?.id,
 					start_at: session.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session.sessionStartTime) / 1000) : 0
 			};
-			const token = localStorage.getItem('token');
-			const config = {
-					headers: {
-							token: token,
-							'm-preferred-language': 'en'
-					},
-			};
-			return axios.post(`${BASE_URL}/section_session/post_event/`, event,config);
+			
+			return createEvent(event);
 	}catch(error){
 			console.log(error);
 	}
@@ -332,7 +328,7 @@ export const uploadFileInS3Folder = async (data) => {
 			token: token,
 		},
 	};
-	return axios.post(`${BASE_URL}/general/upload_file/`, formData,config);
+	return axios.post(`${BASE_URL}/general/candidate_upload_file/`, formData,config);
 };
 
 export const findConfigs = (configs, entities) => {
@@ -406,35 +402,34 @@ export const updatePersistData = (key, updates) => {
 
 export const addSectionSessionRecord = (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {
-		console.log('session',session);
-		const sourceIds = [...session?.cameraRecordings, ...session?.audioRecordings, ...session?.screenRecordings];
+		console.log('session',session,'candidateInviteAssessmentSection',candidateInviteAssessmentSection);
+	
+		const sourceIds = [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name];
 		const recordings = sourceIds?.length
-			? await getRecordingSid({'source_id': [...session.cameraRecordings, ...session.audioRecordings, ...session.screenRecordings]})
+			? await getRecordingSid({'source_id': [...session.user_video_name, ...session.audio_recordings, ...session.screen_sharing_video_name]})
 			: [];
 		let sectionSessionDetails = {
 			start_time: session.sessionStartTime,
+			submission_time: session.submissionTime,
 			duration_taken: session.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
-			candidate_identity_card: session.identityCard,
-			candidate_photo: session.candidatePhoto,
-			school: candidateInviteAssessmentSection?.candidate_assessment.candidate.school,
-			section: candidateInviteAssessmentSection.section.id,
-			candidate: candidateInviteAssessmentSection.candidate_assessment.candidate.id,
-			candidate_invite_assessment_section: candidateInviteAssessmentSection.id,
-			camera_recordings: recordings?.data?.filter(recording => session.cameraRecordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			audio_recordings: recordings?.data?.filter(recording => session.audioRecordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			screen_recordings: recordings?.data?.filter(recording => session.screenRecordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			identity_card: session.identityCard,
+			room_scan_video:session?.room_scan_video,
+			identity_photo: session.candidatePhoto,
+			school: candidateInviteAssessmentSection?.school?.id || '',
+			assessment: candidateInviteAssessmentSection?.assessment?.id || 1,
+			candidate: candidateInviteAssessmentSection.id,
+			user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			audio_recordings: recordings?.data?.filter(recording => session.audio_recordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			roomscan_recordings: session.roomScanRecordings,
-			room_id:session?.room_id || '',
-			room_session_id: session.roomSessionId || '',
 			session_id: session.sessionId,
 			collected_details: {
 				location: session.location,
 			},
-			browser_events: session.browserEvents,
 			video_codec: null,
 			video_extension: null,
-			mobile_audio_recordings: session.mobileAudios,
-			mobile_recordings: session.mobileRecordings
+			archive_id:null,
+			attempt_id:null,
 		};
 
 		if (session.id) {
@@ -468,7 +463,7 @@ export const registerAIEvent = async ({ notify, eventType, eventName, eventValue
 			end_at:endTime,
 			value: eventName,
 			created_at: getDateTime(),
-			section_session: session?.id
+			session_id: session?.id
 		};
 		console.log('event',event);
 	
@@ -482,13 +477,348 @@ export const registerAIEvent = async ({ notify, eventType, eventName, eventValue
 };
 
 export const submitSession = async () => {
-	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-	const session = convertDataIntoParse('session');
-	let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
-	if(resp){
-	let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
-		if(completedRes){
-				localStorage.clear();
+	try{
+		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+		const session = convertDataIntoParse('session');
+		let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+		if(resp){
+			localStorage.clear();
+		// let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
+			// if(completedRes){
+			// 		// location.reload();
+			// 		localStorage.clear();
+			// }
 		}
+	}catch(error){
+		console.error(error);
 	}
+};
+
+
+
+export const lockBrowserFromContent = (entities) => {
+	return new Promise(async (resolve, _reject) => {
+		let result = {};
+		for (const entity of entities) {
+			switch (entity.name) {
+				case 'Disable Right Click': {
+					const disableRightClick = await preventRightClick();
+					if (disableRightClick) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Disable Clipboard': {
+					const copyPasteCutDisabled = await disableCopyPasteCut();
+					if (copyPasteCutDisabled) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Disable function keys': {
+					const disableShortcuts = await preventShortCuts();
+					if (disableShortcuts) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Disable Printing': {
+					const disablePrinting = await stopPrinting();
+					if (disablePrinting) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Detect unfocus': {
+					const defocusDisabled = await detectUnfocusOfTab();
+					if (defocusDisabled) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Disable switch to other Apps': {
+					const detectPageLeaving = await preventPreClosure();
+					if (detectPageLeaving) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Detect resizing of window': {
+					const disableWindowResize = await detectWindowResize(null);
+					if (disableWindowResize) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Verify Desktop': {
+					const dualDisplay = await detectDualDisplay();
+					if (dualDisplay) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Force Full Screen': {
+					const fullScreen = await forceFullScreen();
+					if (fullScreen) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+				
+				default:
+					null;
+			}
+		}
+
+		resolve(result);
+	});
+};
+
+export const preventRightClick = () => {
+	return new Promise((resolve, _reject) => {
+		document.addEventListener('contextmenu', handleDefaultEvent);
+		resolve(true);
+	});
+};
+
+export const disableCopyPasteCut = () => {
+	return new Promise((resolve, _reject) => {
+		'cut copy paste'.split(' ').forEach((eventName) => {
+			window.addEventListener(eventName, handleDefaultEvent);
+		});
+		resolve(true);
+	});
+};
+
+export const restoreRightClick = () => {
+	return new Promise((resolve, _reject) => {
+		document.removeEventListener('contextmenu', handleDefaultEvent, true);
+		resolve(true);
+	});
+};
+
+export const preventPreClosure = () => {
+	return new Promise((resolve, _reject) => {
+		// window.onbeforeunload = (_error) => {
+		// 	return 'Really want to quit the exam, may lead to failure?';
+		// };
+		resolve(true);
+	});
+};
+
+export const detectDualDisplay = () => {
+	return new Promise((resolve, _reject) => {
+		resolve(window.screen.isExtended);
+	});
+};
+
+export const detectUnfocusOfTab = () => {
+	return new Promise(async (resolve, _reject) => {
+		try {
+			document.addEventListener('visibilitychange', () => {
+				if (document.hidden) {
+					showNotification({
+						title: 'Warning',
+						body: i18next.t('moved_away_from_page'),
+						icon: `${ASSET_URL}/mereos.png`
+					});
+					registerEvent({ eventType: 'error', notify: false, eventName: 'moved_away_from_page' });
+				} else {
+					showNotification({
+						title: 'Welcome Back',
+						body: i18next.t('moved_back_to_page'),
+						icon: `${ASSET_URL}/mereos.png`
+					});
+					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });
+				}
+			});
+
+			resolve(true);
+		} catch (error) {
+			console.error('Notification permission error:', error);
+			resolve(false);
+		}
+	});
+};
+
+export const preventShortCuts = (allowedFunctionKeys = []) => {
+	return new Promise((resolve, _reject) => {
+		document.onkeydown = (event) => {
+			console.log('preventShortCuts', event);
+			event = event || window.event;
+
+			// List of key codes to be blocked
+			const blockedKeys = [
+				27,  // Escape
+				91,  // Meta (Windows key, Command key on Mac)
+				112, // F1
+				113, // F2
+				114, // F3
+				115, // F4
+				116, // F5
+				117, // F6
+				118, // F7
+				119, // F8
+				120, // F9
+				121, // F10
+				122, // F11
+				123, // F12
+				91, // window btn
+				44,   // Print Screen,
+				173,
+				174,
+				114,
+				145,
+				91
+			];
+
+			// Check for Ctrl/Meta + any alphabet key
+			if (
+				(event.ctrlKey || event.metaKey) && 
+							'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(event.key) !== -1
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+			}
+
+			// Check for Ctrl + Shift + any alphabet key
+			if (
+				(event.ctrlKey || event.metaKey) && event.shiftKey &&
+							'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(event.key) !== -1
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+			}
+
+			// Check for specific function keys and other special keys
+			if (blockedKeys.includes(event.keyCode)) {
+				// Allow specific function key combinations if they are in the allowed list
+				if (event.keyCode >= 112 && event.keyCode <= 123 && allowedFunctionKeys.includes(event.keyCode)) {
+					return; // Allow the function key if it is in the allowed list
+				}
+
+				event.preventDefault();
+				event.stopPropagation();
+			}
+		};
+		resolve(true);
+	});
+};
+
+
+export const stopPrinting = () => {
+	return new Promise((resolve, _reject) => {
+		let css = `
+			body {
+				display: none;
+				visibility: hidden;
+			}
+		`;
+		let head = document.head || document.getElementsByTagName('head')[0];
+		let style = document.createElement('style');
+
+		head.appendChild(style);
+
+		style.type = 'text/css';
+		style.media = 'print';
+		if (style.styleSheet) {
+			// This is required for IE8 and below.
+			style.styleSheet.cssText = css;
+		} else {
+			style.appendChild(document.createTextNode(css));
+		}
+		resolve(true);
+	});
+};
+
+export const detectWindowResize = () => {
+	return new Promise((resolve, _reject) => {
+		let resizeTimeout;
+		let isResizing = false;
+
+		const handleResize = () => {
+			if (!isResizing) {
+				registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+				console.log('Resize started');
+				isResizing = true;
+			}
+
+			clearTimeout(resizeTimeout);
+
+			resizeTimeout = setTimeout(() => {
+				registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+				console.log('Resize ended');
+				isResizing = false;
+			}, 500);
+		};
+
+		window.addEventListener('resize', handleResize);
+		resolve(true);
+	});
+};
+
+
+export const createATab = (url) => {
+	return new Promise((resolve, _reject) => {
+		window.open(url);
+		resolve(true);
+	});
+};
+
+export const forceFullScreen = (element = document.documentElement) => {
+	try {
+		if (typeof element?.requestFullscreen === 'function') {
+			element.requestFullscreen();
+		} else if (typeof element.webkitRequestFullscreen === 'function') { /* Safari */
+			element.webkitRequestFullscreen();
+		} else if (typeof element.msRequestFullscreen === 'function') { /* IE11 */
+			element.msRequestFullscreen();
+		}
+
+		const whiteBackgroundElement = document.createElement('div');
+		whiteBackgroundElement.style.backgroundColor = 'white';
+		whiteBackgroundElement.style.top = '0';
+		whiteBackgroundElement.style.left = '0';
+		whiteBackgroundElement.style.width = '100%';
+		whiteBackgroundElement.style.height = '100%';
+		whiteBackgroundElement.style.overflow = 'auto'; // Enable scrolling
+		whiteBackgroundElement.style.zIndex = '1000'; // Ensure it's on top
+
+		document.body.appendChild(whiteBackgroundElement);
+
+		// Add event listener to handle exiting fullscreen
+		document.addEventListener('fullscreenchange', () => {
+			if (!document.fullscreenElement) {
+				document.body.removeChild(whiteBackgroundElement);
+			}
+		});
+	} catch (error) {
+		console.log(error);
+	}
+};
+
+
+export const getCPUInfo = () => {
+	return new Promise((resolve, _reject) => {
+		resolve(navigator.hardwareConcurrency);
+	});
+};
+
+export const getRAMInfo = () => {
+	return new Promise((resolve, _reject) => {
+		resolve(navigator.deviceMemory);
+	});
+};
+
+const handleDefaultEvent = e => {
+	e.preventDefault();
+	e.stopPropagation();
 };

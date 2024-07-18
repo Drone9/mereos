@@ -3,6 +3,7 @@ import '../assets/css/step2.css';
 import greenCheckMark from '../assets/images/checkmark-green.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
+import i18next from 'i18next';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
     let photo;
@@ -40,7 +41,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                     imageSrc: imageSrc,
                     msg: {
                         type: 'checking',
-                        text: 'ID being verified'
+                        text: 'id_being_verified'
                     }
                 };
                 renderUI();
@@ -51,7 +52,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                     captureMode: 'retake',
                     msg: {
                         type: 'unsuccessful',
-                        text: 'Error capturing picture'
+                        text: 'error_capturing_picture'
                     }
                 };
                 renderUI();
@@ -88,7 +89,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                     imageSrc: imageSrc,
                     msg: {
                         type: 'checking',
-                        text: 'ID being verified'
+                        text: 'id_being_verified'
                     }
                 };
                 renderUI();
@@ -99,7 +100,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                     captureMode: 'retake',
                     msg: {
                         type: 'unsuccessful',
-                        text: 'Error with uploading file'
+                        text: 'error_with_uploading_file'
                     }
                 };
                 renderUI();
@@ -124,7 +125,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                             captureMode: 'retake',
                             msg: {
                                 type: 'successful',
-                                text: 'ID successfully verified'
+                                text: 'id_successfully_verified'
                             }
                         };
                         disabledBtn = false;
@@ -135,7 +136,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                             captureMode: 'retake',
                             msg: {
                                 type: 'unsuccessful',
-                                text: 'ID not verified'
+                                text: 'id_not_verified'
                             }
                         };
                         disabledBtn = false;
@@ -160,7 +161,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                 ...currentState,
                 msg: {
                     type: 'loading',
-                    text: 'File is being uploaded'
+                    text: 'file_is_being_uploaded'
                 }
             };
             renderUI();
@@ -177,7 +178,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                     captureMode: 'uploaded_photo',
                     msg: {
                         type: 'waiting',
-                        text: 'Candidate ID is uploaded successfully'
+                        text: 'candidate_id_is_uploaded_successfully'
                     }
                 };
                 registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_uploaded_successfully'});
@@ -191,7 +192,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                 imageSrc: null,
                 msg: {
                     type: 'error',
-                    text: 'Something went wrong. Please upload again.'
+                    text: 'something_went_wrong_please_upload_again'
                 }
             };
 			registerEvent({eventType: 'success', notify: false, eventName: 'internet_connection_unstable'});
@@ -217,11 +218,11 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 
         const headerTitle = document.createElement('div');
         headerTitle.className = 'ivst-header-title';
-        headerTitle.textContent = 'Identity Validation';
+        headerTitle.textContent = i18next.t('identity_validation');
 
         const message = document.createElement('div');
         message.className = 'ivst-msg';
-        message.textContent = 'Initial system check passed. Get ready for identity validation.';
+        message.textContent = i18next.t('initial_system_check_passed_get_ready_for_identity_validation');
 
         const headerImgContainer = document.createElement('div');
         headerImgContainer.className = 'ivst-header-img-container';
@@ -265,7 +266,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
         if (currentState.msg.text) {
             const queryMsg = document.createElement('div');
             queryMsg.className = 'ivst-query-msg';
-            queryMsg.textContent = currentState.msg.text;
+            queryMsg.textContent = i18next.t(currentState.msg.text);
             if (currentState.msg.type === 'unsuccessful') {
                 queryMsg.style.color = '#E95E5E';
             }
@@ -275,7 +276,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
         if (!currentState.imageSrc) {
             const uploadMsg = document.createElement('div');
             uploadMsg.className = 'ivst-query-msg';
-            uploadMsg.innerHTML = 'Please take picture or <span class="ivst-file">upload your identity document</span>.';
+            uploadMsg.innerHTML = `${i18next.t('please_take_picture_or')} <span class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.`;
             uploadMsg.querySelector('.ivst-file').addEventListener('click', () => inputFile.click());
             wrapper.appendChild(uploadMsg);
         }
@@ -284,21 +285,21 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
         btnContainer.className = 'ivst-btn-container';
 
         if (currentState.captureMode === 'take') {
-            const prevBtn = createButton('Previous Step', 'orange-hollow-btn', prevStep);
-            const takePhotoBtn = createButton('Take ID Photo', 'orange-filled-btn', capturePhoto);
+            const prevBtn = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
+            const takePhotoBtn = createButton(`${i18next.t('take_id_photo')}`, 'orange-filled-btn', capturePhoto);
             takePhotoBtn.disabled = disabledBtn;
             btnContainer.appendChild(prevBtn);
             btnContainer.appendChild(takePhotoBtn);
         } else {
-            const retakeBtn = createButton('Retake ID Photo', 'orange-filled-btn', handleRestart);
+            const retakeBtn = createButton(`${i18next.t('retake_id_photo')}`, 'orange-filled-btn', handleRestart);
             btnContainer.appendChild(retakeBtn);
 
             if (currentState.captureMode !== 'uploaded_photo') {
-                const uploadBtn = createButton('Upload', 'orange-filled-btn', uploadCandidateIdentityCard);
+                const uploadBtn = createButton(`${i18next.t('upload')}`, 'orange-filled-btn', uploadCandidateIdentityCard);
                 uploadBtn.disabled = currentState.msg.type !== 'successful';
                 btnContainer.appendChild(uploadBtn);
             } else {
-                const nextBtn = createButton('Next Step', 'orange-filled-btn', nextStep);
+                const nextBtn = createButton(`${i18next.t('next_step')}`, 'orange-filled-btn', nextStep);
                 btnContainer.appendChild(nextBtn);
             }
         }
@@ -325,4 +326,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
     };
 
     renderUI();
+
+    i18next.on('languageChanged', () => {
+        currentState.msg.text = i18next.t(currentState.msg.text);
+        renderUI();
+    });
 };

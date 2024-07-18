@@ -1,13 +1,9 @@
 import { getDateTime, registerEvent } from '../utils/functions';
 import { showTab } from './examPrechecks';
 import '../assets/css/step3.css';
+import i18next from 'i18next';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
-    if (!tabContent) {
-        console.error('Error: tabContent is not defined or null.');
-        return;
-    }
-
     let canvasRef;
     let audioContext;
     let analyserNode;
@@ -15,7 +11,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
     let stream = null;
     let msg = {
         type: '',
-        text: 'Be loud and clear'
+        text: 'be_loud_clear'
     };
 
     const schoolInfo = {};
@@ -64,7 +60,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
             }
 
         } catch (error) {
-            console.error('Error accessing microphone:', error);
+            console.error('no_mircophone_detected:', error);
         }
     };
 
@@ -74,7 +70,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
         }
 
         msg.type = ''; 
-        msg.text = 'Recording...'; 
+        msg.text = 'recording'; 
         disabledBtn = true;
         updateUI();
 
@@ -98,7 +94,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
                     clearInterval(timer);
                     disabledBtn = false;
                     msg.type = 'successful';
-                    msg.text = 'Audio test passed'; 
+                    msg.text = 'audio_test_passed'; 
                     updateUI();
                 } else if (counter >= 15) {
                     throw 'error';
@@ -107,7 +103,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
                 clearInterval(timer);
                 disabledBtn = false;
                 msg.type = 'unsuccessful';
-                msg.text = 'Audio test failed';
+                msg.text = 'audio_test_failed';
                 updateUI();
                 console.error('Audio test failed');
             }
@@ -143,45 +139,53 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
             container.className = 'ivst-container';
             tabContent.appendChild(container);
         }
-
+    
         let wrapper = container.querySelector('.ivst-wrapper');
         if (!wrapper) {
             wrapper = document.createElement('div');
             wrapper.className = 'ivst-wrapper';
-
+    
             const headerTitle = document.createElement('div');
             headerTitle.className = 'ivst-header-title';
-            headerTitle.textContent = 'Audio Check';
-
+            wrapper.appendChild(headerTitle);
+    
             const message = document.createElement('div');
             message.className = 'ivst-msg';
-            wrapper.appendChild(headerTitle);
             wrapper.appendChild(message);
-
+    
             const audioText = document.createElement('div');
             audioText.className = 'ivst-audio-text';
             audioText.style.textAlign = 'center';
-            audioText.textContent = 'No point in running, leave in time';
-
+            wrapper.appendChild(audioText);
+    
             canvasRef = document.createElement('canvas');
             canvasRef.width = 800;
             canvasRef.height = 200;
-
-            wrapper.appendChild(audioText);
+    
             wrapper.appendChild(canvasRef);
             container.appendChild(wrapper);
         }
-
+    
+        const headerTitle = wrapper.querySelector('.ivst-header-title');
+        if (headerTitle) {
+            headerTitle.textContent = i18next.t('audio_check');
+        }
+    
+        const audioText = wrapper.querySelector('.ivst-audio-text');
+        if (audioText) {
+            audioText.textContent = i18next.t('no_point_in_running_leave_in_time');
+        }
+    
         const messageElement = wrapper.querySelector('.ivst-msg');
         if (messageElement) {
-            messageElement.textContent = msg.text;
+            messageElement.textContent = i18next.t(msg.text);
             if (msg.type === 'unsuccessful') {
                 messageElement.style.color = '#E95E5E';
             } else {
                 messageElement.style.color = '';
             }
         }
-
+    
         let btnContainer = wrapper.querySelector('.ivst-btn-container');
         if (!btnContainer) {
             btnContainer = document.createElement('div');
@@ -190,26 +194,26 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
         } else {
             btnContainer.innerHTML = '';
         }
-
+    
         if (msg.type === '') {
-            const prevButton = createButton('Previous Step', 'orange-hollow-btn', prevStep);
+            const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
             prevButton.disabled = disabledBtn;
-            const recordButton = createButton('Record Audio', 'orange-filled-btn', startRecording);
+            const recordButton = createButton(`${i18next.t('record_audio')}`, 'orange-filled-btn', startRecording);
             recordButton.disabled = disabledBtn;
             btnContainer.appendChild(prevButton);
             btnContainer.appendChild(recordButton);
         } else if (msg.type === 'unsuccessful') {
-            const prevButton = createButton('Previous Step', 'orange-hollow-btn', prevStep);
-            const reRecordButton = createButton('Re-record Audio', 'orange-filled-btn', startRecording);
+            const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
+            const reRecordButton = createButton(`${i18next.t('re_record_audio')}`, 'orange-filled-btn', startRecording);
             btnContainer.appendChild(prevButton);
             btnContainer.appendChild(reRecordButton);
         } else {
-            const reRecordButton = createButton('Re-record Audio', 'orange-hollow-btn', startRecording);
-            const doneButton = createButton('Done', 'orange-filled-btn', nextStep);
+            const reRecordButton = createButton(`${i18next.t('re_record_audio')}`, 'orange-hollow-btn', startRecording);
+            const doneButton = createButton(`${i18next.t('done')}`, 'orange-filled-btn', nextStep);
             btnContainer.appendChild(reRecordButton);
             btnContainer.appendChild(doneButton);
         }
-    };
+    };    
 
     const createButton = (text, className, onClick) => {
         const button = document.createElement('button');
@@ -221,6 +225,11 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 
     drawAudioSpikes();
     updateUI();
+
+    i18next.on('languageChanged', () => {
+        msg.text = i18next.t(msg.text);
+        updateUI();
+    });
 
     const cleanup = () => {
         if (audioContext) {

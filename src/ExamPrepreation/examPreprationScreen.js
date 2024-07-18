@@ -9,37 +9,30 @@ import vector2 from '../assets/images/vector-2.png';
 import vector3 from '../assets/images/vector-3.png';
 import { showTab } from './examPrechecks';
 import { registerEvent } from '../utils/functions';
-
-const translations = {
-  exam_preparation: 'Exam Preparation',
-  icc_msg: 'Please read the instructions carefully before proceeding to the exam.',
-  continue: 'Continue'
-};
-
-const t = (key) => translations[key];
+import i18next from 'i18next';
 
 const vectors = [
-  { name: 'img1', src: `${addressIcon}`, alt: '' },
-  { name: 'img2', src: `${lightBulb}`, alt: '' },
-  { name: 'img3', src: `${megaphone}`, alt: '' },
-  { name: 'img4', src: `${stackBook}`, alt: '' },
-  { name: 'img5', src: `${vector2}`, alt: '' },
-  { name: 'img6', src: `${vector1}`, alt: '' },
-  { name: 'img7', src: `${vector3}`, alt: '' },
-  { name: 'img8', src: `${vector1}`, alt: '' }
+  { name: 'img1', src: addressIcon, alt: '' },
+  { name: 'img2', src: lightBulb, alt: '' },
+  { name: 'img3', src: megaphone, alt: '' },
+  { name: 'img4', src: stackBook, alt: '' },
+  { name: 'img5', src: vector2, alt: '' },
+  { name: 'img6', src: vector1, alt: '' },
+  { name: 'img7', src: vector3, alt: '' },
+  { name: 'img8', src: vector1, alt: '' }
 ];
 
 const getDateTime = () => new Date().toISOString();
 
 const nextPage = () => {
   registerEvent({ eventType: 'success', notify: false, eventName: 'terms_and_conditions_read', eventValue: getDateTime() });
-  showTab('runSystemDiagnostics')
+  showTab('runSystemDiagnostics');
 };
 
 export const ExamPreparation = async (tabContent) => {
   if (!tabContent) {
-      console.error('tabContent is not defined or is not a valid DOM element');
-      return;
+    console.error('tabContent is not defined or is not a valid DOM element');
+    return;
   }
 
   tabContent.innerHTML = '';
@@ -52,23 +45,23 @@ export const ExamPreparation = async (tabContent) => {
 
   const headerImg = document.createElement('img');
   headerImg.className = 'header-img';
-  headerImg.src = `${readingBook}`;
+  headerImg.src = readingBook;
   headerImg.alt = 'header-img';
   examPreparationContainer.appendChild(headerImg);
 
   const title = document.createElement('h1');
-  title.textContent = t('exam_preparation');
+  title.textContent = i18next.t('exam_preparation');
   examPreparationContainer.appendChild(title);
 
   const msgLabel = document.createElement('label');
   msgLabel.className = 'ep-msg';
-  msgLabel.textContent = t('icc_msg');
+  msgLabel.textContent = i18next.t('icc_msg');
   examPreparationContainer.appendChild(msgLabel);
 
   const continueButton = document.createElement('button');
   continueButton.className = 'orange-filled-btn';
-  continueButton.textContent = t('continue');
-  continueButton.style.marginTop = '40px';
+  continueButton.textContent = i18next.t('continue');
+  continueButton.style.marginTop = '10px';
   continueButton.style.justifyContent = 'center';
   continueButton.addEventListener('click', nextPage);
   examPreparationContainer.appendChild(continueButton);
@@ -79,11 +72,11 @@ export const ExamPreparation = async (tabContent) => {
   bgImagesContainer.className = 'bg-images';
 
   vectors.forEach((vector, index) => {
-      const vectorImg = document.createElement('img');
-      vectorImg.className = vector.name;
-      vectorImg.src = vector.src;
-      vectorImg.alt = vector.alt;
-      bgImagesContainer.appendChild(vectorImg);
+    const vectorImg = document.createElement('img');
+    vectorImg.className = vector.name;
+    vectorImg.src = vector.src;
+    vectorImg.alt = vector.alt;
+    bgImagesContainer.appendChild(vectorImg);
   });
 
   container.appendChild(bgImagesContainer);
@@ -92,13 +85,26 @@ export const ExamPreparation = async (tabContent) => {
 
   const styleElement = document.createElement('style');
   styleElement.textContent = `
-      .exam-preparation {
-          /* Define your CSS styles here */
-      }
-      .exam-preparation-container {
-          /* Define your CSS styles here */
-      }
-      /* Define other classes as needed */
+    .exam-preparation {
+        /* Define your CSS styles here */
+    }
+    .exam-preparation-container {
+        /* Define your CSS styles here */
+    }
+    /* Define other classes as needed */
   `;
   document.head.appendChild(styleElement);
+
+  i18next.on('languageChanged', () => {
+    title.textContent = i18next.t('exam_preparation');
+    msgLabel.textContent = i18next.t('icc_msg');
+    continueButton.textContent = i18next.t('continue');
+  });
 };
+
+i18next.on('languageChanged', () => {
+  const activeTab = document.querySelector('.tab-content.active');
+  if (activeTab && activeTab.id === 'ExamPreparation') {
+    ExamPreparation(activeTab);
+  }
+});

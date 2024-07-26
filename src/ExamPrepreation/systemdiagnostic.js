@@ -155,7 +155,7 @@ const runDiagnostics = async () => {
 
         let recordVideo = secureFeatures.find(entity => entity.name === 'Record Video');
         let recordAudio = secureFeatures.find(entity => entity.name === 'Record Audio');
-        let checkNetwork = secureFeatures.find(entity => entity.name === 'Verify Connection');
+        let checkNetwork = secureFeatures.find(entity => entity.name === 'Internet Speed');
         let trackLocation = secureFeatures.find(entity => entity.name === 'Track Location');
         let enableNotifications = secureFeatures.find(entity => entity.name === 'Enable Notifications');
         let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');

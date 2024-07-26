@@ -4,7 +4,7 @@
   "description": "This is an ai-empowered proctoring solution for online assessments.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --silent=false --verbose"
   },
   "keywords": [
     "mereos",
@@ -25,5 +25,13 @@
     "axios": "^1.7.2",
     "i18next": "^23.11.5",
     "twilio-video": "2.28.1"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.4.8",
+    "esbuild-jest": "^0.5.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
   }
 }

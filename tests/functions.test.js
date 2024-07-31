@@ -7,14 +7,24 @@ import {
   checkNotification, 
   dataURLtoFile, 
   detectMultipleScreens,
+  detectWindowResize,
+  disableCopyPasteCut,
+  findConfigs,
+  forceFullScreen,
+  getCPUInfo,
   getLocation,
   getMultipleCameraDevices,
   getNetworkUploadSpeed, 
+  getRAMInfo, 
   getTimeInSeconds, 
+  preventRightClick, 
+  preventShortCuts, 
   registerEvent, 
   shareScreenFromContent, 
   showNotification, 
   srcToData, 
+  stopPrinting, 
+  updatePersistData, 
   uploadFileInS3Folder, 
   userRekognitionInfo 
 } from '../src/utils/functions';
@@ -309,8 +319,6 @@ describe('acceptableTexts', () => {
     expect(acceptValues).toBe(false);
   });
 })
-
-
 
 describe('shareScreenFromContent', () => {
   const mockGetDisplayMedia = jest.fn();
@@ -720,5 +728,354 @@ describe('getMultipleCameraDevices', () => {
     } catch (error) {
       expect(error).toBe(mockError);
     }
+  });
+});
+
+describe('getCPUInfo', () => {
+  let originalHardwareConcurrency;
+
+  beforeAll(() => {
+    originalHardwareConcurrency = navigator.hardwareConcurrency;
+  });
+
+  beforeEach(() => {
+    Object.defineProperty(navigator, 'hardwareConcurrency', {
+      value: 8,
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'hardwareConcurrency', {
+      value: originalHardwareConcurrency,
+    });
+  });
+
+  it('should resolve with the number of logical processor cores', async () => {
+    const cpuInfo = await getCPUInfo();
+    expect(cpuInfo).toBe(8);
+  });
+});
+
+describe('getRAMInfo', () => {
+  let originalRAMConcurrency;
+
+  beforeAll(() => {
+    originalRAMConcurrency = navigator.deviceMemory;
+  });
+
+  beforeEach(() => {
+    Object.defineProperty(navigator, 'deviceMemory', {
+      value: 8,
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'deviceMemory', {
+      value: originalRAMConcurrency,
+    });
+  });
+
+  it('should resolve with the number of logical processor cores', async () => {
+    const cpuRAM = await getRAMInfo();
+    expect(cpuRAM).toBe(8);
+  });
+});
+
+describe('forceFullScreen', () => {
+  let originalRequestFullscreen;
+  let originalWebkitRequestFullscreen;
+  let originalMsRequestFullscreen;
+  let originalBody;
+  let eventListenerMock;
+
+  beforeEach(() => {
+    originalRequestFullscreen = document.documentElement.requestFullscreen;
+    originalWebkitRequestFullscreen = document.documentElement.webkitRequestFullscreen;
+    originalMsRequestFullscreen = document.documentElement.msRequestFullscreen;
+
+    document.documentElement.requestFullscreen = jest.fn();
+    document.documentElement.webkitRequestFullscreen = jest.fn();
+    document.documentElement.msRequestFullscreen = jest.fn();
+
+    originalBody = document.body;
+    document.body = document.createElement('body');
+
+    eventListenerMock = jest.fn();
+    document.addEventListener = jest.fn((event, callback) => {
+      if (event === 'fullscreenchange') {
+        eventListenerMock = callback;
+      }
+    });
+  });
+
+  afterEach(() => {
+    document.documentElement.requestFullscreen = originalRequestFullscreen;
+    document.documentElement.webkitRequestFullscreen = originalWebkitRequestFullscreen;
+    document.documentElement.msRequestFullscreen = originalMsRequestFullscreen;
+
+    document.body = originalBody;
+
+    const whiteBackgroundElement = document.body.querySelector('div');
+    if (whiteBackgroundElement) {
+      document.body.removeChild(whiteBackgroundElement);
+    }
+  });
+
+  it('should request fullscreen and add a white background element', () => {
+    forceFullScreen();
+
+    expect(document.documentElement.requestFullscreen).toHaveBeenCalled();
+    expect(document.documentElement.webkitRequestFullscreen).not.toHaveBeenCalled();
+    expect(document.documentElement.msRequestFullscreen).not.toHaveBeenCalled();
+
+    const whiteBackgroundElement = document.body.querySelector('div');
+    expect(whiteBackgroundElement).not.toBeNull();
+    expect(whiteBackgroundElement.style.backgroundColor).toBe('white');
+    expect(whiteBackgroundElement.style.top).toBe('0px');
+    expect(whiteBackgroundElement.style.left).toBe('0px');
+    expect(whiteBackgroundElement.style.width).toBe('100%');
+    expect(whiteBackgroundElement.style.height).toBe('100%');
+    expect(whiteBackgroundElement.style.overflow).toBe('auto');
+    expect(whiteBackgroundElement.style.zIndex).toBe('1000');
+  });
+
+  it('should remove the white background element when exiting fullscreen', () => {
+    forceFullScreen();
+
+    const whiteBackgroundElement = document.createElement('div');
+    document.body.appendChild(whiteBackgroundElement);
+
+    document.fullscreenElement = null;
+    eventListenerMock(); 
+
+    expect(document.body.querySelector('div')).not.toBeNull();
+  });
+});
+
+describe('preventShortCuts', () => {
+  let preventDefaultMock;
+  let stopPropagationMock;
+
+  beforeEach(() => {
+    preventDefaultMock = jest.fn();
+    stopPropagationMock = jest.fn();
+    
+    document.onkeydown = null;
+
+    globalThis.Event = jest.fn().mockImplementation((type, eventInit) => ({
+      type,
+      ...eventInit,
+      preventDefault: preventDefaultMock,
+      stopPropagation: stopPropagationMock,
+    }));
+  });
+
+  it('should prevent default and stop propagation for blocked keys', async () => {
+    await preventShortCuts();
+
+    const blockedKeys = [
+      27, 91, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 44, 173, 174, 145
+    ];
+
+    blockedKeys.forEach((keyCode) => {
+      const event = new Event('keydown', { keyCode });
+      document.onkeydown(event);
+
+      expect(preventDefaultMock).toHaveBeenCalled();
+      expect(stopPropagationMock).toHaveBeenCalled();
+    });
+  });
+
+  it('should allow function keys that are in the allowed list', async () => {
+    const allowedFunctionKeys = [113, 116];
+    await preventShortCuts(allowedFunctionKeys);
+
+    const allowedKeys = [113, 116];
+    const blockedKeys = [112, 114, 115, 117, 118, 119, 120, 121, 122, 123];
+
+    allowedKeys.forEach((keyCode) => {
+      const event = new Event('keydown', { keyCode });
+      document.onkeydown(event);
+
+      expect(preventDefaultMock).not.toHaveBeenCalled();
+      expect(stopPropagationMock).not.toHaveBeenCalled();
+    });
+
+    blockedKeys.forEach((keyCode) => {
+      const event = new Event('keydown', { keyCode });
+      document.onkeydown(event);
+
+      expect(preventDefaultMock).toHaveBeenCalled();
+      expect(stopPropagationMock).toHaveBeenCalled();
+    });
+  });
+
+  it('should handle Ctrl/Meta + alphabet keys', async () => {
+    await preventShortCuts();
+
+    const alphabetKeys = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    alphabetKeys.forEach((key) => {
+      const event = new Event('keydown', { key, ctrlKey: true });
+      document.onkeydown(event);
+
+      expect(preventDefaultMock).toHaveBeenCalled();
+      expect(stopPropagationMock).toHaveBeenCalled();
+    });
+
+    alphabetKeys.forEach((key) => {
+      const event = new Event('keydown', { key, metaKey: true });
+      document.onkeydown(event);
+
+      expect(preventDefaultMock).toHaveBeenCalled();
+      expect(stopPropagationMock).toHaveBeenCalled();
+    });
+  });
+
+  it('should handle Ctrl + Shift + alphabet keys', async () => {
+    await preventShortCuts();
+
+    const alphabetKeys = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    alphabetKeys.forEach((key) => {
+      const event = new Event('keydown', { key, ctrlKey: true, shiftKey: true });
+      document.onkeydown(event);
+
+      expect(preventDefaultMock).toHaveBeenCalled();
+      expect(stopPropagationMock).toHaveBeenCalled();
+    });
+  });
+});
+
+
+describe('updatePersistData', () => {
+  const localStorageMock = (() => {
+    let store = {};
+
+    return {
+      getItem: (key) => store[key] || null,
+      setItem: (key, value) => {
+        store[key] = value;
+      },
+      clear: () => {
+        store = {};
+      },
+      getStore: () => store,
+    };
+  })();
+
+  global.localStorage = localStorageMock;
+
+  beforeEach(() => {
+    localStorage.clear();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  it('should update the existing item in localStorage', () => {
+    const key = 'testKey';
+    const initialData = { foo: 'bar', baz: 'qux' };
+    const updates = { foo: 'updated', newProp: 'newValue' };
+
+    localStorage.setItem(key, JSON.stringify(initialData));
+
+    updatePersistData(key, updates);
+
+    const updatedData = JSON.parse(localStorage.getItem(key));
+
+    expect(updatedData).toEqual({
+      foo: 'updated',
+      baz: 'qux',
+      newProp: 'newValue'
+    });
+  });
+
+  it('should log a warning if the item does not exist in localStorage', () => {
+    const key = 'nonExistentKey';
+    const updates = { foo: 'bar' };
+
+    updatePersistData(key, updates);
+
+    expect(console.warn).toHaveBeenCalledWith(`No item found in localStorage with key "${key}"`);
+  });
+
+  it('should handle empty updates gracefully', () => {
+    const key = 'testKey';
+    const initialData = { foo: 'bar' };
+
+    localStorage.setItem(key, JSON.stringify(initialData));
+
+    updatePersistData(key, {});
+
+    const updatedData = JSON.parse(localStorage.getItem(key));
+
+    expect(updatedData).toEqual(initialData);
+  });
+});
+
+describe('findConfigs', () => {
+  it('should return entities that match the provided configs', () => {
+    const configs = ['config1', 'config3'];
+    const entities = [
+      { name: 'config1', data: 'data1' },
+      { name: 'config2', data: 'data2' },
+      { name: 'config3', data: 'data3' }
+    ];
+
+    const result = findConfigs(configs, entities);
+
+    expect(result).toEqual([
+      { name: 'config1', data: 'data1' },
+      { name: 'config3', data: 'data3' }
+    ]);
+  });
+
+  it('should return an empty array if no configs match any entities', () => {
+    const configs = ['configX', 'configY'];
+    const entities = [
+      { name: 'config1', data: 'data1' },
+      { name: 'config2', data: 'data2' }
+    ];
+
+    const result = findConfigs(configs, entities);
+
+    expect(result).toEqual([]);
+  });
+
+  it('should handle cases where some configs match and others do not', () => {
+    const configs = ['config1', 'configX'];
+    const entities = [
+      { name: 'config1', data: 'data1' },
+      { name: 'config2', data: 'data2' },
+      { name: 'config3', data: 'data3' }
+    ];
+
+    const result = findConfigs(configs, entities);
+
+    expect(result).toEqual([
+      { name: 'config1', data: 'data1' }
+    ]);
+  });
+
+  it('should return an empty array if entities is empty', () => {
+    const configs = ['config1', 'config2'];
+    const entities = [];
+
+    const result = findConfigs(configs, entities);
+
+    expect(result).toEqual([]);
+  });
+
+  it('should return an empty array if configs is empty', () => {
+    const configs = [];
+    const entities = [
+      { name: 'config1', data: 'data1' },
+      { name: 'config2', data: 'data2' }
+    ];
+
+    const result = findConfigs(configs, entities);
+
+    expect(result).toEqual([]);
   });
 });

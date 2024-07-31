@@ -1,16 +1,14 @@
-import axios from 'axios';
-import { BASE_URL } from '../utils/constant';
+import axiosInstance from '../utils/axios';
 
 export const getRoomSid = async (params) => {
 	const token = localStorage.getItem('token');
-	// let language = getPreferredLanguage();
 	const config = {
 		headers: {
 			token: `${token}`,
 		},
 		params
 	};
-	return axios.get(`${BASE_URL}/twilio/create_room/`, config);
+	return axiosInstance.get(`/twilio/create_room/`, config);
 };
 
 export const getToken = async (params) => {
@@ -21,7 +19,7 @@ export const getToken = async (params) => {
 		},
 		params
 	};
-	return axios.get(`${BASE_URL}/twilio/get-token/`, config);
+	return axiosInstance.get(`/twilio/get-token/`, config);
 };
 
 export const getRecordingSid = async (data) => {
@@ -31,5 +29,5 @@ export const getRecordingSid = async (data) => {
 			token: `${token}`,
 		}
 	};
-	return axios.post(`${BASE_URL}/twilio/get_SID/`, data, config);
+	return axiosInstance.post(`/twilio/get_SID/`, data, config);
 };

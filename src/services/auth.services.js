@@ -1,6 +1,5 @@
-import axios from 'axios';
-import { BASE_URL } from '../utils/constant';
+import axiosInstance from '../utils/axios';
 
 export const registerPublicCandidate = async (data) => {
-	return axios.post(`${BASE_URL}/auth/register/`, data);
+	return axiosInstance.post(`/auth/register/`, data);
 };

@@ -378,7 +378,6 @@ export const checkForMultipleMicrophones = async () => {
   }
 };
 
-
 export const updatePersistData = (key, updates) => {
 	let storedItemJSON = localStorage.getItem(key);
 
@@ -752,7 +751,6 @@ export const detectWindowResize = () => {
 		resolve(true);
 	});
 };
-
 
 export const createATab = (url) => {
 	return new Promise((resolve, _reject) => {

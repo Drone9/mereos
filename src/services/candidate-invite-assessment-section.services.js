@@ -1,10 +1,10 @@
 import axiosInstance from '../utils/axios.js';
-import { getAuthenticationToken } from '../utils/functions.js';
 
 export const getCandidateInviteAssessmentSection = async (params) => {
+	const token =  localStorage.getItem('token');
 	const config = {
 		headers: {
-			'm-preferred-language': language
+			token:token,
 		},
 		params: params
 	};
@@ -12,7 +12,7 @@ export const getCandidateInviteAssessmentSection = async (params) => {
 };
 
 export const changeCandidateInviteAssessmentSectionStatus = async (data) => {
-	const token = getAuthenticationToken();
+	const token =  localStorage.getItem('token');
 	const config = {
 		headers: {
 			token: token,

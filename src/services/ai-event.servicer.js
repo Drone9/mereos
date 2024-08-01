@@ -1,8 +1,7 @@
 import axios from '../utils/axios.js';
-import { getAuthenticationToken } from '../utils/functions.js';
 
 export const getAllAiEvents = async () => {
-	const token = getAuthenticationToken();
+	const token = localStorage.getItem('token');
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,
@@ -12,7 +11,7 @@ export const getAllAiEvents = async () => {
 };
 
 export const createAiEvent = async (data) => {
-	const token = getAuthenticationToken();
+	const token = localStorage.getItem('token');
 	const config = {
 		headers: {
 			token: token,
@@ -22,7 +21,7 @@ export const createAiEvent = async (data) => {
 };
 
 export const editAiEvent = async (data) => {
-	const token = getAuthenticationToken();
+	const token = localStorage.getItem('token');
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,
@@ -32,11 +31,10 @@ export const editAiEvent = async (data) => {
 };
 
 export const deleteEvent = async (id) => {
-	const token = getAuthenticationToken();
+	const token = localStorage.getItem('token');
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,
-			'm-preferred-language': language
 		},
 	};
 	return axios.delete(`/sessions/ai_event/?id=${id}`, config);

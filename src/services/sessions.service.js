@@ -1,6 +1,5 @@
 import axiosInstance from '../utils/axios';
 
-
 export const addSectionSession = async (data) => {
 	const token = localStorage.getItem('token');
 	const config = {

@@ -1,8 +1,7 @@
 import axios from '../utils/axios.js';
-import { getAuthenticationToken } from '../utils/functions.js';
 
 export const getAllEvents = async () => {
-	const token = getAuthenticationToken();
+	const token = localStorage.getItem('token');
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,
@@ -12,7 +11,7 @@ export const getAllEvents = async () => {
 };
 
 export const createEvent = async (data) => {
-	const token = getAuthenticationToken();
+	const token = localStorage.getItem('token');
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,
@@ -22,7 +21,7 @@ export const createEvent = async (data) => {
 };
 
 export const editEvent = async (data) => {
-	const token = getAuthenticationToken();
+	const token = localStorage.getItem('token');
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,
@@ -32,7 +31,7 @@ export const editEvent = async (data) => {
 };
 
 export const deleteEvent = async (id) => {
-	const token = getAuthenticationToken();
+	const token = localStorage.getItem('token');
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,

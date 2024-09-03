@@ -1,6 +1,6 @@
 <samp>
 
-![mereos](<img src="logo.svg" alt="drawing" height="500"/>)
+<img src="logo.svg" alt="drawing" height="500"/>
 
 </samp>
 

@@ -1,10 +1,6 @@
-<samp>
-
-![mereos](<img src="logo.svg" alt="drawing" height="500"/>)
-
-</samp>
-
 # `mereos`
+
+<img src="logo.svg" alt="mereos" height="500"/>
 
 Mereos is a JavaScript library for online proctoring.
 

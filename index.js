@@ -16,13 +16,14 @@ import { startRecording, stopAllRecordings } from './src/StartRecording/startRec
 import { registerPublicCandidate } from './src/services/auth.services';
 import { addSectionSessionRecord, convertDataIntoParse } from './src/utils/functions';
 import { changeCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
-import { initialSessionData } from './src/utils/constant';
+import { initialSessionData, preChecksSteps } from './src/utils/constant';
 
     async function init(host) {
         const resp = await registerPublicCandidate(host);
         localStorage.setItem('token', resp.data?.token);
         localStorage.setItem('candidateAssessment',JSON.stringify(resp.data?.user_data));
         localStorage.setItem('session',JSON.stringify(initialSessionData));
+        localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
         return resp.data;
     };
     

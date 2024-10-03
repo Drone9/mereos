@@ -3,10 +3,34 @@ import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
 import { convertDataIntoParse, findConfigs, getCandidateAssessment, getDateTime, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, submitSession, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
+import { openModal } from '../ExamPrepreation/examPrechecks';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
 let aiEvents = [];
+
+// export const checkScreenSharing = () => {
+//     const secureFeatures = getCandidateAssessment();
+//     const session = convertDataIntoParse('session');
+//     console.log('secureFeatures',secureFeatures);
+
+// 	const screenSharingTrack = newStream;
+// 	if (secureFeatures?.school?.entities.find(entity => entity.key === 'record_screen')) {
+// 		if (screenSharingTrack?.getTracks()?.length && session?.screenRecordingStream?.active) {
+// 			const screenTracks = screenSharingTrack?.getTracks()[0];
+// 			const handleTrackEnded = () => {
+//                 openModal();
+//                 stopAllRecordings();
+// 			};
+
+// 			screenTracks.addEventListener('ended', handleTrackEnded);
+// 		} else {
+//             openModal();
+//             stopAllRecordings();
+// 		}
+// 	}
+// };
+
 
 export const startRecording = async (token) => {
     console.log('startRecording');
@@ -18,6 +42,11 @@ export const startRecording = async (token) => {
     let screenRecordings = [];
     const secureFeatures = getCandidateAssessment();
     const session = convertDataIntoParse('session');
+
+    if(!newStream?.getTracks()?.length){
+        openModal();
+        return;
+    }
 
     if (secureFeatures?.school?.entities !== null) {
         await lockBrowserFromContent(secureFeatures?.school?.entities || []);
@@ -298,3 +327,5 @@ export const stopAllRecordings = async () => {
         console.error(e);
     }
 };
+
+// checkScreenSharing();

@@ -8,7 +8,7 @@ import { IdentityVerificationScreenFour } from './identityVerificationScreenFour
 import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
 import { ExamPreparation } from './examPreprationScreen';
 import { LanguageDropdown } from './languageDropdown';
-import { addSectionSessionRecord, convertDataIntoParse, getCandidateAssessment, registerEvent, updatePersistData } from '../utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, getCandidateAssessment, handlePreChecksRedirection, registerEvent, updatePersistData } from '../utils/functions';
 import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import germanyFlag from '../assets/images/flag-of-germany.svg';
@@ -79,10 +79,17 @@ window.addEventListener('click', function (event) {
     }
 });
 
+const navigate = (newTabId) => {
+    showTab(newTabId);
+};
+
 function openModal() {
     document.body.appendChild(modal);
     modal.style.display = 'block';
-    showTab('ExamPreparation');
+    const activeTab = handlePreChecksRedirection();
+    console.log('activeTab',activeTab);
+
+    showTab(activeTab);
     const session = convertDataIntoParse('session');
 
     console.log('session', session);
@@ -131,15 +138,13 @@ const showTab = async (tabId) => {
         }
     });
 
-    const navigate = (newTabId) => {
-        showTab(newTabId);
-    };
-
     const candidateAssessment = getCandidateAssessment();
     const secureFeatures = candidateAssessment?.school?.entities || [];
-    
+    console.log('secureFeatures',secureFeatures);
+
     const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications'];
 
+    console.log('tabId',tabId);
     if (tabId === 'ExamPreparation') {
         if (!secureFeatures?.find(entity => entity.name === "Examination Window")) {
             navigate('runSystemDiagnostics');
@@ -165,20 +170,20 @@ const showTab = async (tabId) => {
         }
         await IdentityVerificationScreenTwo(tabContent4);
     } else if (tabId === 'IdentityVerificationScreenThree') {
-        if (!secureFeatures?.find(entity => entity.name === 'Record Audio')) {
+        if (!secureFeatures?.find(entity => entity.name === 'record_audio')) {
             navigate('IdentityVerificationScreenFour');
             return;
         }
         await IdentityVerificationScreenThree(tabContent5);
     } else if (tabId === 'IdentityVerificationScreenFour') {
-        if (!secureFeatures?.find(entity => entity.name === 'Record Room')) {
-            navigate('IdentityVerificationScreenSix');
+        if (!secureFeatures?.find(entity => entity.key === 'record_room')) {
+            navigate('IdentityVerificationScreenFive');
             return;
         }
         await IdentityVerificationScreenFour(tabContent6);
     } else if (tabId === 'IdentityVerificationScreenFive') {
-        if (!secureFeatures?.find(entity => entity.name === 'Record Screen')) {
-            navigate('IdentityVerificationScreenFive');
+        if (!secureFeatures?.find(entity => entity.key === 'record_screen')) {
+            closeModal();
             return;
         }
         await IdentityVerificationScreenFive(tabContent7);

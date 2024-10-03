@@ -240,6 +240,7 @@ const runDiagnostics = async () => {
         if (allStatuses) {
             continueBtn.addEventListener('click', () => {
                 registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
+                updatePersistData('preChecksSteps',{ diagnosticStep:true });
                 showTab('IdentityVerificationScreenOne');
             });
         }

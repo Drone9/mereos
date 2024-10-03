@@ -60,6 +60,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
     };
 
     const nextStep = () => {
+        updatePersistData('preChecksSteps',{ screenSharing:true });
         registerEvent({ eventType: 'success', notify: false, eventName: 'screen_recording_window_shared', eventValue: getDateTime() });
         closeModal();
     };
@@ -115,7 +116,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
     let doneButton; // Declare doneButton outside the conditional block
 
     if (mode === 'startScreenRecording') {
-        doneButton = document.createElement('button'); // Initialize doneButton
+        doneButton = document.createElement('button'); 
         doneButton.className = 'orange-filled-btn';
         doneButton.textContent = i18next.t('done');
         doneButton.disabled = multipleScreens;

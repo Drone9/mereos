@@ -27,6 +27,7 @@ const getDateTime = () => new Date().toISOString();
 const nextPage = () => {
   registerEvent({ eventType: 'success', notify: false, eventName: 'terms_and_conditions_read', eventValue: getDateTime() });
   showTab('runSystemDiagnostics');
+  updatePersistData('preChecksSteps',{ examPreparation:true });
 };
 
 export const ExamPreparation = async (tabContent) => {

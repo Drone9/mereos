@@ -6,6 +6,7 @@ import { createAiEvent } from '../services/ai-event.servicer';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import i18next from 'i18next';
 import { createEvent } from '../services/event.service';
+import { closeModal } from '../ExamPrepreation/examPrechecks';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -808,3 +809,37 @@ const handleDefaultEvent = e => {
 	e.preventDefault();
 	e.stopPropagation();
 };
+
+export const handlePreChecksRedirection = () => {
+	const preChecksSteps = convertDataIntoParse('preChecksSteps');
+	console.log('preChecksSteps',preChecksSteps);
+
+	if (!preChecksSteps?.examPreparation) {
+		return 'ExamPreparation';
+	} else if(!preChecksSteps?.diagnosticStep){
+		return 'runSystemDiagnostics';
+	}
+	// else if(!preChecksSteps?.preValidation){
+	// 	return PREVALIDATION_INSTRUCTIONS;
+	// }
+	else if(!preChecksSteps?.userPhoto){
+		return 'IdentityVerificationScreenOne';
+	}else if(!preChecksSteps?.identityCardPhoto){
+		return 'IdentityVerificationScreenTwo';
+	}else if(!preChecksSteps?.audioDetection){
+		return 'IdentityVerificationScreenThree';
+	}else if(!preChecksSteps?.roomScanningVideo){
+		return 'IdentityVerificationScreenFour';
+	}else if(!preChecksSteps?.mobileConnection){
+		return IDENTITY_VERIFICATION_SCREEN_SIX;
+	}else if(!preChecksSteps?.screenSharing){
+		return 'IdentityVerificationScreenFive';
+	}
+	// else if(!preChecksSteps?.examIndication){
+	// 	return EXAM_INDICATIONS;
+	// }
+	else{
+		return closeModal();
+	}
+};
+

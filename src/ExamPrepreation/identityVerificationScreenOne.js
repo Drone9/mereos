@@ -125,8 +125,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
   };
 
   const nextStep = () => {
-    showTab('IdentityVerificationScreenTwo');
     registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
+    updatePersistData('preChecksSteps',{ userPhoto:true });
+    showTab('IdentityVerificationScreenTwo');
   };
 
   const uploadUserCapturedPhoto = async () => {

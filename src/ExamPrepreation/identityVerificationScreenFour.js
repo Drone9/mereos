@@ -91,6 +91,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
     };
 
     const nextStep = async () => {
+        updatePersistData('preChecksSteps',{ roomScanningVideo:true });
         registerEvent({ eventType: 'success', notify: false, eventName: 'room_scan_completed', eventValue: getDateTime() });
         showTab('IdentityVerificationScreenFive');
     };

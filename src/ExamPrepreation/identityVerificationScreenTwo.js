@@ -151,6 +151,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
     };
 
     const nextStep = async () => {
+        updatePersistData('preChecksSteps',{ identityCardPhoto:true });
 		registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_verified_successfully', eventValue: getDateTime()});
         showTab('IdentityVerificationScreenThree');
     };

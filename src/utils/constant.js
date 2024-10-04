@@ -27,3 +27,17 @@ export const initialSessionData = {
 		archive_id:null,
 		attempt_id:null
 };
+
+export const preChecksSteps = {
+	examPreparation:false,
+	diagnosticStep:false,
+	preValidation:false,
+	userPhoto:false,
+	identityCardPhoto:false,
+	audioDetection:false,
+	roomScanningVideo:false,
+	screenSharing:false,
+	examIndication:false,
+	examPrechecks:false,
+	mobileConnection:false,
+};

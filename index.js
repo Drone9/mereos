@@ -17,14 +17,25 @@ import { registerPublicCandidate } from './src/services/auth.services';
 import { addSectionSessionRecord, convertDataIntoParse } from './src/utils/functions';
 import { changeCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
+import { getProfile } from './src/services/profile.services';
 
-    async function init(host) {
-        const resp = await registerPublicCandidate(host);
-        localStorage.setItem('token', resp.data?.token);
-        localStorage.setItem('candidateAssessment',JSON.stringify(resp.data?.user_data));
-        localStorage.setItem('session',JSON.stringify(initialSessionData));
-        localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
-        return resp.data;
+    async function init(host,profileId) {
+        try{
+            const resp = await registerPublicCandidate(host);
+            if(resp?.data){
+                localStorage.setItem('token', resp.data?.token);
+                localStorage.setItem('candidateAssessment',JSON.stringify(resp.data?.user_data));
+                localStorage.setItem('session',JSON.stringify(initialSessionData));
+                localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
+            
+                const profileResp = await getProfile({id:profileId})
+                localStorage.setItem('secureFeatures',JSON.stringify(profileResp?.data));
+                console.log('profileResp',profileResp);
+                return resp.data;
+            }
+        }catch(e){
+            console.error('error',e);
+        }
     };
     
     async function start_prechecks(profile) {
@@ -42,7 +53,6 @@ import { initialSessionData, preChecksSteps } from './src/utils/constant';
             console.error(err);
             // throw err;
         }
-        
     };
     
     async function start_recording() {
@@ -51,17 +61,12 @@ import { initialSessionData, preChecksSteps } from './src/utils/constant';
             const newRoomSessionId = newDate.getTime();
             let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
             let twilioToken = await getToken({ room_sid: resp.data.room_sid });
-            console.log('twilioToken',twilioToken?.data?.token);
             if(twilioToken){
                 startRecording(twilioToken?.data?.token);
             };
-            // const resp = await axios.get('https://corder-api.mereos.eu/twilio/get_token');
-            // return resp;
         }catch(err){
             console.log('error',err);
-            // throw err;
-        }
-       
+        }       
     };
     
     async function stop_recording(session) {
@@ -70,8 +75,6 @@ import { initialSessionData, preChecksSteps } from './src/utils/constant';
             if(stop_recordingResp){
                 return 'Recording Stops'
             }
-            //     const resp = await axios.get('https://corder-api.mereos.eu/twilio/stop_recording');
-            //     return resp;
         }catch(err){
             console.error(err);
         }

@@ -1,4 +1,4 @@
-import { getDateTime, registerEvent } from '../utils/functions';
+import { getDateTime, getSecureFeatures, registerEvent } from '../utils/functions';
 import { showTab } from './examPrechecks';
 import '../assets/css/step3.css';
 import i18next from 'i18next';
@@ -78,6 +78,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
         const timer = setInterval(() => {
             try {
                 counter += 1;
+                const getSecureFeature = getSecureFeatures();
+                const profileSettings = getSecureFeature?.settings || [];
 
                 const bufferLength = analyserNode.frequencyBinCount;
                 const frequencyData = new Uint8Array(bufferLength);
@@ -89,7 +91,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
                 }
                 const rms = Math.sqrt(sumSquares / bufferLength);
                 console.log('rms____', rms);
-                const requiredLevel = 0.15;
+                const requiredLevel = profileSettings?.audio_level || 0.15;
                 if (rms > requiredLevel) {
                     clearInterval(timer);
                     disabledBtn = false;

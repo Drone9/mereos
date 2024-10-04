@@ -4,10 +4,10 @@ import {
     checkMicrophone, 
     checkNotification, 
     detectMultipleScreens, 
-    getCandidateAssessment, 
     getLocation, 
     getMultipleCameraDevices, 
     getNetworkUploadSpeed, 
+    getSecureFeatures, 
     registerEvent, 
     updatePersistData 
 } from '../utils/functions';
@@ -149,8 +149,9 @@ const runDiagnostics = async () => {
     };
 
     try {
-        const candidateAssessment = await getCandidateAssessment();
-        const secureFeatures = candidateAssessment?.school?.entities || [];
+        const candidateAssessment = await getSecureFeatures();
+        const secureFeatures = candidateAssessment?.entities || [];
+        const profileSettings = candidateAssessment?.settings;
         console.log('secureFeatures', secureFeatures);
 
         let recordVideo = secureFeatures.find(entity => entity.name === 'Record Video');
@@ -184,7 +185,7 @@ const runDiagnostics = async () => {
 
         if (checkNetwork) {
             promises.push(getNetworkUploadSpeed().then(network => {
-                const isNetworkGood = network.speedMbps > 0.168;
+                const isNetworkGood = network.speedMbps > profileSettings?.upload_speed || 0.168;
                 setElementStatus('network', { success: networkGreen, failure: networkRed }, isNetworkGood);
                 handleDiagnosticItemClick('network', getNetworkUploadSpeed);
                 return isNetworkGood;

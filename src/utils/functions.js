@@ -336,8 +336,8 @@ export const findConfigs = (configs, entities) => {
 	return result;
 };
 
-export const getCandidateAssessment = () => {
-	const secureFeatures = JSON.parse(localStorage.getItem('candidateAssessment'))
+export const getSecureFeatures = () => {
+	const secureFeatures = JSON.parse(localStorage.getItem('secureFeatures'))
 	return secureFeatures;
 }
 
@@ -830,9 +830,11 @@ export const handlePreChecksRedirection = () => {
 		return 'IdentityVerificationScreenThree';
 	}else if(!preChecksSteps?.roomScanningVideo){
 		return 'IdentityVerificationScreenFour';
-	}else if(!preChecksSteps?.mobileConnection){
-		return IDENTITY_VERIFICATION_SCREEN_SIX;
-	}else if(!preChecksSteps?.screenSharing){
+	}
+	// else if(!preChecksSteps?.mobileConnection){
+	// 	return IDENTITY_VERIFICATION_SCREEN_SIX;
+	// }
+	else if(!preChecksSteps?.screenSharing){
 		return 'IdentityVerificationScreenFive';
 	}
 	// else if(!preChecksSteps?.examIndication){

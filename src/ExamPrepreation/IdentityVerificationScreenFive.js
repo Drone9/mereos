@@ -1,4 +1,4 @@
-import { detectMultipleScreens, getCandidateAssessment, getDateTime, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
+import { detectMultipleScreens, getDateTime, getSecureFeatures, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
 import mockImage from '../assets/images/screen-recorder-mock.svg';
 import '../assets/css/step5.css';
 import { closeModal, showTab } from './examPrechecks';
@@ -149,8 +149,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
     tabContent.appendChild(container);
 
     shareScreen();
-    const candidateAssessment = getCandidateAssessment();
-    const secureFeatures = candidateAssessment?.school?.entities || [];
+    const candidateAssessment = getSecureFeatures();
+    const secureFeatures = candidateAssessment?.entities || [];
     console.log('secureFeatures', secureFeatures);
     
     let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');

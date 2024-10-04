@@ -8,7 +8,7 @@ import { IdentityVerificationScreenFour } from './identityVerificationScreenFour
 import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
 import { ExamPreparation } from './examPreprationScreen';
 import { LanguageDropdown } from './languageDropdown';
-import { addSectionSessionRecord, convertDataIntoParse, getCandidateAssessment, handlePreChecksRedirection, registerEvent, updatePersistData } from '../utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData } from '../utils/functions';
 import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import germanyFlag from '../assets/images/flag-of-germany.svg';
@@ -138,11 +138,11 @@ const showTab = async (tabId) => {
         }
     });
 
-    const candidateAssessment = getCandidateAssessment();
-    const secureFeatures = candidateAssessment?.school?.entities || [];
+    const getSecureFeature = getSecureFeatures();
+    const secureFeatures = getSecureFeature?.entities || [];
     console.log('secureFeatures',secureFeatures);
 
-    const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications'];
+    const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications','Upload Speed'];
 
     console.log('tabId',tabId);
     if (tabId === 'ExamPreparation') {

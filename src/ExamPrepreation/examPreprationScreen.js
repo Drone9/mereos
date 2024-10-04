@@ -8,7 +8,7 @@ import vector1 from '../assets/images/vector-1.png';
 import vector2 from '../assets/images/vector-2.png';
 import vector3 from '../assets/images/vector-3.png';
 import { showTab } from './examPrechecks';
-import { registerEvent } from '../utils/functions';
+import { registerEvent, updatePersistData } from '../utils/functions';
 import i18next from 'i18next';
 
 const vectors = [

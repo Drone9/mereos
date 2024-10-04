@@ -1,6 +1,6 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
-import { convertDataIntoParse, findConfigs, getCandidateAssessment, getDateTime, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, submitSession, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, submitSession, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import { openModal } from '../ExamPrepreation/examPrechecks';
@@ -10,12 +10,12 @@ let aiProcessingInterval = null;
 let aiEvents = [];
 
 // export const checkScreenSharing = () => {
-//     const secureFeatures = getCandidateAssessment();
+//     const secureFeatures = getSecureFeatures();
 //     const session = convertDataIntoParse('session');
 //     console.log('secureFeatures',secureFeatures);
 
 // 	const screenSharingTrack = newStream;
-// 	if (secureFeatures?.school?.entities.find(entity => entity.key === 'record_screen')) {
+// 	if (secureFeatures?.entities.find(entity => entity.key === 'record_screen')) {
 // 		if (screenSharingTrack?.getTracks()?.length && session?.screenRecordingStream?.active) {
 // 			const screenTracks = screenSharingTrack?.getTracks()[0];
 // 			const handleTrackEnded = () => {
@@ -40,7 +40,7 @@ export const startRecording = async (token) => {
     let cameraRecordings = [];
     let audioRecordings = [];
     let screenRecordings = [];
-    const secureFeatures = getCandidateAssessment();
+    const secureFeatures = getSecureFeatures();
     const session = convertDataIntoParse('session');
 
     if(!newStream?.getTracks()?.length){
@@ -48,17 +48,17 @@ export const startRecording = async (token) => {
         return;
     }
 
-    if (secureFeatures?.school?.entities !== null) {
-        await lockBrowserFromContent(secureFeatures?.school?.entities || []);
+    if (secureFeatures?.entities !== null) {
+        await lockBrowserFromContent(secureFeatures?.entities || []);
 
         let twilioOptions = {
-            audio: findConfigs(['Record Audio'], secureFeatures?.school?.entities).length ?
+            audio: findConfigs(['Record Audio'], secureFeatures?.entities).length ?
                 (localStorage.getItem('microphoneID') !== null ? {
                     deviceId: { exact: localStorage.getItem('microphoneID') },
                 } : true)
                 :
                 false,
-            video: findConfigs(['Record Video'], secureFeatures?.school?.entities).length ?
+            video: findConfigs(['Record Video'], secureFeatures?.entities).length ?
                 (localStorage.getItem('deviceId') !== null ? {
                     deviceId: { exact: localStorage.getItem('deviceId') },
                 } : true)
@@ -86,7 +86,7 @@ export const startRecording = async (token) => {
                 deviceId: { exact: localStorage.getItem('microphoneID') },
             } : true) });
 
-            if (secureFeatures?.school?.entities.find(entity => entity.key === 'record_video')) {
+            if (secureFeatures?.entities.find(entity => entity.key === 'record_video')) {
                 startAIWebcam(mediaStream);
             }
 
@@ -104,7 +104,7 @@ export const startRecording = async (token) => {
             ];
 
             updatePersistData('session', { user_video_name: cameraRecordings, user_audio_name: audioRecordings, room_id: room?.sid });
-            if (session?.screenRecordingStream && findConfigs(['Record Screen'], secureFeatures?.school?.entities).length) {
+            if (session?.screenRecordingStream && findConfigs(['Record Screen'], secureFeatures?.entities).length) {
                 screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
                 let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
                 screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];

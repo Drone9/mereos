@@ -6,8 +6,7 @@
   "scripts": {
     "test": "jest --silent=false --verbose",
     "lint": "eslint ./**/*.js",
-    "lint:fix": "eslint --fix ./**/*.js",
-    "build": "webpack"
+    "lint:fix": "eslint --fix ./**/*.js"
   },
   "keywords": [
     "mereos",

@@ -124,11 +124,6 @@ const showTab = async (tabId) => {
 	const tabs = document.querySelectorAll('.tab');
 	const tabContents = document.querySelectorAll('.tab-content');
 
-	if (!tabs.length || !tabContents.length) {
-		console.error('Tabs or TabContents are not found');
-		return;
-	}
-	
 	tabs.forEach(tab => {
 		tab.classList.remove('active');
 		if (tab.dataset.tab === tabId) {

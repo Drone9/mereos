@@ -12,7 +12,7 @@ export const getRoomSid = async (params) => {
 };
 
 export const getToken = async (params) => {
-  const token = localStorage.getItem('token');
+	const token = localStorage.getItem('token');
 	const config = {
 		headers: {
 			token: `${token}`,

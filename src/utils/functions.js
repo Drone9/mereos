@@ -3,7 +3,7 @@ import { ASSET_URL, BASE_URL } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
-import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+// import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import i18next from 'i18next';
 import { createEvent } from '../services/event.service';
 import { closeModal } from '../ExamPrepreation/examPrechecks';
@@ -207,23 +207,23 @@ export const testUploadSpeed = async (text) => {
 	return axios.post(`https://dashboard-api.mereos-datasafe.com/general/test-upload-speed`, { 'test': text });
 };
 
-export const registerEvent = ({ eventType, eventName, eventValue }) => {
+export const registerEvent = ({ eventName }) => {
 	try{
-			const session = convertDataIntoParse('session');
-			console.log('session',session);
+		const session = convertDataIntoParse('session');
+		console.log('session',session);
 
-			const event = {
-					name: eventName,
-					value: eventName,
-					session_id: session?.id,
-					start_at: session.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session.sessionStartTime) / 1000) : 0
-			};
+		const event = {
+			name: eventName,
+			value: eventName,
+			session_id: session?.id,
+			start_at: session.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session.sessionStartTime) / 1000) : 0
+		};
 			
-			return createEvent(event);
+		return createEvent(event);
 	}catch(error){
-			console.log(error);
+		console.log(error);
 	}
-}
+};
 
 export const getAuthenticationToken = () => {
 	return localStorage.getItem('token');
@@ -337,67 +337,67 @@ export const findConfigs = (configs, entities) => {
 };
 
 export const getSecureFeatures = () => {
-	const secureFeatures = JSON.parse(localStorage.getItem('secureFeatures'))
+	const secureFeatures = JSON.parse(localStorage.getItem('secureFeatures'));
 	return secureFeatures;
-}
+};
 
 export const checkForMultipleMicrophones = async () => {
-  try {
-    console.log('Starting checkForMultipleMicrophones');
+	try {
+		console.log('Starting checkForMultipleMicrophones');
 
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-    console.log('getUserMedia succeeded');
+		await navigator.mediaDevices.getUserMedia({ audio: true });
+		console.log('getUserMedia succeeded');
 
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    console.log('Devices found:', devices);
+		const devices = await navigator.mediaDevices.enumerateDevices();
+		console.log('Devices found:', devices);
 
-    const microphones = devices.filter(device => device.kind === 'audioinput');
-    console.log('Microphones found:', microphones);
+		const microphones = devices.filter(device => device.kind === 'audioinput');
+		console.log('Microphones found:', microphones);
 
-    const defaultMicrophone = microphones.find(device => device.deviceId === 'default');
-    console.log('Default Microphone found:', defaultMicrophone);
+		const defaultMicrophone = microphones.find(device => device.deviceId === 'default');
+		console.log('Default Microphone found:', defaultMicrophone);
 
-    if (defaultMicrophone) {
-      console.log('Returning default microphone');
-      return [defaultMicrophone];
-    }
+		if (defaultMicrophone) {
+			console.log('Returning default microphone');
+			return [defaultMicrophone];
+		}
 
-    if (microphones.length > 0) {
-      console.log('Returning first microphone');
-      return [microphones[0]];
-    }
+		if (microphones.length > 0) {
+			console.log('Returning first microphone');
+			return [microphones[0]];
+		}
 
-    console.log('No microphones found');
-    return [];
-  } catch (err) {
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      console.error('Permission denied:', err);
-    } else {
-      console.error('Error:', err);
-    }
-    return [];
-  }
+		console.log('No microphones found');
+		return [];
+	} catch (err) {
+		if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+			console.error('Permission denied:', err);
+		} else {
+			console.error('Error:', err);
+		}
+		return [];
+	}
 };
 
 export const updatePersistData = (key, updates) => {
 	let storedItemJSON = localStorage.getItem(key);
 
 	if (storedItemJSON) {
-			let storedItem = JSON.parse(storedItemJSON);
+		let storedItem = JSON.parse(storedItemJSON);
 
-			for (let prop in updates) {
-					if (updates.hasOwnProperty(prop)) {
-							storedItem[prop] = updates[prop];
-					}
+		for (let prop in updates) {
+			if (updates.hasOwnProperty(prop)) {
+				storedItem[prop] = updates[prop];
 			}
+		}
 
-			let updatedItemJSON = JSON.stringify(storedItem);
+		let updatedItemJSON = JSON.stringify(storedItem);
 
-			localStorage.setItem(key, updatedItemJSON);
+		localStorage.setItem(key, updatedItemJSON);
 	} else {
-			console.warn(`No item found in localStorage with key "${key}"`);
+		console.warn(`No item found in localStorage with key "${key}"`);
 	}
-}
+};
 
 export const addSectionSessionRecord = (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {

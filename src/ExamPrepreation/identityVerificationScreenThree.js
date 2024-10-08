@@ -40,7 +40,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 					analyserNode.getByteFrequencyData(frequencyData);
 
 					canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-					canvasCtx.fillStyle = schoolInfo.theme.color || '#FF961B';
+					canvasCtx.fillStyle = schoolInfo?.theme?.color || '#FF961B';
 					const barWidth = (canvas.width / bufferLength) * 8.5;
 					let barHeight;
 					let x = 0;
@@ -79,7 +79,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			try {
 				counter += 1;
 				const getSecureFeature = getSecureFeatures();
-				const profileSettings = getSecureFeature.settings || [];
+				const profileSettings = getSecureFeature?.settings || [];
 
 				const bufferLength = analyserNode.frequencyBinCount;
 				const frequencyData = new Uint8Array(bufferLength);
@@ -91,7 +91,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				}
 				const rms = Math.sqrt(sumSquares / bufferLength);
 				console.log('rms____', rms);
-				const requiredLevel = profileSettings.audio_level || 0.15;
+				const requiredLevel = profileSettings?.audio_level || 0.15;
 				if (rms > requiredLevel) {
 					clearInterval(timer);
 					disabledBtn = false;

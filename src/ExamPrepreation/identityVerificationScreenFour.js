@@ -114,7 +114,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				folderName: 'videos'
 			});
 
-			if (url.data.file_url) {
+			if (url?.data?.file_url) {
 				const fileUrl = url.data.file_url;
 				updatePersistData('session', { room_scan_video: fileUrl });
 				console.log('Room scan recording uploaded:', fileUrl);
@@ -131,7 +131,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	const updateUI = () => {
-		let container = tabContent.querySelector('.ivsf-container');
+		let container = tabContent?.querySelector('.ivsf-container');
 		if (!container) {
 			container = document.createElement('div');
 			container.className = 'ivsf-container';

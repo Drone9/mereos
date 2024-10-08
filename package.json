@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --silent=false --verbose",
-    "lint": "eslint ./**/*.jsx ./**/*.js",
+    "lint": "eslint ./**/*.js",
     "lint:fix": "eslint --fix ./**/*.js",
     "build": "webpack"
   },
@@ -23,19 +23,20 @@
     "url": "https://github.com/Drone9/mereos.git"
   },
   "dependencies": {
-    "@babel/preset-env": "^7.25.7",
     "@tensorflow-models/coco-ssd": "2.2.3",
     "@tensorflow/tfjs": "4.20.0",
     "axios": "^1.7.2",
     "babel-eslint": "^10.1.0",
+    "css-loader": "^6.7.1",
     "eslint": "5.16.0",
     "i18next": "^23.11.5",
-    "mini-css-extract-plugin": "^2.9.1",
+    "mini-css-extract-plugin": "1",
+    "terser-webpack-plugin": "^5.3.10",
     "twilio-video": "2.28.1",
-    "webpack-cli": "^5.1.4"
+    "eslint-loader": "^4.0.2",
+    "eslint-plugin-import": "2.14.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.12.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.4.8",
     "esbuild-jest": "^0.5.0",
@@ -47,6 +48,15 @@
     "identity-obj-proxy": "^3.0.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
-    "style-loader": "2.0.0"
+    "style-loader": "2.0.0",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^4.10.0",
+    "babel-loader": "^8.1.0",
+    "html-webpack-plugin": "^3.2.0",
+    "webpack-dev-server": "^4.8.1",
+    "@babel/plugin-transform-runtime": "^7.10.4",
+    "@babel/core": "^7.25.7",
+    "@babel/plugin-proposal-optional-chaining": "^7.21.0",
+    "@babel/preset-env": "^7.25.7"
   }
 }

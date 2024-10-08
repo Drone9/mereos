@@ -150,7 +150,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	shareScreen();
 	const candidateAssessment = getSecureFeatures();
-	const secureFeatures = (candidateAssessment && candidateAssessment.entities) || [];
+	const secureFeatures = candidateAssessment?.entities || [];
 	console.log('secureFeatures', secureFeatures);
     
 	let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');

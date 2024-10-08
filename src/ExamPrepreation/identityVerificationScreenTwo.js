@@ -118,8 +118,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				const userImageData = resp.data;
 				console.log('userImageData',userImageData);
 				if (userImageData) {
-					console.log('acceptableLabels',acceptableLabels(userImageData.label, 80));
-					if (acceptableLabels(userImageData.label, 80) && acceptableText(userImageData.text, 59) && userImageData.face.FaceDetails.length > 0) {
+					console.log('acceptableLabels',acceptableLabels(userImageData?.label, 80));
+					if (acceptableLabels(userImageData?.label, 80) && acceptableText(userImageData?.text, 59) && userImageData?.face?.FaceDetails.length > 0) {
 						currentState = {
 							...currentState,
 							captureMode: 'retake',
@@ -172,7 +172,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				file: dataURIToBlob(currentState.imageSrc)
 			});
 
-			if (resp.data.file_url) {
+			if (resp?.data?.file_url) {
 				updatePersistData('session',{ identityCard: resp.data.file_url });
 				currentState = {
 					...currentState,

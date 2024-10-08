@@ -80,10 +80,10 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			const imageUrl = await dataURLtoFile(state.imageSrc);
 			data.append('image', imageUrl);
 			const resp = await userRekognitionInfo(data);
-			const predictions = resp.data && resp.data.face && resp.data.face.FaceDetails;
+			const predictions = resp?.data?.face?.FaceDetails;
 
 			img.onload = async function () {
-				if (predictions.length && predictions.length === 1) {
+				if (predictions?.length && predictions?.length === 1) {
 					state = {
 						...state,
 						imageSrc: state.imageSrc,
@@ -93,7 +93,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 						},
 					};
 					registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
-				} else if (predictions.length > 1) {
+				} else if (predictions?.length > 1) {
 					state = {
 						...state,
 						imageSrc: null,
@@ -143,7 +143,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				folderName: 'candidate_images',
 				file: dataURIToBlob(state.imageSrc),
 			});
-			if (resp.data && resp.data.file_url) {
+			if (resp?.data?.file_url) {
 				updatePersistData('session', { candidatePhoto: resp.data.file_url });
 				state = {
 					...state,

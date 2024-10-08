@@ -124,6 +124,11 @@ const showTab = async (tabId) => {
 	const tabs = document.querySelectorAll('.tab');
 	const tabContents = document.querySelectorAll('.tab-content');
 
+	if (!tabs.length || !tabContents.length) {
+		console.error('Tabs or TabContents are not found');
+		return;
+	}
+	
 	tabs.forEach(tab => {
 		tab.classList.remove('active');
 		if (tab.dataset.tab === tabId) {
@@ -139,50 +144,50 @@ const showTab = async (tabId) => {
 	});
 
 	const getSecureFeature = getSecureFeatures();
-	const secureFeatures = (getSecureFeature && getSecureFeature.entities) || [];
+	const secureFeatures = getSecureFeature?.entities || [];
 	console.log('secureFeatures',secureFeatures);
 
 	const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications','Upload Speed'];
 
 	console.log('tabId',tabId);
 	if (tabId === 'ExamPreparation') {
-		if (!secureFeatures.find(entity => entity.name === 'Examination Window')) {
+		if (!secureFeatures?.find(entity => entity.name === 'Examination Window')) {
 			navigate('runSystemDiagnostics');
 			return;
 		}
 		await ExamPreparation(tabContent1);
 	} else if (tabId === 'runSystemDiagnostics') {
-		if (!secureFeatures.filter(entity => systemDiagnosticSteps.includes(entity.name)).length) {
+		if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length) {
 			navigate('IdentityVerificationScreenOne');
 			return;
 		}
 		runSystemDiagnostics();
 	} else if (tabId === 'IdentityVerificationScreenOne') {
-		if (!secureFeatures.find(entity => entity.name === 'Verify Candidate')) {
+		if (!secureFeatures?.find(entity => entity.name === 'Verify Candidate')) {
 			navigate('IdentityVerificationScreenTwo');
 			return;
 		}
 		await IdentityVerificationScreenOne(tabContent3);
 	} else if (tabId === 'IdentityVerificationScreenTwo') {
-		if (!secureFeatures.find(entity => entity.key === 'identity_card_requirement')) {
+		if (!secureFeatures?.find(entity => entity.key === 'identity_card_requirement')) {
 			navigate('IdentityVerificationScreenThree');
 			return;
 		}
 		await IdentityVerificationScreenTwo(tabContent4);
 	} else if (tabId === 'IdentityVerificationScreenThree') {
-		if (!secureFeatures.find(entity => entity.name === 'record_audio')) {
+		if (!secureFeatures?.find(entity => entity.name === 'record_audio')) {
 			navigate('IdentityVerificationScreenFour');
 			return;
 		}
 		await IdentityVerificationScreenThree(tabContent5);
 	} else if (tabId === 'IdentityVerificationScreenFour') {
-		if (!secureFeatures.find(entity => entity.key === 'record_room')) {
+		if (!secureFeatures?.find(entity => entity.key === 'record_room')) {
 			navigate('IdentityVerificationScreenFive');
 			return;
 		}
 		await IdentityVerificationScreenFour(tabContent6);
 	} else if (tabId === 'IdentityVerificationScreenFive') {
-		if (!secureFeatures.find(entity => entity.key === 'record_screen')) {
+		if (!secureFeatures?.find(entity => entity.key === 'record_screen')) {
 			closeModal();
 			return;
 		}
@@ -196,8 +201,8 @@ const startSession = async (session) => {
 
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
-		if (resp && resp.data) {
-			updatePersistData('session', { sessionId: resp.data.session_id, id: resp.data.id });
+		if (resp?.data) {
+			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
 			registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
 		}
 		// const candidateAssessmentResp = await changeCandidateAssessmentStatus({ id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Attending' });

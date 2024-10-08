@@ -150,8 +150,8 @@ const runDiagnostics = async () => {
 
 	try {
 		const candidateAssessment = await getSecureFeatures();
-		const secureFeatures = candidateAssessment.entities || [];
-		const profileSettings = candidateAssessment.settings;
+		const secureFeatures = candidateAssessment?.entities || [];
+		const profileSettings = candidateAssessment?.settings;
 		console.log('secureFeatures', secureFeatures);
 
 		let recordVideo = secureFeatures.find(entity => entity.name === 'Record Video');
@@ -185,7 +185,7 @@ const runDiagnostics = async () => {
 
 		if (checkNetwork) {
 			promises.push(getNetworkUploadSpeed().then(network => {
-				const isNetworkGood = network.speedMbps > profileSettings.upload_speed || 0.168;
+				const isNetworkGood = network.speedMbps > profileSettings?.upload_speed || 0.168;
 				setElementStatus('network', { success: networkGreen, failure: networkRed }, isNetworkGood);
 				handleDiagnosticItemClick('network', getNetworkUploadSpeed);
 				return isNetworkGood;
@@ -230,11 +230,11 @@ const runDiagnostics = async () => {
 
 		const videoDevices = await getMultipleCameraDevices();
 		console.log('videoDevices', videoDevices);
-		localStorage.setItem('deviceId', videoDevices && videoDevices[0].deviceId);
+		localStorage.setItem('deviceId', videoDevices && videoDevices[0]?.deviceId);
 
 		const microphones = await checkForMultipleMicrophones();
 		console.log('microphones', microphones);
-		localStorage.setItem('microphoneID', microphones && microphones[0].deviceId);
+		localStorage.setItem('microphoneID', microphones && microphones[0]?.deviceId);
 
 		const continueBtn = document.getElementById('diagnosticContinueBtn');
 		continueBtn.disabled = !allStatuses;

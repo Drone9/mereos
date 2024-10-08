@@ -40,26 +40,25 @@ export const startRecording = async (token) => {
 	let cameraRecordings = [];
 	let audioRecordings = [];
 	let screenRecordings = [];
-	const candidateAssessment = getSecureFeatures();
-	const secureFeatures = (candidateAssessment && candidateAssessment.entities) || [];
+	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 
-	if(!(newStream && newStream.getTracks().length)){
+	if(!newStream?.getTracks()?.length){
 		openModal();
 		return;
 	}
 
-	if (secureFeatures.entities !== null) {
-		await lockBrowserFromContent(secureFeatures.entities || []);
+	if (secureFeatures?.entities !== null) {
+		await lockBrowserFromContent(secureFeatures?.entities || []);
 
 		let twilioOptions = {
-			audio: findConfigs(['Record Audio'], secureFeatures.entities).length ?
+			audio: findConfigs(['Record Audio'], secureFeatures?.entities).length ?
 				(localStorage.getItem('microphoneID') !== null ? {
 					deviceId: { exact: localStorage.getItem('microphoneID') },
 				} : true)
 				:
 				false,
-			video: findConfigs(['Record Video'], secureFeatures.entities).length ?
+			video: findConfigs(['Record Video'], secureFeatures?.entities).length ?
 				(localStorage.getItem('deviceId') !== null ? {
 					deviceId: { exact: localStorage.getItem('deviceId') },
 				} : true)
@@ -70,7 +69,7 @@ export const startRecording = async (token) => {
 		try {
 			const dateTime = new Date();
 			const newRoomSessionId = dateTime.getTime();
-			const newSessionId = session.sessionId ? session.sessionId : dateTime.getTime();
+			const newSessionId = session?.sessionId ? session?.sessionId : dateTime.getTime();
 
 			updatePersistData('session', {
 				roomSessionId: newRoomSessionId,
@@ -87,7 +86,7 @@ export const startRecording = async (token) => {
 				deviceId: { exact: localStorage.getItem('microphoneID') },
 			} : true) });
 
-			if (secureFeatures.entities.find(entity => entity.key === 'record_video')) {
+			if (secureFeatures?.entities.find(entity => entity.key === 'record_video')) {
 				startAIWebcam(mediaStream);
 			}
 
@@ -97,16 +96,16 @@ export const startRecording = async (token) => {
 
 			cameraRecordings = [
 				...cameraRecordings,
-				...Array.from(room && room.localParticipant && room.localParticipant.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
+				...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
 			];
 			audioRecordings = [
 				...audioRecordings,
-				...Array.from(room && room.localParticipant && room.localParticipant.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
+				...Array.from(room?.localParticipant?.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
 			];
 
-			updatePersistData('session', { user_video_name: cameraRecordings, user_audio_name: audioRecordings, room_id: room.sid });
-			if (session.screenRecordingStream && findConfigs(['Record Screen'], secureFeatures.entities).length) {
-				screenTrack = new TwilioVideo.LocalVideoTrack(newStream && newStream.getTracks()[0]);
+			updatePersistData('session', { user_video_name: cameraRecordings, user_audio_name: audioRecordings, room_id: room?.sid });
+			if (session?.screenRecordingStream && findConfigs(['Record Screen'], secureFeatures?.entities).length) {
+				screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
 				let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
 				screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
@@ -200,7 +199,7 @@ const startAIWebcam = async (mediaStream) => {
 
 	const session = convertDataIntoParse('session');
 
-	let seconds = session && (session.quizStartTime ? parseInt((getTimeInSeconds({ isUTC: true }) - session.quizStartTime) / 1000) : 0);
+	let seconds = session?.quizStartTime ? parseInt((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) : 0;
 
 	aiProcessingInterval = setInterval(async () => {
 		try {
@@ -214,7 +213,7 @@ const startAIWebcam = async (mediaStream) => {
 
 				let log = {}, person = {}, multiplePersonFound = false;
 				predictions.forEach(prediction => {
-					if (prediction.class === 'person' && (person && person.class)) {
+					if (prediction.class === 'person' && person?.class) {
 						if (!multiplePersonFound) {
 							log = { ...log, 'multiple_people': (log['multiple_people'] || 0) + 1 };
 							multiplePersonFound = true;
@@ -233,7 +232,7 @@ const startAIWebcam = async (mediaStream) => {
 				['person_missing', 'object_detected', 'multiple_people'].forEach(key => {
 					let lastLogIndex = aiEvents.findIndex(lg => lg[key]);
 					let lastLog = lastLogIndex > -1 ? aiEvents.splice(lastLogIndex, 1)[0] : undefined;
-					if (log[key] && (!(lastLog && lastLog[key]) || (lastLog && lastLog.end_time))) {
+					if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
 						const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
 						aiEvents.push(newLog);
 
@@ -241,7 +240,7 @@ const startAIWebcam = async (mediaStream) => {
 							title: 'Warning!',
 							body: `Alert: ${key} detected!`,
 						});
-					} else if (log[key] && (lastLog && lastLog[key])) {
+					} else if (log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
 						aiEvents.push(lastLog);
 						if (lastLog.time_span > 10) {
@@ -250,7 +249,7 @@ const startAIWebcam = async (mediaStream) => {
 								body: `Alert: ${key} detected for more than 10 seconds!`,
 							});
 						}
-					} else if (!log[key] && (lastLog && lastLog[key])) {
+					} else if (!log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, end_time: Number(lastLog.start_time) + Number(lastLog.time_span) };
 						registerAIEvent({ eventType: 'success', notify: false, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) });
 					}

@@ -1,15 +1,15 @@
 import { 
-    checkCamera, 
-    checkForMultipleMicrophones, 
-    checkMicrophone, 
-    checkNotification, 
-    detectMultipleScreens, 
-    getLocation, 
-    getMultipleCameraDevices, 
-    getNetworkUploadSpeed, 
-    getSecureFeatures, 
-    registerEvent, 
-    updatePersistData 
+	checkCamera, 
+	checkForMultipleMicrophones, 
+	checkMicrophone, 
+	checkNotification, 
+	detectMultipleScreens, 
+	getLocation, 
+	getMultipleCameraDevices, 
+	getNetworkUploadSpeed, 
+	getSecureFeatures, 
+	registerEvent, 
+	updatePersistData 
 } from '../utils/functions';
 import '../assets/css/systemDiagnostic.css';
 import loadingGray from '../assets/images/loading-gray.svg';
@@ -38,12 +38,12 @@ import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 
 const runDiagnostics = async () => {
-    const tab1Content = document.getElementById('runSystemDiagnostics');
-    if (!tab1Content) {
-        console.error('Element with id "runSystemDiagnostics" not found.');
-        return;
-    }
-    tab1Content.innerHTML = `
+	const tab1Content = document.getElementById('runSystemDiagnostics');
+	if (!tab1Content) {
+		console.error('Element with id "runSystemDiagnostics" not found.');
+		return;
+	}
+	tab1Content.innerHTML = `
         <div class="system-diagnostic-test-screen">
             <h1 class="heading">${i18next.t('system_diagnostic')}</h1>
             <div class="diagnostic-status container-box">
@@ -118,142 +118,142 @@ const runDiagnostics = async () => {
         </div>
     `;
 
-    const setElementStatus = (id, status, isSuccess) => {
-        document.getElementById(`${id}StatusIcon`).src = isSuccess ? status.success : status.failure;
-        document.getElementById(`${id}StatusLoading`).src = isSuccess ? checkMarkIcon : XCircle;
-    };
+	const setElementStatus = (id, status, isSuccess) => {
+		document.getElementById(`${id}StatusIcon`).src = isSuccess ? status.success : status.failure;
+		document.getElementById(`${id}StatusLoading`).src = isSuccess ? checkMarkIcon : XCircle;
+	};
 
-    const handleDiagnosticItemClick = (id, checkFunction) => {
-        document.getElementById(`${id}DiagnosticItem`).addEventListener('click', async () => {
-            const result = await checkFunction();
-            setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
-        });
-    };
+	const handleDiagnosticItemClick = (id, checkFunction) => {
+		document.getElementById(`${id}DiagnosticItem`).addEventListener('click', async () => {
+			const result = await checkFunction();
+			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
+		});
+	};
 
-    const successIconMap = {
-        camera: videoGreen,
-        microphone: microPhoneGreen,
-        network: networkGreen,
-        location: locationGreen,
-        notification: notificationGreen,
-        screen: multipleScreenGreen
-    };
+	const successIconMap = {
+		camera: videoGreen,
+		microphone: microPhoneGreen,
+		network: networkGreen,
+		location: locationGreen,
+		notification: notificationGreen,
+		screen: multipleScreenGreen
+	};
 
-    const failureIconMap = {
-        camera: videoRed,
-        microphone: microPhoneRed,
-        network: networkRed,
-        location: locationRed,
-        notification: notificationRed,
-        screen: multipleScreenRed
-    };
+	const failureIconMap = {
+		camera: videoRed,
+		microphone: microPhoneRed,
+		network: networkRed,
+		location: locationRed,
+		notification: notificationRed,
+		screen: multipleScreenRed
+	};
 
-    try {
-        const candidateAssessment = await getSecureFeatures();
-        const secureFeatures = candidateAssessment?.entities || [];
-        const profileSettings = candidateAssessment?.settings;
-        console.log('secureFeatures', secureFeatures);
+	try {
+		const candidateAssessment = await getSecureFeatures();
+		const secureFeatures = candidateAssessment.entities || [];
+		const profileSettings = candidateAssessment.settings;
+		console.log('secureFeatures', secureFeatures);
 
-        let recordVideo = secureFeatures.find(entity => entity.name === 'Record Video');
-        let recordAudio = secureFeatures.find(entity => entity.name === 'Record Audio');
-        let checkNetwork = secureFeatures.find(entity => entity.name === 'Internet Speed');
-        let trackLocation = secureFeatures.find(entity => entity.name === 'Track Location');
-        let enableNotifications = secureFeatures.find(entity => entity.name === 'Enable Notifications');
-        let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
+		let recordVideo = secureFeatures.find(entity => entity.name === 'Record Video');
+		let recordAudio = secureFeatures.find(entity => entity.name === 'Record Audio');
+		let checkNetwork = secureFeatures.find(entity => entity.name === 'Internet Speed');
+		let trackLocation = secureFeatures.find(entity => entity.name === 'Track Location');
+		let enableNotifications = secureFeatures.find(entity => entity.name === 'Enable Notifications');
+		let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
 
-        const promises = [];
+		const promises = [];
 
-        if (recordVideo) {
-            promises.push(checkCamera().then(camera => {
-                setElementStatus('camera', { success: videoGreen, failure: videoRed }, camera);
-                handleDiagnosticItemClick('camera', checkCamera);
-                return camera;
-            }));
-        } else {
-            setElementStatus('camera', { success: videoGreen, failure: videoRed }, true);
-        }
+		if (recordVideo) {
+			promises.push(checkCamera().then(camera => {
+				setElementStatus('camera', { success: videoGreen, failure: videoRed }, camera);
+				handleDiagnosticItemClick('camera', checkCamera);
+				return camera;
+			}));
+		} else {
+			setElementStatus('camera', { success: videoGreen, failure: videoRed }, true);
+		}
 
-        if (recordAudio) {
-            promises.push(checkMicrophone().then(microphone => {
-                setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, microphone);
-                handleDiagnosticItemClick('microphone', checkMicrophone);
-                return microphone;
-            }));
-        } else {
-            setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, true);
-        }
+		if (recordAudio) {
+			promises.push(checkMicrophone().then(microphone => {
+				setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, microphone);
+				handleDiagnosticItemClick('microphone', checkMicrophone);
+				return microphone;
+			}));
+		} else {
+			setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, true);
+		}
 
-        if (checkNetwork) {
-            promises.push(getNetworkUploadSpeed().then(network => {
-                const isNetworkGood = network.speedMbps > profileSettings?.upload_speed || 0.168;
-                setElementStatus('network', { success: networkGreen, failure: networkRed }, isNetworkGood);
-                handleDiagnosticItemClick('network', getNetworkUploadSpeed);
-                return isNetworkGood;
-            }));
-        } else {
-            setElementStatus('network', { success: networkGreen, failure: networkRed }, true);
-        }
+		if (checkNetwork) {
+			promises.push(getNetworkUploadSpeed().then(network => {
+				const isNetworkGood = network.speedMbps > profileSettings.upload_speed || 0.168;
+				setElementStatus('network', { success: networkGreen, failure: networkRed }, isNetworkGood);
+				handleDiagnosticItemClick('network', getNetworkUploadSpeed);
+				return isNetworkGood;
+			}));
+		} else {
+			setElementStatus('network', { success: networkGreen, failure: networkRed }, true);
+		}
 
-        if (trackLocation) {
-            promises.push(getLocation().then(location => {
-                updatePersistData('session', { location });
-                setElementStatus('location', { success: locationGreen, failure: locationRed }, location);
-                handleDiagnosticItemClick('location', getLocation);
-                return location;
-            }));
-        } else {
-            setElementStatus('location', { success: locationGreen, failure: locationRed }, true);
-        }
+		if (trackLocation) {
+			promises.push(getLocation().then(location => {
+				updatePersistData('session', { location });
+				setElementStatus('location', { success: locationGreen, failure: locationRed }, location);
+				handleDiagnosticItemClick('location', getLocation);
+				return location;
+			}));
+		} else {
+			setElementStatus('location', { success: locationGreen, failure: locationRed }, true);
+		}
 
-        if (enableNotifications) {
-            promises.push(checkNotification().then(notification => {
-                setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, notification);
-                handleDiagnosticItemClick('notification', checkNotification);
-                return notification;
-            }));
-        } else {
-            setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, true);
-        }
+		if (enableNotifications) {
+			promises.push(checkNotification().then(notification => {
+				setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, notification);
+				handleDiagnosticItemClick('notification', checkNotification);
+				return notification;
+			}));
+		} else {
+			setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, true);
+		}
 
-        if (multipleScreensCheck) {
-            promises.push(detectMultipleScreens().then(screens => {
-                setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, !screens);
-                handleDiagnosticItemClick('screen', detectMultipleScreens);
-                return !screens;
-            }));
-        } else {
-            setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, true);
-        }
+		if (multipleScreensCheck) {
+			promises.push(detectMultipleScreens().then(screens => {
+				setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, !screens);
+				handleDiagnosticItemClick('screen', detectMultipleScreens);
+				return !screens;
+			}));
+		} else {
+			setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, true);
+		}
 
-        const results = await Promise.all(promises);
-        const allStatuses = results.every(status => status);
+		const results = await Promise.all(promises);
+		const allStatuses = results.every(status => status);
 
-        const videoDevices = await getMultipleCameraDevices();
-        console.log('videoDevices', videoDevices);
-        localStorage.setItem('deviceId', videoDevices && videoDevices[0]?.deviceId);
+		const videoDevices = await getMultipleCameraDevices();
+		console.log('videoDevices', videoDevices);
+		localStorage.setItem('deviceId', videoDevices && videoDevices[0].deviceId);
 
-        const microphones = await checkForMultipleMicrophones();
-        console.log('microphones', microphones);
-        localStorage.setItem('microphoneID', microphones && microphones[0]?.deviceId);
+		const microphones = await checkForMultipleMicrophones();
+		console.log('microphones', microphones);
+		localStorage.setItem('microphoneID', microphones && microphones[0].deviceId);
 
-        const continueBtn = document.getElementById('diagnosticContinueBtn');
-        continueBtn.disabled = !allStatuses;
-        if (allStatuses) {
-            continueBtn.addEventListener('click', () => {
-                registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
-                updatePersistData('preChecksSteps',{ diagnosticStep:true });
-                showTab('IdentityVerificationScreenOne');
-            });
-        }
-    } catch (error) {
-        console.error('Error during diagnostics:', error);
-    }
+		const continueBtn = document.getElementById('diagnosticContinueBtn');
+		continueBtn.disabled = !allStatuses;
+		if (allStatuses) {
+			continueBtn.addEventListener('click', () => {
+				registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
+				updatePersistData('preChecksSteps',{ diagnosticStep:true });
+				showTab('IdentityVerificationScreenOne');
+			});
+		}
+	} catch (error) {
+		console.error('Error during diagnostics:', error);
+	}
 };
 
 export const runSystemDiagnostics = async () => {
-    await runDiagnostics();
+	await runDiagnostics();
 };
 
 i18next.on('languageChanged', () => {
-    runDiagnostics();
+	runDiagnostics();
 });

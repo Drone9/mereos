@@ -1,6 +1,6 @@
 const axios = {
-  post: jest.fn(), // Mock the post method
-  create: jest.fn(),
+	post: jest.fn(), // Mock the post method
+	create: jest.fn(),
 };
 
 export default axios;

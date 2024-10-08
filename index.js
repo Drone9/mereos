@@ -7,7 +7,6 @@
  * LICENSE file in the root directory of this source tree.
 */
 
-import axios from 'axios';
 window.openModal = openModal;
 
 import { openModal } from './src/ExamPrepreation/examPrechecks';
@@ -19,90 +18,88 @@ import { changeCandidateAssessmentStatus } from './src/services/candidate-assess
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { getProfile } from './src/services/profile.services';
 
-    async function init(host,profileId) {
-        try{
-            const resp = await registerPublicCandidate(host);
-            if(resp?.data){
-                localStorage.setItem('token', resp.data?.token);
-                localStorage.setItem('candidateAssessment',JSON.stringify(resp.data?.user_data));
-                localStorage.setItem('session',JSON.stringify(initialSessionData));
-                localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
-            
-                const profileResp = await getProfile({id:profileId})
-                localStorage.setItem('secureFeatures',JSON.stringify(profileResp?.data));
-                console.log('profileResp',profileResp);
-                return resp.data;
-            }
-        }catch(e){
-            console.error('error',e);
-        }
-    };
+async function init(host,profileId) {
+	try{
+		const resp = await registerPublicCandidate(host);
+		if(resp.data){
+			localStorage.setItem('token', resp.data.token);
+			localStorage.setItem('candidateAssessment',JSON.stringify(resp.data.user_data));
+			localStorage.setItem('session',JSON.stringify(initialSessionData));
+			localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
+        
+			const profileResp = await getProfile({id:profileId});
+			localStorage.setItem('secureFeatures',JSON.stringify(profileResp.data));
+			console.log('profileResp',profileResp);
+			return resp.data;
+		}
+	}catch(e){
+		console.error('error',e);
+	}
+}
     
-    async function start_prechecks(profile) {
-        openModal();
-        return
-        try{
-            const resp = await axios.get('https://corder-api.mereos.eu/profile/profile/', {
-                profile: profile
-            });
-            if(resp){
-                openModal();
-            }
-            // return resp;
-        }catch(err){
-            console.error(err);
-            // throw err;
-        }
-    };
-    
-    async function start_recording() {
-        try{
-            const newDate = new Date();
-            const newRoomSessionId = newDate.getTime();
-            let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
-            let twilioToken = await getToken({ room_sid: resp.data.room_sid });
-            if(twilioToken){
-                startRecording(twilioToken?.data?.token);
-            };
-        }catch(err){
-            console.log('error',err);
-        }       
-    };
-    
-    async function stop_recording(session) {
-        try{
-            const stop_recordingResp  = await stopAllRecordings();
-            if(stop_recordingResp){
-                return 'Recording Stops'
-            }
-        }catch(err){
-            console.error(err);
-        }
-    }
+async function start_prechecks() {
+	openModal();
+	// return;
+	// try{
+	//     const resp = await axios.get('https://corder-api.mereos.eu/profile/profile/', {
+	//         profile: profile
+	//     });
+	//     if(resp){
+	//         openModal();
+	//     }
+	//     // return resp;
+	// }catch(err){
+	//     console.error(err);
+	//     // throw err;
+	// }
+}
 
-    async function submit_session(session) {
-        try{
-            const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-            const session = convertDataIntoParse('session');
-            let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
-            if(resp){
-                console.log('submit_session');
-				let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Completed'});
-                if(completedRes){
-                    localStorage.clear();
-                }
-            }
-            return 
-            // const resp = await axios.post('https://corder-api.mereos.eu/session/session', session);
-            // return resp;
-        }catch(err){
-            console.error(err);
-            // throw err;
-        }
-       
-    }
-    
-    // window.mereos = {init, start_prechecks, start_recording, stop_recording};
-    export {init, start_prechecks, start_recording, stop_recording, submit_session };
+async function start_recording() {
+	try{
+		const newDate = new Date();
+		const newRoomSessionId = newDate.getTime();
+		let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
+		let twilioToken = await getToken({ room_sid: resp.data.room_sid });
+		if(twilioToken){
+			startRecording(twilioToken.data.token);
+		}
+	}catch(err){
+		console.log('error',err);
+	}       
+}
 
-/******************************************* */
+async function stop_recording() {
+	try{
+		const stop_recordingResp  = await stopAllRecordings();
+		if(stop_recordingResp){
+			return 'Recording Stops';
+		}
+	}catch(err){
+		console.error(err);
+	}
+}
+
+async function submit_session() {
+	try{
+		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+		const session = convertDataIntoParse('session');
+		let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+		if(resp){
+			console.log('submit_session');
+			let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection.candidate_assessment.assessment.id, status: 'Completed'});
+			if(completedRes){
+				localStorage.clear();
+			}
+		}
+		return;
+		// const resp = await axios.post('https://corder-api.mereos.eu/session/session', session);
+		// return resp;
+	}catch(err){
+		console.error(err);
+		// throw err;
+	}
+    
+}
+
+// window.mereos = {init, start_prechecks, start_recording, stop_recording};
+export {init, start_prechecks, start_recording, stop_recording, submit_session };

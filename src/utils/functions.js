@@ -3,7 +3,7 @@ import { ASSET_URL, BASE_URL } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
-import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+// import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import i18next from 'i18next';
 import { createEvent } from '../services/event.service';
 import { closeModal } from '../ExamPrepreation/examPrechecks';
@@ -207,23 +207,23 @@ export const testUploadSpeed = async (text) => {
 	return axios.post(`https://dashboard-api.mereos-datasafe.com/general/test-upload-speed`, { 'test': text });
 };
 
-export const registerEvent = ({ eventType, eventName, eventValue }) => {
+export const registerEvent = ({ eventName }) => {
 	try{
-			const session = convertDataIntoParse('session');
-			console.log('session',session);
+		const session = convertDataIntoParse('session');
+		console.log('session',session);
 
-			const event = {
-					name: eventName,
-					value: eventName,
-					session_id: session?.id,
-					start_at: session.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session.sessionStartTime) / 1000) : 0
-			};
+		const event = {
+			name: eventName,
+			value: eventName,
+			session_id: session.id,
+			start_at: session.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session.sessionStartTime) / 1000) : 0
+		};
 			
-			return createEvent(event);
+		return createEvent(event);
 	}catch(error){
-			console.log(error);
+		console.log(error);
 	}
-}
+};
 
 export const getAuthenticationToken = () => {
 	return localStorage.getItem('token');
@@ -259,7 +259,7 @@ export const acceptableLabels = (detectedLabels, acceptedValue = 80) => {
 	const acceptedLabels = ['cards', 'document', 'text', 'id cards', 'passport', 'driving license', 'license', 'id', 'identity', 'doc', 'cnic', 'nic'];
 	let totalLabelConfidence = 0;
 	let totalAcceptedLabels = 0;
-	detectedLabels?.Labels?.forEach(label => {
+	detectedLabels.Labels.forEach(label => {
 		if (acceptedLabels.includes(label.Name.toLowerCase())) {
 			totalLabelConfidence = totalLabelConfidence + label.Confidence;
 			totalAcceptedLabels = totalAcceptedLabels + 1;
@@ -283,7 +283,7 @@ export const acceptableText = (detectedText, acceptedValue = 80) => {
 };
 
 export const dataURLtoFile = (dataurl, filename) => {
-	let arr = dataurl?.split(','),
+	let arr = dataurl.split(','),
 		mime = arr[0].match(/:(.*?);/)[1],
 		bstr = atob(arr[arr.length - 1]), 
 		n = bstr.length, 
@@ -337,74 +337,74 @@ export const findConfigs = (configs, entities) => {
 };
 
 export const getSecureFeatures = () => {
-	const secureFeatures = JSON.parse(localStorage.getItem('secureFeatures'))
+	const secureFeatures = JSON.parse(localStorage.getItem('secureFeatures'));
 	return secureFeatures;
-}
+};
 
 export const checkForMultipleMicrophones = async () => {
-  try {
-    console.log('Starting checkForMultipleMicrophones');
+	try {
+		console.log('Starting checkForMultipleMicrophones');
 
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-    console.log('getUserMedia succeeded');
+		await navigator.mediaDevices.getUserMedia({ audio: true });
+		console.log('getUserMedia succeeded');
 
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    console.log('Devices found:', devices);
+		const devices = await navigator.mediaDevices.enumerateDevices();
+		console.log('Devices found:', devices);
 
-    const microphones = devices.filter(device => device.kind === 'audioinput');
-    console.log('Microphones found:', microphones);
+		const microphones = devices.filter(device => device.kind === 'audioinput');
+		console.log('Microphones found:', microphones);
 
-    const defaultMicrophone = microphones.find(device => device.deviceId === 'default');
-    console.log('Default Microphone found:', defaultMicrophone);
+		const defaultMicrophone = microphones.find(device => device.deviceId === 'default');
+		console.log('Default Microphone found:', defaultMicrophone);
 
-    if (defaultMicrophone) {
-      console.log('Returning default microphone');
-      return [defaultMicrophone];
-    }
+		if (defaultMicrophone) {
+			console.log('Returning default microphone');
+			return [defaultMicrophone];
+		}
 
-    if (microphones.length > 0) {
-      console.log('Returning first microphone');
-      return [microphones[0]];
-    }
+		if (microphones.length > 0) {
+			console.log('Returning first microphone');
+			return [microphones[0]];
+		}
 
-    console.log('No microphones found');
-    return [];
-  } catch (err) {
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      console.error('Permission denied:', err);
-    } else {
-      console.error('Error:', err);
-    }
-    return [];
-  }
+		console.log('No microphones found');
+		return [];
+	} catch (err) {
+		if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+			console.error('Permission denied:', err);
+		} else {
+			console.error('Error:', err);
+		}
+		return [];
+	}
 };
 
 export const updatePersistData = (key, updates) => {
 	let storedItemJSON = localStorage.getItem(key);
 
 	if (storedItemJSON) {
-			let storedItem = JSON.parse(storedItemJSON);
+		let storedItem = JSON.parse(storedItemJSON);
 
-			for (let prop in updates) {
-					if (updates.hasOwnProperty(prop)) {
-							storedItem[prop] = updates[prop];
-					}
+		for (let prop in updates) {
+			if (updates.hasOwnProperty(prop)) {
+				storedItem[prop] = updates[prop];
 			}
+		}
 
-			let updatedItemJSON = JSON.stringify(storedItem);
+		let updatedItemJSON = JSON.stringify(storedItem);
 
-			localStorage.setItem(key, updatedItemJSON);
+		localStorage.setItem(key, updatedItemJSON);
 	} else {
-			console.warn(`No item found in localStorage with key "${key}"`);
+		console.warn(`No item found in localStorage with key "${key}"`);
 	}
-}
+};
 
 export const addSectionSessionRecord = (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {
 		console.log('session',session,'candidateInviteAssessmentSection',candidateInviteAssessmentSection);
 	
-		const sourceIds = [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name];
-		const recordings = sourceIds?.length
+		const sourceIds = [...session.user_video_name, ...session.audio_recordings, ...session.screen_sharing_video_name];
+		const recordings = sourceIds.length
 			? await getRecordingSid({'source_id': [...session.user_video_name, ...session.audio_recordings, ...session.screen_sharing_video_name]})
 			: [];
 		let sectionSessionDetails = {
@@ -412,14 +412,14 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 			submission_time: session.submissionTime,
 			duration_taken: session.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
 			identity_card: session.identityCard,
-			room_scan_video:session?.room_scan_video,
+			room_scan_video:session.room_scan_video,
 			identity_photo: session.candidatePhoto,
-			school: candidateInviteAssessmentSection?.school?.id || '',
-			assessment: candidateInviteAssessmentSection?.assessment?.id || 1,
+			school: candidateInviteAssessmentSection.school.id || '',
+			assessment: candidateInviteAssessmentSection.assessment.id || 1,
 			candidate: candidateInviteAssessmentSection.id,
-			user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			audio_recordings: recordings?.data?.filter(recording => session.audio_recordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			user_video_name: recordings.data.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid)).map(recording => recording.media_external_location) || [],
+			audio_recordings: recordings.data.filter(recording => session.audio_recordings.find(subrecording => subrecording === recording.source_sid)).map(recording => recording.media_external_location) || [],
+			screen_sharing_video_name: recordings.data.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid)).map(recording => recording.media_external_location) || [],
 			roomscan_recordings: session.roomScanRecordings,
 			session_id: session.sessionId,
 			collected_details: {
@@ -461,7 +461,7 @@ export const registerAIEvent = async ({ notify, eventType, eventName, eventValue
 			end_at:endTime,
 			value: eventName,
 			created_at: getDateTime(),
-			session_id: session?.id
+			session_id: session.id
 		};
 				
 		await createAiEvent(event);
@@ -762,7 +762,7 @@ export const createATab = (url) => {
 
 export const forceFullScreen = (element = document.documentElement) => {
 	try {
-		if (typeof element?.requestFullscreen === 'function') {
+		if (typeof element.requestFullscreen === 'function') {
 			element.requestFullscreen();
 		} else if (typeof element.webkitRequestFullscreen === 'function') { /* Safari */
 			element.webkitRequestFullscreen();
@@ -814,30 +814,30 @@ export const handlePreChecksRedirection = () => {
 	const preChecksSteps = convertDataIntoParse('preChecksSteps');
 	console.log('preChecksSteps',preChecksSteps);
 
-	if (!preChecksSteps?.examPreparation) {
+	if (!preChecksSteps.examPreparation) {
 		return 'ExamPreparation';
-	} else if(!preChecksSteps?.diagnosticStep){
+	} else if(!preChecksSteps.diagnosticStep){
 		return 'runSystemDiagnostics';
 	}
-	// else if(!preChecksSteps?.preValidation){
+	// else if(!preChecksSteps.preValidation){
 	// 	return PREVALIDATION_INSTRUCTIONS;
 	// }
-	else if(!preChecksSteps?.userPhoto){
+	else if(!preChecksSteps.userPhoto){
 		return 'IdentityVerificationScreenOne';
-	}else if(!preChecksSteps?.identityCardPhoto){
+	}else if(!preChecksSteps.identityCardPhoto){
 		return 'IdentityVerificationScreenTwo';
-	}else if(!preChecksSteps?.audioDetection){
+	}else if(!preChecksSteps.audioDetection){
 		return 'IdentityVerificationScreenThree';
-	}else if(!preChecksSteps?.roomScanningVideo){
+	}else if(!preChecksSteps.roomScanningVideo){
 		return 'IdentityVerificationScreenFour';
 	}
-	// else if(!preChecksSteps?.mobileConnection){
+	// else if(!preChecksSteps.mobileConnection){
 	// 	return IDENTITY_VERIFICATION_SCREEN_SIX;
 	// }
-	else if(!preChecksSteps?.screenSharing){
+	else if(!preChecksSteps.screenSharing){
 		return 'IdentityVerificationScreenFive';
 	}
-	// else if(!preChecksSteps?.examIndication){
+	// else if(!preChecksSteps.examIndication){
 	// 	return EXAM_INDICATIONS;
 	// }
 	else{

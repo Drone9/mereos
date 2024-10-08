@@ -1,14 +1,14 @@
 import axios from '../utils/axios.js';
 
 export const getProfile = async (params) => {
-  const token = localStorage.getItem('token');
-  const config = {
-    headers: {
-      token: `${token}`,
-    },
-    params: params
-  };
-  return axios.get('/profiles/candidate_profile/', config);
+	const token = localStorage.getItem('token');
+	const config = {
+		headers: {
+			token: `${token}`,
+		},
+		params: params
+	};
+	return axios.get('/profiles/candidate_profile/', config);
 };
 export const createProfile = async (data) => {
 	const token = localStorage.getItem('token');

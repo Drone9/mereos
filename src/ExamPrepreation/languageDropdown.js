@@ -39,6 +39,7 @@ export const LanguageDropdown = (languages) => {
 	return dropdown;
 };
 
+// Function to set the language using i18next
 export const setLanguage = (lang) => {
 	i18next.changeLanguage(lang, (err) => {
 		if (err) return console.error(err);
@@ -46,6 +47,7 @@ export const setLanguage = (lang) => {
 	});
 };
 
+// Function to update translations in the document
 export const updateTranslations = () => {
 	document.querySelectorAll('[data-i18n]').forEach((element) => {
 		const key = element.getAttribute('data-i18n');

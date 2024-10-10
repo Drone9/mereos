@@ -37,21 +37,9 @@ async function init(host,profileId) {
 	}
 }
     
-async function start_prechecks() {
-	openModal();
-	// return;
-	// try{
-	//     const resp = await axios.get('https://corder-api.mereos.eu/profile/profile/', {
-	//         profile: profile
-	//     });
-	//     if(resp){
-	//         openModal();
-	//     }
-	//     // return resp;
-	// }catch(err){
-	//     console.error(err);
-	//     // throw err;
-	// }
+async function start_prechecks(callback) {
+	console.log('Callback received in start_prechecks:', callback);
+	openModal(callback);
 }
 
 async function start_recording() {

@@ -6,7 +6,7 @@ import i18next from 'i18next';
 
 export let newStream;
 
-export const IdentityVerificationScreenFive = async (tabContent) => {
+export const IdentityVerificationScreenFive = async (tabContent,callback = () => {}) => {
 	let multipleScreens;
 	if (!tabContent) {
 		console.error('tabContent is not defined or is not a valid DOM element');
@@ -56,12 +56,13 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				text: err
 			};
 		}
-		updateUI(); // Update UI after screen sharing attempt
+		updateUI(); 
 	};
 
 	const nextStep = () => {
-		updatePersistData('preChecksSteps',{ screenSharing:true });
+		updatePersistData('preChecksSteps', { screenSharing: true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'screen_recording_window_shared', eventValue: getDateTime() });
+		callback({ success: true, message: 'precheck_completed' });
 		closeModal();
 	};
 

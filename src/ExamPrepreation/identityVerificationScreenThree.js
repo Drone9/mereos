@@ -3,7 +3,7 @@ import { showTab } from './examPrechecks';
 import '../assets/css/step3.css';
 import i18next from 'i18next';
 
-export const IdentityVerificationScreenThree = async (tabContent) => {
+export const IdentityVerificationScreenThree = async (tabContent,callback) => {
 	let canvasRef;
 	let audioContext;
 	let analyserNode;
@@ -126,7 +126,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	const nextStep = async () => {
 		updatePersistData('preChecksSteps',{ audioDetection:true });
 		registerEvent({eventType: 'success', notify: false, eventName: 'audio_check_completed', eventValue: getDateTime()});
-		showTab('IdentityVerificationScreenFour');
+		showTab('IdentityVerificationScreenFour',callback);
 		console.log('Navigate to IDENTITY_VERIFICATION_SCREEN_FOUR');
 	};
 

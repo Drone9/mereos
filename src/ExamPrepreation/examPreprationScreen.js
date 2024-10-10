@@ -26,11 +26,11 @@ const getDateTime = () => new Date().toISOString();
 
 const nextPage = () => {
 	registerEvent({ eventType: 'success', notify: false, eventName: 'terms_and_conditions_read', eventValue: getDateTime() });
-	showTab('runSystemDiagnostics');
+	showTab('runSystemDiagnostics',callback);
 	updatePersistData('preChecksSteps',{ examPreparation:true });
 };
 
-export const ExamPreparation = async (tabContent) => {
+export const ExamPreparation = async (tabContent,callback) => {
 	if (!tabContent) {
 		console.error('tabContent is not defined or is not a valid DOM element');
 		return;

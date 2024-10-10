@@ -864,12 +864,12 @@ describe('preventShortCuts', () => {
     
     document.onkeydown = null;
 
-    // globalThis.Event = jest.fn().mockImplementation((type, eventInit) => ({
-    //   type,
-    //   ...eventInit,
-    //   preventDefault: preventDefaultMock,
-    //   stopPropagation: stopPropagationMock,
-    // }));
+    globalThis.Event = jest.fn().mockImplementation((type, eventInit) => ({
+      type,
+      ...eventInit,
+      preventDefault: preventDefaultMock,
+      stopPropagation: stopPropagationMock,
+    }));
   });
 
   it('should prevent default and stop propagation for blocked keys', async () => {

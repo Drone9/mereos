@@ -810,38 +810,50 @@ const handleDefaultEvent = e => {
 	e.stopPropagation();
 };
 
-export const handlePreChecksRedirection = () => {
+export const handlePreChecksRedirection = (callback) => {
 	const preChecksSteps = convertDataIntoParse('preChecksSteps');
-	console.log('preChecksSteps',preChecksSteps);
+	const getSecureFeature = getSecureFeatures();
+	const secureFeatures = getSecureFeature?.entities || [];
+	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
+	const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications','Upload Speed'];
 
-	if (!preChecksSteps?.examPreparation) {
+	if (!preChecksSteps?.examPreparation && hasFeature('examination_window')) {
+		callback({ success: true, message: 'examination_window' });
 		return 'ExamPreparation';
-	} else if(!preChecksSteps?.diagnosticStep){
+	} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length){
+		callback({ success: true, message: 'runSystemDiagnostics' });
 		return 'runSystemDiagnostics';
 	}
 	// else if(!preChecksSteps?.preValidation){
 	// 	return PREVALIDATION_INSTRUCTIONS;
 	// }
-	else if(!preChecksSteps?.userPhoto){
+	else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
+		callback({ success: true, message: 'verify_candidate' });
 		return 'IdentityVerificationScreenOne';
-	}else if(!preChecksSteps?.identityCardPhoto){
+	}else if(!preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
+		callback({ success: true, message: 'identity_card_requirement' });
 		return 'IdentityVerificationScreenTwo';
-	}else if(!preChecksSteps?.audioDetection){
+	}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
+		callback({ success: true, message: 'record_audio' });
 		return 'IdentityVerificationScreenThree';
-	}else if(!preChecksSteps?.roomScanningVideo){
+	}else if(!preChecksSteps?.roomScanningVideo || hasFeature('record_room')){
+		callback({ success: true, message: 'record_room' });
 		return 'IdentityVerificationScreenFour';
 	}
 	// else if(!preChecksSteps?.mobileConnection){
 	// 	return IDENTITY_VERIFICATION_SCREEN_SIX;
 	// }
-	else if(!preChecksSteps?.screenSharing){
+	else if(!preChecksSteps?.screenSharing || hasFeature('record_screen')){
+		callback({ success: true, message: 'record_screen' });
 		return 'IdentityVerificationScreenFive';
 	}
 	// else if(!preChecksSteps?.examIndication){
 	// 	return EXAM_INDICATIONS;
 	// }
 	else{
-		return closeModal();
+		callback({ success: true, message: 'precheck_completed' });
+		closeModal();
+		// history.push('/assessment/session');
 	}
 };
 

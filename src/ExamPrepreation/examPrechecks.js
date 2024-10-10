@@ -7,17 +7,17 @@ import { IdentityVerificationScreenThree } from './identityVerificationScreenThr
 import { IdentityVerificationScreenFour } from './identityVerificationScreenFour';
 import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
 import { ExamPreparation } from './examPreprationScreen';
-import { LanguageDropdown } from './languageDropdown';
+// import { LanguageDropdown } from './languageDropdown';
 import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData } from '../utils/functions';
 // import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 // import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
-import germanyFlag from '../assets/images/flag-of-germany.svg';
-import UKFlag from '../assets/images/flag-of-uk.svg';
-import spainFlag from '../assets/images/flag-of-spain.svg';
-import franceFlag from '../assets/images/flag-of-france.svg';
-import brazilFlag from '../assets/images/flag-of-brazil.svg';
-import italyFlag from '../assets/images/flag-of-italy.svg';
-import whalesFlag from '../assets/images/flag-of-whales.svg';
+// import germanyFlag from '../assets/images/flag-of-germany.svg';
+// import UKFlag from '../assets/images/flag-of-uk.svg';
+// import spainFlag from '../assets/images/flag-of-spain.svg';
+// import franceFlag from '../assets/images/flag-of-france.svg';
+// import brazilFlag from '../assets/images/flag-of-brazil.svg';
+// import italyFlag from '../assets/images/flag-of-italy.svg';
+// import whalesFlag from '../assets/images/flag-of-whales.svg';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -73,120 +73,155 @@ tabContentsWrapper.appendChild(tabContent7);
 
 modalContent.appendChild(tabContentsWrapper);
 
-window.addEventListener('click', function (event) {
-	if (event.target === modal) {
-		closeModal();
-	}
-});
+// window.addEventListener('click', function (event) {
+// 	if (event.target === modal) {
+// 		closeModal();
+// 	}
+// });
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
 };
 
-function openModal() {
+function openModal(callback) {
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
-	const activeTab = handlePreChecksRedirection();
-	console.log('activeTab',activeTab);
+	const activeTab = handlePreChecksRedirection(callback);
+	console.log('activeTab', activeTab);
 
-	showTab(activeTab);
+	showTab(activeTab,callback);
 	const session = convertDataIntoParse('session');
 
 	console.log('session', session);
 	startSession(session);
+
 	const header = document.createElement('div');
 	header.className = 'header';
 
-	const languageDropdown = LanguageDropdown([
-		{ name: 'English', value: 'english', src: `${UKFlag}`, alt: '', keyword: 'en' },
-		{ name: 'Spanish', value: 'spanish', src: `${spainFlag}`, alt: '', keyword: 'es' },
-		{ name: 'German', value: 'german', src: `${germanyFlag}`, alt: '', keyword: 'de' },
-		{ name: 'French', value: 'french', src: `${franceFlag}`, alt: '', keyword: 'fr' },
-		{ name: 'Portuguese (Brazil)', value: 'portuguese_brazil', src: `${brazilFlag}`, alt: '', keyword: 'pt' },
-		{ name: 'Italian', value: 'italian', src: `${italyFlag}`, alt: '', keyword: 'it' },
-		{ name: 'Welsh', value: 'welsh', src: `${whalesFlag}`, alt: '', keyword: 'cy' },
-	]);
+	const languageSelect = document.createElement('select');
+	languageSelect.id = 'languageDropdown';
+	languageSelect.style.position = 'absolute';
+	languageSelect.style.padding = '10px';
+	languageSelect.className = 'langauge-dropdown';
+	languageSelect.style.top = '10px';
+	languageSelect.style.right = '10px';
 
-	header.style.position = 'absolute';
-	header.style.top = '10px';
-	header.style.right = '10px';
+	// Language options
+	const languages = [
+		{ name: 'English', value: 'english', keyword: 'en' },
+		{ name: 'Spanish', value: 'spanish', keyword: 'es' },
+		{ name: 'German', value: 'german', keyword: 'de' },
+		{ name: 'French', value: 'french', keyword: 'fr' },
+		{ name: 'Portuguese (Brazil)', value: 'portuguese_brazil', keyword: 'pt' },
+		{ name: 'Italian', value: 'italian', keyword: 'it' },
+		{ name: 'Welsh', value: 'welsh', keyword: 'cy' },
+	];
 
-	header.appendChild(languageDropdown);
+	languages.forEach(lang => {
+		const option = document.createElement('option');
+		option.value = lang.keyword; // Use the language keyword as the value
+		option.textContent = lang.name; // Set the display name
+		languageSelect.appendChild(option);
+	});
+
+	languageSelect.addEventListener('change', (event) => {
+		const selectedLanguage = event.target.value;
+		console.log('Selected language:', selectedLanguage);
+		setLanguage(selectedLanguage);
+	});
+
+	header.appendChild(languageSelect);
 	modalContent.insertBefore(header, modalContent.firstChild);
 }
 
+export const setLanguage = (lang) => {
+	i18next.changeLanguage(lang, (err) => {
+		if (err) return console.error(err);
+		updateTranslations();
+	});
+};
+
 function closeModal() {
+	console.log('closeModal called');
 	modal.style.display = 'none';
 	modal.remove();
 }
 
-const showTab = async (tabId) => {
-	const tabs = document.querySelectorAll('.tab');
-	const tabContents = document.querySelectorAll('.tab-content');
+const showTab = async (tabId, callback) => {
+	try {
+		console.log('callback',callback);
+		const tabs = document.querySelectorAll('.tab');
+		const tabContents = document.querySelectorAll('.tab-content');
 
-	tabs.forEach(tab => {
-		tab.classList.remove('active');
-		if (tab.dataset.tab === tabId) {
-			tab.classList.add('active');
-		}
-	});
+		tabs.forEach(tab => {
+			tab.classList.remove('active');
+			if (tab.dataset.tab === tabId) {
+				tab.classList.add('active');
+			}
+		});
 
-	tabContents.forEach(content => {
-		content.classList.remove('active');
-		if (content.id === tabId) {
-			content.classList.add('active');
-		}
-	});
+		tabContents.forEach(content => {
+			content.classList.remove('active');
+			if (content.id === tabId) {
+				content.classList.add('active');
+			}
+		});
 
-	const getSecureFeature = getSecureFeatures();
-	const secureFeatures = getSecureFeature?.entities || [];
-	console.log('secureFeatures',secureFeatures);
+		const getSecureFeature = getSecureFeatures();
+		const secureFeatures = getSecureFeature?.entities || [];
+		console.log('secureFeatures', secureFeatures);
 
-	const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications','Upload Speed'];
+		const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications', 'Upload Speed'];
 
-	console.log('tabId',tabId);
-	if (tabId === 'ExamPreparation') {
-		if (!secureFeatures?.find(entity => entity.name === 'Examination Window')) {
-			navigate('runSystemDiagnostics');
+		console.log('tabId', tabId);
+		if (tabId === 'ExamPreparation') {
+			if (!secureFeatures?.find(entity => entity.key === 'examination_window')) {
+				navigate('runSystemDiagnostics');
+				return;
+			}
+			await ExamPreparation(tabContent1,callback);
+		} else if (tabId === 'runSystemDiagnostics') {
+			if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length) {
+				navigate('IdentityVerificationScreenOne');
+				return;
+			}
+			runSystemDiagnostics(callback);
+		} else if (tabId === 'IdentityVerificationScreenOne') {
+			if (!secureFeatures?.find(entity => entity.key === 'verify_candidate')) {
+				navigate('IdentityVerificationScreenTwo');
+				return;
+			}
+			await IdentityVerificationScreenOne(tabContent3,callback);
+		} else if (tabId === 'IdentityVerificationScreenTwo') {
+			if (!secureFeatures?.find(entity => entity.key === 'identity_card_requirement')) {
+				navigate('IdentityVerificationScreenThree');
+				return;
+			}
+			await IdentityVerificationScreenTwo(tabContent4,callback);
+		} else if (tabId === 'IdentityVerificationScreenThree') {
+			if (!secureFeatures?.find(entity => entity.key === 'record_audio')) {
+				navigate('IdentityVerificationScreenFour');
+				return;
+			}
+			await IdentityVerificationScreenThree(tabContent5);
+		} else if (tabId === 'IdentityVerificationScreenFour') {
+			if (!secureFeatures?.find(entity => entity.key === 'record_room')) {
+				navigate('IdentityVerificationScreenFive');
+				return;
+			}
+			await IdentityVerificationScreenFour(tabContent6,callback);
+		} else if (tabId === 'IdentityVerificationScreenFive') {
+			if (!secureFeatures?.find(entity => entity.key === 'record_screen')) {
+				closeModal(callback);
+				return;
+			}
+			await IdentityVerificationScreenFive(tabContent7, callback);
+		} else {
+			closeModal(callback);
 			return;
 		}
-		await ExamPreparation(tabContent1);
-	} else if (tabId === 'runSystemDiagnostics') {
-		if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length) {
-			navigate('IdentityVerificationScreenOne');
-			return;
-		}
-		runSystemDiagnostics();
-	} else if (tabId === 'IdentityVerificationScreenOne') {
-		if (!secureFeatures?.find(entity => entity.name === 'Verify Candidate')) {
-			navigate('IdentityVerificationScreenTwo');
-			return;
-		}
-		await IdentityVerificationScreenOne(tabContent3);
-	} else if (tabId === 'IdentityVerificationScreenTwo') {
-		if (!secureFeatures?.find(entity => entity.key === 'identity_card_requirement')) {
-			navigate('IdentityVerificationScreenThree');
-			return;
-		}
-		await IdentityVerificationScreenTwo(tabContent4);
-	} else if (tabId === 'IdentityVerificationScreenThree') {
-		if (!secureFeatures?.find(entity => entity.name === 'record_audio')) {
-			navigate('IdentityVerificationScreenFour');
-			return;
-		}
-		await IdentityVerificationScreenThree(tabContent5);
-	} else if (tabId === 'IdentityVerificationScreenFour') {
-		if (!secureFeatures?.find(entity => entity.key === 'record_room')) {
-			navigate('IdentityVerificationScreenFive');
-			return;
-		}
-		await IdentityVerificationScreenFour(tabContent6);
-	} else if (tabId === 'IdentityVerificationScreenFive') {
-		if (!secureFeatures?.find(entity => entity.key === 'record_screen')) {
-			closeModal();
-			return;
-		}
-		await IdentityVerificationScreenFive(tabContent7);
+	} catch (e) {
+		console.error('error in showTab', e);
 	}
 };
 
@@ -215,12 +250,12 @@ const startSession = async (session) => {
 	}
 };
 
-const updateTranslations = () => {
+export const updateTranslations = () => {
 	document.querySelectorAll('[data-i18n]').forEach((element) => {
 		const key = element.getAttribute('data-i18n');
 		element.textContent = i18next.t(key);
 	});
-	console.log('Translations updated');
+	console.log('Translations updated'); // Debugging log
 };
 
 i18next.init({

@@ -8,6 +8,11 @@
     "lint": "eslint ./**/*.js",
     "lint:fix": "eslint --fix ./**/*.js"
   },
+  "browserslist": [
+   ">0.2%",
+  "not dead",
+  "not op_mini all"
+	],
   "keywords": [
     "mereos",
     "proctoring",

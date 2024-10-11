@@ -5,7 +5,7 @@ import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 
-export const IdentityVerificationScreenTwo = async (tabContent,callback) => {
+export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let photo;
 	let inputFile;
 	let disabledBtn = false;
@@ -153,7 +153,7 @@ export const IdentityVerificationScreenTwo = async (tabContent,callback) => {
 	const nextStep = async () => {
 		updatePersistData('preChecksSteps',{ identityCardPhoto:true });
 		registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_verified_successfully', eventValue: getDateTime()});
-		showTab('IdentityVerificationScreenThree',callback);
+		showTab('IdentityVerificationScreenThree');
 	};
 
 	const uploadCandidateIdentityCard = async () => {

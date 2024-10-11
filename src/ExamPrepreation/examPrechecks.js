@@ -73,11 +73,11 @@ tabContentsWrapper.appendChild(tabContent7);
 
 modalContent.appendChild(tabContentsWrapper);
 
-// window.addEventListener('click', function (event) {
-// 	if (event.target === modal) {
-// 		closeModal();
-// 	}
-// });
+window.addEventListener('click', function (event) {
+	if (event.target === modal) {
+		closeModal();
+	}
+});
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
@@ -142,14 +142,19 @@ export const setLanguage = (lang) => {
 };
 
 function closeModal() {
-	console.log('closeModal called');
+	console.log('closeModal called',window.globalCallback);
+
+	if (typeof window.globalCallback === 'function') {
+		window.globalCallback({ message: 'precheck_completed' });
+	}
+
 	modal.style.display = 'none';
 	modal.remove();
 }
 
 const showTab = async (tabId, callback) => {
 	try {
-		console.log('callback',callback);
+		console.log('showTab callback',callback);
 		const tabs = document.querySelectorAll('.tab');
 		const tabContents = document.querySelectorAll('.tab-content');
 
@@ -179,16 +184,16 @@ const showTab = async (tabId, callback) => {
 				navigate('runSystemDiagnostics');
 				return;
 			}
-			await ExamPreparation(tabContent1,callback);
+			await ExamPreparation(tabContent1);
 		} else if (tabId === 'runSystemDiagnostics') {
 			if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length) {
 				navigate('IdentityVerificationScreenOne');
 				return;
 			}
-			runSystemDiagnostics(callback);
+			runSystemDiagnostics();
 		} else if (tabId === 'IdentityVerificationScreenOne') {
 			if (!secureFeatures?.find(entity => entity.key === 'verify_candidate')) {
-				navigate('IdentityVerificationScreenTwo');
+				navigate('IdentityVerificationScreenTwo',callback);
 				return;
 			}
 			await IdentityVerificationScreenOne(tabContent3,callback);
@@ -197,7 +202,7 @@ const showTab = async (tabId, callback) => {
 				navigate('IdentityVerificationScreenThree');
 				return;
 			}
-			await IdentityVerificationScreenTwo(tabContent4,callback);
+			await IdentityVerificationScreenTwo(tabContent4);
 		} else if (tabId === 'IdentityVerificationScreenThree') {
 			if (!secureFeatures?.find(entity => entity.key === 'record_audio')) {
 				navigate('IdentityVerificationScreenFour');
@@ -209,13 +214,15 @@ const showTab = async (tabId, callback) => {
 				navigate('IdentityVerificationScreenFive');
 				return;
 			}
-			await IdentityVerificationScreenFour(tabContent6,callback);
+			await IdentityVerificationScreenFour(tabContent6);
 		} else if (tabId === 'IdentityVerificationScreenFive') {
 			if (!secureFeatures?.find(entity => entity.key === 'record_screen')) {
 				closeModal(callback);
 				return;
 			}
-			await IdentityVerificationScreenFive(tabContent7, callback);
+			console.log('callback',callback);
+			
+			await IdentityVerificationScreenFive(tabContent7,callback);
 		} else {
 			closeModal(callback);
 			return;

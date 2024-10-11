@@ -1,7 +1,7 @@
 import axiosInstance from '../utils/axios.js';
 
 export const getCandidateInviteAssessmentSection = async (params) => {
-	const token =  localStorage.getItem('token');
+	const token =  localStorage.getItem('mereosToken');
 	const config = {
 		headers: {
 			token:token,
@@ -12,7 +12,7 @@ export const getCandidateInviteAssessmentSection = async (params) => {
 };
 
 export const changeCandidateInviteAssessmentSectionStatus = async (data) => {
-	const token =  localStorage.getItem('token');
+	const token =  localStorage.getItem('mereosToken');
 	const config = {
 		headers: {
 			token: token,

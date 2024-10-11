@@ -22,7 +22,7 @@ async function init(host,profileId) {
 	try{
 		const resp = await registerPublicCandidate(host);
 		if(resp.data){
-			localStorage.setItem('token', resp.data.token);
+			localStorage.setItem('mereosToken', resp.data.token);
 			localStorage.setItem('candidateAssessment',JSON.stringify(resp.data.user_data));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
 			localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
@@ -36,20 +36,23 @@ async function init(host,profileId) {
 		console.error('error',e);
 	}
 }
-    
+
+window.globalCallback = null;
 async function start_prechecks(callback) {
-	console.log('Callback received in start_prechecks:', callback);
+	window.globalCallback = callback;
 	openModal(callback);
 }
 
-async function start_recording() {
+window.startRecordingCallBack = null;
+async function start_recording(callback) {
 	try{
+		window.startRecordingCallBack = callback;
 		const newDate = new Date();
 		const newRoomSessionId = newDate.getTime();
 		let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
 		let twilioToken = await getToken({ room_sid: resp.data.room_sid });
 		if(twilioToken){
-			startRecording(twilioToken.data.token);
+			startRecording(twilioToken.data.token,callback);
 		}
 	}catch(err){
 		console.log('error',err);

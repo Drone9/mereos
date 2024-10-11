@@ -1,12 +1,12 @@
 import { detectMultipleScreens, getDateTime, getSecureFeatures, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
 import mockImage from '../assets/images/screen-recorder-mock.svg';
 import '../assets/css/step5.css';
-import { closeModal, showTab } from './examPrechecks';
+import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 
 export let newStream;
 
-export const IdentityVerificationScreenFive = async (tabContent,callback = () => {}) => {
+export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
 	if (!tabContent) {
 		console.error('tabContent is not defined or is not a valid DOM element');
@@ -62,8 +62,7 @@ export const IdentityVerificationScreenFive = async (tabContent,callback = () =>
 	const nextStep = () => {
 		updatePersistData('preChecksSteps', { screenSharing: true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'screen_recording_window_shared', eventValue: getDateTime() });
-		callback({ success: true, message: 'precheck_completed' });
-		closeModal();
+		showTab('IdentityVerificationScreenSix');
 	};
 
 	const prevStep = () => {

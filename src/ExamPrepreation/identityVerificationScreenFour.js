@@ -4,7 +4,7 @@ import { showTab } from './examPrechecks';
 import { getDateTime, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
 import i18next from 'i18next';
 
-export const IdentityVerificationScreenFour = async (tabContent,callback) => {
+export const IdentityVerificationScreenFour = async (tabContent) => {
 	let recordingMode = 'startRecording';
 	let showPlayer = false;
 	let textMessage = 'scan_your_room';
@@ -93,7 +93,7 @@ export const IdentityVerificationScreenFour = async (tabContent,callback) => {
 	const nextStep = async () => {
 		updatePersistData('preChecksSteps',{ roomScanningVideo:true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'room_scan_completed', eventValue: getDateTime() });
-		showTab('IdentityVerificationScreenFive',callback);
+		showTab('IdentityVerificationScreenFive');
 	};
 
 	const prevStep = () => {

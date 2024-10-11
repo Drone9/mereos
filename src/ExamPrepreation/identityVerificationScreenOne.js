@@ -4,7 +4,7 @@ import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 
-export const IdentityVerificationScreenOne = async (tabContent,callback) => {
+export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
 		captureMode: 'take',
 		imageSrc: null,
@@ -127,7 +127,7 @@ export const IdentityVerificationScreenOne = async (tabContent,callback) => {
 	const nextStep = () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
 		updatePersistData('preChecksSteps',{ userPhoto:true });
-		showTab('IdentityVerificationScreenTwo',callback);
+		showTab('IdentityVerificationScreenTwo');
 	};
 
 	const uploadUserCapturedPhoto = async () => {

@@ -226,7 +226,7 @@ export const registerEvent = ({ eventName }) => {
 };
 
 export const getAuthenticationToken = () => {
-	return localStorage.getItem('token');
+	return localStorage.getItem('mereosToken');
 };
 
 export const userRekognitionInfo = async (data) => {
@@ -307,7 +307,7 @@ export const shareScreenFromContent = () => {
 };
 
 export const uploadFileInS3Folder = async (data) => {
-	const token = localStorage.getItem('token');
+	const token = localStorage.getItem('mereosToken');
 	
 	const myHeaders = new Headers();
 	const formData = new FormData();
@@ -762,7 +762,8 @@ export const createATab = (url) => {
 
 export const forceFullScreen = (element = document.documentElement) => {
 	try {
-		if (typeof element?.requestFullscreen === 'function') {
+		// Attempt to request fullscreen based on the browser
+		if (typeof element.requestFullscreen === 'function') {
 			element.requestFullscreen();
 		} else if (typeof element.webkitRequestFullscreen === 'function') { /* Safari */
 			element.webkitRequestFullscreen();
@@ -788,7 +789,7 @@ export const forceFullScreen = (element = document.documentElement) => {
 			}
 		});
 	} catch (error) {
-		console.log(error);
+		console.error('An error occurred while attempting to enter fullscreen:', error);
 	}
 };
 
@@ -810,48 +811,41 @@ const handleDefaultEvent = e => {
 	e.stopPropagation();
 };
 
-export const handlePreChecksRedirection = (callback) => {
+export const handlePreChecksRedirection = () => {
 	const preChecksSteps = convertDataIntoParse('preChecksSteps');
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
 	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 	const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications','Upload Speed'];
+	console.log('preChecksSteps',!preChecksSteps?.roomScanningVideo || hasFeature('record_room'));
 
 	if (!preChecksSteps?.examPreparation && hasFeature('examination_window')) {
-		callback({ success: true, message: 'examination_window' });
 		return 'ExamPreparation';
 	} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length){
-		callback({ success: true, message: 'runSystemDiagnostics' });
 		return 'runSystemDiagnostics';
 	}
 	// else if(!preChecksSteps?.preValidation){
 	// 	return PREVALIDATION_INSTRUCTIONS;
 	// }
 	else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
-		callback({ success: true, message: 'verify_candidate' });
 		return 'IdentityVerificationScreenOne';
 	}else if(!preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
-		callback({ success: true, message: 'identity_card_requirement' });
 		return 'IdentityVerificationScreenTwo';
 	}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
-		callback({ success: true, message: 'record_audio' });
 		return 'IdentityVerificationScreenThree';
-	}else if(!preChecksSteps?.roomScanningVideo || hasFeature('record_room')){
-		callback({ success: true, message: 'record_room' });
+	}else if(!preChecksSteps?.roomScanningVideo && hasFeature('record_room')){
 		return 'IdentityVerificationScreenFour';
 	}
 	// else if(!preChecksSteps?.mobileConnection){
 	// 	return IDENTITY_VERIFICATION_SCREEN_SIX;
 	// }
 	else if(!preChecksSteps?.screenSharing || hasFeature('record_screen')){
-		callback({ success: true, message: 'record_screen' });
 		return 'IdentityVerificationScreenFive';
 	}
 	// else if(!preChecksSteps?.examIndication){
 	// 	return EXAM_INDICATIONS;
 	// }
 	else{
-		callback({ success: true, message: 'precheck_completed' });
 		closeModal();
 		// history.push('/assessment/session');
 	}

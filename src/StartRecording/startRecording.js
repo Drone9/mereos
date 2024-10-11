@@ -3,37 +3,13 @@ import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
 import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, submitSession, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
-import { openModal } from '../ExamPrepreation/examPrechecks';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
 let aiEvents = [];
 
-// export const checkScreenSharing = () => {
-//     const secureFeatures = getSecureFeatures();
-//     const session = convertDataIntoParse('session');
-//     console.log('secureFeatures',secureFeatures);
-
-// 	const screenSharingTrack = newStream;
-// 	if (secureFeatures?.entities.find(entity => entity.key === 'record_screen')) {
-// 		if (screenSharingTrack?.getTracks()?.length && session?.screenRecordingStream?.active) {
-// 			const screenTracks = screenSharingTrack?.getTracks()[0];
-// 			const handleTrackEnded = () => {
-//                 openModal();
-//                 stopAllRecordings();
-// 			};
-
-// 			screenTracks.addEventListener('ended', handleTrackEnded);
-// 		} else {
-//             openModal();
-//             stopAllRecordings();
-// 		}
-// 	}
-// };
-
-
 export const startRecording = async (token) => {
-	console.log('startRecording');
+	console.log('startRecording',token);
 
 	let cameraTrack = null;
 	let screenTrack = null;
@@ -43,8 +19,8 @@ export const startRecording = async (token) => {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 
-	if(!newStream?.getTracks()?.length){
-		openModal();
+	if(!(newStream?.getTracks()?.length) && findConfigs(['Record Screen'],secureFeatures?.entities)?.length){
+		window.startRecordingCallBack({ message: 'screen_share_again' });
 		return;
 	}
 
@@ -66,7 +42,9 @@ export const startRecording = async (token) => {
 				false
 		};
 
+		console.log('twilioOptions',twilioOptions);
 		try {
+			console.log('in the try');
 			const dateTime = new Date();
 			const newRoomSessionId = dateTime.getTime();
 			const newSessionId = session?.sessionId ? session?.sessionId : dateTime.getTime();
@@ -114,6 +92,7 @@ export const startRecording = async (token) => {
 			registerEvent({ eventType: 'success', notify: false, eventName: 'browser_locked_successfully', eventValue: getDateTime() });
 
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
+			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 
 			console.log('Local screen share track published:', screenTrack);
 

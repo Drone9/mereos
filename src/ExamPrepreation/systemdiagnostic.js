@@ -37,7 +37,7 @@ import prompMessage from '../assets/images/user-permission-english.svg';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 
-const runDiagnostics = async (callback) => {
+const runDiagnostics = async () => {
 	const tab1Content = document.getElementById('runSystemDiagnostics');
 	if (!tab1Content) {
 		console.error('Element with id "runSystemDiagnostics" not found.');
@@ -242,7 +242,7 @@ const runDiagnostics = async (callback) => {
 			continueBtn.addEventListener('click', () => {
 				registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
 				updatePersistData('preChecksSteps',{ diagnosticStep:true });
-				showTab('IdentityVerificationScreenOne',callback);
+				showTab('IdentityVerificationScreenOne');
 			});
 		}
 	} catch (error) {

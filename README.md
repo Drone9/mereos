@@ -25,12 +25,13 @@ var mereos = require('mereos');
 
 ```js
 var {init} = require('mereos');
+
 var candidate_object = {
     type: 'candidate',
-	name: `John Doe`,
-	email: 'john.doe@gmail.com',
-	phone: '+613324234' ,
-	external_id: 'ui11223',
+    name: `John Doe`,
+    email: 'john.doe@gmail.com',
+    phone: '+613324234',
+    external_id: 'ui11223',
     school: 1999999,
     ...
 }

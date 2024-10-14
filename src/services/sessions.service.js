@@ -1,7 +1,8 @@
 import axiosInstance from '../utils/axios';
+import { getAuthenticationToken } from '../utils/functions';
 
 export const addSectionSession = async (data) => {
-	const token = localStorage.getItem('mereosToken');
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			token: token,
@@ -11,7 +12,7 @@ export const addSectionSession = async (data) => {
 };
 
 export const editSectionSession = async (data) => {
-	const token = localStorage.getItem('mereosToken');
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			token: token,

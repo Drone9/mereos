@@ -52,7 +52,7 @@ const runDiagnostics = async () => {
                         <label class="description">${i18next.t('system_diagnostic_msg')}</label>
                     </div>
                     <div class="container-prompt">
-                        <img src=${prompMessage} alt="" width="330px" class="prompt-image"></img>
+                        <img src=${prompMessage} alt="" width="300px" class="prompt-image"></img>
                     </div>
                     <div class="container-middle box-section">
                         <div class="diagnostic-item grey-box" id="cameraDiagnosticItem">

@@ -1,7 +1,8 @@
 import axiosInstance from '../utils/axios.js';
+import { getAuthenticationToken } from '../utils/functions.js';
 
 export const changeCandidateAssessmentStatus = async (data) => {
-	const token =  localStorage.getItem('mereosToken');
+	const token =  getAuthenticationToken();
 	const config = {
 		headers: {
 			token: token,

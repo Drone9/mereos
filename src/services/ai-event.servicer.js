@@ -1,7 +1,8 @@
 import axios from '../utils/axios.js';
+import { getAuthenticationToken } from '../utils/functions.js';
 
 export const getAllAiEvents = async () => {
-	const mereosToken = localStorage.getItem('mereosmereosToken');
+	const mereosToken = getAuthenticationToken();
 	const config = {
 		headers: {
 			Authorization: `Basic ${mereosToken}`,
@@ -11,17 +12,17 @@ export const getAllAiEvents = async () => {
 };
 
 export const createAiEvent = async (data) => {
-	const mereosToken = localStorage.getItem('mereosmereosToken');
+	const mereosToken = getAuthenticationToken();
 	const config = {
 		headers: {
-			mereosToken: mereosToken,
+			token: mereosToken,
 		},
 	};
 	return axios.post('/sessions/candidate_ai_event/', data, config);
 };
 
 export const editAiEvent = async (data) => {
-	const mereosToken = localStorage.getItem('mereosmereosToken');
+	const mereosToken = getAuthenticationToken();
 	const config = {
 		headers: {
 			Authorization: `Basic ${mereosToken}`,
@@ -31,7 +32,7 @@ export const editAiEvent = async (data) => {
 };
 
 export const deleteEvent = async (id) => {
-	const mereosToken = localStorage.getItem('mereosToken');
+	const mereosToken = getAuthenticationToken();
 	const config = {
 		headers: {
 			Authorization: `Basic ${mereosToken}`,

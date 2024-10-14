@@ -13,12 +13,13 @@ import { openModal } from './src/ExamPrepreation/examPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
 import { registerPublicCandidate } from './src/services/auth.services';
-import { addSectionSessionRecord, convertDataIntoParse } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, updatePersistData } from './src/utils/functions';
 import { changeCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { getProfile } from './src/services/profile.services';
+import { createCandidateAssessment } from './src/services/assessment.services';
 
-async function init(host,profileId) {
+async function init(host,profileId,assessmentData) {
 	try{
 		const resp = await registerPublicCandidate(host);
 		if(resp.data){
@@ -26,10 +27,23 @@ async function init(host,profileId) {
 			localStorage.setItem('candidateAssessment',JSON.stringify(resp.data.user_data));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
 			localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
-        
-			const profileResp = await getProfile({id:profileId});
-			localStorage.setItem('secureFeatures',JSON.stringify(profileResp.data));
-			console.log('profileResp',profileResp);
+      
+			const data = {
+				'name': assessmentData?.name,
+				'description': assessmentData?.description,
+				'external_id': assessmentData?.id,
+				'course_id':assessmentData?.course_id,
+				'others': {'test': 'value'}
+			};
+			const assessmentResp = await createCandidateAssessment(data);
+			if(assessmentResp?.data){
+				updatePersistData('session', {
+					assessment: assessmentResp?.data,
+				});
+				const profileResp = await getProfile({ id:profileId });
+				localStorage.setItem('secureFeatures',JSON.stringify(profileResp.data));
+				console.log('profileResp',profileResp);
+			}
 			return resp.data;
 		}
 	}catch(e){
@@ -63,7 +77,7 @@ async function stop_recording() {
 	try{
 		const stop_recordingResp  = await stopAllRecordings();
 		if(stop_recordingResp){
-			return 'Recording Stops';
+			return {message:'recording_stopped'};
 		}
 	}catch(err){
 		console.error(err);
@@ -79,15 +93,16 @@ async function submit_session() {
 			console.log('submit_session');
 			let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection.candidate_assessment.assessment.id, status: 'Completed'});
 			if(completedRes){
-				localStorage.clear();
+				localStorage.removeItem('candidateAssessment');
+				localStorage.removeItem('mereosToken');
+				localStorage.removeItem('session');
+				localStorage.removeItem('preChecksSteps');
+				localStorage.removeItem('secureFeatures');
 			}
 		}
 		return;
-		// const resp = await axios.post('https://corder-api.mereos.eu/session/session', session);
-		// return resp;
 	}catch(err){
 		console.error(err);
-		// throw err;
 	}
     
 }

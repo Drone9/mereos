@@ -1,7 +1,8 @@
 import axios from '../utils/axios.js';
+import { getAuthenticationToken } from '../utils/functions.js';
 
 export const getProfile = async (params) => {
-	const token = localStorage.getItem('mereosToken');
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			token: `${token}`,
@@ -11,7 +12,7 @@ export const getProfile = async (params) => {
 	return axios.get('/profiles/candidate_profile/', config);
 };
 export const createProfile = async (data) => {
-	const token = localStorage.getItem('mereosToken');
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			token: token,
@@ -21,7 +22,7 @@ export const createProfile = async (data) => {
 };
 
 export const editProfile = async (data) => {
-	const token = localStorage.getItem('mereosToken');
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,
@@ -31,7 +32,7 @@ export const editProfile = async (data) => {
 };
 
 export const deleteProfile = async (id) => {
-	const token = localStorage.getItem('mereosToken');
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			Authorization: `Basic ${token}`,

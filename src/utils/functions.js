@@ -415,7 +415,7 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 			room_scan_video:session?.room_scan_video,
 			identity_photo: session.candidatePhoto,
 			school: candidateInviteAssessmentSection?.school?.id || '',
-			assessment: candidateInviteAssessmentSection?.assessment?.id || 1,
+			assessment: session?.assessment?.id || 1,
 			candidate: candidateInviteAssessmentSection.id,
 			user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			audio_recordings: recordings?.data?.filter(recording => session.audio_recordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
@@ -477,7 +477,11 @@ export const submitSession = async () => {
 		const session = convertDataIntoParse('session');
 		let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if(resp){
-			localStorage.clear();
+			localStorage.removeItem('candidateAssessment');
+			localStorage.removeItem('mereosToken');
+			localStorage.removeItem('session');
+			localStorage.removeItem('preChecksSteps');
+			localStorage.removeItem('secureFeatures');
 		}
 	}catch(error){
 		console.error(error);
@@ -847,7 +851,5 @@ export const handlePreChecksRedirection = () => {
 	// }
 	else{
 		closeModal();
-		// history.push('/assessment/session');
 	}
 };
-

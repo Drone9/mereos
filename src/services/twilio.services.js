@@ -1,7 +1,8 @@
 import axiosInstance from '../utils/axios';
+import { getAuthenticationToken } from '../utils/functions';
 
 export const getRoomSid = async (params) => {
-	const token = localStorage.getItem('mereosToken');
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			token: `${token}`,
@@ -12,7 +13,7 @@ export const getRoomSid = async (params) => {
 };
 
 export const getToken = async (params) => {
-	const token = localStorage.getItem('mereosToken');
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			token: `${token}`,
@@ -23,7 +24,7 @@ export const getToken = async (params) => {
 };
 
 export const getRecordingSid = async (data) => {
-	const token = localStorage.getItem('mereosToken');
+	const token = getAuthenticationToken();
 	const config = {
 		headers: {
 			token: `${token}`,

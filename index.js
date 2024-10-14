@@ -19,7 +19,7 @@ import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
 
-async function init(host,profileId,assessmentData) {
+async function init(host, profileId, assessmentData) {
 	try{
 		const resp = await registerPublicCandidate(host);
 		if(resp.data){
@@ -36,13 +36,13 @@ async function init(host,profileId,assessmentData) {
 				'others': {'test': 'value'}
 			};
 			const assessmentResp = await createCandidateAssessment(data);
-			if(assessmentResp?.data){
+			if (assessmentResp?.data) {
 				updatePersistData('session', {
 					assessment: assessmentResp?.data,
 				});
-				const profileResp = await getProfile({ id:profileId });
-				localStorage.setItem('secureFeatures',JSON.stringify(profileResp.data));
-				console.log('profileResp',profileResp);
+				const profileResp = await getProfile({id: profileId });
+				localStorage.setItem('secureFeatures', JSON.stringify(profileResp.data));
+				console.log('profileResp', profileResp);
 			}
 			return resp.data;
 		}
@@ -58,54 +58,48 @@ async function start_prechecks(callback) {
 }
 
 window.startRecordingCallBack = null;
-async function start_recording(callback) {
-	try{
+async function start_session(callback) {
+	try {
 		window.startRecordingCallBack = callback;
 		const newDate = new Date();
 		const newRoomSessionId = newDate.getTime();
 		let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
 		let twilioToken = await getToken({ room_sid: resp.data.room_sid });
-		if(twilioToken){
-			startRecording(twilioToken.data.token,callback);
+		if (twilioToken) {
+			startRecording(twilioToken.data.token, callback);
 		}
-	}catch(err){
-		console.log('error',err);
+	} catch (err) {
+		console.log('error',err); 
+		callback({type: 'error', message: 'There is error in starting the session'});
 	}       
 }
 
-async function stop_recording() {
-	try{
-		const stop_recordingResp  = await stopAllRecordings();
-		if(stop_recordingResp){
-			return {message:'recording_stopped'};
-		}
-	}catch(err){
-		console.error(err);
-	}
-}
-
-async function submit_session() {
-	try{
+async function stop_session(callback) {
+	try {
+		const stop_sessionResp  = await stopAllRecordings();
 		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 		const session = convertDataIntoParse('session');
 		let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
-		if(resp){
+		if (resp) {
 			console.log('submit_session');
 			let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection.candidate_assessment.assessment.id, status: 'Completed'});
-			if(completedRes){
+			if (completedRes) {
 				localStorage.removeItem('candidateAssessment');
 				localStorage.removeItem('mereosToken');
 				localStorage.removeItem('session');
 				localStorage.removeItem('preChecksSteps');
 				localStorage.removeItem('secureFeatures');
 			}
+			callback({type: 'success', message: 'session is finished successfully'});
+		} else {
+			throw 'session can\'t add';
 		}
-		return;
-	}catch(err){
+	} catch(err) {
 		console.error(err);
+		callback({type: 'error', message: 'There is error in stopping the session'});
 	}
     
 }
 
-// window.mereos = {init, start_prechecks, start_recording, stop_recording};
-export {init, start_prechecks, start_recording, stop_recording, submit_session };
+// window.mereos = {init, start_prechecks, start_session, stop_session};
+export {init, start_prechecks, start_session, stop_session, submit_session };

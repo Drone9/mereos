@@ -213,7 +213,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			btnContainer.appendChild(recordButton);
 		} else if (recordingMode === 'beingRecorded') {
 			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
-			const stopButton = createButton(`${i18next.t('stop_recording')}`, 'orange-filled-btn', handleStopRecording);
+			const stopButton = createButton(`${i18next.t('stop_session')}`, 'orange-filled-btn', handleStopRecording);
 			btnContainer.appendChild(prevButton);
 			btnContainer.appendChild(stopButton);
 		} else if (recordingMode === 'stopRecording' || recordingMode === 'uploaded_file') {

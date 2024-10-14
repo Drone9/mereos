@@ -142,7 +142,7 @@ export const setLanguage = (lang) => {
 };
 
 function closeModal() {
-	console.log('closeModal called',window.globalCallback);
+	console.log('closeModal called', window.globalCallback);
 
 	if (typeof window.globalCallback === 'function') {
 		window.globalCallback({ message: 'precheck_completed' });

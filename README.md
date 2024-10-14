@@ -16,34 +16,34 @@ The `mereos` package contains only the functionality necessary to conduct an onl
 var mereos = require('mereos');
 ```
 
-1. `init` function is used to initiate a session of proctoring. It takes `school_id` and `assessment_id`. In response, it returns the profile of the features to take assessment with.
+1. `init` function is used to initiate a session of proctoring. It takes `candidate_object`, `profile_id` and `assessment_object`.
 
-**Note:** 'assessment_id' is optional. In case 'assessment_id' is not provided. Default profile of the school will be retured.
+**Note:** `profile_id` is related to proctoring profile which is created at Admin panel.
 
 ```js
 var {init} = require('mereos');
-var profile = init(school_id, assessment_id);
+var resp = init(candidate_object, profile_id, assessment_object);
 ```
 
-2. `start_prechecks` function is used to start prechecks. All the prechecks are based on profile assigned to a school or assessment.
+2. `start_prechecks` function is used to start prechecks. All the prechecks are based on profile used in `init` function. This function takes a callback function which runs once the whole process of prechecks is executed.
 
 ```js
 var {start_prechecks} = require('mereos');
-var resp = start_prechecks(profile);
+var resp = start_prechecks(callback);
 ```
 
-3. `start_recording` function is used to start the video recording for proctoring.
+3. `start_session` function is used to start the session of proctoring through library. This function takes a callback function which runs once the whole process of prechecks is executed.
 
 ```js
-var {start_recording} = require('mereos');
-var resp = start_recording();
+var {start_session} = require('mereos');
+var resp = start_session(callback);
 ```
 
-4. `stop_recording` function is used to stop the video recording.
+4. `stop_session` function is used to finish the session. This function takes a callback function which runs once the whole process is executed.
 
 ```js
-var {stop_recording} = require('mereos');
-var resp = stop_recording(session);
+var {stop_session} = require('mereos');
+var resp = stop_session(callback);
 ```
 
 ## Contributing

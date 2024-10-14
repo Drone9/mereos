@@ -18,10 +18,28 @@ var mereos = require('mereos');
 
 1. `init` function is used to initiate a session of proctoring. It takes `candidate_object`, `profile_id` and `assessment_object`.
 
-**Note:** `profile_id` is related to proctoring profile which is created at Admin panel.
+**Note:** 
+`profile_id` is related to proctoring profile which is created at Admin panel.
+`external_id` in candidate_object is a unique id of candidate in LMS. It's advice to used properly to bridge library and LMS. 
+`external_id` in assessment_object is the id of assessment in LMS. It's advice to used properly to bridge library and LMS. 
 
 ```js
 var {init} = require('mereos');
+var candidate_object = {
+    type: 'candidate',
+	name: `John Doe`,
+	email: 'john.doe@gmail.com',
+	phone: '+613324234' ,
+	external_id: 'ui11223',
+    school: 1999999,
+    ...
+}
+var profile_id = 33212214;
+var assessment_object = {
+    name: 'Geology',
+    external_id: '3235235235' 
+    ...
+}
 var resp = init(candidate_object, profile_id, assessment_object);
 ```
 
@@ -32,7 +50,7 @@ var {start_prechecks} = require('mereos');
 var resp = start_prechecks(callback);
 ```
 
-3. `start_session` function is used to start the session of proctoring through library. This function takes a callback function which runs once the whole process of prechecks is executed.
+3. `start_session` function is used to start the session of proctoring through library. This function takes a callback function which runs once the whole process is executed.
 
 ```js
 var {start_session} = require('mereos');

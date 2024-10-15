@@ -1,6 +1,6 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
-import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, submitSession, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 
@@ -52,7 +52,8 @@ export const startRecording = async (token) => {
 			updatePersistData('session', {
 				roomSessionId: newRoomSessionId,
 				sessionId: newSessionId,
-				sessionStartTime: getTimeInSeconds({ isUTC: true, inputDate: dateTime })
+				sessionStartTime: getTimeInSeconds({ isUTC: true, inputDate: dateTime }),
+				sessionStatus:'Attending'
 			});
 
 			console.log('twilioOptions', twilioOptions);
@@ -70,18 +71,19 @@ export const startRecording = async (token) => {
 
 			cameraTrack = new TwilioVideo.LocalVideoTrack(mediaStream.getVideoTracks()[0]);
 			await room.localParticipant.publishTrack(cameraTrack);
-			console.log('Local camera track published:', cameraTrack);
+			
+			if (secureFeatures?.entities.find(entity => entity.key === 'record_video')) {
+				cameraRecordings = [
+					...cameraRecordings,
+					...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
+				];
+				audioRecordings = [
+					...audioRecordings,
+					...Array.from(room?.localParticipant?.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
+				];
+				updatePersistData('session', { user_video_name: cameraRecordings || [], user_audio_name: audioRecordings, room_id: room?.sid });
+			}
 
-			cameraRecordings = [
-				...cameraRecordings,
-				...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
-			];
-			audioRecordings = [
-				...audioRecordings,
-				...Array.from(room?.localParticipant?.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
-			];
-
-			updatePersistData('session', { user_video_name: cameraRecordings, user_audio_name: audioRecordings, room_id: room?.sid });
 			if (session?.screenRecordingStream && findConfigs(['Record Screen'], secureFeatures?.entities).length) {
 				screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
 				let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
@@ -100,6 +102,9 @@ export const startRecording = async (token) => {
 				cleanupLocalVideo(cameraTrack);
 			});
 		} catch (error) {
+			updatePersistData('session', {
+				sessionStatus:'Terminated'
+			});
 			console.error('Error starting recording:', error);
 		}
 	}
@@ -293,12 +298,11 @@ export const stopAllRecordings = async () => {
 			title: 'Recording Stopped',
 			body: 'Recording session has ended.',
 		});
-
+		
 		updatePersistData('session', {
-			recordingEnded: true
+			recordingEnded: true,
+			sessionStatus:'Completed',
 		});
-
-		await submitSession();
 
 		return 'stop recording';
 	} catch (e) {

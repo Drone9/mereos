@@ -25,7 +25,8 @@ export const initialSessionData = {
 	video_codec: null,
 	video_extension: null,
 	archive_id:null,
-	attempt_id:null
+	attempt_id:null,
+	sessionStatus:'Initiated'
 };
 
 export const preChecksSteps = {

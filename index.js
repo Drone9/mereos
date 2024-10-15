@@ -14,7 +14,6 @@ import { getRoomSid, getToken } from './src/services/twilio.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
 import { registerPublicCandidate } from './src/services/auth.services';
 import { addSectionSessionRecord, convertDataIntoParse, updatePersistData } from './src/utils/functions';
-import { changeCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
@@ -77,19 +76,17 @@ async function start_session(callback) {
 async function stop_session(callback) {
 	try {
 		const stop_sessionResp  = await stopAllRecordings();
+		console.log('stop_sessionResp',stop_sessionResp);
 		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 		const session = convertDataIntoParse('session');
 		let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp) {
 			console.log('submit_session');
-			let completedRes = await changeCandidateAssessmentStatus({id: candidateInviteAssessmentSection.candidate_assessment.assessment.id, status: 'Completed'});
-			if (completedRes) {
-				localStorage.removeItem('candidateAssessment');
-				localStorage.removeItem('mereosToken');
-				localStorage.removeItem('session');
-				localStorage.removeItem('preChecksSteps');
-				localStorage.removeItem('secureFeatures');
-			}
+			localStorage.removeItem('candidateAssessment');
+			localStorage.removeItem('mereosToken');
+			localStorage.removeItem('session');
+			localStorage.removeItem('preChecksSteps');
+			localStorage.removeItem('secureFeatures');
 			callback({type: 'success', message: 'session is finished successfully'});
 		} else {
 			throw 'session can\'t add';
@@ -102,4 +99,4 @@ async function stop_session(callback) {
 }
 
 // window.mereos = {init, start_prechecks, start_session, stop_session};
-export {init, start_prechecks, start_session, stop_session, submit_session };
+export {init, start_prechecks, start_session, stop_session };

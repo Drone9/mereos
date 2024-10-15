@@ -402,40 +402,44 @@ export const updatePersistData = (key, updates) => {
 export const addSectionSessionRecord = (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {
 		console.log('session',session,'candidateInviteAssessmentSection',candidateInviteAssessmentSection);
-	
-		const sourceIds = [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name];
-		const recordings = sourceIds?.length
-			? await getRecordingSid({'source_id': [...session.user_video_name, ...session.audio_recordings, ...session.screen_sharing_video_name]})
-			: [];
+		let recordings;
+		if(session?.user_video_name?.length || session?.audio_recordings?.length || session?.screen_sharing_video_name?.length){
+			const sourceIds = [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name];
+			recordings = sourceIds?.length
+				? await getRecordingSid({'source_id': [...session.user_video_name, ...session.audio_recordings, ...session.screen_sharing_video_name]})
+				: [];
+		}
+		
 		let sectionSessionDetails = {
-			start_time: session.sessionStartTime,
-			submission_time: session.submissionTime,
-			duration_taken: session.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
-			identity_card: session.identityCard,
+			start_time: session?.sessionStartTime,
+			submission_time: session?.submissionTime,
+			duration_taken: session?.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
+			identity_card: session?.identityCard,
 			room_scan_video:session?.room_scan_video,
-			identity_photo: session.candidatePhoto,
+			identity_photo: session?.candidatePhoto,
 			school: candidateInviteAssessmentSection?.school?.id || '',
 			assessment: session?.assessment?.id || 1,
-			candidate: candidateInviteAssessmentSection.id,
+			candidate: candidateInviteAssessmentSection?.id,
 			user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			audio_recordings: recordings?.data?.filter(recording => session.audio_recordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			roomscan_recordings: session.roomScanRecordings,
-			session_id: session.sessionId,
+			roomscan_recordings: session?.roomScanRecordings,
+			session_id: session?.sessionId,
 			collected_details: {
-				location: session.location,
+				location: session?.location,
 			},
+			status: session?.sessionStatus,
 			video_codec: null,
 			video_extension: null,
 			archive_id:null,
 			attempt_id:null,
 		};
 
-		if (session.id) {
-			sectionSessionDetails['id'] = session.id;
+		if (session?.id) {
+			sectionSessionDetails['id'] = session?.id;
 		}
 		
-		const resp = session.id ? await editSectionSession(sectionSessionDetails) : await addSectionSession(sectionSessionDetails);
+		const resp = session?.id ? await editSectionSession(sectionSessionDetails) : await addSectionSession(sectionSessionDetails);
 		resolve(resp);
 	});
 };
@@ -468,23 +472,6 @@ export const registerAIEvent = async ({ notify, eventType, eventName, eventValue
 		notify && showNotification({eventType, eventName, eventValue});
 	}catch(e){
 		console.log('error',e);
-	}
-};
-
-export const submitSession = async () => {
-	try{
-		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-		const session = convertDataIntoParse('session');
-		let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
-		if(resp){
-			localStorage.removeItem('candidateAssessment');
-			localStorage.removeItem('mereosToken');
-			localStorage.removeItem('session');
-			localStorage.removeItem('preChecksSteps');
-			localStorage.removeItem('secureFeatures');
-		}
-	}catch(error){
-		console.error(error);
 	}
 };
 

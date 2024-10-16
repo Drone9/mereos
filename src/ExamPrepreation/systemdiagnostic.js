@@ -242,7 +242,7 @@ const runDiagnostics = async () => {
 			continueBtn.addEventListener('click', () => {
 				registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
 				updatePersistData('preChecksSteps',{ diagnosticStep:true });
-				showTab('IdentityVerificationScreenOne');
+				showTab('Prevalidationinstruction');
 			});
 		}
 	} catch (error) {

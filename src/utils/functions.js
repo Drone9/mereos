@@ -110,23 +110,19 @@ export const getMultipleCameraDevices = () => {
 			.then(devices => {
 				const videoDevices = devices.filter(device => device.kind === 'videoinput');
 				videoDevices.sort((a, b) => {
-					// Check for keywords or identifiers common on Windows and macOS for built-in cameras
 					const isDefaultCamera = (device) => {
 						const label = device.label.toLowerCase();
 						return (
-							// Windows identifiers
 							label.includes('webcam') ||
 							label.includes('camera') ||
 							label.includes('integrated') ||
-							// macOS identifiers
 							label.includes('facetime') ||
 							label.includes('isight')
-							// Add more specific identifiers as needed
 						);
 					};
 				
 					if (isDefaultCamera(a)) {
-						return -1; // prioritize default camera
+						return -1;
 					} else if (isDefaultCamera(b)) {
 						return 1;
 					}
@@ -343,31 +339,17 @@ export const getSecureFeatures = () => {
 
 export const checkForMultipleMicrophones = async () => {
 	try {
-		console.log('Starting checkForMultipleMicrophones');
-
 		await navigator.mediaDevices.getUserMedia({ audio: true });
-		console.log('getUserMedia succeeded');
 
 		const devices = await navigator.mediaDevices.enumerateDevices();
-		console.log('Devices found:', devices);
 
 		const microphones = devices.filter(device => device.kind === 'audioinput');
 		console.log('Microphones found:', microphones);
 
-		const defaultMicrophone = microphones.find(device => device.deviceId === 'default');
-		console.log('Default Microphone found:', defaultMicrophone);
-
-		if (defaultMicrophone) {
-			console.log('Returning default microphone');
-			return [defaultMicrophone];
-		}
-
 		if (microphones.length > 0) {
-			console.log('Returning first microphone');
-			return [microphones[0]];
+			return microphones;
 		}
 
-		console.log('No microphones found');
 		return [];
 	} catch (err) {
 		if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -808,16 +790,17 @@ export const handlePreChecksRedirection = () => {
 	const secureFeatures = getSecureFeature?.entities || [];
 	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 	const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications','Upload Speed'];
-	console.log('preChecksSteps',!preChecksSteps?.roomScanningVideo || hasFeature('record_room'));
+	const prevalidationSteps = ['record_video', 'record_audio','identity_card_requirement','record_room'];
 
-	if (!preChecksSteps?.examPreparation && hasFeature('examination_window')) {
+	console.log('preValidation',!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.name))?.length > 0);
+
+	if (!preChecksSteps?.examPreparation && hasFeature('exam_perparation')) {
 		return 'ExamPreparation';
 	} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length){
 		return 'runSystemDiagnostics';
+	}else if(!preChecksSteps?.preValidation){
+		return 'Prevalidationinstruction';
 	}
-	// else if(!preChecksSteps?.preValidation){
-	// 	return PREVALIDATION_INSTRUCTIONS;
-	// }
 	else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
 		return 'IdentityVerificationScreenOne';
 	}else if(!preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){

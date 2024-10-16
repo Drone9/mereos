@@ -7,8 +7,9 @@ import { IdentityVerificationScreenThree } from './identityVerificationScreenThr
 import { IdentityVerificationScreenFour } from './identityVerificationScreenFour';
 import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
 import { ExamPreparation } from './examPreprationScreen';
-// import { LanguageDropdown } from './languageDropdown';
 import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData } from '../utils/functions';
+import { PrevalidationInstructions } from './PrevalidationInstructions';
+import { preChecksSteps } from '../utils/constant';
 // import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 // import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 // import germanyFlag from '../assets/images/flag-of-germany.svg';
@@ -63,6 +64,10 @@ const tabContent7 = document.createElement('div');
 tabContent7.className = 'tab-content';
 tabContent7.id = 'IdentityVerificationScreenFive';
 
+const tabContent8 = document.createElement('div');
+tabContent8.className = 'tab-content';
+tabContent8.id = 'Prevalidationinstruction';
+
 tabContentsWrapper.appendChild(tabContent1);
 tabContentsWrapper.appendChild(tabContent2);
 tabContentsWrapper.appendChild(tabContent3);
@@ -70,14 +75,9 @@ tabContentsWrapper.appendChild(tabContent4);
 tabContentsWrapper.appendChild(tabContent5);
 tabContentsWrapper.appendChild(tabContent6);
 tabContentsWrapper.appendChild(tabContent7);
+tabContentsWrapper.appendChild(tabContent8);
 
 modalContent.appendChild(tabContentsWrapper);
-
-window.addEventListener('click', function (event) {
-	if (event.target === modal) {
-		closeModal();
-	}
-});
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
@@ -88,11 +88,17 @@ function openModal(callback) {
 	modal.style.display = 'block';
 	const activeTab = handlePreChecksRedirection(callback);
 	console.log('activeTab', activeTab);
+	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
+	console.log('typeof',typeof preChecksStep);
+
+	if(preChecksStep === null){
+		console.log('in the if preChecksSteps');
+		localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
+	}
 
 	showTab(activeTab,callback);
 	const session = convertDataIntoParse('session');
 
-	console.log('session', session);
 	startSession(session);
 
 	const header = document.createElement('div');
@@ -177,20 +183,27 @@ const showTab = async (tabId, callback) => {
 		console.log('secureFeatures', secureFeatures);
 
 		const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications', 'Upload Speed'];
+		const prevalidationSteps = ['record_video', 'record_audio','identity_card_requirement','record_room'];
 
-		console.log('tabId', tabId);
+		console.log('exam_perparation', secureFeatures?.find(entity => entity.key === 'exam_perparation'));
 		if (tabId === 'ExamPreparation') {
-			if (!secureFeatures?.find(entity => entity.key === 'examination_window')) {
+			if (!secureFeatures?.find(entity => entity.key === 'exam_perparation')) {
 				navigate('runSystemDiagnostics');
 				return;
 			}
 			await ExamPreparation(tabContent1);
 		} else if (tabId === 'runSystemDiagnostics') {
 			if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length) {
-				navigate('IdentityVerificationScreenOne');
+				navigate('Prevalidationinstruction');
 				return;
 			}
 			runSystemDiagnostics();
+		} else if (tabId === 'Prevalidationinstruction') {
+			if (!secureFeatures.filter(entity => prevalidationSteps.includes(entity.key))?.length) {
+				navigate('IdentityVerificationScreenOne');
+				return;
+			}
+			await PrevalidationInstructions(tabContent8);
 		} else if (tabId === 'IdentityVerificationScreenOne') {
 			if (!secureFeatures?.find(entity => entity.key === 'verify_candidate')) {
 				navigate('IdentityVerificationScreenTwo',callback);
@@ -198,7 +211,7 @@ const showTab = async (tabId, callback) => {
 			}
 			await IdentityVerificationScreenOne(tabContent3,callback);
 		} else if (tabId === 'IdentityVerificationScreenTwo') {
-			if (!secureFeatures?.find(entity => entity.key === 'identity_card_requirement')) {
+			if (!secureFeatures?.find(entity => entity.key === 'verify_id')) {
 				navigate('IdentityVerificationScreenThree');
 				return;
 			}
@@ -220,7 +233,6 @@ const showTab = async (tabId, callback) => {
 				closeModal(callback);
 				return;
 			}
-			console.log('callback',callback);
 			
 			await IdentityVerificationScreenFive(tabContent7,callback);
 		} else {

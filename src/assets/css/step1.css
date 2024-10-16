@@ -32,12 +32,11 @@
 	font-style: normal;
 	font-weight: normal;
 	font-size: 16px;
-	line-height: 160%;
 	display: flex;
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 1px auto 7px;
+	margin: 25px auto 7px;
 }
 
 .ivso-header-img-container {
@@ -130,7 +129,7 @@
 }
 
 .ivso-btn-container {
-	margin: 40px auto 10px;
+	margin: 20px auto 10px;
 	display: flex;
 	flex-direction: row;
 	column-gap: 20px;

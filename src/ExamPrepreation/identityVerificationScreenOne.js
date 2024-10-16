@@ -202,7 +202,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 		const ivsoQueryMsg = document.createElement('div');
 		ivsoQueryMsg.className = 'ivso-query-msg';
-		// ivsoQueryMsg.textContent = i18next.t('photo_blurry_try_again');
 
 		if (state.imageSrc) {
 			const img = document.createElement('img');
@@ -270,9 +269,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		}
 
 		ivsoWrapper.appendChild(ivsHeaderTitle);
-		ivsoWrapper.appendChild(ivsMsg);
 		ivsoWrapper.appendChild(ivsoHeaderImgContainer);
 		ivsoWrapper.appendChild(ivsoWebcamContainer);
+		ivsoWrapper.appendChild(ivsMsg);
 		ivsoWrapper.appendChild(ivsoBtnContainer);
 		if (state.captureMode === 'retake') {
 			ivsoWrapper.appendChild(ivsoQueryMsg);

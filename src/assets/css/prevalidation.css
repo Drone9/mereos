@@ -1,0 +1,123 @@
+.pvi-container {
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+}
+
+.pvi-wrapper {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.pvi-header-img {
+  margin: 20px auto 0px;
+}
+.pvi-instruction-img{
+  width: 40px;
+  height: 40px;
+}
+.multi-device-block {
+  margin: auto;
+  gap: 10px;
+  display: flex;
+  justify-content: center;
+}
+.multi-device-block select {
+  padding: 10px;
+  border: 1px solid lightgray;
+  border-radius: 5px;
+  width: 100%;
+}
+
+.multi-device-block label {
+  font-size: 13px;
+}
+.camera-container{
+  width: 35%;
+}
+.microphone-container{
+  width: 35%;
+}
+.pvi-header-title {
+  font-family: Poppins, sans-serif;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #222222;
+  margin: 0px auto 0px;
+}
+.my-recorded-video{
+  height: 300px;
+}
+.pvi-msg {
+  font-family: Poppins, sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 16px;
+  line-height: 160%;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #8D979F;
+  margin: 5px auto 0px;
+}
+
+.pvi-instructions-container {
+  display: flex;
+  flex-direction: row;
+  margin: 20px auto 0px;
+}
+
+.pvi-instructions-img {
+  height: 48px;
+  width: 48px;
+  border-radius: 0px;
+}
+
+.pvi-instruction-txt {
+  font-family: Poppins, sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  color: #222222;
+  margin: 0px 15px 0px 5px;
+}
+
+.pvi-query-msg {
+  font-family: Poppins, sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 21px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 16px auto 0px;
+  cursor: pointer;
+}
+
+.pvi-btn-container {
+  margin: 20px 0px 0px;
+  text-align: center;
+}
+
+.pvi-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 11px 32px;
+  background: #0087FD;
+  border-radius: 5px;
+  border: 0px;
+  color: #ffffff;
+  margin: auto;
+  cursor: pointer;
+}

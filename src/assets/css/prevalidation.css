@@ -3,7 +3,9 @@
   flex-direction: column;
   margin: auto;
 }
-
+.ivsf-container{
+  margin-top: -15px;
+}
 .pvi-wrapper {
   margin: auto;
   display: flex;
@@ -43,7 +45,7 @@
   font-family: Poppins, sans-serif;
   font-style: normal;
   font-weight: bold;
-  font-size: 32px;
+  font-size: 26px;
   display: flex;
   align-items: center;
   text-align: center;
@@ -51,7 +53,7 @@
   margin: 0px auto 0px;
 }
 .my-recorded-video{
-  height: 300px;
+  height: 255px;
 }
 .pvi-msg {
   font-family: Poppins, sans-serif;
@@ -63,13 +65,13 @@
   align-items: center;
   text-align: center;
   color: #8D979F;
-  margin: 5px auto 0px;
+  margin: 0px auto 0px;
 }
 
 .pvi-instructions-container {
   display: flex;
   flex-direction: row;
-  margin: 20px auto 0px;
+  margin: 10px auto 0px;
 }
 
 .pvi-instructions-img {
@@ -99,12 +101,12 @@
   display: flex;
   align-items: center;
   text-align: center;
-  margin: 16px auto 0px;
+  margin: 9px auto 0px;
   cursor: pointer;
 }
 
 .pvi-btn-container {
-  margin: 20px 0px 0px;
+  margin: 10px 0px 0px;
   text-align: center;
 }
 

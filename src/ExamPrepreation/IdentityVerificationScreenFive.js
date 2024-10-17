@@ -3,6 +3,7 @@ import mockImage from '../assets/images/screen-recorder-mock.svg';
 import '../assets/css/step5.css';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
+import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export let newStream;
 
@@ -74,6 +75,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const container = document.createElement('div');
 	container.classList.add('ivsf-container');
+	renderIdentityVerificationSteps(container, 5);
 
 	const wrapper = document.createElement('div');
 	wrapper.classList.add('ivsf-wrapper');

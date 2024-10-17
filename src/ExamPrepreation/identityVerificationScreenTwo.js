@@ -4,6 +4,7 @@ import greenCheckMark from '../assets/images/checkmark-green.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
+import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let photo;
@@ -19,8 +20,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const videoConstraints = {
-		width: 400,
-		height: 300,
+		width: 350,
+		height: 280,
 		facingMode: 'user',
 		deviceId: localStorage.getItem('deviceId') || undefined,
 	};
@@ -213,6 +214,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			tabContent.appendChild(container);
 		}
 		container.innerHTML = '';
+		renderIdentityVerificationSteps(container, 2);
 
 		const wrapper = document.createElement('div');
 		wrapper.className = 'ivst-wrapper';

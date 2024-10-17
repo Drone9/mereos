@@ -44,13 +44,12 @@
 
 .ivst-container .ivst-header-title {
   font-weight: bold;
-  font-size: 42px;
-  line-height: 63px;
+  font-size: 35px;
   display: flex;
   align-items: center;
   text-align: center;
   color: #222222;
-  margin: 26px auto 0px;
+  margin: 15px auto 0px;
 }
 
 .ivst-container .ivst-query-msg {
@@ -86,8 +85,7 @@
 }
 
 .ivst-container .ivst-msg {
-  font-size: 16px;
-  line-height: 160%;
+  font-size: 15px;
   display: flex;
   align-items: center;
   text-align: center;
@@ -137,7 +135,7 @@
 
 .ivst-container .ivst-btn-container {
   display: flex;
-  margin: 40px auto 0px;
+  margin: 20px auto 0px;
   gap: 20px;
 }
 
@@ -156,5 +154,5 @@
   line-height: 140%;
   margin: auto;
   border-radius: 5px;
-  margin: 30px auto 20px;
+  margin: 20px auto 10px;
 }

@@ -3,6 +3,7 @@
   display: flex;
   font-family: 'Poppins', sans-serif;
   justify-content: center;
+	flex-direction: column;
 }
 
 .ivso-wrapper {
@@ -18,13 +19,13 @@
 	font-family: Poppins;
 	font-style: normal;
 	font-weight: bold;
-	font-size: 42px;
+	font-size: 32px;
 	line-height: 63px;
 	display: flex;
 	align-items: center;
 	text-align: center;
 	color: #222222;
-	margin: 4px auto 7px;
+	margin: 0px auto 7px;
 }
 
 .ivso-msg {
@@ -36,16 +37,16 @@
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 25px auto 7px;
+	margin: 15px auto 7px;
 }
 
 .ivso-header-img-container {
 	position: relative;
-	margin: 10px auto 0px;
+	margin: 0px auto 0px;
 }
 .ivso-captured-img{
-	width: 400px;
-	height: 300px;
+	width: 350px;
+	height: 274px;
 	object-fit: cover;
 }
 
@@ -63,9 +64,9 @@
 
 .ivso-screen-grid {
 	position: absolute;
-	right: -177px;
+	right: -169px;
 	top: 37px;
-	height: 218px;
+	height: 195px;
 }
 
 @media (max-width: 720px) {
@@ -129,7 +130,7 @@
 }
 
 .ivso-btn-container {
-	margin: 20px auto 10px;
+	margin: 10px auto 0px;
 	display: flex;
 	flex-direction: row;
 	column-gap: 20px;

@@ -68,6 +68,11 @@ const tabContent8 = document.createElement('div');
 tabContent8.className = 'tab-content';
 tabContent8.id = 'Prevalidationinstruction';
 
+const identitySteps = document.createElement('div');
+identitySteps.className = 'steps-container';
+identitySteps.id = 'modal-steps-container';
+
+tabContentsWrapper.appendChild(identitySteps);
 tabContentsWrapper.appendChild(tabContent1);
 tabContentsWrapper.appendChild(tabContent2);
 tabContentsWrapper.appendChild(tabContent3);
@@ -101,8 +106,8 @@ function openModal(callback) {
 
 	startSession(session);
 
-	const header = document.createElement('div');
-	header.className = 'header';
+	const modalHeader = document.createElement('div');
+	modalHeader.className = 'header';
 
 	const languageSelect = document.createElement('select');
 	languageSelect.id = 'languageDropdown';
@@ -111,6 +116,7 @@ function openModal(callback) {
 	languageSelect.className = 'langauge-dropdown';
 	languageSelect.style.top = '10px';
 	languageSelect.style.right = '10px';
+	languageSelect.style.width = '120px';
 
 	// Language options
 	const languages = [
@@ -136,8 +142,8 @@ function openModal(callback) {
 		setLanguage(selectedLanguage);
 	});
 
-	header.appendChild(languageSelect);
-	modalContent.insertBefore(header, modalContent.firstChild);
+	modalHeader.appendChild(languageSelect);
+	modalContent.insertBefore(modalHeader, modalContent.firstChild);
 }
 
 export const setLanguage = (lang) => {
@@ -161,6 +167,7 @@ function closeModal() {
 const showTab = async (tabId, callback) => {
 	try {
 		console.log('showTab callback',callback);
+
 		const tabs = document.querySelectorAll('.tab');
 		const tabContents = document.querySelectorAll('.tab-content');
 

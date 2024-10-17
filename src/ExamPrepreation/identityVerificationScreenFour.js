@@ -3,6 +3,7 @@ import redDot from '../assets/images/red-dot.svg';
 import { showTab } from './examPrechecks';
 import { getDateTime, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
 import i18next from 'i18next';
+import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
 	let recordingMode = 'startRecording';
@@ -138,6 +139,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			tabContent.appendChild(container);
 		}
 		container.innerHTML = '';
+		renderIdentityVerificationSteps(container, 4);
 
 		const wrapper = document.createElement('div');
 		wrapper.className = 'ivsf-wrapper';
@@ -156,7 +158,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		if (showPlayer && blob) {
 			refVideo = document.createElement('video');
 			refVideo.id = 'myVideo';
-			refVideo.className = 'my-recorded-video';
+			refVideo.className = 'my-recorded-video2';
 			refVideo.controls = true;
 			refVideo.autoplay = true;
 			headerImgContainer.appendChild(refVideo);
@@ -183,7 +185,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 			const webcam = document.createElement('video');
 			webcam.autoplay = true;
-			webcam.height = 300;
+			webcam.height = 280;
 			navigator.mediaDevices.getUserMedia(videoConstraints)
 				.then(stream => {
 					webcam.srcObject = stream;

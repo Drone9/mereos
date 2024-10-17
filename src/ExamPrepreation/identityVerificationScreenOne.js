@@ -3,6 +3,7 @@ import '../assets/css/step1.css';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
+import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
@@ -10,8 +11,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		imageSrc: null,
 		videoConstraints: {
 			video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
-			width: 400,
-			height: 300,
+			width: 350,
+			height: 280,
 			facingMode: 'user',
 			deviceId: localStorage.getItem('deviceId') || undefined,
 		},
@@ -172,54 +173,60 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 	const renderUI = () => {
 		let ivsoContainer = tabContent.querySelector('.ivso-container');
+		
 		if (!ivsoContainer) {
 			ivsoContainer = document.createElement('div');
 			ivsoContainer.className = 'ivso-container';
 			tabContent.appendChild(ivsoContainer);
+		} else {
+			ivsoContainer.innerHTML = '';
 		}
 
-		ivsoContainer.innerHTML = '';
-
+		renderIdentityVerificationSteps(ivsoContainer, 1);
+	
 		const ivsoWrapper = document.createElement('div');
 		ivsoWrapper.className = 'ivso-wrapper';
-
+	
 		const ivsHeaderTitle = document.createElement('div');
 		ivsHeaderTitle.className = 'ivso-header-title';
 		ivsHeaderTitle.textContent = i18next.t('webcam_diagnostics');
-
+	
 		const ivsMsg = document.createElement('div');
 		ivsMsg.className = 'ivso-msg';
 		ivsMsg.textContent = i18next.t(state.msg.text);
-
+	
 		const ivsoWebcamContainer = document.createElement('div');
 		ivsoWebcamContainer.className = 'ivso-webcam-container';
-
+	
 		const ivsoHeaderImgContainer = document.createElement('div');
 		ivsoHeaderImgContainer.className = 'ivso-header-img-container';
-
+	
 		const ivsoBtnContainer = document.createElement('div');
 		ivsoBtnContainer.className = 'ivso-btn-container';
-
+	
 		const ivsoQueryMsg = document.createElement('div');
 		ivsoQueryMsg.className = 'ivso-query-msg';
-
+	
+		// Handle webcam image or video feed
 		if (state.imageSrc) {
 			const img = document.createElement('img');
 			img.src = state.imageSrc;
 			img.className = 'ivso-captured-img';
 			ivsoHeaderImgContainer.appendChild(img);
 		} else {
+			// Check webcam stream
 			if (!webcamStream) {
 				startWebcam();
 			}
 			ivsoWebcamContainer.appendChild(videoElement);
-
+	
 			const gridImg = document.createElement('img');
 			gridImg.src = screenCenter;
 			gridImg.className = 'ivso-screen-grid';
 			ivsoHeaderImgContainer.appendChild(gridImg);
 		}
-
+	
+		// Handle buttons
 		if (state.captureMode !== 'take') {
 			const retakePhotoBtn = document.createElement('button');
 			retakePhotoBtn.textContent = i18next.t('retake_photo');
@@ -243,7 +250,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			});
 			ivsoBtnContainer.appendChild(retakePhotoBtn);
 		}
-
+	
 		if (state.captureMode === 'uploaded_photo') {
 			const nextBtn = document.createElement('button');
 			nextBtn.textContent = i18next.t('next_step');
@@ -251,7 +258,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			nextBtn.addEventListener('click', nextStep);
 			ivsoBtnContainer.appendChild(nextBtn);
 		}
-
+	
 		if (state.captureMode === 'take') {
 			const takePhotoBtn = document.createElement('button');
 			takePhotoBtn.textContent = i18next.t('take_photo');
@@ -259,7 +266,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			takePhotoBtn.addEventListener('click', capturePhoto);
 			ivsoBtnContainer.appendChild(takePhotoBtn);
 		}
-
+	
 		if (state.captureMode === 'retake') {
 			const uploadPhotoBtn = document.createElement('button');
 			uploadPhotoBtn.textContent = i18next.t('upload');
@@ -267,7 +274,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			uploadPhotoBtn.addEventListener('click', uploadUserCapturedPhoto);
 			ivsoBtnContainer.appendChild(uploadPhotoBtn);
 		}
-
+	
+		// Append elements to wrapper
 		ivsoWrapper.appendChild(ivsHeaderTitle);
 		ivsoWrapper.appendChild(ivsoHeaderImgContainer);
 		ivsoWrapper.appendChild(ivsoWebcamContainer);
@@ -276,9 +284,11 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		if (state.captureMode === 'retake') {
 			ivsoWrapper.appendChild(ivsoQueryMsg);
 		}
-
+	
+		// Append the wrapper to the container
 		ivsoContainer.appendChild(ivsoWrapper);
 	};
+	
 
 	renderUI();
 

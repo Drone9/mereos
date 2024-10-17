@@ -1,0 +1,112 @@
+.ivs-container {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+}
+.steps-container{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 14px;
+}
+@media (max-width: 720px) {
+  .ivs-container {
+      overflow: auto;
+      width: 98%;
+  }
+}
+
+.ivs-header-img {
+  width: 411px;
+  height: 230px;
+  border-radius: 5px;
+  margin: 30px auto 0;
+}
+
+.ivs-instructions-container {
+  text-align: center;
+  display: flex;
+  flex-direction: row;
+  margin: 20px auto 0;
+}
+
+.ivs-instruction {
+  display: flex;
+  flex-direction: row;
+}
+
+.ivs-instruction-step-container {
+  margin: 0 25px 0 5px;
+}
+
+.ivs-instruction-step {
+  display: flex;
+  align-items: center;
+  font-family: Poppins, sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 13px;
+  line-height: 19px;
+  color: #B7C5D1;
+}
+
+.ivs-instruction-txt {
+  font-family: Poppins, sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 24px;
+  display: flex;
+  white-space: nowrap;
+  align-items: center;
+  color: #92959A;
+  border-bottom: 3.5px solid #EAEDF2;
+  border-radius: 1px;
+  padding-bottom: 10px;
+}
+
+.ivs-instruction-txt-orange {
+  font-family: Poppins, sans-serif;
+  white-space: nowrap;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  color: #FFA500;
+  border-bottom: 3.5px solid #FFA500;
+  border-radius: 1px;
+  padding-bottom: 10px;
+}
+
+.ivs-btn-container {
+  margin: 35px 0 auto;
+}
+
+.ivs-query-msg {
+  font-family: Poppins, sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 21px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #8D979F;
+  margin: 16px auto 0;
+}
+
+.ivs-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 11px 32px;
+  background: #0087FD;
+  border-radius: 5px;
+  border: 0;
+  color: #ffffff;
+  margin: auto;
+  cursor: pointer;
+}

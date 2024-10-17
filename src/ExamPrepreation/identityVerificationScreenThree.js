@@ -2,6 +2,8 @@ import { getDateTime, getSecureFeatures, registerEvent, updatePersistData } from
 import { showTab } from './examPrechecks';
 import '../assets/css/step3.css';
 import i18next from 'i18next';
+import { renderIdentityVerificationSteps } from './IdentitySteps';
+// import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
 	let canvasRef;
@@ -141,8 +143,9 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			container = document.createElement('div');
 			container.className = 'ivst-container';
 			tabContent.appendChild(container);
+			renderIdentityVerificationSteps(container, 3);
 		}
-    
+
 		let wrapper = container.querySelector('.ivst-wrapper');
 		if (!wrapper) {
 			wrapper = document.createElement('div');
@@ -226,6 +229,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		return button;
 	};
 
+	// renderIdentityVerificationSteps(tabContent.querySelector('.ivst-container'), 3);
 	drawAudioSpikes();
 	updateUI();
 

@@ -284,12 +284,12 @@
 .orange-hollow-btn{
   border-style: none;
 	font-size: 1em;
-	color: orange;
+	color: var(--primary-color);
 	font-weight: 500;
 	border-radius: 5px;
 	padding: 10px 20px;
   background-color: #ffffff; 
-  border: 1px solid orange;
+  border: 1px solid var(--primary-color);
   cursor: pointer;
 	&:disabled {
 		background-image: linear-gradient(#F6F6F9, #F6F6F9) !important;
@@ -321,7 +321,7 @@
 	font-weight: 500;
 	border-radius: 5px;
 	padding: 10px 20px;
-  background-color: orange;
+  background-color: var(--primary-color);
   cursor: pointer;
 	&:disabled {
 		background-image: linear-gradient(#F6F6F9, #F6F6F9) !important;

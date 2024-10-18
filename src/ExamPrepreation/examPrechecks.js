@@ -126,13 +126,13 @@ function openModal(callback) {
 		{ name: 'French', value: 'french', keyword: 'fr' },
 		{ name: 'Portuguese (Brazil)', value: 'portuguese_brazil', keyword: 'pt' },
 		{ name: 'Italian', value: 'italian', keyword: 'it' },
-		{ name: 'Welsh', value: 'welsh', keyword: 'cy' },
+		// { name: 'Welsh', value: 'welsh', keyword: 'cy' },
 	];
 
 	languages.forEach(lang => {
 		const option = document.createElement('option');
-		option.value = lang.keyword; // Use the language keyword as the value
-		option.textContent = lang.name; // Set the display name
+		option.value = lang.keyword;
+		option.textContent = lang.name;
 		languageSelect.appendChild(option);
 	});
 
@@ -281,7 +281,7 @@ export const updateTranslations = () => {
 		const key = element.getAttribute('data-i18n');
 		element.textContent = i18next.t(key);
 	});
-	console.log('Translations updated'); // Debugging log
+	console.log('Translations updated');
 };
 
 i18next.init({
@@ -293,6 +293,21 @@ i18next.init({
        
 		fr: {
 			translation: require('../assets/locales/fr/translation.json')
+		},
+		it: {
+			translation: require('../assets/locales/it/translation.json')
+		},
+		pt: {
+			translation: require('../assets/locales/pt/translation.json')
+		},
+		nl: {
+			translation: require('../assets/locales/nl/translation.json')
+		},
+		es: {
+			translation: require('../assets/locales/es/translation.json')
+		},
+		de: {
+			translation: require('../assets/locales/de/translation.json')
 		},
        
 	}

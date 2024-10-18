@@ -3,11 +3,14 @@ import i18next from 'i18next';
 i18next.init({
 	lng: 'en',
 	resources: {
-		en: {
-			translation: require('./locales/en.json')
-		},
-		es: {
-			translation: require('./locales/es.json')
+		// en: {
+		// 	translation: require('./locales/en.json')
+		// },
+		// es: {
+		// 	translation: require('./locales/es.json')
+		// },
+		it: {
+			translation: require('./locales/it/translations.json')
 		}
 	}
 }, (err) => {

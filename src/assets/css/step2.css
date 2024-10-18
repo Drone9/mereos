@@ -148,6 +148,6 @@
 
 .ivst-file {
     text-decoration: underline;
-    color: orange; /* Assuming $primaryColor is defined in colors.scss */
+    color: var(--primary-color); /* Assuming $primaryColor is defined in colors.scss */
     cursor: pointer;
 }

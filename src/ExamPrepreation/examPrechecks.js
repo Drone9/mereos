@@ -10,6 +10,7 @@ import { ExamPreparation } from './examPreprationScreen';
 import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
 import { preChecksSteps } from '../utils/constant';
+import { MobileProctoring } from './mobileProctoring';
 // import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 // import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 // import germanyFlag from '../assets/images/flag-of-germany.svg';
@@ -36,51 +37,56 @@ modalContent.appendChild(tabsContainer);
 const tabContentsWrapper = document.createElement('div');
 tabContentsWrapper.className = 'tab-contents-wrapper';
 
-const tabContent1 = document.createElement('div');
-tabContent1.className = 'tab-content';
-tabContent1.id = 'ExamPreparation';
+const ExamPreparationContainer = document.createElement('div');
+ExamPreparationContainer.className = 'tab-content';
+ExamPreparationContainer.id = 'ExamPreparation';
 
-const tabContent2 = document.createElement('div');
-tabContent2.className = 'tab-content';
-tabContent2.id = 'runSystemDiagnostics';
+const SystemDiagnosticsContainer = document.createElement('div');
+SystemDiagnosticsContainer.className = 'tab-content';
+SystemDiagnosticsContainer.id = 'runSystemDiagnostics';
 
-const tabContent3 = document.createElement('div');
-tabContent3.className = 'tab-content';
-tabContent3.id = 'IdentityVerificationScreenOne';
+const IdentityVerificationScreenOneContainer = document.createElement('div');
+IdentityVerificationScreenOneContainer.className = 'tab-content';
+IdentityVerificationScreenOneContainer.id = 'IdentityVerificationScreenOne';
 
-const tabContent4 = document.createElement('div');
-tabContent4.className = 'tab-content';
-tabContent4.id = 'IdentityVerificationScreenTwo';
+const IdentityVerificationScreenTwoConatiner = document.createElement('div');
+IdentityVerificationScreenTwoConatiner.className = 'tab-content';
+IdentityVerificationScreenTwoConatiner.id = 'IdentityVerificationScreenTwo';
 
-const tabContent5 = document.createElement('div');
-tabContent5.className = 'tab-content';
-tabContent5.id = 'IdentityVerificationScreenThree';
+const IdentityVerificationScreenThreeContainer = document.createElement('div');
+IdentityVerificationScreenThreeContainer.className = 'tab-content';
+IdentityVerificationScreenThreeContainer.id = 'IdentityVerificationScreenThree';
 
-const tabContent6 = document.createElement('div');
-tabContent6.className = 'tab-content';
-tabContent6.id = 'IdentityVerificationScreenFour';
+const IdentityVerificationScreenFourContainer = document.createElement('div');
+IdentityVerificationScreenFourContainer.className = 'tab-content';
+IdentityVerificationScreenFourContainer.id = 'IdentityVerificationScreenFour';
 
-const tabContent7 = document.createElement('div');
-tabContent7.className = 'tab-content';
-tabContent7.id = 'IdentityVerificationScreenFive';
+const IdentityVerificationScreenFiveContainer = document.createElement('div');
+IdentityVerificationScreenFiveContainer.className = 'tab-content';
+IdentityVerificationScreenFiveContainer.id = 'IdentityVerificationScreenFive';
 
-const tabContent8 = document.createElement('div');
-tabContent8.className = 'tab-content';
-tabContent8.id = 'Prevalidationinstruction';
+const PrevalidationinstructionContainer = document.createElement('div');
+PrevalidationinstructionContainer.className = 'tab-content';
+PrevalidationinstructionContainer.id = 'Prevalidationinstruction';
 
 const identitySteps = document.createElement('div');
 identitySteps.className = 'steps-container';
 identitySteps.id = 'modal-steps-container';
 
+const mobileProctingConatiner = document.createElement('div');
+identitySteps.className = 'mobile-procting-conatiner';
+identitySteps.id = 'mobileProctingConatiner';
+
 tabContentsWrapper.appendChild(identitySteps);
-tabContentsWrapper.appendChild(tabContent1);
-tabContentsWrapper.appendChild(tabContent2);
-tabContentsWrapper.appendChild(tabContent3);
-tabContentsWrapper.appendChild(tabContent4);
-tabContentsWrapper.appendChild(tabContent5);
-tabContentsWrapper.appendChild(tabContent6);
-tabContentsWrapper.appendChild(tabContent7);
-tabContentsWrapper.appendChild(tabContent8);
+tabContentsWrapper.appendChild(ExamPreparationContainer);
+tabContentsWrapper.appendChild(SystemDiagnosticsContainer);
+tabContentsWrapper.appendChild(IdentityVerificationScreenOneContainer);
+tabContentsWrapper.appendChild(IdentityVerificationScreenTwoConatiner);
+tabContentsWrapper.appendChild(IdentityVerificationScreenThreeContainer);
+tabContentsWrapper.appendChild(IdentityVerificationScreenFourContainer);
+tabContentsWrapper.appendChild(IdentityVerificationScreenFiveContainer);
+tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
+tabContentsWrapper.appendChild(mobileProctingConatiner);
 
 modalContent.appendChild(tabContentsWrapper);
 
@@ -198,7 +204,7 @@ const showTab = async (tabId, callback) => {
 				navigate('runSystemDiagnostics');
 				return;
 			}
-			await ExamPreparation(tabContent1);
+			await ExamPreparation(ExamPreparationContainer);
 		} else if (tabId === 'runSystemDiagnostics') {
 			if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length) {
 				navigate('Prevalidationinstruction');
@@ -210,38 +216,44 @@ const showTab = async (tabId, callback) => {
 				navigate('IdentityVerificationScreenOne');
 				return;
 			}
-			await PrevalidationInstructions(tabContent8);
+			await PrevalidationInstructions(PrevalidationinstructionContainer);
 		} else if (tabId === 'IdentityVerificationScreenOne') {
 			if (!secureFeatures?.find(entity => entity.key === 'verify_candidate')) {
 				navigate('IdentityVerificationScreenTwo',callback);
 				return;
 			}
-			await IdentityVerificationScreenOne(tabContent3,callback);
+			await IdentityVerificationScreenOne(IdentityVerificationScreenOneContainer,callback);
 		} else if (tabId === 'IdentityVerificationScreenTwo') {
 			if (!secureFeatures?.find(entity => entity.key === 'verify_id')) {
 				navigate('IdentityVerificationScreenThree');
 				return;
 			}
-			await IdentityVerificationScreenTwo(tabContent4);
+			await IdentityVerificationScreenTwo(IdentityVerificationScreenTwoConatiner);
 		} else if (tabId === 'IdentityVerificationScreenThree') {
 			if (!secureFeatures?.find(entity => entity.key === 'record_audio')) {
 				navigate('IdentityVerificationScreenFour');
 				return;
 			}
-			await IdentityVerificationScreenThree(tabContent5);
+			await IdentityVerificationScreenThree(IdentityVerificationScreenThreeContainer);
 		} else if (tabId === 'IdentityVerificationScreenFour') {
 			if (!secureFeatures?.find(entity => entity.key === 'record_room')) {
 				navigate('IdentityVerificationScreenFive');
 				return;
 			}
-			await IdentityVerificationScreenFour(tabContent6);
+			await IdentityVerificationScreenFour(IdentityVerificationScreenFourContainer);
+		} else if (tabId === 'MobileProctoring') {
+			if (!secureFeatures?.find(entity => entity.key === 'mobile_proctoring')) {
+				navigate('IdentityVerificationScreenFive');
+				return;
+			}
+			await MobileProctoring(mobileProctingConatiner);
 		} else if (tabId === 'IdentityVerificationScreenFive') {
 			if (!secureFeatures?.find(entity => entity.key === 'record_screen')) {
 				closeModal(callback);
 				return;
 			}
 			
-			await IdentityVerificationScreenFive(tabContent7,callback);
+			await IdentityVerificationScreenFive(IdentityVerificationScreenFiveContainer,callback);
 		} else {
 			closeModal(callback);
 			return;

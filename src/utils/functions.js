@@ -323,7 +323,7 @@ export const findConfigs = (configs, entities) => {
 	let result = [];
 	for (const entity of entities) {
 		for (const config of configs) {
-			if (config === entity.name) {
+			if (config === entity.key) {
 				result.push(entity);
 				break;
 			}
@@ -385,10 +385,10 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 	return new Promise(async (resolve, _reject) => {
 		console.log('session',session,'candidateInviteAssessmentSection',candidateInviteAssessmentSection);
 		let recordings;
-		if(session?.user_video_name?.length || session?.audio_recordings?.length || session?.screen_sharing_video_name?.length){
-			const sourceIds = [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name];
+		if(session?.user_video_name?.length || session?.audio_recordings?.length || session?.screen_sharing_video_name?.length || session?.mobileRecordings?.length || session?.mobileAudios?.length){
+			const sourceIds = [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
 			recordings = sourceIds?.length
-				? await getRecordingSid({'source_id': [...session.user_video_name, ...session.audio_recordings, ...session.screen_sharing_video_name]})
+				? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
 				: [];
 		}
 		
@@ -415,6 +415,8 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 			video_extension: null,
 			archive_id:null,
 			attempt_id:null,
+			mobile_audio_recordings: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			mobile_recordings: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 		};
 
 		if (session?.id) {
@@ -726,13 +728,6 @@ export const detectWindowResize = () => {
 	});
 };
 
-export const createATab = (url) => {
-	return new Promise((resolve, _reject) => {
-		window.open(url);
-		resolve(true);
-	});
-};
-
 export const forceFullScreen = (element = document.documentElement) => {
 	try {
 		// Attempt to request fullscreen based on the browser
@@ -809,17 +804,11 @@ export const handlePreChecksRedirection = () => {
 		return 'IdentityVerificationScreenThree';
 	}else if(!preChecksSteps?.roomScanningVideo && hasFeature('record_room')){
 		return 'IdentityVerificationScreenFour';
-	}
-	// else if(!preChecksSteps?.mobileConnection){
-	// 	return IDENTITY_VERIFICATION_SCREEN_SIX;
-	// }
-	else if(!preChecksSteps?.screenSharing || hasFeature('record_screen')){
+	}else if(!preChecksSteps?.mobileConnection && hasFeature('mobile_proctoring')){
+		return 'MobileProctoring';
+	}else if(!preChecksSteps?.screenSharing || hasFeature('record_screen')){
 		return 'IdentityVerificationScreenFive';
-	}
-	// else if(!preChecksSteps?.examIndication){
-	// 	return EXAM_INDICATIONS;
-	// }
-	else{
+	} else{
 		closeModal();
 	}
 };

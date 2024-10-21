@@ -94,7 +94,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	const nextStep = async () => {
 		updatePersistData('preChecksSteps',{ roomScanningVideo:true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'room_scan_completed', eventValue: getDateTime() });
-		showTab('IdentityVerificationScreenFive');
+		showTab('MobileProctoring');
 	};
 
 	const prevStep = () => {
@@ -185,7 +185,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 			const webcam = document.createElement('video');
 			webcam.autoplay = true;
-			webcam.height = 280;
+			webcam.height = 250;
 			navigator.mediaDevices.getUserMedia(videoConstraints)
 				.then(stream => {
 					webcam.srcObject = stream;

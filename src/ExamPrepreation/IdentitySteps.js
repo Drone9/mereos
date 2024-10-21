@@ -74,18 +74,18 @@ export const renderIdentityVerificationSteps = (identitySteps, currentStep) => {
 		mainContainer.appendChild(div);
 	}
 
-	// if (findEntity('Mobile Proctoring')) {
-	// 	const div = document.createElement('div');
-	// 	div.className = 'ivs-instruction';
-	// 	const fifthStepStatus = stepStatus(5); // 5th step
-	// 	div.appendChild(renderStep(fifthStepStatus, 'synchronisation_mobile', fifthStepStatus === VERIFING));
-	// 	mainContainer.appendChild(div);
-	// }
+	if (findEntity('mobile_proctoring')) {
+		const div = document.createElement('div');
+		div.className = 'ivs-instruction';
+		const fifthStepStatus = stepStatus(5);
+		div.appendChild(renderStep(fifthStepStatus, 'synchronisation_mobile', fifthStepStatus === VERIFING));
+		mainContainer.appendChild(div);
+	}
 
 	if (findEntity('record_screen')) {
 		const div = document.createElement('div');
 		div.className = 'ivs-instruction';
-		const fifthStepStatus = stepStatus(5); // 6th step
+		const fifthStepStatus = stepStatus(6);
 		div.appendChild(renderStep(fifthStepStatus, 'screen_record', fifthStepStatus === VERIFING));
 		mainContainer.appendChild(div);
 	}

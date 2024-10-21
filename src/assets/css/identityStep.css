@@ -36,7 +36,7 @@
 }
 
 .ivs-instruction-step-container {
-  margin: 0 25px 0 5px;
+  margin: 6px 10px 0 5px;
 }
 
 .ivs-instruction-step {
@@ -54,7 +54,7 @@
   font-family: Poppins, sans-serif;
   font-style: normal;
   font-weight: 500;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 24px;
   display: flex;
   white-space: nowrap;
@@ -70,7 +70,7 @@
   white-space: nowrap;
   font-style: normal;
   font-weight: 500;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 24px;
   display: flex;
   align-items: center;

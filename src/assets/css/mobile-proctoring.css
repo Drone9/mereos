@@ -1,0 +1,239 @@
+.ivsf-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.ivsf-wrapper {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  row-gap: 7px;
+}
+
+@media (max-width: 720px) {
+  .ivsf-wrapper {
+    margin: 0;
+  }
+}
+
+.mobile-connection-banner {
+  margin: 35px auto 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.mobile-connection-banner .banner-image {
+  width: 400px;
+  height: 240px;
+  object-fit: cover;  
+  border-radius: 5px;
+}
+
+.mobile-connection-banner .banner-info-box {
+  background: #e5f3ff;
+  width: 272px;
+  position: absolute;
+  padding: 10px;
+  border-radius: 10px;
+  right: -225px;
+  top: 12%;
+}
+
+.mobile-connection-banner .banner-info-box .title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.mobile-connection-banner .banner-info-box .title p {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.mobile-connection-banner .banner-info-box .desc {
+  font-size: 13px;
+  color: #8D979F;
+  margin-left: 8px;
+}
+
+.bottom-desc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #8D979F;
+  font-size: 14px;
+}
+
+.bottom-desc p {
+  width: 884px;
+}
+
+.example-text {
+  color: #8d979f;
+  font-size: 15px;
+}
+
+.bottom-desc-remote {
+  width: 700px;
+  text-align: start;
+  display: flex;
+  column-gap: 13px;
+  justify-content: center;
+  color: #8d979f;
+}
+
+.bottom-desc-remote input {
+  accent-color: var(--primary-color);
+}
+.bottom-desc-remote p{
+  margin: 0;
+  font-size: 15px;
+}
+.qr-code-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex-direction: column;
+  row-gap: 10px;
+  margin-top: 30px;
+}
+.qr-code-container canvas{
+  width: 200px !important;
+  height: 200px !important;
+}
+.qr-code-container .qr-code {
+  background: #F4F7F9;
+  padding: 10px;
+  border: 0;
+}
+
+.qr-code-container .qr-code svg {
+  height: 167px !important;
+  max-width: 168px !important;
+  width: 167px !important;    
+}
+
+.remote-mobile-video {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  row-gap: 10px;
+  margin-top: 10px;
+}
+
+.remote-mobile-video img {
+  width: 400px;
+  height: 230px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.remote-mobile-video video {
+  width: 500px;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.ivsf-header-img {
+  height: 300px;
+  border-radius: 5px;
+  margin: 30px auto 0px;
+}
+
+@media (max-width: 720px) {
+  .ivsf-header-img {
+    width: 100%;
+  }
+}
+
+.mobile-header-title {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 35px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #222222;
+  margin: 15px auto 0px;
+}
+
+.ivsf-msg {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 16px;
+  line-height: 160%;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #8D979F;
+  margin: 10px auto 0px;
+}
+
+.ivsf-instructions-container {
+  text-align: center;
+  display: flex;
+  flex-direction: row;
+  margin: 20px auto 0px;
+}
+
+.ivsf-instructions-container .ivsf-instructions-img {
+  height: 48px;
+  width: 48px;
+  border-radius: 0px;
+}
+
+.ivsf-instruction-step-container {
+  margin: 0px 25px 0px 5px;
+}
+
+.ivsf-instruction-step {
+  display: flex;
+  align-items: center;
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 13px;
+  line-height: 19px;
+  color: #B7C5D1;
+}
+
+.ivsf-instruction-txt {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  color: #222222;
+}
+
+.ivsf-btn-container {
+  display: flex;
+  justify-content: center;
+  margin: 10px auto 55px;
+  gap: 20px;
+}
+
+@media (max-width: 720px) {
+  .ivsf-btn-container {
+    margin: 19px 0 0 0;
+    flex-direction: column;
+  }
+}
+
+.ivsf-query-msg {
+  font-size: 14px;
+  margin: 20px auto 0px;
+  color: #8D979F;
+}

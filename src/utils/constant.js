@@ -2,6 +2,8 @@ export const ASSET_URL = '../assets/images';
 
 export const BASE_URL = 'https://corder-api.mereos.eu';
 
+export const SOCKET_URL = 'wss://mobile-socket.mereos.eu/websocket/';
+
 export const CONTENT_TYPE = Object.freeze({
 	JSON: 'application/json',
 	FORM_DATA: 'multipart/form-data'
@@ -26,7 +28,10 @@ export const initialSessionData = {
 	video_extension: null,
 	archive_id:null,
 	attempt_id:null,
-	sessionStatus:'Initiated'
+	sessionStatus:'Initiated',
+	mobileRoomId:null,
+	mobileRecordings:[],
+	mobileAudios:[],
 };
 
 export const preChecksSteps = {

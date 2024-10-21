@@ -3,13 +3,15 @@ import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
 import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
+import socket from '../utils/socket';
+import { getRecordings } from '../services/twilio.services';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
 let aiEvents = [];
 
-export const startRecording = async (token) => {
-	console.log('startRecording',token);
+export const startRecording = async (webToken) => {
+	console.log('startRecording',webToken);
 
 	let cameraTrack = null;
 	let screenTrack = null;
@@ -18,8 +20,52 @@ export const startRecording = async (token) => {
 	let screenRecordings = [];
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
+	
+	const initSocketConnection = () => {
+		if (!socket) {
+			console.error('Socket not initialized');
+			return;
+		}
+		socket.onmessage = (event) => {
+			const eventData = JSON.parse(event?.data);
+			console.log('message____',eventData?.message?.event);
 
-	if(!(newStream?.getTracks()?.length) && findConfigs(['Record Screen'],secureFeatures?.entities)?.length){
+			switch (eventData?.message?.event || eventData?.event) {
+				case 'MobileRecordingStarted':
+					console.log('MobileRecordingStarted', eventData?.message?.message);
+					break;
+
+				case 'violation':
+					console.log('violation message',eventData?.message?.message);
+					if(eventData?.message?.message === 'Violation'){
+						updatePersistData('preChecksSteps', { 
+							mobileConnection: false,
+							screenSharing: false
+						});
+						window.open('/assessment/prechecks', '_self');
+					}
+					registerEvent({ eventType: 'error', notify: false, eventName:eventData?.message?.message , eventValue: getDateTime() });
+					break;
+
+				default:
+					console.log('Unknown event:', eventData?.message);
+					break;
+			}
+		};
+		
+		socket.onerror = (error) => {
+			console.error('WebSocket error:', error);
+		};
+
+		socket.onclose = () => {
+			console.log('WebSocket connection closed');
+		};
+	};
+	
+	initSocketConnection();
+
+	if(!(newStream?.getTracks()?.length) && findConfigs(['record_screen'],secureFeatures?.entities)?.length){
+		console.log('in this newStream if condition');
 		window.startRecordingCallBack({ message: 'screen_share_again' });
 		return;
 	}
@@ -28,13 +74,13 @@ export const startRecording = async (token) => {
 		await lockBrowserFromContent(secureFeatures?.entities || []);
 
 		let twilioOptions = {
-			audio: findConfigs(['Record Audio'], secureFeatures?.entities).length ?
+			audio: findConfigs(['record_audio'], secureFeatures?.entities).length ?
 				(localStorage.getItem('microphoneID') !== null ? {
 					deviceId: { exact: localStorage.getItem('microphoneID') },
 				} : true)
 				:
 				false,
-			video: findConfigs(['Record Video'], secureFeatures?.entities).length ?
+			video: findConfigs(['record_video'], secureFeatures?.entities).length ?
 				(localStorage.getItem('deviceId') !== null ? {
 					deviceId: { exact: localStorage.getItem('deviceId') },
 				} : true)
@@ -57,7 +103,7 @@ export const startRecording = async (token) => {
 			});
 
 			console.log('twilioOptions', twilioOptions);
-			let room = await TwilioVideo.connect(token, twilioOptions);
+			let room = await TwilioVideo.connect(webToken, twilioOptions);
 			roomInstance = room;
 			console.log('Room connected:', room);
 
@@ -84,7 +130,7 @@ export const startRecording = async (token) => {
 				updatePersistData('session', { user_video_name: cameraRecordings || [], user_audio_name: audioRecordings, room_id: room?.sid });
 			}
 
-			if (session?.screenRecordingStream && findConfigs(['Record Screen'], secureFeatures?.entities).length) {
+			if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
 				screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
 				let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
 				screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];
@@ -92,14 +138,29 @@ export const startRecording = async (token) => {
 			}
 
 			registerEvent({ eventType: 'success', notify: false, eventName: 'browser_locked_successfully', eventValue: getDateTime() });
-
+			
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
+			if (socket && socket.readyState === WebSocket.OPEN) {
+				socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
+			}
 			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 
 			console.log('Local screen share track published:', screenTrack);
 
-			room.on('disconnected', () => {
+			room.on('disconnected', (error) => {
 				cleanupLocalVideo(cameraTrack);
+				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
+					updatePersistData('preChecksSteps', { 
+						mobileConnection: false,
+						screenSharing: false
+					});
+				}else{
+					updatePersistData('preChecksSteps', { 
+						screenSharing: false,
+					});
+				}
+				console.log('diconnection room',error);
+				// window.open('/assessment/prechecks', '_self');
 			});
 		} catch (error) {
 			updatePersistData('session', {
@@ -267,7 +328,46 @@ export const cleanupLocalVideo = () => {
 
 export const stopAllRecordings = async () => {
 	try {
-		// let recordingActive;
+		const session = convertDataIntoParse('session');
+		const secureFeatures = getSecureFeatures();
+
+		if(secureFeatures?.entities.find(entity => entity.key === 'mobile_proctoring')){
+			const getRecordingResp = await getRecordings({ room_sid: session?.mobileRoomId });
+			if(getRecordingResp?.data && getRecordingResp?.status === 200){
+				const newCameraRecordings = [];
+				const newAudioRecordings = [];
+				
+				console.log('getRecordingResp',getRecordingResp?.data);
+				const existingVideoRecordings = [...session.cameraRecordings, ...session.screenRecordings];
+				const existingAudioRecordings = [...session.audioRecordings];
+				
+				getRecordingResp?.data?.video_recordings.forEach(recording => {
+					if (!existingVideoRecordings.includes(recording.source_sid)) {
+						newCameraRecordings.push(recording.source_sid);
+					}
+				});
+		
+				// Check for new audio recordings
+				getRecordingResp?.data?.audio_recordings.forEach(recording => {
+					if (!existingAudioRecordings.includes(recording.source_sid)) {
+						newAudioRecordings.push(recording.source_sid);
+					}
+				});
+
+				const mobileRecordings = session?.mobileRecordings || [];
+				const mobileAudios = session?.mobileAudios || [];
+
+				updatePersistData('session', {
+					mobileRecordings: [...mobileRecordings, ...newCameraRecordings],
+					mobileAudios: [...mobileAudios, ...newAudioRecordings],
+				});
+			}
+		}
+
+		if (socket && socket.readyState === WebSocket.OPEN) {
+			socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
+		}
+		
 		if (roomInstance) {
 			roomInstance.localParticipant.tracks.forEach(publication => {
 				const track = publication.track;
@@ -294,14 +394,16 @@ export const stopAllRecordings = async () => {
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 
-		showNotification({
-			title: 'Recording Stopped',
-			body: 'Recording session has ended.',
-		});
 		
+
 		updatePersistData('session', {
 			recordingEnded: true,
 			sessionStatus:'Completed',
+		});
+
+		showNotification({
+			title: 'Recording Stopped',
+			body: 'Recording session has ended.',
 		});
 
 		return 'stop recording';

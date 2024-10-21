@@ -74,11 +74,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const container = document.createElement('div');
-	container.classList.add('ivsf-container');
-	renderIdentityVerificationSteps(container, 5);
+	container.classList.add('screen-share-container');
+	renderIdentityVerificationSteps(container, 6);
 
 	const wrapper = document.createElement('div');
-	wrapper.classList.add('ivsf-wrapper');
+	wrapper.classList.add('screen-wrapper');
 
 	const headerTitle = document.createElement('div');
 	headerTitle.classList.add('ivsf-header-titles');
@@ -86,12 +86,12 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	wrapper.appendChild(headerTitle);
 
 	const msgElement = document.createElement('div');
-	msgElement.classList.add('ivsf-msg');
+	msgElement.classList.add('screen-desc');
 	msgElement.textContent = i18next.t('verification_completed_msg');
 	wrapper.appendChild(msgElement);
 	const reshareButton = document.createElement('button');
 	const headerImg = document.createElement('img');
-	headerImg.classList.add('ivsf-header-img');
+	headerImg.classList.add('screen-share-dummy');
 	headerImg.src = mockImage;
 	headerImg.alt = 'camera-icon';
 	wrapper.appendChild(headerImg);
@@ -137,10 +137,10 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const styleElement = document.createElement('style');
 	styleElement.textContent = `
-        .ivsf-container {
+        .screen-share-container {
             /* Define your CSS styles here */
         }
-        .ivsf-wrapper {
+        .screen-wrapper {
             /* Define your CSS styles here */
         }
         /* Define other classes as needed */

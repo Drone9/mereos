@@ -1,31 +1,32 @@
-.ivsf-container {
+.screen-share-container {
 	display: flex;
 	flex-direction: column;
 }
 
-.ivsf-wrapper {
+.screen-wrapper {
 	margin: auto;
 	display: flex;
 	flex-direction: column;
 }
 
 @media (max-width: 720px) {
-	.ivsf-wrapper {
+	.screen-wrapper {
 		margin: 0;
 	}
 }
 
-.ivsf-header-img {
-  height: 272px;
-  display: flex;
-  border-radius: 5px;
-  align-items: center;
-  justify-content: center;
-	margin-left: 216px;
+.screen-share-dummy {
+	height: 230px;
+	display: flex;
+	border-radius: 5px;
+	align-items: center;
+	justify-content: center;
+	margin-top: 9px;
+	margin-bottom: 10px;
 }
 
 @media (max-width: 720px) {
-	.ivsf-header-img {
+	.screen-share-dummy {
 		width: 100%;
 	}
 }
@@ -42,7 +43,7 @@
 	margin: 22px auto 0;
 }
 
-.ivsf-msg {
+.screen-desc {
 	font-family: Poppins;
 	font-style: normal;
 	font-weight: normal;

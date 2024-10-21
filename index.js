@@ -13,10 +13,11 @@ import { openModal } from './src/ExamPrepreation/examPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
 import { registerPublicCandidate } from './src/services/auth.services';
-import { addSectionSessionRecord, convertDataIntoParse, updatePersistData } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, updatePersistData } from './src/utils/functions';
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
+import socket from './src/utils/socket';
 
 async function init(host, profileId, assessmentData) {
 	try{
@@ -60,12 +61,31 @@ window.startRecordingCallBack = null;
 async function start_session(callback) {
 	try {
 		window.startRecordingCallBack = callback;
-		const newDate = new Date();
-		const newRoomSessionId = newDate.getTime();
-		let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
-		let twilioToken = await getToken({ room_sid: resp.data.room_sid });
-		if (twilioToken) {
-			startRecording(twilioToken.data.token, callback);
+		const secureFeatures = getSecureFeatures();
+		if(secureFeatures?.entities?.length > 0){
+			const newDate = new Date();
+			const mobileRoomSessionId = new Date().getTime();
+			
+			const newRoomSessionId = newDate.getTime();
+			if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
+				let resp = await getRoomSid({ session_id: mobileRoomSessionId, auto_record: true });
+				let mobileTwilioToken = await getToken({ room_sid: resp.data.room_sid });
+				updatePersistData('session', {
+					mobileRoomId:resp.data.room_sid
+				});
+	
+				if (socket && socket.readyState === WebSocket.OPEN) {
+					console.log('in the socket if condition',mobileTwilioToken?.data?.token);
+					socket.send(JSON.stringify({ event: 'twilioToken', message: mobileTwilioToken?.data?.token }));
+				}
+			}
+			let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
+			let twilioToken = await getToken({ room_sid: resp.data.room_sid });
+			if (twilioToken) {
+				startRecording(twilioToken.data.token);
+			}
+		}else {
+			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 		}
 	} catch (err) {
 		console.log('error',err); 

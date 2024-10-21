@@ -12,6 +12,17 @@ export const getRoomSid = async (params) => {
 	return axiosInstance.get(`/twilio/create_room/`, config);
 };
 
+export const getRecordings = async (params) => {
+	const token = getAuthenticationToken();
+	const config = {
+		headers: {
+			token: `${token}`,
+		},
+		params
+	};
+	return axiosInstance.get('/twilio/get_recordings_sid/', config);
+};
+
 export const getToken = async (params) => {
 	const token = getAuthenticationToken();
 	const config = {

@@ -330,7 +330,13 @@ export const stopAllRecordings = async () => {
 	try {
 		const session = convertDataIntoParse('session');
 		const secureFeatures = getSecureFeatures();
+		console.log('session',session);
 
+		if (socket && socket.readyState === WebSocket.OPEN) {
+			console.log('in the stopRecording log');
+			socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
+		}
+		
 		if(secureFeatures?.entities.find(entity => entity.key === 'mobile_proctoring')){
 			const getRecordingResp = await getRecordings({ room_sid: session?.mobileRoomId });
 			if(getRecordingResp?.data && getRecordingResp?.status === 200){
@@ -338,8 +344,8 @@ export const stopAllRecordings = async () => {
 				const newAudioRecordings = [];
 				
 				console.log('getRecordingResp',getRecordingResp?.data);
-				const existingVideoRecordings = [...session.cameraRecordings, ...session.screenRecordings];
-				const existingAudioRecordings = [...session.audioRecordings];
+				const existingVideoRecordings = [...session.user_video_name, ...session.screen_sharing_video_name];
+				const existingAudioRecordings = [...session.audio_recordings];
 				
 				getRecordingResp?.data?.video_recordings.forEach(recording => {
 					if (!existingVideoRecordings.includes(recording.source_sid)) {
@@ -364,10 +370,6 @@ export const stopAllRecordings = async () => {
 			}
 		}
 
-		if (socket && socket.readyState === WebSocket.OPEN) {
-			socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
-		}
-		
 		if (roomInstance) {
 			roomInstance.localParticipant.tracks.forEach(publication => {
 				const track = publication.track;
@@ -388,13 +390,9 @@ export const stopAllRecordings = async () => {
 		roomInstance = null;
 		cleanupLocalVideo();
 
-		// recordingActive = false;
-
 		const dateTime = new Date();
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
-
-		
 
 		updatePersistData('session', {
 			recordingEnded: true,
@@ -406,7 +404,7 @@ export const stopAllRecordings = async () => {
 			body: 'Recording session has ended.',
 		});
 
-		return 'stop recording';
+		return 'stop_recording';
 	} catch (e) {
 		console.error(e);
 	}

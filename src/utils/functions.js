@@ -212,7 +212,7 @@ export const registerEvent = ({ eventName }) => {
 			name: eventName,
 			value: eventName,
 			session_id: session?.id,
-			start_at: session.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session.sessionStartTime) / 1000) : 0
+			start_at: session?.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.sessionStartTime) / 1000) : 0
 		};
 			
 		return createEvent(event);
@@ -415,8 +415,8 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 			video_extension: null,
 			archive_id:null,
 			attempt_id:null,
-			mobile_audio_recordings: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			mobile_recordings: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 		};
 
 		if (session?.id) {

@@ -1,4 +1,4 @@
-.ivsf-container {
+.screen-four-container {
 	margin: auto;
 }
 
@@ -9,7 +9,7 @@
 
 .ivsf-header-img-container {
 	position: relative;
-	margin: 30px auto 0px;
+	margin: 10px auto 0px;
 }
 
 @media(max-width:720px) {

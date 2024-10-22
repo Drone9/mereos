@@ -97,19 +97,21 @@ async function stop_session(callback) {
 	try {
 		const stop_sessionResp  = await stopAllRecordings();
 		console.log('stop_sessionResp',stop_sessionResp);
-		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-		const session = convertDataIntoParse('session');
-		let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
-		if (resp) {
-			console.log('submit_session');
-			localStorage.removeItem('candidateAssessment');
-			localStorage.removeItem('mereosToken');
-			localStorage.removeItem('session');
-			localStorage.removeItem('preChecksSteps');
-			localStorage.removeItem('secureFeatures');
-			callback({type: 'success', message: 'session is finished successfully'});
-		} else {
-			throw 'session can\'t add';
+		if(stop_sessionResp === 'stop_recording'){
+			const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+			const session = convertDataIntoParse('session');
+			let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+			if (resp) {
+				console.log('submit_session');
+				localStorage.removeItem('candidateAssessment');
+				localStorage.removeItem('mereosToken');
+				localStorage.removeItem('session');
+				localStorage.removeItem('preChecksSteps');
+				localStorage.removeItem('secureFeatures');
+				callback({ type: 'success', message: 'session is finished successfully' });
+			} else {
+				throw 'session can\'t add';
+			}
 		}
 	} catch(err) {
 		console.error(err);

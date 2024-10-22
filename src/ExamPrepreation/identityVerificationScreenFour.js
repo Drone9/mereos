@@ -132,10 +132,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	const updateUI = () => {
-		let container = tabContent?.querySelector('.ivsf-container');
+		let container = tabContent?.querySelector('.screen-four-container');
 		if (!container) {
 			container = document.createElement('div');
-			container.className = 'ivsf-container';
+			container.className = 'screen-four-container';
 			tabContent.appendChild(container);
 		}
 		container.innerHTML = '';

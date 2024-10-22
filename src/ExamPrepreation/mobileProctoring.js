@@ -71,13 +71,13 @@ export const MobileProctoring = async (tabContent) => {
 						const call = peerInstance.call(eventData?.message?.message, mediaStream);
 						let remoteVideo = document.getElementById('remote-mobile-video-container');
 
-						call.on('stream', (remoteStream) => {
+						call?.on('stream', (remoteStream) => {
 							console.log('remoteVideoRef',remoteVideo);
 							remoteVideo.srcObject = remoteStream;
 							remoteVideo.setAttribute('autoplay', true);
 							remoteVideo.setAttribute('playsinline', true);
 						});
-						call.on('close', () => {
+						call?.on('close', () => {
 							console.log('Call ended.');
 							remoteVideo.srcObject = null;
 						});

@@ -38,6 +38,8 @@ import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 
 const runDiagnostics = async () => {
+	let cameraStream = null;
+	let audioStream = null;
 	const tab1Content = document.getElementById('runSystemDiagnostics');
 	if (!tab1Content) {
 		console.error('Element with id "runSystemDiagnostics" not found.');
@@ -164,20 +166,22 @@ const runDiagnostics = async () => {
 		const promises = [];
 
 		if (recordVideo) {
-			promises.push(checkCamera().then(camera => {
-				setElementStatus('camera', { success: videoGreen, failure: videoRed }, camera);
+			promises.push(checkCamera().then(stream => {
+				cameraStream = stream; // Save the camera stream
+				setElementStatus('camera', { success: videoGreen, failure: videoRed }, stream);
 				handleDiagnosticItemClick('camera', checkCamera);
-				return camera;
+				return stream;
 			}));
 		} else {
 			setElementStatus('camera', { success: videoGreen, failure: videoRed }, true);
 		}
 
 		if (recordAudio) {
-			promises.push(checkMicrophone().then(microphone => {
-				setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, microphone);
+			promises.push(checkMicrophone().then(stream => {
+				audioStream = stream; // Save the audio stream
+				setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, stream);
 				handleDiagnosticItemClick('microphone', checkMicrophone);
-				return microphone;
+				return stream;
 			}));
 		} else {
 			setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, true);
@@ -240,6 +244,14 @@ const runDiagnostics = async () => {
 		continueBtn.disabled = !allStatuses;
 		if (allStatuses) {
 			continueBtn.addEventListener('click', () => {
+				if (cameraStream) {
+					cameraStream.getTracks().forEach(track => track.stop());
+					cameraStream = null;
+				}
+				if (audioStream) {
+					audioStream.getTracks().forEach(track => track.stop());
+					audioStream = null;
+				}
 				registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
 				updatePersistData('preChecksSteps',{ diagnosticStep:true });
 				showTab('Prevalidationinstruction');

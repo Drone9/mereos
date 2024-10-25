@@ -7,6 +7,7 @@ import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
 	let canvasRef;
+	let audioStream= null;
 	let audioContext;
 	let analyserNode;
 	let disabledBtn = false;
@@ -24,7 +25,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		try {
 			const audioPermission = await navigator.permissions.query({ name: 'microphone' });
 			if (audioPermission.state === 'granted') {
-				const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+				audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
 				stream = audioStream;
 
 				audioContext = new AudioContext();
@@ -126,6 +127,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	};
 
 	const nextStep = async () => {
+		audioStream.getAudioTracks().forEach(track => track.stop());
 		updatePersistData('preChecksSteps',{ audioDetection:true });
 		registerEvent({eventType: 'success', notify: false, eventName: 'audio_check_completed', eventValue: getDateTime()});
 		showTab('IdentityVerificationScreenFour');

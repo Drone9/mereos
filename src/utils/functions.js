@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ASSET_URL, BASE_URL } from './constant';
+import { ASSET_URL, BASE_URL, prevalidationSteps, systemDiagnosticSteps } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
@@ -583,10 +583,14 @@ export const detectDualDisplay = () => {
 	});
 };
 
+
+let visibilityChangeHandler; // Declare a variable to store the handler
+
 export const detectUnfocusOfTab = () => {
 	return new Promise(async (resolve, _reject) => {
 		try {
-			document.addEventListener('visibilitychange', () => {
+			// Define the visibility change handler
+			visibilityChangeHandler = () => {
 				if (document.hidden) {
 					showNotification({
 						title: 'Warning',
@@ -602,7 +606,10 @@ export const detectUnfocusOfTab = () => {
 					});
 					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });
 				}
-			});
+			};
+
+			// Add the visibility change listener
+			document.addEventListener('visibilitychange', visibilityChangeHandler);
 
 			resolve(true);
 		} catch (error) {
@@ -611,6 +618,49 @@ export const detectUnfocusOfTab = () => {
 		}
 	});
 };
+
+let mediaStream = null; // Singleton instance of MediaStream
+
+export const startMediaStream = async (constraints) => {
+	try {
+		// Ensure at least one of audio or video is requested
+		if (!constraints.audio && !constraints.video) {
+			throw new Error('At least one of audio or video must be requested.');
+		}
+
+		// Stop any existing tracks before starting a new stream
+		if (mediaStream) {
+			mediaStream.getTracks().forEach(track => track.stop());
+		}
+
+		mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+
+		console.log('Media stream started:', mediaStream);
+		return mediaStream; // Return the active MediaStream
+	} catch (error) {
+		console.error('Error accessing media devices:', error);
+		throw error; // Rethrow error for handling in calling functions
+	}
+};
+
+
+export const stopMediaStream = () => {
+	if (mediaStream) {
+		mediaStream.getTracks().forEach(track => track.stop());
+		mediaStream = null; // Clear the reference
+		console.log('Media stream stopped.');
+	}
+};
+
+// Function to remove the visibility change listener when necessary
+export const removeUnfocusListener = () => {
+	if (visibilityChangeHandler) {
+		document.removeEventListener('visibilitychange', visibilityChangeHandler);
+		visibilityChangeHandler = null; // Clear the handler reference
+	}
+};
+
 
 export const preventShortCuts = (allowedFunctionKeys = []) => {
 	return new Promise((resolve, _reject) => {
@@ -676,7 +726,6 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 	});
 };
 
-
 export const stopPrinting = () => {
 	return new Promise((resolve, _reject) => {
 		let css = `
@@ -702,31 +751,48 @@ export const stopPrinting = () => {
 	});
 };
 
+let resizeTimeout;
+let isResizing = false;
+
+const handleResize = () => {
+	if (!isResizing) {
+		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+		console.log('Resize started');
+		isResizing = true;
+	}
+
+	clearTimeout(resizeTimeout);
+
+	resizeTimeout = setTimeout(() => {
+		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+		console.log('Resize ended');
+		isResizing = false;
+	}, 500);
+};
+
 export const detectWindowResize = () => {
 	return new Promise((resolve, _reject) => {
-		let resizeTimeout;
-		let isResizing = false;
-
-		const handleResize = () => {
-			if (!isResizing) {
-				registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
-				console.log('Resize started');
-				isResizing = true;
-			}
-
-			clearTimeout(resizeTimeout);
-
-			resizeTimeout = setTimeout(() => {
-				registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
-				console.log('Resize ended');
-				isResizing = false;
-			}, 500);
-		};
-
 		window.addEventListener('resize', handleResize);
 		resolve(true);
 	});
 };
+
+export const exitFullScreen = () => {
+	try {
+		// Attempt to exit fullscreen based on the browser
+		if (document.exitFullscreen) {
+			document.exitFullscreen();
+		} else if (document.webkitExitFullscreen) { /* Safari */
+			document.webkitExitFullscreen();
+		} else if (document.msExitFullscreen) { /* IE11 */
+			document.msExitFullscreen();
+		}
+	} catch (error) {
+		console.error('An error occurred while attempting to exit fullscreen:', error);
+	}
+};
+
+let whiteBackgroundElement; // Declare outside to access in the event listener
 
 export const forceFullScreen = (element = document.documentElement) => {
 	try {
@@ -739,28 +805,38 @@ export const forceFullScreen = (element = document.documentElement) => {
 			element.msRequestFullscreen();
 		}
 
-		const whiteBackgroundElement = document.createElement('div');
-		whiteBackgroundElement.style.backgroundColor = 'white';
-		whiteBackgroundElement.style.top = '0';
-		whiteBackgroundElement.style.left = '0';
-		whiteBackgroundElement.style.width = '100%';
-		whiteBackgroundElement.style.height = '100%';
-		whiteBackgroundElement.style.overflow = 'auto'; // Enable scrolling
-		whiteBackgroundElement.style.zIndex = '1000'; // Ensure it's on top
+		// Create the white background element only if it doesn't exist
+		if (!whiteBackgroundElement) {
+			whiteBackgroundElement = document.createElement('div');
+			whiteBackgroundElement.id = 'white-Background-Element';
+			whiteBackgroundElement.style.backgroundColor = 'white';
+			whiteBackgroundElement.style.top = '0';
+			whiteBackgroundElement.style.left = '0';
+			whiteBackgroundElement.style.width = '100%';
+			whiteBackgroundElement.style.height = '100%';
+			whiteBackgroundElement.style.overflow = 'auto'; // Enable scrolling
+			whiteBackgroundElement.style.zIndex = '1000'; // Ensure it's on top
 
-		document.body.appendChild(whiteBackgroundElement);
+			document.body.appendChild(whiteBackgroundElement);
+		}
 
 		// Add event listener to handle exiting fullscreen
-		document.addEventListener('fullscreenchange', () => {
+		const handleFullscreenChange = () => {
 			if (!document.fullscreenElement) {
-				document.body.removeChild(whiteBackgroundElement);
+				// Check if the element exists before attempting to remove it
+				if (whiteBackgroundElement && document.body.contains(whiteBackgroundElement)) {
+					document.body.removeChild(whiteBackgroundElement);
+					whiteBackgroundElement = null; // Reset the reference
+				}
+				document.removeEventListener('fullscreenchange', handleFullscreenChange); // Clean up listener
 			}
-		});
+		};
+
+		document.addEventListener('fullscreenchange', handleFullscreenChange);
 	} catch (error) {
 		console.error('An error occurred while attempting to enter fullscreen:', error);
 	}
 };
-
 
 export const getCPUInfo = () => {
 	return new Promise((resolve, _reject) => {
@@ -779,28 +855,74 @@ const handleDefaultEvent = e => {
 	e.stopPropagation();
 };
 
+export const unlockBrowserFromContent = () => {
+	// Re-enable right-click functionality
+	document.removeEventListener('contextmenu', handleDefaultEvent);
+
+	// Re-enable clipboard events
+	'cut copy paste'.split(' ').forEach((eventName) => {
+		window.removeEventListener(eventName, handleDefaultEvent);
+	});
+
+	// Remove the keyboard shortcut restrictions
+	document.onkeydown = null;
+
+	// Remove the print prevention CSS
+	const printStyles = document.querySelectorAll('style[media="print"]');
+	printStyles.forEach((style) => {
+		if (style.textContent.includes('display: none') && style.textContent.includes('visibility: hidden')) {
+			style.remove();
+		}
+	});
+
+	removeUnfocusListener();
+
+	// Remove window resize detection
+	window.removeEventListener('resize', handleResize);
+
+	// Exit fullscreen mode
+	if (document.fullscreenElement) {
+		document.exitFullscreen();
+	}
+
+	// Remove fullscreen white background overlay
+	const whiteBackgroundElement = document.getElementById('white-Background-Element');
+	if (whiteBackgroundElement) {
+		document.body.removeChild(whiteBackgroundElement);
+	}
+
+	// Disable alert function
+	window.alert = function(){};
+
+	// Close notifications
+	if (Notification.permission === 'granted') {
+		const notifications = document.querySelectorAll('.notification'); 
+		notifications.forEach((notification) => {
+			notification.close();
+		});
+	}
+
+	console.log('All functionalities removed, page is restored to previous state.');
+};
+
 export const handlePreChecksRedirection = () => {
 	const preChecksSteps = convertDataIntoParse('preChecksSteps');
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
 	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
-	const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications','Upload Speed'];
-	const prevalidationSteps = ['record_video', 'record_audio','identity_card_requirement','record_room'];
 
-	console.log('preValidation',!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.name))?.length > 0);
-
-	if (!preChecksSteps?.examPreparation && hasFeature('exam_perparation')) {
+	if (preChecksSteps?.examPreparation && hasFeature('exam_perparation')) {
 		return 'ExamPreparation';
-	} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length){
+	} else if(preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
 		return 'runSystemDiagnostics';
-	}else if(!preChecksSteps?.preValidation){
+	}else if(preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
 		return 'Prevalidationinstruction';
 	}
-	else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
+	else if(preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
 		return 'IdentityVerificationScreenOne';
-	}else if(!preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
+	}else if(preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
 		return 'IdentityVerificationScreenTwo';
-	}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
+	}else if(preChecksSteps?.audioDetection && hasFeature('record_audio')){
 		return 'IdentityVerificationScreenThree';
 	}else if(!preChecksSteps?.roomScanningVideo && hasFeature('record_room')){
 		return 'IdentityVerificationScreenFour';

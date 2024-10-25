@@ -9,6 +9,7 @@ import { renderIdentityVerificationSteps } from './IdentitySteps';
 export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let photo;
 	let inputFile;
+	let stream = null;
 	let disabledBtn = false;
 	let fileObj;
 	let currentState = {
@@ -152,6 +153,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const nextStep = async () => {
+		stream.getTracks().forEach(track => track.stop());
 		updatePersistData('preChecksSteps',{ identityCardPhoto:true });
 		registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_verified_successfully', eventValue: getDateTime()});
 		showTab('IdentityVerificationScreenThree');
@@ -206,7 +208,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		showTab('IdentityVerificationScreenOne');
 	};
 
-	const renderUI = () => {
+	const renderUI = async () => {
 		let container = tabContent.querySelector('.ivso-container');
 		if (!container) {
 			container = document.createElement('div');
@@ -249,12 +251,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			photo.autoplay = true;
 			headerImgContainer.appendChild(photo);
 
-			navigator.mediaDevices.getUserMedia({ video: videoConstraints })
-				.then(stream => {
-					photo.srcObject = stream;
-				})
-				.catch(err => console.error('Error accessing webcam:', err));
-
+			stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+			if(stream !== null) {
+				photo.srcObject = stream;
+			}
 			const gridImg = document.createElement('img');
 			gridImg.src = `${screenCenter}`;
 			gridImg.className = 'ivst-screen-grid';

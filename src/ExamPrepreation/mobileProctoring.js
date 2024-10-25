@@ -11,6 +11,7 @@ import { getAuthenticationToken, getDateTime, registerEvent, updatePersistData }
 import { showTab } from './examPrechecks';
 import cameraExample from '../assets/images/user-video-tutorial.jpeg';
 
+window.mobileStream = null;
 export const MobileProctoring = async (tabContent) => {
 	let mobileSteps = ''; 
 	let checkedVideo = false;
@@ -68,6 +69,7 @@ export const MobileProctoring = async (tabContent) => {
 					renderUI();
 					const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 					getUserMedia({ video: true, audio: false }, (mediaStream) => {
+						window.mobileStream = mediaStream;
 						const call = peerInstance.call(eventData?.message?.message, mediaStream);
 						let remoteVideo = document.getElementById('remote-mobile-video-container');
 
@@ -135,12 +137,18 @@ export const MobileProctoring = async (tabContent) => {
 		if(newStep === 'broadcasting') {
 			socket?.send(JSON.stringify({ event: 'requestMobileBroadcast' }));
 		} else if(newStep === 'step4'){
+			window.mobileStream?.getTracks()?.forEach((track) => track.stop());
 			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successfull', eventValue: getDateTime() });
 			updatePersistData('preChecksSteps', { mobileConnection: true });
 			showTab('IdentityVerificationScreenFive');
 			let container = document.getElementById('mobile-proctoring');
-			container.innerHTML = '';
-			remoteVideoRef.srcObject = null;
+			console.log('container',container);
+			if(container){
+				container.innerHTML = '';
+			}
+			if(remoteVideoRef){
+				remoteVideoRef.srcObject = null;
+			}
 		}
 	};
 
@@ -156,14 +164,15 @@ export const MobileProctoring = async (tabContent) => {
 	console.log('checkedVideo',checkedVideo);
 
 	function renderUI() {
-		let container = document.querySelector('.ivsf-container');
+		let container = tabContent?.querySelector('.ivsf-container');
 		if (!container) {
 			container = document.createElement('div');
 			container.className = 'ivsf-container';
-			container.id = 'mobile-proctoring';
 			tabContent.appendChild(container);
+			container.id = 'mobile-proctoring';
 		}
 		container.innerHTML = '';
+
 		const wrapper = document.createElement('div');
 		wrapper.className = 'ivsf-wrapper';
 
@@ -372,6 +381,11 @@ export const MobileProctoring = async (tabContent) => {
 	}
 
 	const initProctoring = () => {
+		console.log('webStream',window);
+		if(window.webStream) {
+			window.webStream.getTracks().forEach(track => track.stop());
+		}
+		
 		initPeerConnection();
 
 		initSocketConnection();

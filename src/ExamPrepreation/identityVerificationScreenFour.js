@@ -5,14 +5,14 @@ import { getDateTime, registerEvent, updatePersistData, uploadFileInS3Folder } f
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 
+window.userMediaStream = null;
+
 export const IdentityVerificationScreenFour = async (tabContent) => {
 	let recordingMode = 'startRecording';
 	let showPlayer = false;
 	let textMessage = 'scan_your_room';
 	let loading = false;
-	let recordingTimer = null;
 	let blob = null;
-	let refVideo = null;
 	let mediaRecorder = null;
 	let recordedChunks = [];
 
@@ -20,89 +20,79 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		width: 640,
 		height: 480,
 		facingMode: 'user',
-		deviceId: localStorage.getItem('deviceId'),
 		video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true
 	};
 
-	const handleRestartRecording = async () => {
-		showPlayer = false;
-		loading = false;
-		recordingMode = 'startRecording';
-		blob = null;
-		updateUI();
-	};
-
-	const handleStartRecording = async () => {
-		const mediaOptions = {
-			audio: localStorage.getItem('microphoneID') !== null ? { deviceId: { exact: localStorage.getItem('microphoneID') }} : true,
-			video: localStorage.getItem('deviceId') !== null ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
-		};
-
+	const handleStartRecording = async (type) => {
 		try {
-			const mediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
-
-			mediaRecorder = new MediaRecorder(mediaStream, {
-				mimeType: 'video/webm; codecs=vp9'
-			});
-
-			mediaRecorder.ondataavailable = (event) => {
-				if (event.data.size > 0) {
-					recordedChunks.push(event.data);
-				}
-			};
-
-			mediaRecorder.onstop = () => {
-				blob = new Blob(recordedChunks, {
-					type: 'video/webm'
+			if (type === 'startRecording') {
+				mediaRecorder = new MediaRecorder(window.userMediaStream, {
+					mimeType: 'video/webm; codecs=vp9'
 				});
-				showPlayer = true;
-				recordedChunks = [];
+
+				mediaRecorder.ondataavailable = (event) => {
+					if (event.data.size > 0) {
+						recordedChunks.push(event.data);
+					}
+				};
+
+				mediaRecorder.onstop = () => {
+					blob = new Blob(recordedChunks, { type: 'video/webm' });
+					showPlayer = true;
+					recordedChunks = [];
+					updateUI();
+				};
+
+				mediaRecorder.start();
+				recordingMode = 'beingRecorded';
 				updateUI();
-				if (refVideo) {
-					refVideo.src = URL.createObjectURL(blob);
-				}
-			};
-
-			mediaRecorder.start();
-			recordingMode = 'beingRecorded';
-			updateUI();
-
-			const startTime = Date.now();
-			const intervalId = setInterval(() => {
-				const elapsedMilliseconds = Date.now() - startTime;
-				const elapsedSeconds = Math.floor(elapsedMilliseconds / 1000);
-
-				if (elapsedSeconds >= 60) {
-					handleStopRecording();
-					clearInterval(intervalId);
-				}
-			}, 1000);
+			}
 		} catch (error) {
 			console.error('Error accessing media devices:', error);
 		}
 	};
 
+
+	const handleRestartRecording = async () => {
+		showPlayer = false;
+		loading=false;
+		recordingMode ='startRecording';
+		updateUI();
+	};
+
+
 	const handleStopRecording = async () => {
 		if (mediaRecorder) {
 			mediaRecorder.stop();
 		}
-		stopRecordingTimer();
 		recordingMode = 'stopRecording';
 		updateUI();
 	};
 
 	const nextStep = async () => {
-		updatePersistData('preChecksSteps',{ roomScanningVideo:true });
-		registerEvent({ eventType: 'success', notify: false, eventName: 'room_scan_completed', eventValue: getDateTime() });
-		showTab('MobileProctoring');
+		try {
+			if (window.userMediaStream) {
+				window.userMediaStream.getTracks().forEach(track => track.stop());
+				window.userMediaStream = null;
+			}
+
+			updatePersistData('preChecksSteps', { roomScanningVideo: true });
+			registerEvent({
+				eventType: 'success',
+				notify: false,
+				eventName: 'room_scan_completed',
+				eventValue: getDateTime(),
+			});
+
+			showTab('MobileProctoring');
+		} catch (error) {
+			console.error('Error navigating to next step:', error);
+		}
 	};
 
 	const prevStep = () => {
 		showTab('IdentityVerificationScreenThree');
-		console.log('Navigate to previous step');
 	};
-
-	const stopRecordingTimer = () => clearInterval(recordingTimer);
 
 	const uploadUserRoomVideo = async () => {
 		try {
@@ -118,7 +108,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			if (url?.data?.file_url) {
 				const fileUrl = url.data.file_url;
 				updatePersistData('session', { room_scan_video: fileUrl });
-				console.log('Room scan recording uploaded:', fileUrl);
 				recordingMode = 'uploaded_file';
 				textMessage = 'candidate_video_is_uploaded_successfully';
 				updateUI();
@@ -131,11 +120,12 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		}
 	};
 
-	const updateUI = () => {
+	const updateUI = async () => {
 		let container = tabContent?.querySelector('.screen-four-container');
 		if (!container) {
 			container = document.createElement('div');
-			container.className = 'screen-four-container';
+			container.className = 'screen-four-container'; 
+			container.id = 'screen-four-main-container';
 			tabContent.appendChild(container);
 		}
 		container.innerHTML = '';
@@ -156,41 +146,34 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		headerImgContainer.className = 'ivsf-header-img-container';
 
 		if (showPlayer && blob) {
-			refVideo = document.createElement('video');
+			const refVideo = document.createElement('video');
 			refVideo.id = 'myVideo';
 			refVideo.className = 'my-recorded-video2';
 			refVideo.controls = true;
 			refVideo.autoplay = true;
+			refVideo.src = URL.createObjectURL(blob);
 			headerImgContainer.appendChild(refVideo);
-			if (refVideo && blob) {
-				refVideo.src = URL.createObjectURL(blob);
-			}
 		} else {
 			if (recordingMode === 'beingRecorded') {
 				const recordingBadge = document.createElement('div');
 				recordingBadge.className = 'ivsf-recording-badge-container';
-
+				
 				const dot = document.createElement('img');
 				dot.className = 'ivsf-recording-dot';
 				dot.src = redDot; 
 				dot.alt = 'red-dot';
-
-				recordingBadge.appendChild(dot);
+				const webcam = document.createElement('video');
+				webcam.autoplay = true;
+				webcam.muted = true;
+				webcam.height = 250;
+				webcam.id = 'webcam-recorded-media';
+				webcam.srcObject = window.userMediaStream;
 
 				recordingBadge.appendChild(dot);
 				recordingBadge.appendChild(document.createTextNode(`${i18next.t('recording')}`));
-
 				headerImgContainer.appendChild(recordingBadge);
+				headerImgContainer.appendChild(webcam); 
 			}
-
-			const webcam = document.createElement('video');
-			webcam.autoplay = true;
-			webcam.height = 250;
-			navigator.mediaDevices.getUserMedia(videoConstraints)
-				.then(stream => {
-					webcam.srcObject = stream;
-				});
-			headerImgContainer.appendChild(webcam);
 		}
 
 		wrapper.appendChild(headerTitle);
@@ -209,8 +192,24 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		btnContainer.className = 'ivsf-btn-container';
 
 		if (recordingMode === 'startRecording') {
+			const mediaOptions = {
+				audio: localStorage.getItem('microphoneID') !== null ? { deviceId: { exact: localStorage.getItem('microphoneID') }} : true,
+				video: videoConstraints.video,
+			};
+
+			window.userMediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
+			const webcam = document.createElement('video');
+			
+			webcam.autoplay = true;
+			webcam.muted = true;
+			webcam.height = 250;
+			webcam.id = 'webcam-recording-media';
+			webcam.srcObject = window.userMediaStream;
+			console.log('window.userMediaStream',window.userMediaStream);
+			headerImgContainer.appendChild(webcam);
+
 			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
-			const recordButton = createButton(`${i18next.t('record_video')}`, 'orange-filled-btn', handleStartRecording);
+			const recordButton = createButton(`${i18next.t('record_video')}`, 'orange-filled-btn', () => handleStartRecording('startRecording'));
 			btnContainer.appendChild(prevButton);
 			btnContainer.appendChild(recordButton);
 		} else if (recordingMode === 'beingRecorded') {
@@ -244,20 +243,11 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		return button;
 	};
 
+	handleStartRecording();
+
 	updateUI();
 
 	i18next.on('languageChanged', () => {
 		updateUI();
 	});
-
-	const cleanup = () => {
-		if (mediaRecorder) {
-			mediaRecorder.stop();
-		}
-		stopRecordingTimer();
-	};
-
-	return {
-		cleanup
-	};
 };

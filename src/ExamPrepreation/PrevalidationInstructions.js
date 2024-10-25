@@ -9,6 +9,8 @@ import { showTab } from './examPrechecks';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
+		let currentCaptureMode = null;
+		let mediaStream = null;
 		let cameras = [];
 		let microphones = [];
 		let videoConstraints = {
@@ -22,7 +24,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		const iconData = [
 			{
 				src: washroomCircle,
-				text: 'use_washroom', // Store the translation key instead of the translated text
+				text: 'use_washroom',
 			},
 			{
 				src: waterCircle,
@@ -39,10 +41,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		];
 		console.log('cameras',cameras,'microphones',microphones);
 
-		let currentCaptureMode = null;
 		console.log('currentCaptureMode',currentCaptureMode);
-
-		let mediaStream = null;
 
 		const handleDeviceId = async (id, type) => {
 			if (type === 'camera') {
@@ -66,6 +65,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 	
 		const nextStep = () => {
+			mediaStream?.getTracks().forEach(track => track.stop());
 			registerEvent({eventType: 'success', notify: false, eventName: 'prevalidation_passed'});
 			updatePersistData('preChecksSteps', { preValidation: true });
 			showTab('IdentityVerificationScreenOne');
@@ -222,13 +222,12 @@ export const PrevalidationInstructions = async (tabContent) => {
 			};
 		};
 
-
 		const startWebcam = async () => {
 			const videoContainer = document.getElementById('videoContainer');
 			videoContainer.innerHTML = ''; 
 	
 			try {
-				mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: audioConstraints });
+				mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
 	
 				const videoElement = document.createElement('video');
 				videoElement.id = 'myVideo';

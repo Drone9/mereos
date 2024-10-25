@@ -9,7 +9,7 @@ import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive
 import { ExamPreparation } from './examPreprationScreen';
 import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
-import { preChecksSteps } from '../utils/constant';
+import { preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
 // import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
 // import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
@@ -195,9 +195,6 @@ const showTab = async (tabId, callback) => {
 		const secureFeatures = getSecureFeature?.entities || [];
 		console.log('secureFeatures', secureFeatures);
 
-		const systemDiagnosticSteps = ['Verify Desktop', 'Record Video', 'Record Audio', 'Verify Connection', 'Track Location', 'Enable Notifications', 'Upload Speed'];
-		const prevalidationSteps = ['record_video', 'record_audio','identity_card_requirement','record_room'];
-
 		console.log('exam_perparation', secureFeatures?.find(entity => entity.key === 'exam_perparation'));
 		if (tabId === 'ExamPreparation') {
 			if (!secureFeatures?.find(entity => entity.key === 'exam_perparation')) {
@@ -206,7 +203,7 @@ const showTab = async (tabId, callback) => {
 			}
 			await ExamPreparation(ExamPreparationContainer);
 		} else if (tabId === 'runSystemDiagnostics') {
-			if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.name))?.length) {
+			if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length) {
 				navigate('Prevalidationinstruction');
 				return;
 			}

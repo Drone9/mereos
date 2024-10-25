@@ -47,3 +47,33 @@ export const preChecksSteps = {
 	examPrechecks:false,
 	mobileConnection:false,
 };
+
+export const LockDownOptions = [
+	'detect_unfocus',
+	'disable_downloading',
+	'disable_printing',
+	'force_full_screen',
+	'detect_resizing_of_window',
+	'disable_right_click',
+	'disable_function_keys',
+	'block_browser_screenshot',
+	'disable_clipboard'
+];
+
+export const systemDiagnosticSteps = [
+	'verify_desktop', 
+	'record_video', 
+	'record_audio', 
+	'verify_connection', 
+	'track_location', 
+	'enable_notifications', 
+	'record_room',
+	'record_audio'
+];
+
+export const prevalidationSteps = [
+	'record_video', 
+	'record_audio',
+	'identity_card_requirement',
+	'record_room'
+];

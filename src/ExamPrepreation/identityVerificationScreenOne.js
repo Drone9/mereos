@@ -6,6 +6,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
+	let stream = null;
 	let state = {
 		captureMode: 'take',
 		imageSrc: null,
@@ -14,7 +15,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			width: 350,
 			height: 280,
 			facingMode: 'user',
-			deviceId: localStorage.getItem('deviceId') || undefined,
 		},
 		msg: {
 			type: 'checking',
@@ -31,7 +31,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			videoElement.width = state.videoConstraints.width;
 			videoElement.height = state.videoConstraints.height;
 			videoElement.autoplay = true;
-			const stream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
+			stream = await navigator.mediaDevices.getUserMedia({ video: state.videoConstraints });
 			videoElement.srcObject = stream;
 			webcamStream = stream;
 			if (tabContent) {
@@ -126,6 +126,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	};
 
 	const nextStep = () => {
+		if(stream){
+			stream?.getTracks()?.forEach((track) => track.stop());
+		}
 		registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
 		updatePersistData('preChecksSteps',{ userPhoto:true });
 		showTab('IdentityVerificationScreenTwo');

@@ -1,14 +1,16 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
-import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import socket from '../utils/socket';
 import { getRecordings } from '../services/twilio.services';
+import { LockDownOptions } from '../utils/constant';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
 let aiEvents = [];
+let mediaStream=null;
 
 export const startRecording = async (webToken) => {
 	console.log('startRecording',webToken);
@@ -71,7 +73,9 @@ export const startRecording = async (webToken) => {
 	}
 
 	if (secureFeatures?.entities !== null) {
-		await lockBrowserFromContent(secureFeatures?.entities || []);
+		if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
+			await lockBrowserFromContent(secureFeatures?.entities || []);
+		}
 
 		let twilioOptions = {
 			audio: findConfigs(['record_audio'], secureFeatures?.entities).length ?
@@ -107,7 +111,7 @@ export const startRecording = async (webToken) => {
 			roomInstance = room;
 			console.log('Room connected:', room);
 
-			const mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
+			mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
 				deviceId: { exact: localStorage.getItem('microphoneID') },
 			} : true) });
 
@@ -143,7 +147,10 @@ export const startRecording = async (webToken) => {
 			if (socket && socket.readyState === WebSocket.OPEN) {
 				socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
 			}
-			window.startRecordingCallBack({ message: 'recording_started_successfully' });
+			
+			if(window.startRecordingCallBack){
+				window.startRecordingCallBack({ message: 'recording_started_successfully' });
+			}
 
 			console.log('Local screen share track published:', screenTrack);
 
@@ -314,7 +321,8 @@ export const cleanupLocalVideo = () => {
 		if (videoElement) {
 			videoElement.pause();
 			videoElement.srcObject.getTracks().forEach(track => track.stop());
-			videoElement.remove();
+			videoElement.srcObject = null;
+			// videoElement.remove();
 		}
 
 		const canvas = webcamContainer.querySelector('canvas');
@@ -330,20 +338,21 @@ export const stopAllRecordings = async () => {
 	try {
 		const session = convertDataIntoParse('session');
 		const secureFeatures = getSecureFeatures();
-		console.log('session',session);
+		console.log('session', session);
+		console.log('newStream',newStream,'roomInstance',roomInstance);
 
 		if (socket && socket.readyState === WebSocket.OPEN) {
 			console.log('in the stopRecording log');
 			socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
 		
-		if(secureFeatures?.entities.find(entity => entity.key === 'mobile_proctoring')){
+		if (secureFeatures?.entities.find(entity => entity.key === 'mobile_proctoring')) {
 			const getRecordingResp = await getRecordings({ room_sid: session?.mobileRoomId });
-			if(getRecordingResp?.data && getRecordingResp?.status === 200){
+			if (getRecordingResp?.data && getRecordingResp?.status === 200) {
 				const newCameraRecordings = [];
 				const newAudioRecordings = [];
 				
-				console.log('getRecordingResp',getRecordingResp?.data);
+				console.log('getRecordingResp', getRecordingResp?.data);
 				const existingVideoRecordings = [...session.user_video_name, ...session.screen_sharing_video_name];
 				const existingAudioRecordings = [...session.audio_recordings];
 				
@@ -353,7 +362,6 @@ export const stopAllRecordings = async () => {
 					}
 				});
 		
-				// Check for new audio recordings
 				getRecordingResp?.data?.audio_recordings.forEach(recording => {
 					if (!existingAudioRecordings.includes(recording.source_sid)) {
 						newAudioRecordings.push(recording.source_sid);
@@ -370,33 +378,59 @@ export const stopAllRecordings = async () => {
 			}
 		}
 
+		cleanupLocalVideo();
+
+		if(mediaStream){
+			mediaStream.getTracks().forEach(track => track.stop());
+			mediaStream=null;
+		}
+
+		if (newStream) {
+			newStream.getVideoTracks().forEach(track => {
+				track.stop();
+				track.enabled = false;
+			});
+		}
+
+		if (newStream) {
+			newStream.getAudioTracks().forEach(track => {
+				track.stop();
+				track.enabled = false;
+			});
+		}
+
 		if (roomInstance) {
 			roomInstance.localParticipant.tracks.forEach(publication => {
 				const track = publication.track;
 				if (track) {
 					track.stop();
+					track.detach().forEach(element => element.remove());
+					track.disable();
 					roomInstance.localParticipant.unpublishTrack(track);
 				}
 			});
 			roomInstance.disconnect();
+			roomInstance = null;
 		}
 
-		// Clear AI processing interval if it's active
+		console.log('newStream after',newStream,'after roomInstance',roomInstance);
+
 		if (aiProcessingInterval) {
 			clearInterval(aiProcessingInterval);
 			aiProcessingInterval = null;
 		}
 
-		roomInstance = null;
-		cleanupLocalVideo();
-
+		if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
+			unlockBrowserFromContent();
+		}
+		
 		const dateTime = new Date();
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 
 		updatePersistData('session', {
 			recordingEnded: true,
-			sessionStatus:'Completed',
+			sessionStatus: 'Completed',
 		});
 
 		showNotification({
@@ -409,5 +443,3 @@ export const stopAllRecordings = async () => {
 		console.error(e);
 	}
 };
-
-// checkScreenSharing();

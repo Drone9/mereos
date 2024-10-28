@@ -71,6 +71,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 	const nextStep = async () => {
 		try {
+			showPlayer = false;
+			loading=false;
 			if (window.userMediaStream) {
 				window.userMediaStream.getTracks().forEach(track => track.stop());
 				window.userMediaStream = null;

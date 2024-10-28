@@ -142,7 +142,6 @@ export const MobileProctoring = async (tabContent) => {
 			updatePersistData('preChecksSteps', { mobileConnection: true });
 			showTab('IdentityVerificationScreenFive');
 			let container = document.getElementById('mobile-proctoring');
-			console.log('container',container);
 			if(container){
 				container.innerHTML = '';
 			}
@@ -160,8 +159,6 @@ export const MobileProctoring = async (tabContent) => {
 		}
 		renderUI(); 
 	};
-
-	console.log('checkedVideo',checkedVideo);
 
 	function renderUI() {
 		let container = tabContent?.querySelector('.ivsf-container');

@@ -18,6 +18,7 @@ import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import socket from './src/utils/socket';
+import { v4 } from 'uuid';
 
 async function init(host, profileId, assessmentData) {
 	try{
@@ -63,15 +64,15 @@ async function start_session(callback) {
 		window.startRecordingCallBack = callback;
 		const secureFeatures = getSecureFeatures();
 		if(secureFeatures?.entities?.length > 0){
-			const newDate = new Date();
-			const mobileRoomSessionId = new Date().getTime();
-			
-			const newRoomSessionId = newDate.getTime();
+			const mobileRoomSessionId = v4();
+
+			const newRoomSessionId = v4();
 			if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
 				let resp = await getRoomSid({ session_id: mobileRoomSessionId, auto_record: true });
 				let mobileTwilioToken = await getToken({ room_sid: resp.data.room_sid });
 				updatePersistData('session', {
-					mobileRoomId:resp.data.room_sid
+					mobileRoomId:resp.data.room_sid,
+					mobileRoomSessionId:mobileRoomSessionId
 				});
 	
 				if (socket && socket.readyState === WebSocket.OPEN) {

@@ -4,13 +4,15 @@ import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getT
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import socket from '../utils/socket';
-import { getRecordings } from '../services/twilio.services';
+import { getCreateRoom } from '../services/twilio.services';
 import { LockDownOptions } from '../utils/constant';
+import '../assets/css/start-recording.css';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
 let aiEvents = [];
 let mediaStream=null;
+let mobileRoomInstance = null;
 
 export const startRecording = async (webToken) => {
 	console.log('startRecording',webToken);
@@ -33,9 +35,29 @@ export const startRecording = async (webToken) => {
 			console.log('message____',eventData?.message?.event);
 
 			switch (eventData?.message?.event || eventData?.event) {
-				case 'MobileRecordingStarted':
-					console.log('MobileRecordingStarted', eventData?.message?.message);
+				case 'MobileRecordingStarted': {
+					getCreateRoom({
+						room_name: session?.mobileRoomSessionId,
+						auto_record: false
+					}).then(async (twilioTokens) => {
+						console.log('mobileTwilioToken',twilioTokens);
+	
+						const twilioRoom = await TwilioVideo.connect(twilioTokens?.data?.token, {
+							audio: false,
+							video: false
+						});
+						console.log('mobileTwilioRoom', twilioRoom);
+				
+						mobileRoomInstance = twilioRoom;
+						if(mobileRoomInstance){
+							VideoChat(twilioRoom);
+						}
+					}).catch((error)=>{
+						console.log('error', error);
+					});
+
 					break;
+				}
 
 				case 'violation':
 					console.log('violation message',eventData?.message?.message);
@@ -115,7 +137,7 @@ export const startRecording = async (webToken) => {
 				deviceId: { exact: localStorage.getItem('microphoneID') },
 			} : true) });
 
-			if (secureFeatures?.entities.find(entity => entity.key === 'record_video')) {
+			if (secureFeatures?.entities?.find(entity => entity.key === 'record_video')) {
 				startAIWebcam(mediaStream);
 			}
 
@@ -147,14 +169,14 @@ export const startRecording = async (webToken) => {
 			if (socket && socket.readyState === WebSocket.OPEN) {
 				socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
 			}
-			
+
 			if(window.startRecordingCallBack){
 				window.startRecordingCallBack({ message: 'recording_started_successfully' });
 			}
 
 			console.log('Local screen share track published:', screenTrack);
 
-			room.on('disconnected', (error) => {
+			room.on('reconnecting', (error) => {
 				cleanupLocalVideo(cameraTrack);
 				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
 					updatePersistData('preChecksSteps', { 
@@ -167,7 +189,9 @@ export const startRecording = async (webToken) => {
 					});
 				}
 				console.log('diconnection room',error);
-				// window.open('/assessment/prechecks', '_self');
+				if(window.startRecordingCallBack){
+					window.startRecordingCallBack({ message: 'web_internet_connection_disconnected' });
+				}
 			});
 		} catch (error) {
 			updatePersistData('session', {
@@ -322,7 +346,6 @@ export const cleanupLocalVideo = () => {
 			videoElement.pause();
 			videoElement.srcObject.getTracks().forEach(track => track.stop());
 			videoElement.srcObject = null;
-			// videoElement.remove();
 		}
 
 		const canvas = webcamContainer.querySelector('canvas');
@@ -336,47 +359,44 @@ export const cleanupLocalVideo = () => {
 
 export const stopAllRecordings = async () => {
 	try {
-		const session = convertDataIntoParse('session');
 		const secureFeatures = getSecureFeatures();
-		console.log('session', session);
-		console.log('newStream',newStream,'roomInstance',roomInstance);
 
 		if (socket && socket.readyState === WebSocket.OPEN) {
 			console.log('in the stopRecording log');
 			socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
 		
-		if (secureFeatures?.entities.find(entity => entity.key === 'mobile_proctoring')) {
-			const getRecordingResp = await getRecordings({ room_sid: session?.mobileRoomId });
-			if (getRecordingResp?.data && getRecordingResp?.status === 200) {
-				const newCameraRecordings = [];
-				const newAudioRecordings = [];
+		// if (secureFeatures?.entities.find(entity => entity.key === 'mobile_proctoring')) {
+		// 	const getRecordingResp = await getRecordings({ room_sid: session?.mobileRoomId });
+		// 	if (getRecordingResp?.data && getRecordingResp?.status === 200) {
+		// 		const newCameraRecordings = [];
+		// 		const newAudioRecordings = [];
 				
-				console.log('getRecordingResp', getRecordingResp?.data);
-				const existingVideoRecordings = [...session.user_video_name, ...session.screen_sharing_video_name];
-				const existingAudioRecordings = [...session.audio_recordings];
+		// 		console.log('getRecordingResp', getRecordingResp?.data);
+		// 		const existingVideoRecordings = [...session.user_video_name, ...session.screen_sharing_video_name];
+		// 		const existingAudioRecordings = [...session.audio_recordings];
 				
-				getRecordingResp?.data?.video_recordings.forEach(recording => {
-					if (!existingVideoRecordings.includes(recording.source_sid)) {
-						newCameraRecordings.push(recording.source_sid);
-					}
-				});
+		// 		getRecordingResp?.data?.video_recordings.forEach(recording => {
+		// 			if (!existingVideoRecordings.includes(recording.source_sid)) {
+		// 				newCameraRecordings.push(recording.source_sid);
+		// 			}
+		// 		});
 		
-				getRecordingResp?.data?.audio_recordings.forEach(recording => {
-					if (!existingAudioRecordings.includes(recording.source_sid)) {
-						newAudioRecordings.push(recording.source_sid);
-					}
-				});
+		// 		getRecordingResp?.data?.audio_recordings.forEach(recording => {
+		// 			if (!existingAudioRecordings.includes(recording.source_sid)) {
+		// 				newAudioRecordings.push(recording.source_sid);
+		// 			}
+		// 		});
 
-				const mobileRecordings = session?.mobileRecordings || [];
-				const mobileAudios = session?.mobileAudios || [];
+		// 		const mobileRecordings = session?.mobileRecordings || [];
+		// 		const mobileAudios = session?.mobileAudios || [];
 
-				updatePersistData('session', {
-					mobileRecordings: [...mobileRecordings, ...newCameraRecordings],
-					mobileAudios: [...mobileAudios, ...newAudioRecordings],
-				});
-			}
-		}
+		// 		updatePersistData('session', {
+		// 			mobileRecordings: [...mobileRecordings, ...newCameraRecordings],
+		// 			mobileAudios: [...mobileAudios, ...newAudioRecordings],
+		// 		});
+		// 	}
+		// }
 
 		cleanupLocalVideo();
 
@@ -399,6 +419,20 @@ export const stopAllRecordings = async () => {
 			});
 		}
 
+		if (mobileRoomInstance) {
+			mobileRoomInstance.localParticipant.tracks.forEach(publication => {
+				const track = publication.track;
+				if (track) {
+					track.stop();
+					track.detach().forEach(element => element.remove());
+					track.disable();
+					mobileRoomInstance.localParticipant.unpublishTrack(track);
+				}
+			});
+			mobileRoomInstance.disconnect();
+			mobileRoomInstance = null;
+		}
+
 		if (roomInstance) {
 			roomInstance.localParticipant.tracks.forEach(publication => {
 				const track = publication.track;
@@ -412,8 +446,6 @@ export const stopAllRecordings = async () => {
 			roomInstance.disconnect();
 			roomInstance = null;
 		}
-
-		console.log('newStream after',newStream,'after roomInstance',roomInstance);
 
 		if (aiProcessingInterval) {
 			clearInterval(aiProcessingInterval);
@@ -443,3 +475,117 @@ export const stopAllRecordings = async () => {
 		console.error(e);
 	}
 };
+
+function VideoChat(room) {
+	const secureFeatures = getSecureFeatures();
+	const session = convertDataIntoParse('session');
+	const localVideoRef = document.createElement('div');
+	const remoteVideoRef = document.createElement('div');
+	remoteVideoRef.classList.add('remote-video');
+
+	document.body.appendChild(remoteVideoRef); 
+
+	function attachTrack(track, container) {
+		if (container && track && track.kind === 'video') {
+			try {
+				const attachedElement = track?.attach();
+				if (attachedElement) {
+					attachedElement.classList.add('video-attached');
+					container.appendChild(attachedElement);
+				}
+			} catch (error) {
+				console.error('Error attaching video track:', error);
+			}
+		} else {
+			console.error('Track is not a video track or container is missing', { track, container });
+		}
+	}
+
+	function detachTrack(track) {
+		if (track && track.detach) {
+			track.detach().forEach(element => element.remove());
+		}
+	}
+
+	function handleParticipant(participant) {
+		participant.tracks.forEach(publication => {
+			if (publication.isSubscribed && publication.track.kind === 'video') {
+				attachTrack(publication.track, remoteVideoRef);
+			}
+		});
+
+		participant.on('trackSubscribed', (track) => {
+			if (track.kind === 'video') {
+				attachTrack(track, remoteVideoRef);
+				updatePersistData('session', {
+					mobileRecordings: [
+						...(session.mobileRecordings || []),
+						track.sid
+					],
+				});
+			}
+
+			if (track.kind === 'audio') {
+				updatePersistData('session', {
+					mobileAudios: [
+						...(session.mobileAudios || []),
+						track.sid
+					],
+				});
+			}
+		});
+
+		participant.on('trackUnsubscribed', (track) => {
+			detachTrack(track);
+		});
+	}
+
+	function connectToRoom() {
+		try {
+			room.localParticipant.videoTracks.forEach(publication => {
+				if (publication.track && publication.track.kind === 'video') {
+					attachTrack(publication.track, localVideoRef);
+				}
+			});
+
+			room.participants.forEach(participant => {
+				handleParticipant(participant);
+			});
+
+			room.on('participantReconnecting', remoteParticipant => {
+				console.log(`${remoteParticipant.identity} is reconnecting the signaling connection to the Room!`);
+				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
+					updatePersistData('preChecksSteps', { 
+						mobileConnection: false,
+						screenSharing: false
+					});
+				} else {
+					updatePersistData('preChecksSteps', { 
+						screenSharing: false
+					});					
+				}
+				setTimeout(() => {
+					if(window.startRecordingCallBack){
+						window.startRecordingCallBack({ message: 'mobile_internet_connection_disconnected' });
+					}
+				}, 4000);
+			});
+
+			room.on('participantConnected', (participant) => {
+				handleParticipant(participant);
+			});
+
+			room.on('participantDisconnected', participant => {
+				participant.tracks.forEach(publication => {
+					if (publication.track) {
+						detachTrack(publication.track);
+					}
+				});
+			});
+		} catch (error) {
+			console.error('Error connecting to Twilio room:', error);
+		}
+	}
+
+	connectToRoom();
+}

@@ -15,7 +15,7 @@ export const createEvent = async (data) => {
 	const token = getAuthenticationToken();
 	const config = {
 		headers: {
-			Authorization: `Basic ${token}`,
+			token: token,
 		},
 	};
 	return axios.post('/sessions/candidate_event/', data, config);

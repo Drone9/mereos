@@ -911,18 +911,18 @@ export const handlePreChecksRedirection = () => {
 	const secureFeatures = getSecureFeature?.entities || [];
 	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
-	if (preChecksSteps?.examPreparation && hasFeature('exam_perparation')) {
+	if (!preChecksSteps?.examPreparation && hasFeature('exam_perparation')) {
 		return 'ExamPreparation';
-	} else if(preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
+	} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
 		return 'runSystemDiagnostics';
-	}else if(preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
+	}else if(!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
 		return 'Prevalidationinstruction';
 	}
-	else if(preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
+	else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
 		return 'IdentityVerificationScreenOne';
-	}else if(preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
+	}else if(!preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
 		return 'IdentityVerificationScreenTwo';
-	}else if(preChecksSteps?.audioDetection && hasFeature('record_audio')){
+	}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
 		return 'IdentityVerificationScreenThree';
 	}else if(!preChecksSteps?.roomScanningVideo && hasFeature('record_room')){
 		return 'IdentityVerificationScreenFour';

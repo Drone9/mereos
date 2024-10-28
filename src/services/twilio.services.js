@@ -43,3 +43,13 @@ export const getRecordingSid = async (data) => {
 	};
 	return axiosInstance.post(`/twilio/get_SID/`, data, config);
 };
+
+export const getCreateRoom = async (data) => {
+	const token = getAuthenticationToken();
+	const config = {
+		headers: {
+			token: `${token}`,
+		}
+	};
+	return axiosInstance.post('/twilio/candidate_get_create_room/', data, config);
+};

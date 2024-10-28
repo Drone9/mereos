@@ -17,3 +17,13 @@ body{
   height: auto;
   display: block;
 }
+.remote-video{
+  position: absolute;
+  left: 208px;
+  top: 23px;
+}
+.remote-video  .video-attached{
+  width: 200px;
+  height: 155px;
+  object-fit: cover;
+}

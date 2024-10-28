@@ -207,7 +207,7 @@ const showTab = async (tabId, callback) => {
 				navigate('Prevalidationinstruction');
 				return;
 			}
-			runSystemDiagnostics();
+			runSystemDiagnostics(SystemDiagnosticsContainer);
 		} else if (tabId === 'Prevalidationinstruction') {
 			if (!secureFeatures.filter(entity => prevalidationSteps.includes(entity.key))?.length) {
 				navigate('IdentityVerificationScreenOne');

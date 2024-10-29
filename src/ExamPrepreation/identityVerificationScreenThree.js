@@ -3,9 +3,9 @@ import { showTab } from './examPrechecks';
 import '../assets/css/step3.css';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
-// import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
+	console.log('IdentityVerificationScreenThree');
 	let canvasRef;
 	let audioStream= null;
 	let audioContext;
@@ -16,8 +16,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		type: '',
 		text: 'be_loud_clear'
 	};
-
-	const schoolInfo = {};
+	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
 
 	let animationFrameId = null;
 
@@ -43,7 +42,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 					analyserNode.getByteFrequencyData(frequencyData);
 
 					canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-					canvasCtx.fillStyle = schoolInfo?.theme?.color || '#FF961B';
+					canvasCtx.fillStyle = schoolTheme?.theming || '#FF961B';
 					const barWidth = (canvas.width / bufferLength) * 8.5;
 					let barHeight;
 					let x = 0;
@@ -135,6 +134,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	};
 
 	const prevStep = () => {
+		updatePersistData('preChecksSteps',{ audioDetection:false });
 		showTab('IdentityVerificationScreenTwo');
 		console.log('Navigate to IDENTITY_VERIFICATION_SCREEN_TWO');
 	};
@@ -145,10 +145,12 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			container = document.createElement('div');
 			container.className = 'ivst-container';
 			tabContent.appendChild(container);
-			renderIdentityVerificationSteps(container, 3);
 		}
 
+		const stepsContainer = document.createElement('div');
+		renderIdentityVerificationSteps(stepsContainer, 1);
 		let wrapper = container.querySelector('.ivst-wrapper');
+		
 		if (!wrapper) {
 			wrapper = document.createElement('div');
 			wrapper.className = 'ivst-wrapper';
@@ -157,6 +159,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			headerTitle.className = 'ivst-header-title';
 			wrapper.appendChild(headerTitle);
     
+			wrapper.appendChild(stepsContainer);
+
 			const message = document.createElement('div');
 			message.className = 'ivst-msg';
 			wrapper.appendChild(message);

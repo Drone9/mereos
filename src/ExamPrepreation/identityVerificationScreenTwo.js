@@ -7,6 +7,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
+	console.log('IdentityVerificationScreenTwo');
 	let photo;
 	let inputFile;
 	let stream = null;
@@ -153,7 +154,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const nextStep = async () => {
-		stream.getTracks().forEach(track => track.stop());
+		if(stream?.getTracks()){
+			stream.getTracks().forEach(track => track.stop());
+		}
 		updatePersistData('preChecksSteps',{ identityCardPhoto:true });
 		registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_verified_successfully', eventValue: getDateTime()});
 		showTab('IdentityVerificationScreenThree');
@@ -205,6 +208,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const prevStep = () => {
+		updatePersistData('preChecksSteps',{ identityCardPhoto:false });
 		showTab('IdentityVerificationScreenOne');
 	};
 
@@ -216,7 +220,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			tabContent.appendChild(container);
 		}
 		container.innerHTML = '';
-		renderIdentityVerificationSteps(container, 2);
+
+		let stepsContainer = document.createElement('div');
+
+		renderIdentityVerificationSteps(stepsContainer, 2);
 
 		const wrapper = document.createElement('div');
 		wrapper.className = 'ivst-wrapper';
@@ -263,6 +270,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		}
 
 		wrapper.appendChild(headerTitle);
+		wrapper.appendChild(stepsContainer);
 		wrapper.appendChild(message);
 		wrapper.appendChild(headerImgContainer);
 
@@ -290,7 +298,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (currentState.captureMode === 'take') {
 			const prevBtn = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
 			const takePhotoBtn = createButton(`${i18next.t('take_id_photo')}`, 'orange-filled-btn', capturePhoto);
-			takePhotoBtn.disabled = disabledBtn;
+			takePhotoBtn.disabled = disabledBtn || !!currentState.imageSrc;
 			btnContainer.appendChild(prevBtn);
 			btnContainer.appendChild(takePhotoBtn);
 		} else {
@@ -299,7 +307,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 
 			if (currentState.captureMode !== 'uploaded_photo') {
 				const uploadBtn = createButton(`${i18next.t('upload')}`, 'orange-filled-btn', uploadCandidateIdentityCard);
-				uploadBtn.disabled = currentState.msg.type !== 'successful';
+				uploadBtn.disabled = currentState.msg.type === 'loading';
 				btnContainer.appendChild(uploadBtn);
 			} else {
 				const nextBtn = createButton(`${i18next.t('next_step')}`, 'orange-filled-btn', nextStep);

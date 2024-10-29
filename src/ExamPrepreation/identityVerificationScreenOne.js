@@ -6,8 +6,10 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
+	console.log('IdentityVerificationScreenOne');
 	let stream = null;
 	let state = {
+		isUploading: false,
 		captureMode: 'take',
 		imageSrc: null,
 		videoConstraints: {
@@ -136,6 +138,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 	const uploadUserCapturedPhoto = async () => {
 		try {
+			state.isUploading = true; 
+			renderUI();
 			state = {
 				...state,
 				msg: {
@@ -170,6 +174,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				},
 			};
 			registerEvent({ eventType: 'error', notify: false, eventName: 'internet_connection_unstable' });
+		}finally{
+			state.isUploading = true; 
 		}
 		renderUI();
 	};
@@ -184,8 +190,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		} else {
 			ivsoContainer.innerHTML = '';
 		}
-
-		renderIdentityVerificationSteps(ivsoContainer, 1);
 	
 		const ivsoWrapper = document.createElement('div');
 		ivsoWrapper.className = 'ivso-wrapper';
@@ -193,6 +197,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		const ivsHeaderTitle = document.createElement('div');
 		ivsHeaderTitle.className = 'ivso-header-title';
 		ivsHeaderTitle.textContent = i18next.t('webcam_diagnostics');
+		const stepsContainer = document.createElement('div');
+
+		renderIdentityVerificationSteps(stepsContainer, 1);
 	
 		const ivsMsg = document.createElement('div');
 		ivsMsg.className = 'ivso-msg';
@@ -210,7 +217,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		const ivsoQueryMsg = document.createElement('div');
 		ivsoQueryMsg.className = 'ivso-query-msg';
 	
-		// Handle webcam image or video feed
 		if (state.imageSrc) {
 			const img = document.createElement('img');
 			img.src = state.imageSrc;
@@ -274,12 +280,14 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			const uploadPhotoBtn = document.createElement('button');
 			uploadPhotoBtn.textContent = i18next.t('upload');
 			uploadPhotoBtn.className = 'orange-filled-btn';
+			uploadPhotoBtn.disabled = state.isUploading; 
 			uploadPhotoBtn.addEventListener('click', uploadUserCapturedPhoto);
 			ivsoBtnContainer.appendChild(uploadPhotoBtn);
 		}
 	
 		// Append elements to wrapper
 		ivsoWrapper.appendChild(ivsHeaderTitle);
+		ivsoWrapper.appendChild(stepsContainer);
 		ivsoWrapper.appendChild(ivsoHeaderImgContainer);
 		ivsoWrapper.appendChild(ivsoWebcamContainer);
 		ivsoWrapper.appendChild(ivsMsg);

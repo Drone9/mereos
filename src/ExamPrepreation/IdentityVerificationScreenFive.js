@@ -8,6 +8,7 @@ import { renderIdentityVerificationSteps } from './IdentitySteps';
 export let newStream;
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
+	console.log('IdentityVerificationScreenFive');
 	let multipleScreens;
 	if (!tabContent) {
 		console.error('tabContent is not defined or is not a valid DOM element');
@@ -70,12 +71,15 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		if (stream) {
 			stream.getVideoTracks()[0].stop();
 		}
+		updatePersistData('preChecksSteps',{ screenSharing:false });
 		showTab('IdentityVerificationScreenFour');
 	};
 
 	const container = document.createElement('div');
 	container.classList.add('screen-share-container');
-	renderIdentityVerificationSteps(container, 6);
+
+	const stepsContainer = document.createElement('div');
+	renderIdentityVerificationSteps(stepsContainer, 1);
 
 	const wrapper = document.createElement('div');
 	wrapper.classList.add('screen-wrapper');
@@ -84,7 +88,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	headerTitle.classList.add('ivsf-header-titles');
 	headerTitle.textContent = i18next.t('verification_completed');
 	wrapper.appendChild(headerTitle);
-
+	wrapper.appendChild(stepsContainer);
+	
 	const msgElement = document.createElement('div');
 	msgElement.classList.add('screen-desc');
 	msgElement.textContent = i18next.t('verification_completed_msg');

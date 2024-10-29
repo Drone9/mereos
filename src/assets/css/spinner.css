@@ -18,17 +18,17 @@
 
 .spinner .bounce1 {
     animation-delay: -0.32s;
-    background-color: var(--primary-color);;
+    background-color: var(--theme-color);;
 }
 
 .spinner .bounce2 {
     animation-delay: -0.16s;
-    background-color: var(--primary-color);;
+    background-color: var(--theme-color);;
 }
 
 .spinner .bounce3 {
     animation-delay: -0.16s;
-    background-color: var(--primary-color);;
+    background-color: var(--theme-color);;
 }
 
 @keyframes sk-bouncedelay {

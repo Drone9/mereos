@@ -7,7 +7,6 @@
   margin: auto;
   display: flex;
   flex-direction: column;
-  row-gap: 7px;
 }
 
 @media (max-width: 720px) {
@@ -88,7 +87,7 @@
 }
 
 .bottom-desc-remote input {
-  accent-color: var(--primary-color);
+  accent-color: var(--theme-color);
 }
 .bottom-desc-remote p{
   margin: 0;

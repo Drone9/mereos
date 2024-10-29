@@ -13,6 +13,7 @@ import cameraExample from '../assets/images/user-video-tutorial.jpeg';
 
 window.mobileStream = null;
 export const MobileProctoring = async (tabContent) => {
+	console.log('MobileProctoring');
 	let mobileSteps = ''; 
 	let checkedVideo = false;
 	const remoteVideoRef = document.createElement('video');
@@ -176,10 +177,12 @@ export const MobileProctoring = async (tabContent) => {
 		const headerTitle = document.createElement('div');
 		headerTitle.className = 'mobile-header-title';
 		headerTitle.innerText = t('setting_up_your_phone_camera');
-
-		renderIdentityVerificationSteps(container, 5);
+		
+		const stepsContainer = document.createElement('div');
+		renderIdentityVerificationSteps(stepsContainer, 1);
 
 		wrapper.appendChild(headerTitle);
+		wrapper.appendChild(stepsContainer);
 
 		if (mobileSteps === '') {
 			const mobileConnectionBanner = document.createElement('div');

@@ -11,7 +11,7 @@
 
 @media (min-width: 401px) {
   .exam-preparation h1 {
-      text-align: left; /* Assuming a default value, change as needed */
+      text-align: left;
   }
 }
 

@@ -4,7 +4,7 @@ body {
   font-family: 'Poppins', sans-serif;
 }
 :root {
-  --primary-color: #FF961B;
+  --theme-color: #FF961B;
 }
 
 .modal {
@@ -65,7 +65,7 @@ body {
 }
 
 .tab.active {
-  color: var(--primary-color);
+  color: var(--theme-color);
 }
 
 .tab-content {

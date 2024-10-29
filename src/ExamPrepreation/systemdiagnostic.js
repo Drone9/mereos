@@ -37,14 +37,16 @@ import prompMessage from '../assets/images/user-permission-english.svg';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 
-const runDiagnostics = async () => {
+export const runSystemDiagnostics = async (tab1Content) => {
+	console.log('runDiagnostics');
 	let cameraStream = null;
 	let audioStream = null;
-	const tab1Content = document.getElementById('runSystemDiagnostics');
+
 	if (!tab1Content) {
 		console.error('Element with id "runSystemDiagnostics" not found.');
 		return;
 	}
+	tab1Content.innerHTML = ``; 
 	tab1Content.innerHTML = `
         <div class="system-diagnostic-test-screen">
             <h1 class="heading">${i18next.t('system_diagnostic')}</h1>
@@ -262,10 +264,6 @@ const runDiagnostics = async () => {
 	}
 };
 
-export const runSystemDiagnostics = async () => {
-	await runDiagnostics();
-};
-
 i18next.on('languageChanged', () => {
-	runDiagnostics();
+	runSystemDiagnostics(document.getElementById('runSystemDiagnostics'));
 });

@@ -25,6 +25,7 @@ const vectors = [
 const getDateTime = () => new Date().toISOString();
 
 export const ExamPreparation = async (tabContent,callback) => {
+	console.log('ExamPreparation');
 	if (!tabContent) {
 		console.error('tabContent is not defined or is not a valid DOM element');
 		return;

@@ -19,7 +19,7 @@
 .ivst-container .recording-text {
   text-align: center;
   font-size: 18px;
-  color: var(--primary-color); /* $primaryColor */
+  color: var(--theme-color); /* $primaryColor */
   text-transform: capitalize;
 }
 
@@ -71,7 +71,7 @@
 }
 
 .ivst-container .audio-timer span {
-  color: var(--primary-color); /* $primaryColor */
+  color: var(--theme-color); /* $primaryColor */
   font-size: 17px;
   font-weight: 500;
 }

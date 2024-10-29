@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 14px;
+  margin-bottom: 18px;
 }
 @media (max-width: 720px) {
   .ivs-container {
@@ -74,8 +74,8 @@
   line-height: 24px;
   display: flex;
   align-items: center;
-  color: var(--primary-color);
-  border-bottom: 3.5px solid var(--primary-color);
+  color: var(--theme-color);
+  border-bottom: 3.5px solid var(--theme-color);
   border-radius: 1px;
   padding-bottom: 10px;
 }

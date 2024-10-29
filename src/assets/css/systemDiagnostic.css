@@ -14,6 +14,7 @@
   font-weight: 600;
   font-size: 32px;
   margin-bottom: 0;
+  text-align: center;
 }
 
 .system-diagnostic-test-screen .container-prompt {
@@ -282,12 +283,12 @@
 .orange-hollow-btn{
   border-style: none;
 	font-size: 1em;
-	color: var(--primary-color);
+	color: var(--theme-color);
 	font-weight: 500;
 	border-radius: 5px;
 	padding: 10px 20px;
   background-color: #ffffff; 
-  border: 1px solid var(--primary-color);
+  border: 1px solid var(--theme-color);
   cursor: pointer;
 	&:disabled {
 		background-image: linear-gradient(#F6F6F9, #F6F6F9) !important;
@@ -319,7 +320,7 @@
 	font-weight: 500;
 	border-radius: 5px;
 	padding: 10px 20px;
-  background-color: var(--primary-color);
+  background-color: var(--theme-color);
   cursor: pointer;
 	&:disabled {
 		background-image: linear-gradient(#F6F6F9, #F6F6F9) !important;

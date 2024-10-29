@@ -89,6 +89,11 @@ tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
 tabContentsWrapper.appendChild(mobileProctingConatiner);
 
 modalContent.appendChild(tabContentsWrapper);
+const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
+
+if(schoolTheme){
+	document.documentElement.style.setProperty('--theme-color', schoolTheme?.theming);
+}
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
@@ -132,7 +137,6 @@ function openModal(callback) {
 		{ name: 'French', value: 'french', keyword: 'fr' },
 		{ name: 'Portuguese (Brazil)', value: 'portuguese_brazil', keyword: 'pt' },
 		{ name: 'Italian', value: 'italian', keyword: 'it' },
-		// { name: 'Welsh', value: 'welsh', keyword: 'cy' },
 	];
 
 	languages.forEach(lang => {
@@ -160,8 +164,6 @@ export const setLanguage = (lang) => {
 };
 
 function closeModal() {
-	console.log('closeModal called', window.globalCallback);
-
 	if (typeof window.globalCallback === 'function') {
 		window.globalCallback({ message: 'precheck_completed' });
 	}
@@ -172,8 +174,7 @@ function closeModal() {
 
 const showTab = async (tabId, callback) => {
 	try {
-		console.log('showTab callback',callback);
-
+		console.log('tabId',tabId);
 		const tabs = document.querySelectorAll('.tab');
 		const tabContents = document.querySelectorAll('.tab-content');
 
@@ -195,7 +196,6 @@ const showTab = async (tabId, callback) => {
 		const secureFeatures = getSecureFeature?.entities || [];
 		console.log('secureFeatures', secureFeatures);
 
-		console.log('exam_perparation', secureFeatures?.find(entity => entity.key === 'exam_perparation'));
 		if (tabId === 'ExamPreparation') {
 			if (!secureFeatures?.find(entity => entity.key === 'exam_perparation')) {
 				navigate('runSystemDiagnostics');
@@ -262,7 +262,6 @@ const showTab = async (tabId, callback) => {
 
 const startSession = async (session) => {
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-	console.log('candidateInviteAssessmentSection',candidateInviteAssessmentSection,'session',session);
 
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
@@ -270,11 +269,6 @@ const startSession = async (session) => {
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
 			registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
 		}
-		// const candidateAssessmentResp = await changeCandidateAssessmentStatus({ id: candidateInviteAssessmentSection?.candidate_assessment?.assessment?.id, status: 'Attending' });
-
-		// const candidateInviteAssessmentSectionResp = await changeCandidateInviteAssessmentSectionStatus({ id: candidateInviteAssessmentSection.id, status: 'Initiated' });
-
-		// console.log(resp, candidateAssessmentResp, candidateInviteAssessmentSectionResp);
 		updatePersistData('session',
 			{
 				id: resp.data.id,
@@ -294,7 +288,7 @@ export const updateTranslations = () => {
 };
 
 i18next.init({
-	lng: 'en',
+	lng: schoolTheme?.language.split('-')[0] || 'en',
 	resources: {
 		en: {
 			translation: require('../assets/locales/en/translation.json')
@@ -324,7 +318,6 @@ i18next.init({
 	if (err) return console.error(err);
 	updateTranslations();
 });
-
 
 document.addEventListener('DOMContentLoaded', () => {
 	updateTranslations();

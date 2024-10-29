@@ -20,7 +20,7 @@ import { createCandidateAssessment } from './src/services/assessment.services';
 import socket from './src/utils/socket';
 import { v4 } from 'uuid';
 
-async function init(host, profileId, assessmentData) {
+async function init(host, profileId, assessmentData,schoolTheme) {
 	try{
 		const resp = await registerPublicCandidate(host);
 		if(resp.data){
@@ -28,11 +28,12 @@ async function init(host, profileId, assessmentData) {
 			localStorage.setItem('candidateAssessment',JSON.stringify(resp.data.user_data));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
 			localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
+			localStorage.setItem('schoolTheme',JSON.stringify(schoolTheme));
       
 			const data = {
 				'name': assessmentData?.name,
 				'description': assessmentData?.description,
-				'external_id': assessmentData?.id,
+				'external_id': assessmentData?.id || 1,
 				'course_id':assessmentData?.course_id,
 				'others': {'test': 'value'}
 			};

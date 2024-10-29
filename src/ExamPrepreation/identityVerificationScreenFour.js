@@ -8,6 +8,7 @@ import { renderIdentityVerificationSteps } from './IdentitySteps';
 window.userMediaStream = null;
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
+	console.log('IdentityVerificationScreenFour');
 	let recordingMode = 'startRecording';
 	let showPlayer = false;
 	let textMessage = 'scan_your_room';
@@ -93,6 +94,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	const prevStep = () => {
+		updatePersistData('preChecksSteps',{ roomScanningVideo:false });
 		showTab('IdentityVerificationScreenThree');
 	};
 
@@ -131,7 +133,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			tabContent.appendChild(container);
 		}
 		container.innerHTML = '';
-		renderIdentityVerificationSteps(container, 4);
+
+		const stepsContainer = document.createElement('div');
+		renderIdentityVerificationSteps(stepsContainer, 1);
 
 		const wrapper = document.createElement('div');
 		wrapper.className = 'ivsf-wrapper';
@@ -179,6 +183,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		}
 
 		wrapper.appendChild(headerTitle);
+		wrapper.appendChild(stepsContainer);
 		wrapper.appendChild(message);
 		wrapper.appendChild(headerImgContainer);
 

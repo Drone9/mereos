@@ -208,14 +208,16 @@ export const registerEvent = ({ eventName }) => {
 		const session = convertDataIntoParse('session');
 		console.log('session',session);
 
-		const event = {
-			name: eventName,
-			value: eventName,
-			session_id: session?.id,
-			start_at: session?.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.sessionStartTime) / 1000) : 0
-		};
-			
-		return createEvent(event);
+		if(session?.id){
+			const event = {
+				name: eventName,
+				value: eventName,
+				session_id: session?.id,
+				start_at: session?.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.sessionStartTime) / 1000) : 0
+			};
+				
+			return createEvent(event);
+		}
 	}catch(error){
 		console.log(error);
 	}

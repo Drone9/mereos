@@ -223,6 +223,11 @@ export const registerEvent = ({ eventName }) => {
 	}
 };
 
+export const updateThemeColor = () => {
+	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme')); 
+	document.documentElement.style.setProperty('--theme-color', schoolTheme?.theming || '#FF961B');
+};
+
 export const getAuthenticationToken = () => {
 	return localStorage.getItem('mereosToken');
 };
@@ -621,48 +626,37 @@ export const detectUnfocusOfTab = () => {
 	});
 };
 
-let mediaStream = null; // Singleton instance of MediaStream
+window.sharedMediaStream = null;
 
-export const startMediaStream = async (constraints) => {
+export const getMediaStream = async ({ audio, video }) => {
+	if (window.sharedMediaStream) {
+		return window.sharedMediaStream;
+	}
 	try {
-		// Ensure at least one of audio or video is requested
-		if (!constraints.audio && !constraints.video) {
-			throw new Error('At least one of audio or video must be requested.');
-		}
-
-		// Stop any existing tracks before starting a new stream
-		if (mediaStream) {
-			mediaStream.getTracks().forEach(track => track.stop());
-		}
-
-		mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        
-
-		console.log('Media stream started:', mediaStream);
-		return mediaStream; // Return the active MediaStream
+		window.sharedMediaStream = await navigator.mediaDevices.getUserMedia({ audio: audio, video: video });
+		return window.sharedMediaStream;
 	} catch (error) {
-		console.error('Error accessing media devices:', error);
-		throw error; // Rethrow error for handling in calling functions
+		console.error('Error accessing media devices: ', error);
+		throw error;
 	}
 };
-
 
 export const stopMediaStream = () => {
-	if (mediaStream) {
-		mediaStream.getTracks().forEach(track => track.stop());
-		mediaStream = null; // Clear the reference
+	if (window.sharedMediaStream) {
+		window.sharedMediaStream.getTracks().forEach(track => track.stop());
+		window.sharedMediaStream = null;
 		console.log('Media stream stopped.');
+	} else {
+		console.log('No media stream to stop.');
 	}
 };
 
-// Function to remove the visibility change listener when necessary
 export const removeUnfocusListener = () => {
 	if (visibilityChangeHandler) {
 		document.removeEventListener('visibilitychange', visibilityChangeHandler);
-		visibilityChangeHandler = null; // Clear the handler reference
+		visibilityChangeHandler = null; 
 	}
 };
-
 
 export const preventShortCuts = (allowedFunctionKeys = []) => {
 	return new Promise((resolve, _reject) => {

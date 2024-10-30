@@ -78,7 +78,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				window.userMediaStream.getTracks().forEach(track => track.stop());
 				window.userMediaStream = null;
 			}
-
 			updatePersistData('preChecksSteps', { roomScanningVideo: true });
 			registerEvent({
 				eventType: 'success',

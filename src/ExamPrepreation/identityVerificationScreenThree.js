@@ -34,14 +34,14 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				mediaStreamSource.connect(analyserNode);
 
 				const canvas = canvasRef;
-				const canvasCtx = canvas.getContext('2d');
+				const canvasCtx = canvas?.getContext('2d');
 
 				const drawOnCanvas = () => {
 					const bufferLength = analyserNode.frequencyBinCount;
 					const frequencyData = new Uint8Array(bufferLength);
 					analyserNode.getByteFrequencyData(frequencyData);
 
-					canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+					canvasCtx?.clearRect(0, 0, canvas.width, canvas.height);
 					canvasCtx.fillStyle = schoolTheme?.theming || '#FF961B';
 					const barWidth = (canvas.width / bufferLength) * 8.5;
 					let barHeight;

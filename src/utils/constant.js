@@ -63,6 +63,11 @@ export const LockDownOptions = [
 	'disable_clipboard'
 ];
 
+export const defaultTheme = {
+	language:'en',
+	theming:'#FF961B'
+};
+
 export const systemDiagnosticSteps = [
 	'verify_desktop', 
 	'record_video', 

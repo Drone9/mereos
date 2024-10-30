@@ -96,7 +96,7 @@ export const ExamPreparation = async (tabContent,callback) => {
     /* Define other classes as needed */
   `;
 	document.head.appendChild(styleElement);
-
+	
 	i18next.on('languageChanged', () => {
 		title.textContent = i18next.t('exam_preparation');
 		msgLabel.textContent = i18next.t('icc_msg');

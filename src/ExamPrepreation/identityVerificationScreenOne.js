@@ -1,4 +1,4 @@
-import { dataURIToBlob, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { dataURIToBlob, getMediaStream, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step1.css';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
@@ -33,7 +33,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			videoElement.width = state.videoConstraints.width;
 			videoElement.height = state.videoConstraints.height;
 			videoElement.autoplay = true;
-			stream = await navigator.mediaDevices.getUserMedia({ video: state.videoConstraints });
+			stream = await getMediaStream(state.videoConstraints);
 			videoElement.srcObject = stream;
 			webcamStream = stream;
 			if (tabContent) {
@@ -128,9 +128,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	};
 
 	const nextStep = () => {
-		if(stream){
-			stream?.getTracks()?.forEach((track) => track.stop());
-		}
+		// if(stream){
+		// 	stream?.getTracks()?.forEach((track) => track.stop());
+		// }
 		registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
 		updatePersistData('preChecksSteps',{ userPhoto:true });
 		showTab('IdentityVerificationScreenTwo');
@@ -299,7 +299,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		// Append the wrapper to the container
 		ivsoContainer.appendChild(ivsoWrapper);
 	};
-	
 
 	renderUI();
 

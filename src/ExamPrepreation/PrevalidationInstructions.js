@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData } from '../utils/functions';
+import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, getMediaStream } from '../utils/functions';
 import '../assets/css/prevalidation.css';
 import { showTab } from './examPrechecks';
 
@@ -100,7 +100,12 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 	
 		const nextStep = () => {
-			mediaStream?.getTracks().forEach(track => track.stop());
+			console.log('mediaStream',mediaStream?.getTracks());
+			// if(mediaStream){
+			// 	mediaStream?.getTracks().forEach(track => track.stop());
+			// 	mediaStream=null;
+			// }
+			console.log('mediaStream after',mediaStream?.getTracks());
 			registerEvent({eventType: 'success', notify: false, eventName: 'prevalidation_passed'});
 			updatePersistData('preChecksSteps', { preValidation: true });
 			showTab('IdentityVerificationScreenOne');
@@ -108,9 +113,16 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		
 		const createUIElements = () => {
-			const container = document.createElement('div');
-			container.className = 'ivsf-container';
+			let container = tabContent.querySelector('.ivso-container');
 	
+			if (!container) {
+				container = document.createElement('div');
+				container.className = 'ivso-container';
+				tabContent.appendChild(container);
+			} else {
+				container.innerHTML = '';
+			}
+
 			const headingContainer = document.createElement('div');
 			const subHeadingContainer = document.createElement('div');
 			
@@ -264,24 +276,30 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		const startWebcam = async () => {
 			const videoContainer = document.getElementById('videoContainer');
-			videoContainer.innerHTML = ''; 
+			videoContainer.innerHTML = ''; // Clear previous content
 	
 			try {
-				mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+				mediaStream = await getMediaStream({ video: videoConstraints, audio: false });
 	
-				const videoElement = document.createElement('video');
-				videoElement.id = 'myVideo';
-				videoElement.className = 'my-recorded-video';
-				videoElement.controls = false; 
-				videoElement.autoplay = true; 
-				videoElement.srcObject = mediaStream; 
+				let videoElement = document.getElementById('myVideo');
+				if (!videoElement) {
+					videoElement = document.createElement('video');
+					videoElement.id = 'myVideo';
+					videoElement.className = 'my-recorded-video';
+					videoElement.controls = false; 
+					videoElement.autoplay = true; 
+				}
+	
+				videoElement.srcObject = mediaStream;
 	
 				videoContainer.appendChild(videoElement);
 				currentCaptureMode = 'done';
-				updateUI(); 
+				updateUI();
 			} catch (error) {
 				console.log('Webcam error:', error);
-				updateUI(); 
+				// Optional: Show a user-friendly error message
+				alert('Error accessing webcam: ' + error.message);
+				updateUI();
 			}
 		};
 

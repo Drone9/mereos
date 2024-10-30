@@ -1,14 +1,15 @@
 import { 
 	checkCamera, 
-	checkForMultipleMicrophones, 
+	// checkForMultipleMicrophones, 
 	checkMicrophone, 
 	checkNotification, 
 	detectMultipleScreens, 
 	getLocation, 
-	getMultipleCameraDevices, 
+	// getMultipleCameraDevices, 
 	getNetworkUploadSpeed, 
 	getSecureFeatures, 
 	registerEvent, 
+	// registerEvent, 
 	updatePersistData 
 } from '../utils/functions';
 import '../assets/css/systemDiagnostic.css';
@@ -16,11 +17,11 @@ import loadingGray from '../assets/images/loading-gray.svg';
 import checkMarkIcon from '../assets/images/checkmark-rounded-green.png';
 import XCircle from '../assets/images/x-circle.png';
 import videoCameraGray from '../assets/images/video-camera-light-gray.svg';
-import microPhoneGray from '../assets/images/microphone-light-gray.svg';
-import networkGray from '../assets/images/spinner-gap-light-gray.svg';
-import locationGray from '../assets/images/location-pin-black.svg';
-import notificationGray from '../assets/images/bell-ringing-light-gray.svg';
-import multipleScreenGray from '../assets/images/mutiple-screen-gray.svg';
+// import microPhoneGray from '../assets/images/microphone-light-gray.svg';
+// import networkGray from '../assets/images/spinner-gap-light-gray.svg';
+// import locationGray from '../assets/images/location-pin-black.svg';
+// import notificationGray from '../assets/images/bell-ringing-light-gray.svg';
+// import multipleScreenGray from '../assets/images/mutiple-screen-gray.svg';
 import videoGreen from '../assets/images/video-camera-green.svg';
 import videoRed from '../assets/images/video-camera-red.svg';
 import microPhoneRed from '../assets/images/microphone-red.svg';
@@ -34,93 +35,119 @@ import notificationRed from '../assets/images/bell-ringing-maroon.svg';
 import multipleScreenRed from '../assets/images/multiple-screen-red.svg';
 import multipleScreenGreen from '../assets/images/multiple-screen-green.svg';
 import prompMessage from '../assets/images/user-permission-english.svg';
-import { showTab } from './examPrechecks';
+// import { showTab } from './examPrechecks';
 import i18next from 'i18next';
+import { showTab } from './examPrechecks';
+
+let cameraStream = null;
+let audioStream = null;
+
+const createDiagnosticItem = (id, label) => {
+	const diagnosticItem = document.createElement('div');
+	diagnosticItem.classList.add('diagnostic-item', 'grey-box');
+	diagnosticItem.id = `${id}DiagnosticItem`;
+
+	const greyBoxRight = document.createElement('div');
+	greyBoxRight.classList.add('grey-box-right');
+
+	const statusIcon = document.createElement('img');
+	statusIcon.id = `${id}StatusIcon`;
+	statusIcon.src = videoCameraGray; // Default gray icon
+	statusIcon.alt = '';
+
+	const labelElement = document.createElement('label');
+	labelElement.textContent = label;
+
+	const greyBoxLeft = document.createElement('div');
+	greyBoxLeft.classList.add('grey-box-left');
+
+	const loadingIcon = document.createElement('img');
+	loadingIcon.id = `${id}StatusLoading`;
+	loadingIcon.src = loadingGray;
+	loadingIcon.alt = '';
+
+	greyBoxRight.appendChild(statusIcon);
+	greyBoxRight.appendChild(labelElement);
+	greyBoxLeft.appendChild(loadingIcon);
+	diagnosticItem.appendChild(greyBoxRight);
+	diagnosticItem.appendChild(greyBoxLeft);
+
+	return diagnosticItem;
+};
+
+const renderUI = (tab1Content) => {
+	tab1Content.innerHTML = '';
+
+	const container = document.createElement('div');
+	container.classList.add('system-diagnostic-test-screen');
+
+	const heading = document.createElement('h1');
+	heading.classList.add('heading');
+	heading.textContent = i18next.t('system_diagnostic');
+
+	const diagnosticStatus = document.createElement('div');
+	diagnosticStatus.classList.add('diagnostic-status', 'container-box');
+
+	const innerContainer = document.createElement('div');
+	innerContainer.classList.add('container');
+
+	const containerTop = document.createElement('div');
+	containerTop.classList.add('container-top');
+
+	const description = document.createElement('label');
+	description.classList.add('description');
+	description.textContent = i18next.t('system_diagnostic_msg');
+
+	const containerPrompt = document.createElement('div');
+	containerPrompt.classList.add('container-prompt');
+
+	const promptImage = document.createElement('img');
+	promptImage.src = prompMessage;
+	promptImage.alt = '';
+	promptImage.width = 350;
+	promptImage.classList.add('prompt-image');
+
+	const containerMiddle = document.createElement('div');
+	containerMiddle.classList.add('container-middle', 'box-section');
+
+	const diagnosticItems = ['camera', 'microphone', 'network', 'location', 'notification', 'screen'];
+	diagnosticItems.forEach(item => {
+		const label = i18next.t(item);
+		const diagnosticItem = createDiagnosticItem(item, label);
+		containerMiddle.appendChild(diagnosticItem);
+	});
+
+	const buttonSection = document.createElement('div');
+	buttonSection.classList.add('button-section');
+
+	const continueBtn = document.createElement('button');
+	continueBtn.classList.add('orange-filled-btn');
+	continueBtn.id = 'diagnosticContinueBtn';
+	continueBtn.disabled = true;
+	continueBtn.textContent = 'Continue';
+	continueBtn.addEventListener('click', () => {
+		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
+		
+		registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
+		updatePersistData('preChecksSteps',{ diagnosticStep:true });
+		showTab('Prevalidationinstruction');
+	});
+	buttonSection.appendChild(continueBtn);
+	innerContainer.append(containerTop, description, containerPrompt, promptImage, containerMiddle, buttonSection);
+	diagnosticStatus.appendChild(innerContainer);
+	container.append(heading, diagnosticStatus);
+	tab1Content.appendChild(container);
+};
 
 export const runSystemDiagnostics = async (tab1Content) => {
 	console.log('runDiagnostics');
-	let cameraStream = null;
-	let audioStream = null;
 
 	if (!tab1Content) {
 		console.error('Element with id "runSystemDiagnostics" not found.');
 		return;
 	}
-	tab1Content.innerHTML = ``; 
-	tab1Content.innerHTML = `
-        <div class="system-diagnostic-test-screen">
-            <h1 class="heading">${i18next.t('system_diagnostic')}</h1>
-            <div class="diagnostic-status container-box">
-                <div class="container">
-                    <div class="container-top">
-                        <label class="description">${i18next.t('system_diagnostic_msg')}</label>
-                    </div>
-                    <div class="container-prompt">
-                        <img src=${prompMessage} alt="" width="300px" class="prompt-image"></img>
-                    </div>
-                    <div class="container-middle box-section">
-                        <div class="diagnostic-item grey-box" id="cameraDiagnosticItem">
-                            <div class="grey-box-right">
-                                <img id="cameraStatusIcon" src="${videoCameraGray}" alt="" />
-                                <label>${i18next.t('webcam')}</label>
-                            </div>
-                            <div class="grey-box-left">
-                                <img id="cameraStatusLoading" src="${loadingGray}" alt="" />
-                            </div>
-                        </div>
-                        <div class="diagnostic-item grey-box" id="microphoneDiagnosticItem">
-                            <div class="grey-box-right">
-                                <img id="microphoneStatusIcon" src="${microPhoneGray}" alt="" />
-                                <label>${i18next.t('microphone')}</label>
-                            </div>
-                            <div class="grey-box-left">
-                                <img id="microphoneStatusLoading" src="${loadingGray}" alt="" />
-                            </div>
-                        </div>
-                        <div class="diagnostic-item grey-box" id="networkDiagnosticItem">
-                            <div class="grey-box-right">
-                                <img id="networkStatusIcon" src="${networkGray}" alt="" />
-                                <label>${i18next.t('connection')}</label>
-                            </div>
-                            <div class="grey-box-left">
-                                <img id="networkStatusLoading" src="${loadingGray}" alt="" />
-                            </div>
-                        </div>
-                        <div class="diagnostic-item grey-box" id="locationDiagnosticItem">
-                            <div class="grey-box-right">
-                                <img id="locationStatusIcon" src="${locationGray}" alt="" />
-                                <label>${i18next.t('location')}</label>
-                            </div>
-                            <div class="grey-box-left">
-                                <img id="locationStatusLoading" src="${loadingGray}" alt="" />
-                            </div>
-                        </div>
-                        <div class="diagnostic-item grey-box" id="notificationDiagnosticItem">
-                            <div class="grey-box-right">
-                                <img id="notificationStatusIcon" src="${notificationGray}" alt="" />
-                                <label>${i18next.t('notification')}</label>
-                            </div>
-                            <div class="grey-box-left">
-                                <img id="notificationStatusLoading" src="${loadingGray}" alt="" />
-                            </div>
-                        </div>
-                        <div class="diagnostic-item grey-box" id="screenDiagnosticItem">
-                            <div class="grey-box-right">
-                                <img id="screenStatusIcon" src="${multipleScreenGray}" alt="" />
-                                <label>${i18next.t('multiple_screens')}</label>
-                            </div>
-                            <div class="grey-box-left">
-                                <img id="screenStatusLoading" src="${loadingGray}" alt="" />
-                            </div>
-                        </div>
-                    </div>
-                    <div class="button-section">
-                        <button class="orange-filled-btn" id="diagnosticContinueBtn" disabled>Continue</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+	renderUI(tab1Content);
 
 	const setElementStatus = (id, status, isSuccess) => {
 		document.getElementById(`${id}StatusIcon`).src = isSuccess ? status.success : status.failure;
@@ -222,48 +249,49 @@ export const runSystemDiagnostics = async (tab1Content) => {
 		}
 
 		if (multipleScreensCheck) {
-			promises.push(detectMultipleScreens().then(screens => {
-				setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, !screens);
+			promises.push(detectMultipleScreens().then(isDetected => {
+				setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, isDetected);
 				handleDiagnosticItemClick('screen', detectMultipleScreens);
-				return !screens;
+				return isDetected;
 			}));
 		} else {
 			setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, true);
 		}
 
-		const results = await Promise.all(promises);
-		const allStatuses = results.every(status => status);
+		await Promise.all(promises);
 
-		const videoDevices = await getMultipleCameraDevices();
-		console.log('videoDevices', videoDevices);
-		localStorage.setItem('deviceId', videoDevices && videoDevices[0]?.deviceId);
+		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 
-		const microphones = await checkForMultipleMicrophones();
-		console.log('microphones', microphones);
-		localStorage.setItem('microphoneID', microphones && microphones[0]?.deviceId);
-
-		const continueBtn = document.getElementById('diagnosticContinueBtn');
-		continueBtn.disabled = !allStatuses;
-		if (allStatuses) {
-			continueBtn.addEventListener('click', () => {
-				if (cameraStream) {
-					cameraStream.getTracks().forEach(track => track.stop());
-					cameraStream = null;
-				}
-				if (audioStream) {
-					audioStream.getTracks().forEach(track => track.stop());
-					audioStream = null;
-				}
-				registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
-				updatePersistData('preChecksSteps',{ diagnosticStep:true });
-				showTab('Prevalidationinstruction');
-			});
-		}
+		const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {
+			const currentIconSrc = document.getElementById(`${item}StatusIcon`).src;
+	
+			const currentIconPathname = new URL(currentIconSrc).pathname;
+	
+			return currentIconPathname === successIconMap[item];
+		});
+	
+		document.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 	} catch (error) {
-		console.error('Error during diagnostics:', error);
+		console.error('Error running diagnostics:', error);
+	} finally {
+		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 	}
 };
 
+// Update the text based on language change
+const updateDiagnosticText = () => {
+	const diagnosticItems = ['camera', 'microphone', 'network', 'location', 'notification', 'screen'];
+	diagnosticItems.forEach(item => {
+		const labelElement = document.querySelector(`#${item}DiagnosticItem label`);
+		if (labelElement) {
+			labelElement.textContent = i18next.t(item);
+		}
+	});
+};
+
+// Language change event listener
 i18next.on('languageChanged', () => {
-	runSystemDiagnostics(document.getElementById('runSystemDiagnostics'));
+	updateDiagnosticText();
 });

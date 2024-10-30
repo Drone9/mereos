@@ -7,12 +7,10 @@ import { IdentityVerificationScreenThree } from './identityVerificationScreenThr
 import { IdentityVerificationScreenFour } from './identityVerificationScreenFour';
 import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
 import { ExamPreparation } from './examPreprationScreen';
-import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData } from '../utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
-import { preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import { defaultTheme, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
-// import { changeCandidateInviteAssessmentSectionStatus } from '../services/candidate-invite-assessment-section.services';
-// import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 // import germanyFlag from '../assets/images/flag-of-germany.svg';
 // import UKFlag from '../assets/images/flag-of-uk.svg';
 // import spainFlag from '../assets/images/flag-of-spain.svg';
@@ -91,10 +89,6 @@ tabContentsWrapper.appendChild(mobileProctingConatiner);
 modalContent.appendChild(tabContentsWrapper);
 const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
 
-if(schoolTheme){
-	document.documentElement.style.setProperty('--theme-color', schoolTheme?.theming);
-}
-
 const navigate = (newTabId) => {
 	showTab(newTabId);
 };
@@ -102,14 +96,15 @@ const navigate = (newTabId) => {
 function openModal(callback) {
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
+
 	const activeTab = handlePreChecksRedirection(callback);
-	console.log('activeTab', activeTab);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
-	console.log('typeof',typeof preChecksStep);
 
 	if(preChecksStep === null){
-		console.log('in the if preChecksSteps');
 		localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
+	}
+	if(schoolTheme === null){
+		localStorage.setItem('schoolTheme',JSON.stringify(defaultTheme));
 	}
 
 	showTab(activeTab,callback);
@@ -139,16 +134,22 @@ function openModal(callback) {
 		{ name: 'Italian', value: 'italian', keyword: 'it' },
 	];
 
+	const defaultLanguage = schoolTheme?.language || 'en';
+
 	languages.forEach(lang => {
 		const option = document.createElement('option');
 		option.value = lang.keyword;
 		option.textContent = lang.name;
+		if (lang.keyword === defaultLanguage) {
+			option.selected = true;
+		}
 		languageSelect.appendChild(option);
 	});
 
 	languageSelect.addEventListener('change', (event) => {
 		const selectedLanguage = event.target.value;
 		console.log('Selected language:', selectedLanguage);
+		updatePersistData('schoolTheme',{ language:event.target.value });
 		setLanguage(selectedLanguage);
 	});
 
@@ -164,10 +165,14 @@ export const setLanguage = (lang) => {
 };
 
 function closeModal() {
-	if (typeof window.globalCallback === 'function') {
+	if (typeof window.globalCallback === 'function' && localStorage.getItem('mereosToken')) {
 		window.globalCallback({ message: 'precheck_completed' });
 	}
 
+	if(window.sharedMediaStream){
+		window.sharedMediaStream?.getTracks()?.forEach(track => track.stop());
+	}
+	
 	modal.style.display = 'none';
 	modal.remove();
 }
@@ -175,6 +180,8 @@ function closeModal() {
 const showTab = async (tabId, callback) => {
 	try {
 		console.log('tabId',tabId);
+
+		updateThemeColor();
 		const tabs = document.querySelectorAll('.tab');
 		const tabContents = document.querySelectorAll('.tab-content');
 
@@ -207,12 +214,14 @@ const showTab = async (tabId, callback) => {
 				navigate('Prevalidationinstruction');
 				return;
 			}
+			console.log('showTab runSystemDiagnosticSteps');
 			runSystemDiagnostics(SystemDiagnosticsContainer);
 		} else if (tabId === 'Prevalidationinstruction') {
 			if (!secureFeatures.filter(entity => prevalidationSteps.includes(entity.key))?.length) {
 				navigate('IdentityVerificationScreenOne');
 				return;
 			}
+			console.log('showTab PrevalidationInstructions');
 			await PrevalidationInstructions(PrevalidationinstructionContainer);
 		} else if (tabId === 'IdentityVerificationScreenOne') {
 			if (!secureFeatures?.find(entity => entity.key === 'verify_candidate')) {
@@ -280,10 +289,13 @@ const startSession = async (session) => {
 };
 
 export const updateTranslations = () => {
-	document.querySelectorAll('[data-i18n]').forEach((element) => {
-		const key = element.getAttribute('data-i18n');
-		element.textContent = i18next.t(key);
-	});
+	// document.querySelectorAll('[data-i18n]').forEach((element) => {
+	// 	const key = element.getAttribute('data-i18n');
+	// 	element.textContent = i18next.t(key);
+	// });
+	const activeTab = handlePreChecksRedirection(window.globalCallback);
+	showTab(activeTab,window.globalCallback);
+	// updateButtonColor(schoolTheme?.theming || '#FF961B');
 	console.log('Translations updated');
 };
 
@@ -322,5 +334,16 @@ i18next.init({
 document.addEventListener('DOMContentLoaded', () => {
 	updateTranslations();
 });
+
+function checkToken() {
+	if (!localStorage.getItem('mereosToken')) {
+		closeModal();
+	}
+}
+
+checkToken();
+
+const checkInterval = 2000;
+setInterval(checkToken, checkInterval);
 
 export { openModal, closeModal, modalContent, showTab };

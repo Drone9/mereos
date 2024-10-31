@@ -129,7 +129,7 @@ export const startRecording = async (webToken) => {
 			});
 
 			console.log('twilioOptions', twilioOptions);
-			let room = await TwilioVideo.connect(webToken, twilioOptions);
+			let room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
 			roomInstance = room;
 			console.log('Room connected:', room);
 

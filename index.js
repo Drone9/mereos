@@ -85,11 +85,16 @@ async function start_session(callback) {
 					socket.send(JSON.stringify({ event: 'twilioToken', message: mobileTwilioToken?.data?.token }));
 				}
 			}
-			let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
-			let twilioToken = await getToken({ room_sid: resp.data.room_sid });
-			if (twilioToken) {
-				startRecording(twilioToken.data.token);
+			if(findConfigs(['record_video'], secureFeatures?.entities).length){
+				let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
+				let twilioToken = await getToken({ room_sid: resp.data.room_sid });
+				if (twilioToken) {
+					updatePersistData('session', {
+						twilioToken:twilioToken.data.token,
+					});
+				}
 			}
+			startRecording();
 		}else {
 			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 		}

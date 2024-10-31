@@ -34,7 +34,8 @@ export const initialSessionData = {
 	mobileRoomId:null,
 	mobileRecordings:[],
 	mobileAudios:[],
-	mobileRoomSessionId:null
+	mobileRoomSessionId:null,
+	twilioToken:null,
 };
 
 export const preChecksSteps = {

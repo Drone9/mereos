@@ -119,6 +119,7 @@ async function stop_session(callback) {
 				localStorage.removeItem('session');
 				localStorage.removeItem('preChecksSteps');
 				localStorage.removeItem('secureFeatures');
+				localStorage.removeItem('schoolTheme');
 				callback({ type: 'success', message: 'session is finished successfully' });
 			} else {
 				throw 'session can\'t add';

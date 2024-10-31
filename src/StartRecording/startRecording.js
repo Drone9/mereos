@@ -210,7 +210,9 @@ const setupWebcam = async (mediaStream) => {
 	if (!webcamContainer) {
 		webcamContainer = document.createElement('div');
 		webcamContainer.id = 'webcam-container';
-		webcamContainer.style.position = 'relative';
+		webcamContainer.style.position = 'absolute';
+		webcamContainer.style.top = '55px';
+		webcamContainer.style.left = '4px';
 		webcamContainer.style.width = '200px';
 		webcamContainer.style.height = '150px';
 		document.body.appendChild(webcamContainer);
@@ -365,38 +367,6 @@ export const stopAllRecordings = async () => {
 			console.log('in the stopRecording log');
 			socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
-		
-		// if (secureFeatures?.entities.find(entity => entity.key === 'mobile_proctoring')) {
-		// 	const getRecordingResp = await getRecordings({ room_sid: session?.mobileRoomId });
-		// 	if (getRecordingResp?.data && getRecordingResp?.status === 200) {
-		// 		const newCameraRecordings = [];
-		// 		const newAudioRecordings = [];
-				
-		// 		console.log('getRecordingResp', getRecordingResp?.data);
-		// 		const existingVideoRecordings = [...session.user_video_name, ...session.screen_sharing_video_name];
-		// 		const existingAudioRecordings = [...session.audio_recordings];
-				
-		// 		getRecordingResp?.data?.video_recordings.forEach(recording => {
-		// 			if (!existingVideoRecordings.includes(recording.source_sid)) {
-		// 				newCameraRecordings.push(recording.source_sid);
-		// 			}
-		// 		});
-		
-		// 		getRecordingResp?.data?.audio_recordings.forEach(recording => {
-		// 			if (!existingAudioRecordings.includes(recording.source_sid)) {
-		// 				newAudioRecordings.push(recording.source_sid);
-		// 			}
-		// 		});
-
-		// 		const mobileRecordings = session?.mobileRecordings || [];
-		// 		const mobileAudios = session?.mobileAudios || [];
-
-		// 		updatePersistData('session', {
-		// 			mobileRecordings: [...mobileRecordings, ...newCameraRecordings],
-		// 			mobileAudios: [...mobileAudios, ...newAudioRecordings],
-		// 		});
-		// 	}
-		// }
 
 		cleanupLocalVideo();
 

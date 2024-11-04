@@ -4,6 +4,7 @@ import '../assets/css/step5.css';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
+import socket from '../utils/socket';
 
 export let newStream;
 
@@ -30,6 +31,44 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			multipleScreens = false;
 			registerEvent({ eventType: 'error', notify: false, eventName: 'multiple_screens_detected' });
 		}
+	};
+
+	const initSocketConnection = () => {
+		if (!socket) {
+			console.error('Socket not initialized');
+			return;
+		}
+
+		socket.onmessage = (event) => {
+			const eventData = JSON.parse(event?.data);
+			console.log('message____',eventData?.message?.event);
+
+			switch (eventData?.message?.event || eventData?.event) {
+				case 'violation':
+					console.log('violation message',eventData?.message?.message);
+					if(eventData?.message?.message === 'Violation'){
+						updatePersistData('preChecksSteps', { mobileConnection: false,screenSharing:false });
+						if(newStream){
+							newStream?.getVideoTracks()[0].stop();
+						}
+						showTab('MobileProctoring');
+					}
+					registerEvent({ eventType: 'error', notify: false, eventName:eventData?.message?.message , eventValue: getDateTime() });
+					break;
+
+				default:
+					console.log('Unknown event:', eventData?.message);
+					break;
+			}
+		};
+		
+		socket.onerror = (error) => {
+			console.error('WebSocket error:', error);
+		};
+
+		socket.onclose = () => {
+			console.log('WebSocket connection closed');
+		};
 	};
 
 	const shareScreen = async () => {
@@ -87,13 +126,15 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const headerTitle = document.createElement('div');
 	headerTitle.classList.add('ivsf-header-titles');
 	headerTitle.textContent = i18next.t('verification_completed');
-	wrapper.appendChild(headerTitle);
-	wrapper.appendChild(stepsContainer);
-	
+
 	const msgElement = document.createElement('div');
 	msgElement.classList.add('screen-desc');
 	msgElement.textContent = i18next.t('verification_completed_msg');
+
+	wrapper.appendChild(headerTitle);
 	wrapper.appendChild(msgElement);
+	wrapper.appendChild(stepsContainer);
+
 	const reshareButton = document.createElement('button');
 	const headerImg = document.createElement('img');
 	headerImg.classList.add('screen-share-dummy');
@@ -156,6 +197,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	tabContent.appendChild(container);
 
 	shareScreen();
+	initSocketConnection();
+	
 	const candidateAssessment = getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
 	console.log('secureFeatures', secureFeatures);
@@ -165,7 +208,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	multipleScreensCheck && checkMultipleScreens();
 
-	// Update UI function to be called on language change
 	const updateUI = () => {
 		headerTitle.textContent = i18next.t('verification_completed');
 		msgElement.textContent = i18next.t('verification_completed_msg');

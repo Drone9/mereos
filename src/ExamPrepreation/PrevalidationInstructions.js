@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, getMediaStream } from '../utils/functions';
+import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData } from '../utils/functions';
 import '../assets/css/prevalidation.css';
 import { showTab } from './examPrechecks';
 
@@ -10,6 +10,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 		let mediaStream = null;
 		let cameras = [];
 		let microphones = [];
+		let selectedMicrophoneId=null;
+		let selectedCameraId = null;
 		let videoConstraints = {
 			width: 640,
 			height: 480,
@@ -95,23 +97,20 @@ export const PrevalidationInstructions = async (tabContent) => {
 				};
 				localStorage.setItem('microphoneID',id);
 			}
-	
+			console.log('audioConstraints',audioConstraints);
 			startWebcam();
 		};
 	
 		const nextStep = () => {
-			console.log('mediaStream',mediaStream?.getTracks());
-			// if(mediaStream){
-			// 	mediaStream?.getTracks().forEach(track => track.stop());
-			// 	mediaStream=null;
-			// }
-			console.log('mediaStream after',mediaStream?.getTracks());
+			if (mediaStream) {
+				mediaStream?.getTracks()?.forEach(track => track.stop());
+				mediaStream = null;
+			}
 			registerEvent({eventType: 'success', notify: false, eventName: 'prevalidation_passed'});
 			updatePersistData('preChecksSteps', { preValidation: true });
 			showTab('IdentityVerificationScreenOne');
 		};
 
-		
 		const createUIElements = () => {
 			let container = tabContent.querySelector('.ivso-container');
 	
@@ -215,7 +214,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		const setTextContent = (headingContainer, subHeadingContainer, messageElement, iconTextElements, iconData) => {
 			headingContainer.textContent = i18next.t('system_diagnostic');
-			subHeadingContainer.textContent = i18next.t('system_diagnostic');
+			subHeadingContainer.textContent = i18next.t('initial_system_check_passed');
 			messageElement.textContent = i18next.t('select_preferred_camera_and_microphone'); 
 	
 			if (Array.isArray(iconTextElements)) {
@@ -230,11 +229,13 @@ export const PrevalidationInstructions = async (tabContent) => {
 		const init = async () => {
 			cameras = await getMultipleCameraDevices();
 			cameras = cameras?.map(camera => ({id: camera.deviceId, name: camera.label, ...camera }));
-			console.log('cameras',cameras);
+			localStorage.setItem('deviceId',cameras?.length ? cameras[0].id : null);
+			selectedCameraId = cameras?.length ? cameras[0].id : null;
 
 			microphones = await checkForMultipleMicrophones();
 			microphones = microphones?.map(microphone => ({id: microphone.deviceId, name: microphone.label, ...microphone }));
-			console.log('microphones', microphones);
+			localStorage.setItem('microphoneID',microphones?.length ? microphones[0].id : null);
+			selectedMicrophoneId = microphones?.length ? microphones[0].id : null;
 
 			startWebcam();
 			updateUI();
@@ -244,42 +245,49 @@ export const PrevalidationInstructions = async (tabContent) => {
 			const cameraDropdown = document.getElementById('cameraDropdown');
 			const microphoneDropdown = document.getElementById('microphoneDropdown');
 			const messageElement = document.getElementById('message');
-
+		
 			cameraDropdown.innerHTML = '';
+			microphoneDropdown.innerHTML = '';
+		
 			cameras.forEach(camera => {
 				const option = document.createElement('option');
 				option.value = camera.id;
 				option.textContent = camera.name;
+				if (camera.id === selectedCameraId) {
+					option.selected = true;
+				}
 				cameraDropdown.appendChild(option);
 			});
-
-			microphoneDropdown.innerHTML = '';
+		
 			microphones.forEach(microphone => {
 				const option = document.createElement('option');
 				option.value = microphone.id;
 				option.textContent = microphone.name;
+				if (microphone.id === selectedMicrophoneId) {
+					option.selected = true;
+				}
 				microphoneDropdown.appendChild(option);
 			});
-
+		
 			messageElement.textContent = i18next.t('select_preferred_camera_and_microphone');
-
+		
 			cameraDropdown.onchange = (event) => {
-				const selectedCameraId = event.target.value;
+				selectedCameraId = event.target.value;
 				handleDeviceId(selectedCameraId, 'camera');
 			};
-
+		
 			microphoneDropdown.onchange = (event) => {
-				const selectedMicrophoneId = event.target.value;
+				selectedMicrophoneId = event.target.value;
 				handleDeviceId(selectedMicrophoneId, 'microphone');
 			};
 		};
-
+		
 		const startWebcam = async () => {
 			const videoContainer = document.getElementById('videoContainer');
-			videoContainer.innerHTML = ''; // Clear previous content
+			videoContainer.innerHTML = '';
 	
 			try {
-				mediaStream = await getMediaStream({ video: videoConstraints, audio: false });
+				mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
 	
 				let videoElement = document.getElementById('myVideo');
 				if (!videoElement) {
@@ -297,7 +305,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 				updateUI();
 			} catch (error) {
 				console.log('Webcam error:', error);
-				// Optional: Show a user-friendly error message
 				alert('Error accessing webcam: ' + error.message);
 				updateUI();
 			}

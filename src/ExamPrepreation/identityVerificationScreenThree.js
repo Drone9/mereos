@@ -11,7 +11,6 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	let audioContext;
 	let analyserNode;
 	let disabledBtn = false;
-	let stream = null;
 	let msg = {
 		type: '',
 		text: 'be_loud_clear'
@@ -25,7 +24,6 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			const audioPermission = await navigator.permissions.query({ name: 'microphone' });
 			if (audioPermission.state === 'granted') {
 				audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-				stream = audioStream;
 
 				audioContext = new AudioContext();
 				analyserNode = audioContext.createAnalyser();
@@ -118,15 +116,17 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	const stopRecording = () => {
 		cancelAnimationFrame(animationFrameId);
 		animationFrameId = null;
-		if (stream) {
-			stream.getTracks().forEach(track => {
+		if (audioStream) {
+			audioStream.getTracks().forEach(track => {
 				track.stop();
 			});
 		}
 	};
 
 	const nextStep = async () => {
-		audioStream.getAudioTracks().forEach(track => track.stop());
+		if(audioStream){
+			audioStream.getAudioTracks().forEach(track => track.stop());
+		}
 		updatePersistData('preChecksSteps',{ audioDetection:true });
 		registerEvent({eventType: 'success', notify: false, eventName: 'audio_check_completed', eventValue: getDateTime()});
 		showTab('IdentityVerificationScreenFour');
@@ -163,7 +163,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 
 			const message = document.createElement('div');
 			message.className = 'ivst-msg';
-			wrapper.appendChild(message);
+			
     
 			const audioText = document.createElement('div');
 			audioText.className = 'ivst-audio-text';
@@ -175,6 +175,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			canvasRef.height = 200;
     
 			wrapper.appendChild(canvasRef);
+			wrapper.appendChild(message);
 			container.appendChild(wrapper);
 		}
     

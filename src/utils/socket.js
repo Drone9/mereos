@@ -1,14 +1,20 @@
 import { SOCKET_URL } from './constant';
 import { v4 } from 'uuid';
 
-const socketGroupId  = JSON.parse(localStorage.getItem('socketGroupId'));
+const generatePeerId = () => v4();
 
-const v4Id = v4();
-let finalGroupName = socketGroupId?.groupName || v4Id;
+const getGroupId = () => {
+	const storedId = JSON.parse(localStorage.getItem('socketGroupId'));
+	if (storedId?.groupName) {
+		return storedId.groupName;
+	} else {
+		const newId = generatePeerId(); // Generate a new group ID here if none exists
+		localStorage.setItem('socketGroupId', JSON.stringify({ groupName: newId }));
+		return newId;
+	}
+};
 
-if (!socketGroupId?.groupName) {
-	localStorage.setItem('socketGroupId',JSON.stringify({ groupName:finalGroupName }));
-}
+let finalGroupName = getGroupId();
 
 const socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
 console.log('socket',socket);

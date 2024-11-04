@@ -39,6 +39,11 @@ export const ExamPreparation = async (tabContent,callback) => {
 	
 	tabContent.innerHTML = '';
 
+	let mobileContainer = document?.getElementById('mobile-proctoring');
+	if(mobileContainer){
+		mobileContainer.innerHTML = '';
+	}
+
 	const container = document.createElement('div');
 	container.className = 'exam-preparation';
 

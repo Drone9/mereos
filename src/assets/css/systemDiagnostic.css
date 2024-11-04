@@ -30,7 +30,7 @@
   text-align: center;
   color: #8D979F;
   width: 650px;
-  margin: 10px auto 0px;
+  margin: 10px auto 10px;
 }
 
 @media (max-width: 720px) {
@@ -63,7 +63,7 @@
 .system-diagnostic-test-screen .container-middle {
   display: flex;
   /* flex-direction: column; */
-  margin: 10px 0;
+  margin: 20px 0;
 }
 
 @media (max-width: 720px) {

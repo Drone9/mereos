@@ -7,6 +7,7 @@ import socket from '../utils/socket';
 import { getCreateRoom } from '../services/twilio.services';
 import { LockDownOptions } from '../utils/constant';
 import '../assets/css/start-recording.css';
+import i18next from 'i18next';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
@@ -313,18 +314,13 @@ const startAIWebcam = async (mediaStream) => {
 					if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
 						const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
 						aiEvents.push(newLog);
-
-						showNotification({
-							title: 'Warning!',
-							body: `Alert: ${key} detected!`,
-						});
 					} else if (log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
 						aiEvents.push(lastLog);
-						if (lastLog.time_span > 10) {
+						if (lastLog.time_span === 10) {
 							showNotification({
 								title: 'Warning!',
-								body: `Alert: ${key} detected for more than 10 seconds!`,
+								body: `${i18next.t('detected_for_more_than_10_seconds')}`,
 							});
 						}
 					} else if (!log[key] && lastLog?.[key]) {
@@ -338,7 +334,6 @@ const startAIWebcam = async (mediaStream) => {
 		}
 	}, 1000);
 };
-
 
 export const cleanupLocalVideo = () => {
 	const webcamContainer = document.getElementById('webcam-container');
@@ -369,6 +364,11 @@ export const stopAllRecordings = async () => {
 		}
 
 		cleanupLocalVideo();
+
+		if(window.sharedMediaStream){
+			window.sharedMediaStream.getTracks().forEach(track => track.stop());
+			window.sharedMediaStream = null;
+		}
 
 		if(mediaStream){
 			mediaStream.getTracks().forEach(track => track.stop());

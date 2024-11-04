@@ -10,11 +10,13 @@ import infoBlue from '../assets/images/info-blue.svg';
 import { getAuthenticationToken, getDateTime, registerEvent, updatePersistData } from '../utils/functions';
 import { showTab } from './examPrechecks';
 import cameraExample from '../assets/images/user-video-tutorial.jpeg';
+import { v4 } from 'uuid';
 
 window.mobileStream = null;
 export const MobileProctoring = async (tabContent) => {
 	console.log('MobileProctoring');
 	let mobileSteps = ''; 
+	let disabledNextBtn = false; 
 	let checkedVideo = false;
 	const remoteVideoRef = document.createElement('video');
 	const currentUserVideoRef = document.createElement('video');
@@ -66,28 +68,41 @@ export const MobileProctoring = async (tabContent) => {
 					console.log('MobileRecordingStarted', eventData?.message?.message);
 					break;
 
-				case 'mobile-broadcast':{
+				case 'mobile-broadcast': {
 					renderUI();
+					console.log('MobileBroadcast_________');
+					disabledNextBtn = true;
 					const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 					getUserMedia({ video: true, audio: false }, (mediaStream) => {
 						window.mobileStream = mediaStream;
-						const call = peerInstance.call(eventData?.message?.message, mediaStream);
-						let remoteVideo = document.getElementById('remote-mobile-video-container');
+						console.log('peerInstance',peerInstance);
 
-						call?.on('stream', (remoteStream) => {
-							console.log('remoteVideoRef',remoteVideo);
-							remoteVideo.srcObject = remoteStream;
-							remoteVideo.setAttribute('autoplay', true);
-							remoteVideo.setAttribute('playsinline', true);
-						});
-						call?.on('close', () => {
-							console.log('Call ended.');
-							remoteVideo.srcObject = null;
-						});
+						if (peerInstance) { 
+							const call = peerInstance.call(eventData?.message?.message, mediaStream);
+							let remoteVideo = document.getElementById('remote-mobile-video-container');
+				
+							call?.on('stream', (remoteStream) => {
+								remoteVideo.srcObject = remoteStream;
+								remoteVideo.setAttribute('autoplay', true);
+								remoteVideo.setAttribute('playsinline', true);
+								disabledNextBtn = false;
+							});
+	
+							call?.on('close', () => {
+								console.log('Call ended.');
+								remoteVideo.srcObject = null;
+							});
+	
+							call?.on('error', (error) => {
+								console.error('Error during call:', error);
+							});
+						} else {
+							console.error('peerInstance is not initialized');
+						}
 					});
-				}
 					break;
-
+				}
+				
 				case 'violation':
 					console.log('eventData?.message?.message',eventData?.message?.message);
 					if (eventData?.message?.message === 'Violation') {
@@ -116,26 +131,50 @@ export const MobileProctoring = async (tabContent) => {
 	};
 
 	const initPeerConnection = () => {
-		const peer = new Peer(socketGroupIds?.groupName);
+		try {
+			if (peerInstance) {
+				console.log('Destroying existing peer');
+				peerInstance.destroy();
+			}
+			const groupName = v4();
+			console.log('socketGroupIds?.groupName', socketGroupIds?.groupName);
 
-		peer.on('call', (call) => {
-			const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-			getUserMedia({ video: true, audio: true }, (mediaStream) => {
-				currentUserVideoRef.srcObject = mediaStream;
-				call.answer(mediaStream);
-				call.on('stream', (remoteStream) => {
-					remoteVideoRef.srcObject = remoteStream;
+			const peer = new Peer(groupName);
+
+			peerInstance = peer;
+
+			peer.on('open', (id) => {
+				console.log('Peer connection opened with ID:', id);
+			});
+		
+			peer.on('error', (error) => {
+				console.error('Peer connection error:', error);
+			});
+
+			peer.on('close', () => {
+				console.log('Peer connection closed');
+			});
+
+			peer.on('call', (call) => {
+				const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+				getUserMedia({ video: true, audio: true }, (mediaStream) => {
+					currentUserVideoRef.srcObject = mediaStream;
+					call.answer(mediaStream);
+					call.on('stream', (remoteStream) => {
+						remoteVideoRef.srcObject = remoteStream;
+					});
 				});
 			});
-		});
-
-		peerInstance = peer;
+		} catch (error) {
+			console.error('Failed to create Peer instance:', error);
+		}
 	};
 
 	const nextStep = (newStep) => {
 		mobileSteps = newStep;
 		renderUI(); 
 		if(newStep === 'broadcasting') {
+			disabledNextBtn = true;
 			socket?.send(JSON.stringify({ event: 'requestMobileBroadcast' }));
 		} else if(newStep === 'step4'){
 			window.mobileStream?.getTracks()?.forEach((track) => track.stop());
@@ -265,6 +304,10 @@ export const MobileProctoring = async (tabContent) => {
 			const canvas = document.createElement('canvas');
 			qrCodeContainer.appendChild(canvas);
       
+			console.log('getAuthenticationToken code',JSON.stringify({
+				token: getAuthenticationToken(),
+				groupName: socketGroupIds?.groupName
+			}));
 			QRCode.toCanvas(canvas, JSON.stringify({
 				token: getAuthenticationToken(),
 				groupName: socketGroupIds?.groupName
@@ -352,7 +395,6 @@ export const MobileProctoring = async (tabContent) => {
 			const remoteVideoRef = document.createElement('video');
 			remoteVideoRef.id = 'remote-mobile-video-container';
 			
-
 			videoContainer.appendChild(remoteVideoRef);
 
 			remoteMobileVideo.appendChild(videoContainer);
@@ -368,6 +410,7 @@ export const MobileProctoring = async (tabContent) => {
 			const btnNext = document.createElement('button');
 			btnNext.className = 'orange-filled-btn';
 			btnNext.innerText = t('next');
+			btnNext.disabled = !disabledNextBtn;
 			btnNext.onclick = () => nextStep('step4');
 
 			btnContainer.appendChild(btnPrevious);

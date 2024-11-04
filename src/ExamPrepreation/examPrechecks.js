@@ -9,15 +9,9 @@ import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive
 import { ExamPreparation } from './examPreprationScreen';
 import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
-import { defaultTheme, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import { defaultTheme, languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
-// import germanyFlag from '../assets/images/flag-of-germany.svg';
-// import UKFlag from '../assets/images/flag-of-uk.svg';
-// import spainFlag from '../assets/images/flag-of-spain.svg';
-// import franceFlag from '../assets/images/flag-of-france.svg';
-// import brazilFlag from '../assets/images/flag-of-brazil.svg';
-// import italyFlag from '../assets/images/flag-of-italy.svg';
-// import whalesFlag from '../assets/images/flag-of-whales.svg';
+import dropDownIcon from '../assets/images/dropdown-btn.svg';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -93,69 +87,104 @@ const navigate = (newTabId) => {
 	showTab(newTabId);
 };
 
-function openModal(callback) {
+const openModal = (callback) => {
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
 
 	const activeTab = handlePreChecksRedirection(callback);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
 
-	if(preChecksStep === null){
-		localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
+	if (preChecksStep === null) {
+		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 	}
-	if(schoolTheme === null){
-		localStorage.setItem('schoolTheme',JSON.stringify(defaultTheme));
+	if (schoolTheme === null) {
+		localStorage.setItem('schoolTheme', JSON.stringify(defaultTheme));
 	}
 
-	showTab(activeTab,callback);
+	showTab(activeTab, callback);
 	const session = convertDataIntoParse('session');
-
 	startSession(session);
 
 	const modalHeader = document.createElement('div');
 	modalHeader.className = 'header';
 
-	const languageSelect = document.createElement('select');
-	languageSelect.id = 'languageDropdown';
-	languageSelect.style.position = 'absolute';
-	languageSelect.style.padding = '10px';
-	languageSelect.className = 'langauge-dropdown';
-	languageSelect.style.top = '10px';
-	languageSelect.style.right = '10px';
-	languageSelect.style.width = '120px';
-
-	// Language options
-	const languages = [
-		{ name: 'English', value: 'english', keyword: 'en' },
-		{ name: 'Spanish', value: 'spanish', keyword: 'es' },
-		{ name: 'German', value: 'german', keyword: 'de' },
-		{ name: 'French', value: 'french', keyword: 'fr' },
-		{ name: 'Portuguese (Brazil)', value: 'portuguese_brazil', keyword: 'pt' },
-		{ name: 'Italian', value: 'italian', keyword: 'it' },
-	];
+	const languageContainer = document.createElement('section');
+	languageContainer.className = 'dropdown';
 
 	const defaultLanguage = schoolTheme?.language || 'en';
+	let selectedLanguage = languages.find(lang => lang.keyword === defaultLanguage);
 
-	languages.forEach(lang => {
-		const option = document.createElement('option');
-		option.value = lang.keyword;
-		option.textContent = lang.name;
-		if (lang.keyword === defaultLanguage) {
-			option.selected = true;
-		}
-		languageSelect.appendChild(option);
+	const selectContainer = document.createElement('div');
+	selectContainer.className = 'select';
+	selectContainer.onclick = () => languageDropdown.classList.toggle('active');
+
+	const flagImg = document.createElement('img');
+	flagImg.src = selectedLanguage.src;
+	flagImg.alt = selectedLanguage.alt;
+	selectContainer.appendChild(flagImg);
+
+	const label = document.createElement('label');
+	label.className = 'language';
+	label.textContent = i18next.t(selectedLanguage.value);
+	selectContainer.appendChild(label);
+
+	const dropdownIcon = document.createElement('img');
+	dropdownIcon.src = dropDownIcon;
+	selectContainer.appendChild(dropdownIcon);
+
+	languageContainer.appendChild(selectContainer);
+
+	const languageDropdown = document.createElement('section');
+	languageDropdown.className = 'dropdown-content';
+
+	languages.forEach((lang, index) => {
+		const optionDiv = document.createElement('div');
+		optionDiv.key = index;
+		optionDiv.className = `dropdown-option ${lang.keyword === selectedLanguage.keyword ? 'selected' : ''}`;
+		optionDiv.onclick = () => onTrigger(lang);
+
+		const optionFlag = document.createElement('img');
+		optionFlag.src = lang.src;
+		optionFlag.alt = lang.alt;
+		optionDiv.appendChild(optionFlag);
+
+		const optionText = document.createElement('div');
+		optionText.className = 'text';
+		optionText.textContent = i18next.t(lang.value);
+		optionDiv.appendChild(optionText);
+
+		languageDropdown.appendChild(optionDiv);
 	});
 
-	languageSelect.addEventListener('change', (event) => {
-		const selectedLanguage = event.target.value;
-		console.log('Selected language:', selectedLanguage);
-		updatePersistData('schoolTheme',{ language:event.target.value });
-		setLanguage(selectedLanguage);
-	});
-
-	modalHeader.appendChild(languageSelect);
+	languageContainer.appendChild(languageDropdown);
+	modalHeader.appendChild(languageContainer);
 	modalContent.insertBefore(modalHeader, modalContent.firstChild);
-}
+
+	function onTrigger(selectedLang) {
+		selectedLanguage = selectedLang;
+	
+		i18next.changeLanguage(selectedLang.keyword)
+			.then(() => {
+				flagImg.src = selectedLang.src;
+				label.textContent = i18next.t(selectedLang.value);
+	
+				languages.forEach(lang => {
+					const optionDiv = Array.from(languageDropdown.children).find(
+						option => option.textContent.trim() === i18next.t(lang.value)
+					);
+					if (optionDiv) {
+						const optionText = optionDiv.querySelector('.text');
+						optionText.textContent = i18next.t(lang.value);
+					}
+				});
+			})
+			.catch(err => console.error(err));
+	
+		languageDropdown.classList.remove('active');
+		updatePersistData('schoolTheme', { language: selectedLang.keyword });
+	}
+	
+};
 
 export const setLanguage = (lang) => {
 	i18next.changeLanguage(lang, (err) => {
@@ -214,14 +243,12 @@ const showTab = async (tabId, callback) => {
 				navigate('Prevalidationinstruction');
 				return;
 			}
-			console.log('showTab runSystemDiagnosticSteps');
 			runSystemDiagnostics(SystemDiagnosticsContainer);
 		} else if (tabId === 'Prevalidationinstruction') {
 			if (!secureFeatures.filter(entity => prevalidationSteps.includes(entity.key))?.length) {
 				navigate('IdentityVerificationScreenOne');
 				return;
 			}
-			console.log('showTab PrevalidationInstructions');
 			await PrevalidationInstructions(PrevalidationinstructionContainer);
 		} else if (tabId === 'IdentityVerificationScreenOne') {
 			if (!secureFeatures?.find(entity => entity.key === 'verify_candidate')) {

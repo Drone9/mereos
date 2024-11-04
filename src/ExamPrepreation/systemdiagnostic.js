@@ -1,15 +1,12 @@
 import { 
 	checkCamera, 
-	// checkForMultipleMicrophones, 
 	checkMicrophone, 
 	checkNotification, 
 	detectMultipleScreens, 
 	getLocation, 
-	// getMultipleCameraDevices, 
 	getNetworkUploadSpeed, 
 	getSecureFeatures, 
 	registerEvent, 
-	// registerEvent, 
 	updatePersistData 
 } from '../utils/functions';
 import '../assets/css/systemDiagnostic.css';
@@ -17,11 +14,6 @@ import loadingGray from '../assets/images/loading-gray.svg';
 import checkMarkIcon from '../assets/images/checkmark-rounded-green.png';
 import XCircle from '../assets/images/x-circle.png';
 import videoCameraGray from '../assets/images/video-camera-light-gray.svg';
-// import microPhoneGray from '../assets/images/microphone-light-gray.svg';
-// import networkGray from '../assets/images/spinner-gap-light-gray.svg';
-// import locationGray from '../assets/images/location-pin-black.svg';
-// import notificationGray from '../assets/images/bell-ringing-light-gray.svg';
-// import multipleScreenGray from '../assets/images/mutiple-screen-gray.svg';
 import videoGreen from '../assets/images/video-camera-green.svg';
 import videoRed from '../assets/images/video-camera-red.svg';
 import microPhoneRed from '../assets/images/microphone-red.svg';
@@ -35,7 +27,6 @@ import notificationRed from '../assets/images/bell-ringing-maroon.svg';
 import multipleScreenRed from '../assets/images/multiple-screen-red.svg';
 import multipleScreenGreen from '../assets/images/multiple-screen-green.svg';
 import prompMessage from '../assets/images/user-permission-english.svg';
-// import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 import { showTab } from './examPrechecks';
 

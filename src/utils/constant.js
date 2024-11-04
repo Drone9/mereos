@@ -1,3 +1,10 @@
+import germanyFlag from '../assets/images/flag-of-germany.svg';
+import UKFlag from '../assets/images/flag-of-uk.svg';
+import spainFlag from '../assets/images/flag-of-spain.svg';
+import franceFlag from '../assets/images/flag-of-france.svg';
+import brazilFlag from '../assets/images/flag-of-brazil.svg';
+import italyFlag from '../assets/images/flag-of-italy.svg';
+
 export const ASSET_URL = '../assets/images';
 
 export const BASE_URL = process.env.NODE_ENV === 'production'
@@ -85,4 +92,13 @@ export const prevalidationSteps = [
 	'record_audio',
 	'identity_card_requirement',
 	'record_room'
+];
+
+export const languages = [
+	{name: 'English', value: 'english', src: UKFlag, alt: '', keyword: 'en' },
+	{name: 'Spanish', value: 'spanish', src: spainFlag, alt: '', keyword: 'es' },
+	{name: 'German', value: 'german', src: germanyFlag, alt: '', keyword: 'de' },
+	{name: 'French', value: 'french', src: franceFlag, alt: '', keyword: 'fr' },
+	{name: 'Portuguese (Brazil)', value: 'portuguese_brazil', src: brazilFlag, alt: '', keyword: 'pt' },
+	{name: 'Italian', value: 'italian', src: italyFlag, alt: '', keyword: 'it' },
 ];

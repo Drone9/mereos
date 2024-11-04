@@ -1,4 +1,4 @@
-import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getMediaStream, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step2.css';
 import greenCheckMark from '../assets/images/checkmark-green.svg';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
@@ -258,7 +258,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			photo.autoplay = true;
 			headerImgContainer.appendChild(photo);
 
-			stream = await getMediaStream({ video: videoConstraints });
+			stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
 			if(stream !== null) {
 				photo.srcObject = stream;
 			}
@@ -270,8 +270,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		}
 
 		wrapper.appendChild(headerTitle);
-		wrapper.appendChild(stepsContainer);
 		wrapper.appendChild(message);
+		wrapper.appendChild(stepsContainer);
 		wrapper.appendChild(headerImgContainer);
 
 		if (currentState.msg.text) {

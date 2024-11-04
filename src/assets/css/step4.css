@@ -81,7 +81,7 @@
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 0px auto 0px !important;
+	margin: 0px auto 10px !important;
 }
 
 .ivsf-instructions-container {
@@ -125,7 +125,7 @@
 
 .ivsf-btn-container {
 	display: flex;
-	margin: 10px auto 0px !important;
+	margin: 20px auto 0px !important;
 	gap: 20px;
 }
 

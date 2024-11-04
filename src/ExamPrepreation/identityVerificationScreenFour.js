@@ -9,6 +9,7 @@ window.userMediaStream = null;
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
 	console.log('IdentityVerificationScreenFour');
+	if (tabContent.querySelector('.screen-four-container')) return; 
 	let recordingMode = 'startRecording';
 	let showPlayer = false;
 	let textMessage = 'scan_your_room';
@@ -182,8 +183,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		}
 
 		wrapper.appendChild(headerTitle);
-		wrapper.appendChild(stepsContainer);
 		wrapper.appendChild(message);
+		wrapper.appendChild(stepsContainer);
 		wrapper.appendChild(headerImgContainer);
 
 		const queryMsg = document.createElement('div');

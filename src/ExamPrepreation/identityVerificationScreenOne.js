@@ -1,4 +1,4 @@
-import { dataURIToBlob, getMediaStream, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { dataURIToBlob, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step1.css';
 import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
@@ -7,7 +7,6 @@ import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	console.log('IdentityVerificationScreenOne');
-	let stream = null;
 	let state = {
 		isUploading: false,
 		captureMode: 'take',
@@ -33,9 +32,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			videoElement.width = state.videoConstraints.width;
 			videoElement.height = state.videoConstraints.height;
 			videoElement.autoplay = true;
-			stream = await getMediaStream(state.videoConstraints);
-			videoElement.srcObject = stream;
-			webcamStream = stream;
+			webcamStream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
+			videoElement.srcObject = webcamStream;
 			if (tabContent) {
 				const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');
 				if (ivsoWebcamContainer) {
@@ -128,9 +126,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	};
 
 	const nextStep = () => {
-		// if(stream){
-		// 	stream?.getTracks()?.forEach((track) => track.stop());
-		// }
+		if(webcamStream){
+			webcamStream?.getTracks()?.forEach((track) => track.stop());
+		}
 		registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
 		updatePersistData('preChecksSteps',{ userPhoto:true });
 		showTab('IdentityVerificationScreenTwo');
@@ -197,6 +195,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		const ivsHeaderTitle = document.createElement('div');
 		ivsHeaderTitle.className = 'ivso-header-title';
 		ivsHeaderTitle.textContent = i18next.t('webcam_diagnostics');
+		const ivssubHeading = document.createElement('div');
+		ivssubHeading.className = 'first-header-msg';
+		ivssubHeading.textContent = i18next.t('your_face_must_visible_on_screen');
 		const stepsContainer = document.createElement('div');
 
 		renderIdentityVerificationSteps(stepsContainer, 1);
@@ -287,6 +288,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	
 		// Append elements to wrapper
 		ivsoWrapper.appendChild(ivsHeaderTitle);
+		ivsoWrapper.appendChild(ivssubHeading);
 		ivsoWrapper.appendChild(stepsContainer);
 		ivsoWrapper.appendChild(ivsoHeaderImgContainer);
 		ivsoWrapper.appendChild(ivsoWebcamContainer);

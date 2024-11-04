@@ -28,6 +28,7 @@ async function init(host, profileId, assessmentData,schoolTheme) {
 			localStorage.setItem('candidateAssessment',JSON.stringify(resp.data.user_data));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
 			localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
+			localStorage.setItem('socketGroupId',JSON.stringify({ groupName:v4() }));
 			if(schoolTheme){
 				localStorage.setItem('schoolTheme',JSON.stringify(schoolTheme));
 			}else{

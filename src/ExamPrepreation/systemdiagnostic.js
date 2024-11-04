@@ -101,7 +101,7 @@ const renderUI = (tab1Content) => {
 	const containerMiddle = document.createElement('div');
 	containerMiddle.classList.add('container-middle', 'box-section');
 
-	const diagnosticItems =  ['webcam', 'microphone', 'connection', 'location', 'notification', 'screen'];
+	const diagnosticItems =  ['webcam', 'microphone', 'connection','notification', 'location', 'screen'];
 	diagnosticItems.forEach(item => {
 		const label = i18next.t(item);
 		const diagnosticItem = createDiagnosticItem(item, label);
@@ -275,7 +275,7 @@ export const runSystemDiagnostics = async (tab1Content) => {
 
 // Update the text based on language change
 const updateDiagnosticText = () => {
-	const diagnosticItems = ['webcam', 'microphone', 'connection', 'location', 'notification', 'screen'];
+	const diagnosticItems = ['webcam', 'microphone', 'connection','notification', 'location', 'screen'];
 	diagnosticItems.forEach(item => {
 		const labelElement = document.querySelector(`#${item}DiagnosticItem label`);
 		if (labelElement) {

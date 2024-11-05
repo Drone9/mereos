@@ -97,7 +97,6 @@ const openModal = (callback) => {
 	if (preChecksStep === null) {
 		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 	}
-
 	showTab(activeTab, callback);
 	const session = convertDataIntoParse('session');
 	startSession(session);

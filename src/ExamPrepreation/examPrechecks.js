@@ -9,7 +9,7 @@ import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive
 import { ExamPreparation } from './examPreprationScreen';
 import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
-import { defaultTheme, languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import { languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
 import dropDownIcon from '../assets/images/dropdown-btn.svg';
 
@@ -97,9 +97,9 @@ const openModal = (callback) => {
 	if (preChecksStep === null) {
 		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 	}
-	if (schoolTheme === null) {
-		localStorage.setItem('schoolTheme', JSON.stringify(defaultTheme));
-	}
+	// if (schoolTheme === null) {
+	// 	localStorage.setItem('schoolTheme', JSON.stringify(defaultTheme));
+	// }
 
 	showTab(activeTab, callback);
 	const session = convertDataIntoParse('session');
@@ -316,13 +316,8 @@ const startSession = async (session) => {
 };
 
 export const updateTranslations = () => {
-	// document.querySelectorAll('[data-i18n]').forEach((element) => {
-	// 	const key = element.getAttribute('data-i18n');
-	// 	element.textContent = i18next.t(key);
-	// });
 	const activeTab = handlePreChecksRedirection(window.globalCallback);
 	showTab(activeTab,window.globalCallback);
-	// updateButtonColor(schoolTheme?.theming || '#FF961B');
 	console.log('Translations updated');
 };
 

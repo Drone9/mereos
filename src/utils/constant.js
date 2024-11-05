@@ -7,9 +7,7 @@ import italyFlag from '../assets/images/flag-of-italy.svg';
 
 export const ASSET_URL = '../assets/images';
 
-export const BASE_URL = process.env.NODE_ENV === 'production'
-	? 'https://corder-api.mereos.eu'
-	: 'https://corder-api.mereos-datasafe.com/';
+export const BASE_URL = 'https://corder-api.mereos.eu';
 
 export const SOCKET_URL = 'wss://mobile-socket.mereos.eu/websocket/';
 

@@ -228,6 +228,36 @@ export const updateThemeColor = () => {
 	document.documentElement.style.setProperty('--theme-color', schoolTheme?.theming || '#FF961B');
 };
 
+export const loadZendeskWidget = () => {
+	const getSecureFeature = getSecureFeatures();
+	const secureFeatures = getSecureFeature?.entities || [];
+	const hasChatBot = secureFeatures?.some(entity => entity.key === 'chat_bot');
+	let script;
+
+	if (hasChatBot) {
+		script = document.createElement('script');
+		script.src = 'https://static.zdassets.com/ekr/snippet.js?key=6542e7ef-41de-43ed-bc22-3d429a78ead3';
+		script.async = true;
+		script.id = 'ze-snippet';
+		document.body.appendChild(script);
+	}
+};
+
+export const cleanupZendeskWidget = () => {
+	const existingScript = document.getElementById('ze-snippet');
+	if (existingScript && existingScript.parentNode) {
+		existingScript.parentNode.removeChild(existingScript);
+	}
+
+	if (window.zE && typeof window.zE === 'function') {
+		try {
+			window.zE('messenger', 'hide');
+		} catch (e) {
+			console.error('Error resetting the Zendesk widget:', e);
+		}
+	}
+};
+
 export const getAuthenticationToken = () => {
 	return localStorage.getItem('mereosToken');
 };

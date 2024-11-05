@@ -7,7 +7,7 @@ import { IdentityVerificationScreenThree } from './identityVerificationScreenThr
 import { IdentityVerificationScreenFour } from './identityVerificationScreenFour';
 import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
 import { ExamPreparation } from './examPreprationScreen';
-import { addSectionSessionRecord, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, loadZendeskWidget, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
 import { languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
@@ -97,10 +97,6 @@ const openModal = (callback) => {
 	if (preChecksStep === null) {
 		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 	}
-	// if (schoolTheme === null) {
-	// 	localStorage.setItem('schoolTheme', JSON.stringify(defaultTheme));
-	// }
-
 	showTab(activeTab, callback);
 	const session = convertDataIntoParse('session');
 	startSession(session);
@@ -201,7 +197,9 @@ function closeModal() {
 	if(window.sharedMediaStream){
 		window.sharedMediaStream?.getTracks()?.forEach(track => track.stop());
 	}
-	
+
+	cleanupZendeskWidget();
+
 	modal.style.display = 'none';
 	modal.remove();
 }
@@ -209,6 +207,8 @@ function closeModal() {
 const showTab = async (tabId, callback) => {
 	try {
 		console.log('tabId',tabId);
+
+		loadZendeskWidget();
 
 		updateThemeColor();
 		const tabs = document.querySelectorAll('.tab');
@@ -364,6 +364,8 @@ function checkToken() {
 }
 
 checkToken();
+
+window.addEventListener('unload', cleanupZendeskWidget);
 
 const checkInterval = 2000;
 setInterval(checkToken, checkInterval);

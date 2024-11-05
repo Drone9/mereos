@@ -14,7 +14,7 @@ import { getRoomSid, getToken } from './src/services/twilio.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
 import { registerPublicCandidate } from './src/services/auth.services';
 import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, updatePersistData } from './src/utils/functions';
-import { defaultTheme, initialSessionData, preChecksSteps } from './src/utils/constant';
+import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import socket from './src/utils/socket';
@@ -29,11 +29,7 @@ async function init(host, profileId, assessmentData,schoolTheme) {
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
 			localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
 			localStorage.setItem('socketGroupId',JSON.stringify({ groupName:v4() }));
-			if(schoolTheme){
-				localStorage.setItem('schoolTheme',JSON.stringify(schoolTheme));
-			}else{
-				localStorage.setItem('schoolTheme',JSON.stringify(defaultTheme));
-			}
+			localStorage.setItem('schoolTheme',JSON.stringify(schoolTheme));
       
 			const data = {
 				'name': assessmentData?.name,

@@ -22,7 +22,6 @@ export const LanguageDropdown = (languages) => {
 		option.addEventListener('click', () => {
 			selectedLanguage.textContent = language.name;
 			dropdownContent.classList.remove('active');
-			console.log(`Changing language to ${language.keyword}`); // Debugging log
 			setLanguage(language.keyword); // Change language
 		});
 
@@ -53,5 +52,4 @@ export const updateTranslations = () => {
 		const key = element.getAttribute('data-i18n');
 		element.textContent = i18next.t(key);
 	});
-	console.log('Translations updated'); // Debugging log
 };

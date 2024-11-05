@@ -8,6 +8,7 @@ import { getCreateRoom } from '../services/twilio.services';
 import { LockDownOptions } from '../utils/constant';
 import '../assets/css/start-recording.css';
 import i18next from 'i18next';
+import interact from 'interactjs';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
@@ -15,9 +16,7 @@ let aiEvents = [];
 let mediaStream=null;
 let mobileRoomInstance = null;
 
-export const startRecording = async (webToken) => {
-	console.log('startRecording',webToken);
-
+export const startRecording = async () => {
 	let cameraTrack = null;
 	let screenTrack = null;
 	let cameraRecordings = [];
@@ -26,6 +25,10 @@ export const startRecording = async (webToken) => {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 	
+	window.addEventListener('popstate', () => {
+		window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+	});
+
 	const initSocketConnection = () => {
 		if (!socket) {
 			console.error('Socket not initialized');
@@ -33,21 +36,16 @@ export const startRecording = async (webToken) => {
 		}
 		socket.onmessage = (event) => {
 			const eventData = JSON.parse(event?.data);
-			console.log('message____',eventData?.message?.event);
-
 			switch (eventData?.message?.event || eventData?.event) {
 				case 'MobileRecordingStarted': {
 					getCreateRoom({
 						room_name: session?.mobileRoomSessionId,
 						auto_record: false
-					}).then(async (twilioTokens) => {
-						console.log('mobileTwilioToken',twilioTokens);
-	
+					}).then(async (twilioTokens) => {	
 						const twilioRoom = await TwilioVideo.connect(twilioTokens?.data?.token, {
 							audio: false,
 							video: false
 						});
-						console.log('mobileTwilioRoom', twilioRoom);
 				
 						mobileRoomInstance = twilioRoom;
 						if(mobileRoomInstance){
@@ -61,13 +59,12 @@ export const startRecording = async (webToken) => {
 				}
 
 				case 'violation':
-					console.log('violation message',eventData?.message?.message);
 					if(eventData?.message?.message === 'Violation'){
 						updatePersistData('preChecksSteps', { 
 							mobileConnection: false,
 							screenSharing: false
 						});
-						window.open('/assessment/prechecks', '_self');
+						window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
 					}
 					registerEvent({ eventType: 'error', notify: false, eventName:eventData?.message?.message , eventValue: getDateTime() });
 					break;
@@ -90,8 +87,7 @@ export const startRecording = async (webToken) => {
 	initSocketConnection();
 
 	if(!(newStream?.getTracks()?.length) && findConfigs(['record_screen'],secureFeatures?.entities)?.length){
-		console.log('in this newStream if condition');
-		window.startRecordingCallBack({ message: 'screen_share_again' });
+		window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
 		return;
 	}
 
@@ -115,9 +111,7 @@ export const startRecording = async (webToken) => {
 				false
 		};
 
-		console.log('twilioOptions',twilioOptions);
 		try {
-			console.log('in the try');
 			const dateTime = new Date();
 			const newRoomSessionId = dateTime.getTime();
 			const newSessionId = session?.sessionId ? session?.sessionId : dateTime.getTime();
@@ -129,10 +123,8 @@ export const startRecording = async (webToken) => {
 				sessionStatus:'Attending'
 			});
 
-			console.log('twilioOptions', twilioOptions);
 			let room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
 			roomInstance = room;
-			console.log('Room connected:', room);
 
 			mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
 				deviceId: { exact: localStorage.getItem('microphoneID') },
@@ -175,9 +167,7 @@ export const startRecording = async (webToken) => {
 				window.startRecordingCallBack({ message: 'recording_started_successfully' });
 			}
 
-			console.log('Local screen share track published:', screenTrack);
-
-			room.on('reconnecting', (error) => {
+			room.on('reconnecting', () => {
 				cleanupLocalVideo(cameraTrack);
 				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
 					updatePersistData('preChecksSteps', { 
@@ -189,7 +179,6 @@ export const startRecording = async (webToken) => {
 						screenSharing: false,
 					});
 				}
-				console.log('diconnection room',error);
 				if(window.startRecordingCallBack){
 					window.startRecordingCallBack({ message: 'web_internet_connection_disconnected' });
 				}
@@ -198,7 +187,6 @@ export const startRecording = async (webToken) => {
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});
-			console.error('Error starting recording:', error);
 		}
 	}
 };
@@ -206,47 +194,63 @@ export const startRecording = async (webToken) => {
 const PREDICTION = ['cell phone', 'book'];
 
 const setupWebcam = async (mediaStream) => {
-	console.log('setupWebcam');
 	let webcamContainer = document.getElementById('webcam-container');
 	if (!webcamContainer) {
 		webcamContainer = document.createElement('div');
 		webcamContainer.id = 'webcam-container';
+		webcamContainer.style.display = 'flex';
+		webcamContainer.style.zIndex = '999';
 		webcamContainer.style.position = 'absolute';
-		webcamContainer.style.top = '55px';
-		webcamContainer.style.left = '4px';
-		webcamContainer.style.width = '200px';
-		webcamContainer.style.height = '150px';
+		webcamContainer.style.rowGap = '10px';
+		webcamContainer.style.flexDirection = 'column';
+		webcamContainer.style.justifyContent = 'start';
+		webcamContainer.style.marginLeft = '10px';
 		document.body.appendChild(webcamContainer);
 	}
+
+	const mediaWrapper = document.createElement('div');
+	mediaWrapper.style.position = 'relative';
+	mediaWrapper.style.width = '200px'; 
+	mediaWrapper.style.height = '150px'; 
 
 	const videoElement = document.createElement('video');
 	videoElement.autoplay = true;
 	videoElement.muted = true;
 	videoElement.srcObject = mediaStream;
-	videoElement.width = 200;
-	videoElement.height = 200 * (3 / 4);
 	videoElement.style.position = 'absolute';
 	videoElement.style.width = '100%';
-	videoElement.style.height = 'auto';
-	videoElement.style.maxWidth = '100%';
+	videoElement.style.height = 'auto'; 
 
 	const canvas = document.createElement('canvas');
 	canvas.id = 'canvas';
-	canvas.style.position = 'absolute';
+	canvas.style.position = 'absolute'; 
 	canvas.style.top = '0';
 	canvas.style.left = '0';
-	canvas.width = 200;
-	canvas.height = 200 * (3 / 4);
-	canvas.style.maxWidth = '100%';
-	canvas.style.width = '100%';
-	canvas.style.height = 'auto';
+	canvas.style.width = '100%'; 
+	canvas.style.height = '100%'; 
 
-	webcamContainer.appendChild(videoElement);
-	webcamContainer.appendChild(canvas);
+	mediaWrapper.appendChild(videoElement);
+	mediaWrapper.appendChild(canvas);
+	webcamContainer.appendChild(mediaWrapper); 
 
 	videoElement.addEventListener('loadedmetadata', () => {
 		canvas.width = videoElement.videoWidth;
 		canvas.height = videoElement.videoHeight;
+	});
+
+	interact(webcamContainer).draggable({
+		listeners: {
+			move(event) {
+				const target = event.target;
+				const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+				const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+				target.style.transform = `translate(${x}px, ${y}px)`;
+
+				target.setAttribute('data-x', x);
+				target.setAttribute('data-y', y);
+			}
+		}
 	});
 
 	return { videoElement, canvas };
@@ -269,7 +273,6 @@ const handleVideoResize = (predictions, context) => {
 };
 
 const startAIWebcam = async (mediaStream) => {
-	console.log('startAIWebcam');
 	await tf.setBackend('webgl');
 	await tf.ready();
 	const net = await cocoSsd.load();
@@ -359,7 +362,6 @@ export const stopAllRecordings = async () => {
 		const secureFeatures = getSecureFeatures();
 
 		if (socket && socket.readyState === WebSocket.OPEN) {
-			console.log('in the stopRecording log');
 			socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
 
@@ -449,11 +451,12 @@ export const stopAllRecordings = async () => {
 function VideoChat(room) {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
+	let webcamContainer = document.getElementById('webcam-container');
 	const localVideoRef = document.createElement('div');
 	const remoteVideoRef = document.createElement('div');
 	remoteVideoRef.classList.add('remote-video');
 
-	document.body.appendChild(remoteVideoRef); 
+	webcamContainer.appendChild(remoteVideoRef); 
 
 	function attachTrack(track, container) {
 		if (container && track && track.kind === 'video') {
@@ -522,8 +525,7 @@ function VideoChat(room) {
 				handleParticipant(participant);
 			});
 
-			room.on('participantReconnecting', remoteParticipant => {
-				console.log(`${remoteParticipant.identity} is reconnecting the signaling connection to the Room!`);
+			room.on('participantReconnecting', () => {
 				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
 					updatePersistData('preChecksSteps', { 
 						mobileConnection: false,

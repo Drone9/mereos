@@ -6,7 +6,6 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
-	console.log('IdentityVerificationScreenOne');
 	let state = {
 		isUploading: false,
 		captureMode: 'take',

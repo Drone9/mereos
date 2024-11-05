@@ -7,7 +7,6 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
-	console.log('IdentityVerificationScreenTwo');
 	let photo;
 	let inputFile;
 	let stream = null;
@@ -119,9 +118,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			try {
 				const resp = await userRekognitionInfo(data);
 				const userImageData = resp.data;
-				console.log('userImageData',userImageData);
 				if (userImageData) {
-					console.log('acceptableLabels',acceptableLabels(userImageData?.label, 80));
 					if (acceptableLabels(userImageData?.label, 80) && acceptableText(userImageData?.text, 59) && userImageData?.face?.FaceDetails.length > 0) {
 						currentState = {
 							...currentState,

@@ -8,7 +8,6 @@ import { renderIdentityVerificationSteps } from './IdentitySteps';
 window.userMediaStream = null;
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
-	console.log('IdentityVerificationScreenFour');
 	if (tabContent.querySelector('.screen-four-container')) return; 
 	let recordingMode = 'startRecording';
 	let showPlayer = false;
@@ -135,7 +134,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		container.innerHTML = '';
 
 		const stepsContainer = document.createElement('div');
-		renderIdentityVerificationSteps(stepsContainer, 1);
+		renderIdentityVerificationSteps(stepsContainer, 4);
 
 		const wrapper = document.createElement('div');
 		wrapper.className = 'ivsf-wrapper';
@@ -212,7 +211,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			webcam.height = 250;
 			webcam.id = 'webcam-recording-media';
 			webcam.srcObject = window.userMediaStream;
-			console.log('window.userMediaStream',window.userMediaStream);
 			headerImgContainer.appendChild(webcam);
 
 			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);

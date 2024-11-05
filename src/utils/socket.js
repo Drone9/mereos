@@ -17,5 +17,5 @@ const getGroupId = () => {
 let finalGroupName = getGroupId();
 
 const socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
-console.log('socket',socket);
+
 export default socket;

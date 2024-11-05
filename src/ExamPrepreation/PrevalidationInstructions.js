@@ -5,7 +5,6 @@ import { showTab } from './examPrechecks';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
-		console.log('PrevalidationInstructions');
 		let currentCaptureMode = null;
 		let mediaStream = null;
 		let cameras = [];
@@ -76,7 +75,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 				text: 'get_ready',
 			},
 		];
-		console.log('cameras',cameras,'microphones',microphones);
 
 		console.log('currentCaptureMode',currentCaptureMode);
 
@@ -97,7 +95,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 				};
 				localStorage.setItem('microphoneID',id);
 			}
-			console.log('audioConstraints',audioConstraints);
 			startWebcam();
 		};
 	

@@ -9,7 +9,6 @@ import socket from '../utils/socket';
 export let newStream;
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
-	console.log('IdentityVerificationScreenFive');
 	let multipleScreens;
 	if (!tabContent) {
 		console.error('tabContent is not defined or is not a valid DOM element');
@@ -41,11 +40,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		socket.onmessage = (event) => {
 			const eventData = JSON.parse(event?.data);
-			console.log('message____',eventData?.message?.event);
 
 			switch (eventData?.message?.event || eventData?.event) {
 				case 'violation':
-					console.log('violation message',eventData?.message?.message);
 					if(eventData?.message?.message === 'Violation'){
 						updatePersistData('preChecksSteps', { mobileConnection: false,screenSharing:false });
 						if(newStream){
@@ -57,7 +54,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					break;
 
 				default:
-					console.log('Unknown event:', eventData?.message);
 					break;
 			}
 		};
@@ -74,7 +70,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const shareScreen = async () => {
 		try {
 			newStream = await shareScreenFromContent();
-			console.log('Screen sharing stream obtained:', newStream);
 			updatePersistData('session', { screenRecordingStream: location });
 
 			if (newStream.getVideoTracks()[0].getSettings().displaySurface === 'monitor') {
@@ -84,7 +79,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					type: 'successful',
 					text: i18next.t('screen_shared_successfully')
 				};
-				console.log('Screen shared successfully');
 			} else {
 				newStream.getVideoTracks()[0].stop();
 				throw i18next.t('please_share_entire_screen');
@@ -118,7 +112,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	container.classList.add('screen-share-container');
 
 	const stepsContainer = document.createElement('div');
-	renderIdentityVerificationSteps(stepsContainer, 1);
+	renderIdentityVerificationSteps(stepsContainer, 6);
 
 	const wrapper = document.createElement('div');
 	wrapper.classList.add('screen-wrapper');
@@ -201,10 +195,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	
 	const candidateAssessment = getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
-	console.log('secureFeatures', secureFeatures);
     
 	let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
-	console.log('multipleScreensCheck', multipleScreensCheck);
 
 	multipleScreensCheck && checkMultipleScreens();
 

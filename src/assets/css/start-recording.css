@@ -17,16 +17,6 @@ body{
   height: auto;
   display: block;
 }
-.remote-video{
-  position: absolute;
-  left: 208px;
-  top: 55px;
-}
-.webcam-container{
-  position: absolute;
-  left: 0;
-  top: 55px;
-}
 .remote-video  .video-attached{
   width: 200px;
   height: 155px;

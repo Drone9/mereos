@@ -5,7 +5,6 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
-	console.log('IdentityVerificationScreenThree');
 	let canvasRef;
 	let audioStream= null;
 	let audioContext;
@@ -90,7 +89,6 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 					sumSquares += (frequencyData[i] / 255) ** 2;
 				}
 				const rms = Math.sqrt(sumSquares / bufferLength);
-				console.log('rms____', rms);
 				const requiredLevel = profileSettings?.audio_level || 0.15;
 				if (rms > requiredLevel) {
 					clearInterval(timer);
@@ -107,7 +105,6 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				msg.type = 'unsuccessful';
 				msg.text = 'audio_test_failed';
 				updateUI();
-				console.error('Audio test failed');
 			}
 
 		}, 1000);
@@ -130,13 +127,11 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		updatePersistData('preChecksSteps',{ audioDetection:true });
 		registerEvent({eventType: 'success', notify: false, eventName: 'audio_check_completed', eventValue: getDateTime()});
 		showTab('IdentityVerificationScreenFour');
-		console.log('Navigate to IDENTITY_VERIFICATION_SCREEN_FOUR');
 	};
 
 	const prevStep = () => {
 		updatePersistData('preChecksSteps',{ audioDetection:false });
 		showTab('IdentityVerificationScreenTwo');
-		console.log('Navigate to IDENTITY_VERIFICATION_SCREEN_TWO');
 	};
 
 	const updateUI = () => {
@@ -148,7 +143,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		}
 
 		const stepsContainer = document.createElement('div');
-		renderIdentityVerificationSteps(stepsContainer, 1);
+		renderIdentityVerificationSteps(stepsContainer, 3);
 		let wrapper = container.querySelector('.ivst-wrapper');
 		
 		if (!wrapper) {

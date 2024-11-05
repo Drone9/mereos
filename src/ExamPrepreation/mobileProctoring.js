@@ -14,7 +14,6 @@ import { v4 } from 'uuid';
 
 window.mobileStream = null;
 export const MobileProctoring = async (tabContent) => {
-	console.log('MobileProctoring');
 	let mobileSteps = ''; 
 	let disabledNextBtn = false; 
 	let checkedVideo = false;
@@ -43,8 +42,7 @@ export const MobileProctoring = async (tabContent) => {
 			sendResetSession();
 		}
 
-		socket.onopen = (event) => {
-			console.log('WebSocket connection established', event);
+		socket.onopen = () => {
 			if (!remoteVideoRef.srcObject?.getTracks()?.length) {
 				sendResetSession();
 			}
@@ -52,7 +50,6 @@ export const MobileProctoring = async (tabContent) => {
 
 		socket.onmessage = (event) => {
 			const eventData = JSON.parse(event.data);
-			console.log('Message received', eventData?.message?.event);
 
 			switch (eventData?.message?.event || eventData?.event) {
 				case 'mobile_connection':
@@ -70,12 +67,11 @@ export const MobileProctoring = async (tabContent) => {
 
 				case 'mobile-broadcast': {
 					renderUI();
-					console.log('MobileBroadcast_________');
+
 					disabledNextBtn = true;
 					const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 					getUserMedia({ video: true, audio: false }, (mediaStream) => {
 						window.mobileStream = mediaStream;
-						console.log('peerInstance',peerInstance);
 
 						if (peerInstance) { 
 							const call = peerInstance.call(eventData?.message?.message, mediaStream);
@@ -89,7 +85,6 @@ export const MobileProctoring = async (tabContent) => {
 							});
 	
 							call?.on('close', () => {
-								console.log('Call ended.');
 								remoteVideo.srcObject = null;
 							});
 	
@@ -104,10 +99,8 @@ export const MobileProctoring = async (tabContent) => {
 				}
 				
 				case 'violation':
-					console.log('eventData?.message?.message',eventData?.message?.message);
 					if (eventData?.message?.message === 'Violation') {
 						mobileSteps = 'tokenCode';
-						console.log('mobile phone disconnected');
 						checkedVideo = false;
 						renderUI();
 					} else {
@@ -133,11 +126,10 @@ export const MobileProctoring = async (tabContent) => {
 	const initPeerConnection = () => {
 		try {
 			if (peerInstance) {
-				console.log('Destroying existing peer');
 				peerInstance.destroy();
 			}
+
 			const groupName = v4();
-			console.log('socketGroupIds?.groupName', socketGroupIds?.groupName);
 
 			const peer = new Peer(groupName);
 
@@ -218,7 +210,7 @@ export const MobileProctoring = async (tabContent) => {
 		headerTitle.innerText = t('setting_up_your_phone_camera');
 		
 		const stepsContainer = document.createElement('div');
-		renderIdentityVerificationSteps(stepsContainer, 1);
+		renderIdentityVerificationSteps(stepsContainer, 5);
 
 		wrapper.appendChild(headerTitle);
 		wrapper.appendChild(stepsContainer);
@@ -304,10 +296,6 @@ export const MobileProctoring = async (tabContent) => {
 			const canvas = document.createElement('canvas');
 			qrCodeContainer.appendChild(canvas);
       
-			console.log('getAuthenticationToken code',JSON.stringify({
-				token: getAuthenticationToken(),
-				groupName: socketGroupIds?.groupName
-			}));
 			QRCode.toCanvas(canvas, JSON.stringify({
 				token: getAuthenticationToken(),
 				groupName: socketGroupIds?.groupName
@@ -424,7 +412,6 @@ export const MobileProctoring = async (tabContent) => {
 	}
 
 	const initProctoring = () => {
-		console.log('webStream',window);
 		if(window.webStream) {
 			window.webStream.getTracks().forEach(track => track.stop());
 		}

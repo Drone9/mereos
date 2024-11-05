@@ -34,24 +34,19 @@ export const checkCamera = () => {
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({ video: true })
 				.then((stream) => {
-					console.log('Camera stream:', stream);
 					resolve(stream);
 				})
-				.catch((err) => {
-					console.log('Error checking camera:', err);
+				.catch(() => {
 					resolve(false);
 				});
 		} else if (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia) {
 			const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
 			getUserMedia({ video: true }, (stream) => {
-				console.log('Camera stream:', stream);
 				resolve(stream);
-			}, (err) => {
-				console.log('Error checking camera:', err);
+			}, () => {
 				resolve(false);
 			});
 		} else {
-			console.log('getUserMedia is not supported');
 			resolve(false);
 		}
 	});
@@ -155,24 +150,19 @@ export const checkMicrophone = () => {
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({ audio: true })
 				.then((stream) => {
-					console.log('Microphone stream:', stream);
 					resolve(stream);
 				})
-				.catch((err) => {
-					console.log('Error checking microphone:', err);
+				.catch(() => {
 					resolve(false);
 				});
 		} else if (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia) {
 			const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
 			getUserMedia({ audio: true }, (stream) => {
-				console.log('Microphone stream:', stream);
 				resolve(stream);
-			}, (err) => {
-				console.log('Error checking microphone:', err);
+			}, () => {
 				resolve(false);
 			});
 		} else {
-			console.log('getUserMedia is not supported');
 			resolve(false);
 		}
 	});
@@ -846,15 +836,13 @@ export const forceFullScreen = (element = document.documentElement) => {
 			document.body.appendChild(whiteBackgroundElement);
 		}
 
-		// Add event listener to handle exiting fullscreen
 		const handleFullscreenChange = () => {
 			if (!document.fullscreenElement) {
-				// Check if the element exists before attempting to remove it
 				if (whiteBackgroundElement && document.body.contains(whiteBackgroundElement)) {
 					document.body.removeChild(whiteBackgroundElement);
-					whiteBackgroundElement = null; // Reset the reference
+					whiteBackgroundElement = null;
 				}
-				document.removeEventListener('fullscreenchange', handleFullscreenChange); // Clean up listener
+				document.removeEventListener('fullscreenchange', handleFullscreenChange); 
 			}
 		};
 
@@ -882,18 +870,14 @@ const handleDefaultEvent = e => {
 };
 
 export const unlockBrowserFromContent = () => {
-	// Re-enable right-click functionality
 	document.removeEventListener('contextmenu', handleDefaultEvent);
 
-	// Re-enable clipboard events
 	'cut copy paste'.split(' ').forEach((eventName) => {
 		window.removeEventListener(eventName, handleDefaultEvent);
 	});
 
-	// Remove the keyboard shortcut restrictions
 	document.onkeydown = null;
 
-	// Remove the print prevention CSS
 	const printStyles = document.querySelectorAll('style[media="print"]');
 	printStyles.forEach((style) => {
 		if (style.textContent.includes('display: none') && style.textContent.includes('visibility: hidden')) {
@@ -903,21 +887,17 @@ export const unlockBrowserFromContent = () => {
 
 	removeUnfocusListener();
 
-	// Remove window resize detection
 	window.removeEventListener('resize', handleResize);
 
-	// Exit fullscreen mode
 	if (document.fullscreenElement) {
 		document.exitFullscreen();
 	}
 
-	// Remove fullscreen white background overlay
 	const whiteBackgroundElement = document.getElementById('white-Background-Element');
 	if (whiteBackgroundElement) {
 		document.body.removeChild(whiteBackgroundElement);
 	}
 
-	// Disable alert function
 	window.alert = function(){};
 
 	// Close notifications
@@ -932,31 +912,37 @@ export const unlockBrowserFromContent = () => {
 };
 
 export const handlePreChecksRedirection = () => {
-	const preChecksSteps = convertDataIntoParse('preChecksSteps');
-	const getSecureFeature = getSecureFeatures();
-	const secureFeatures = getSecureFeature?.entities || [];
-	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
+	const sessionSetting = localStorage.getItem('precheckSetting');
 
-	if (!preChecksSteps?.examPreparation && hasFeature('exam_perparation')) {
+	if(sessionSetting === 'session_resume'){
+		const preChecksSteps = convertDataIntoParse('preChecksSteps');
+		const getSecureFeature = getSecureFeatures();
+		const secureFeatures = getSecureFeature?.entities || [];
+		const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
+
+		if (!preChecksSteps?.examPreparation && hasFeature('exam_perparation')) {
+			return 'ExamPreparation';
+		} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
+			return 'runSystemDiagnostics';
+		}else if(!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
+			return 'Prevalidationinstruction';
+		}
+		else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
+			return 'IdentityVerificationScreenOne';
+		}else if(!preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
+			return 'IdentityVerificationScreenTwo';
+		}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
+			return 'IdentityVerificationScreenThree';
+		}else if(!preChecksSteps?.roomScanningVideo && hasFeature('record_room')){
+			return 'IdentityVerificationScreenFour';
+		}else if(!preChecksSteps?.mobileConnection && hasFeature('mobile_proctoring')){
+			return 'MobileProctoring';
+		}else if(!preChecksSteps?.screenSharing || hasFeature('record_screen')){
+			return 'IdentityVerificationScreenFive';
+		} else{
+			closeModal();
+		}
+	}else{
 		return 'ExamPreparation';
-	} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
-		return 'runSystemDiagnostics';
-	}else if(!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
-		return 'Prevalidationinstruction';
-	}
-	else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
-		return 'IdentityVerificationScreenOne';
-	}else if(!preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
-		return 'IdentityVerificationScreenTwo';
-	}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
-		return 'IdentityVerificationScreenThree';
-	}else if(!preChecksSteps?.roomScanningVideo && hasFeature('record_room')){
-		return 'IdentityVerificationScreenFour';
-	}else if(!preChecksSteps?.mobileConnection && hasFeature('mobile_proctoring')){
-		return 'MobileProctoring';
-	}else if(!preChecksSteps?.screenSharing || hasFeature('record_screen')){
-		return 'IdentityVerificationScreenFive';
-	} else{
-		closeModal();
 	}
 };

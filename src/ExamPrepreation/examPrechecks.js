@@ -88,6 +88,7 @@ const navigate = (newTabId) => {
 };
 
 const openModal = (callback) => {
+	console.log = function() {};
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
 
@@ -206,8 +207,6 @@ function closeModal() {
 
 const showTab = async (tabId, callback) => {
 	try {
-		console.log('tabId',tabId);
-
 		loadZendeskWidget();
 
 		updateThemeColor();
@@ -230,7 +229,6 @@ const showTab = async (tabId, callback) => {
 
 		const getSecureFeature = getSecureFeatures();
 		const secureFeatures = getSecureFeature?.entities || [];
-		console.log('secureFeatures', secureFeatures);
 
 		if (tabId === 'ExamPreparation') {
 			if (!secureFeatures?.find(entity => entity.key === 'exam_perparation')) {
@@ -318,7 +316,6 @@ const startSession = async (session) => {
 export const updateTranslations = () => {
 	const activeTab = handlePreChecksRedirection(window.globalCallback);
 	showTab(activeTab,window.globalCallback);
-	console.log('Translations updated');
 };
 
 i18next.init({

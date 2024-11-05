@@ -24,6 +24,7 @@ async function init(host, profileId, assessmentData,schoolTheme) {
 	try{
 		const resp = await registerPublicCandidate(host);
 		if(resp.data){
+			console.log = function() {};
 			localStorage.setItem('mereosToken', resp.data.token);
 			localStorage.setItem('candidateAssessment',JSON.stringify(resp.data.user_data));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
@@ -45,7 +46,6 @@ async function init(host, profileId, assessmentData,schoolTheme) {
 				});
 				const profileResp = await getProfile({id: profileId });
 				localStorage.setItem('secureFeatures', JSON.stringify(profileResp.data));
-				console.log('profileResp', profileResp);
 			}
 			return resp.data;
 		}
@@ -55,8 +55,9 @@ async function init(host, profileId, assessmentData,schoolTheme) {
 }
 
 window.globalCallback = null;
-async function start_prechecks(callback) {
+async function start_prechecks(callback,setting) {
 	window.globalCallback = callback;
+	localStorage.setItem('precheckSetting',setting);
 	openModal(callback);
 }
 
@@ -78,7 +79,6 @@ async function start_session(callback) {
 				});
 	
 				if (socket && socket.readyState === WebSocket.OPEN) {
-					console.log('in the socket if condition',mobileTwilioToken?.data?.token);
 					socket.send(JSON.stringify({ event: 'twilioToken', message: mobileTwilioToken?.data?.token }));
 				}
 			}
@@ -96,7 +96,6 @@ async function start_session(callback) {
 			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 		}
 	} catch (err) {
-		console.log('error',err); 
 		callback({type: 'error', message: 'There is error in starting the session'});
 	}       
 }
@@ -104,13 +103,11 @@ async function start_session(callback) {
 async function stop_session(callback) {
 	try {
 		const stop_sessionResp  = await stopAllRecordings();
-		console.log('stop_sessionResp',stop_sessionResp);
 		if(stop_sessionResp === 'stop_recording'){
 			const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 			const session = convertDataIntoParse('session');
 			let resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 			if (resp) {
-				console.log('submit_session');
 				localStorage.removeItem('candidateAssessment');
 				localStorage.removeItem('mereosToken');
 				localStorage.removeItem('session');

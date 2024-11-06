@@ -88,7 +88,7 @@ const navigate = (newTabId) => {
 };
 
 const openModal = (callback) => {
-	// console.log = function() {};
+	console.log = function() {};
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
 

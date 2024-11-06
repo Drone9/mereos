@@ -24,7 +24,7 @@ async function init(host, profileId, assessmentData,schoolTheme) {
 	try{
 		const resp = await registerPublicCandidate(host);
 		if(resp.data){
-			// console.log = function() {};
+			console.log = function() {};
 			localStorage.setItem('mereosToken', resp.data.token);
 			localStorage.setItem('candidateAssessment',JSON.stringify(resp.data.user_data));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));

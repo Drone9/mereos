@@ -129,15 +129,15 @@
 }
 
 .remote-mobile-video img {
-  width: 400px;
-  height: 230px;
+  width: 350px;
+  height: 235px;
   object-fit: cover;
   border-radius: 8px;
 }
 
-.remote-mobile-video video {
-  width: 500px;
-  height: 300px;
+.remote-mobile-video div video {
+  width: 350px;
+  height: 235px;
   object-fit: cover;
   border-radius: 8px;
 }
@@ -218,10 +218,10 @@
   color: #222222;
 }
 
-.ivsf-btn-container {
+.mobile-btn-container {
   display: flex;
   justify-content: center;
-  margin: 10px auto 55px;
+  margin: 0px auto 0px;
   gap: 20px;
 }
 
@@ -236,4 +236,17 @@
   font-size: 14px;
   margin: 20px auto 0px;
   color: #8D979F;
+}
+
+.mobile-broadcastin-container{
+  display: flex;
+  align-items: center;
+  column-gap: 19px;
+}
+.remote-mobile-video{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  row-gap: 15px;  
 }

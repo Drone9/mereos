@@ -88,7 +88,7 @@ const navigate = (newTabId) => {
 };
 
 const openModal = (callback) => {
-	console.log = function() {};
+	// console.log = function() {};
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
 
@@ -231,7 +231,7 @@ const showTab = async (tabId, callback) => {
 		const secureFeatures = getSecureFeature?.entities || [];
 
 		if (tabId === 'ExamPreparation') {
-			if (!secureFeatures?.find(entity => entity.key === 'exam_perparation')) {
+			if (!secureFeatures?.find(entity => entity.key === 'record_video')) {
 				navigate('runSystemDiagnostics');
 				return;
 			}

@@ -24,7 +24,7 @@ async function init(host, profileId, assessmentData,schoolTheme) {
 	try{
 		const resp = await registerPublicCandidate(host);
 		if(resp.data){
-			console.log = function() {};
+			// console.log = function() {};
 			localStorage.setItem('mereosToken', resp.data.token);
 			localStorage.setItem('candidateAssessment',JSON.stringify(resp.data.user_data));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
@@ -68,7 +68,7 @@ async function start_session(callback) {
 		const secureFeatures = getSecureFeatures();
 		if(secureFeatures?.entities?.length > 0){
 			const mobileRoomSessionId = v4();
-
+			
 			const newRoomSessionId = v4();
 			if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
 				let resp = await getRoomSid({ session_id: mobileRoomSessionId, auto_record: true });

@@ -19,6 +19,7 @@ export const CONTENT_TYPE = Object.freeze({
 });
 
 export const initialSessionData = {
+	aiEvents:[],
 	start_time: null,
 	submission_time: null,
 	duration_taken: 0,
@@ -28,7 +29,7 @@ export const initialSessionData = {
 	assessment: null,
 	candidate: null,
 	user_video_name:  [],
-	audio_recordings: [],
+	user_audio_name: [],
 	screen_sharing_video_name: [],
 	roomscan_recordings: [],
 	session_id: null,
@@ -43,6 +44,7 @@ export const initialSessionData = {
 	mobileAudios:[],
 	mobileRoomSessionId:null,
 	twilioToken:null,
+	incident_level:null
 };
 
 export const preChecksSteps = {

@@ -1,14 +1,14 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
-import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import socket from '../utils/socket';
 import { getCreateRoom } from '../services/twilio.services';
 import { LockDownOptions } from '../utils/constant';
 import '../assets/css/start-recording.css';
-import i18next from 'i18next';
 import interact from 'interactjs';
+import i18next from 'i18next';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
@@ -52,6 +52,11 @@ export const startRecording = async () => {
 							VideoChat(twilioRoom);
 						}
 					}).catch((error)=>{
+						updatePersistData('preChecksSteps', { 
+							mobileConnection: false,
+							screenSharing: false
+						});
+						window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
 						console.log('error', error);
 					});
 
@@ -316,19 +321,33 @@ const startAIWebcam = async (mediaStream) => {
 					let lastLog = lastLogIndex > -1 ? aiEvents.splice(lastLogIndex, 1)[0] : undefined;
 					if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
 						const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
+						let message = '';
+						console.log('key',key);
+						if(key === 'person_missing'){
+							message = i18next.t('no_person_detected_come_back_to_assessment');
+						}else if(key === 'object_detected'){
+							message = i18next.t('unauthorized_object_detected_please_put_it_away');
+						}else if(key === 'multiple_people'){
+							message = i18next.t('multiple_people_detected');
+						}else{
+							message = i18next.t('ai_recorder_unknown_violation');
+						}
+						console.log('message',message);
+						showNotification({
+							title: 'Warning',
+							body: message,
+						});
 						aiEvents.push(newLog);
 					} else if (log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
 						aiEvents.push(lastLog);
-						if (lastLog.time_span === 10) {
-							showNotification({
-								title: 'Warning!',
-								body: `${i18next.t('detected_for_more_than_10_seconds')}`,
-							});
-						}
 					} else if (!log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, end_time: Number(lastLog.start_time) + Number(lastLog.time_span) };
-						registerAIEvent({ eventType: 'success', notify: false, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) });
+						const data = { eventType: 'success', notify: true, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) };
+						registerAIEvent(data);
+						updatePersistData('session',{
+							aiEvents: [data,...session.aiEvents]
+						});
 					}
 				});
 			}
@@ -360,10 +379,18 @@ export const cleanupLocalVideo = () => {
 export const stopAllRecordings = async () => {
 	try {
 		const secureFeatures = getSecureFeatures();
+		const session = convertDataIntoParse('session');
 
 		if (socket && socket.readyState === WebSocket.OPEN) {
 			socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
+
+		const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
+		updatePersistData('session', {
+			recordingEnded: true,
+			sessionStatus: 'Completed',
+			incident_level:findIncident
+		});
 
 		cleanupLocalVideo();
 
@@ -431,11 +458,7 @@ export const stopAllRecordings = async () => {
 		const dateTime = new Date();
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
-
-		updatePersistData('session', {
-			recordingEnded: true,
-			sessionStatus: 'Completed',
-		});
+	
 
 		showNotification({
 			title: 'Recording Stopped',

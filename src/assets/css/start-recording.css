@@ -12,6 +12,7 @@
 body{
   position: relative;
 }
+
 .local-video-container video {
   width: 100%;
   height: auto;

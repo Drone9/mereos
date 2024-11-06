@@ -68,7 +68,7 @@ async function start_session(callback) {
 		const secureFeatures = getSecureFeatures();
 		if(secureFeatures?.entities?.length > 0){
 			const mobileRoomSessionId = v4();
-
+			
 			const newRoomSessionId = v4();
 			if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
 				let resp = await getRoomSid({ session_id: mobileRoomSessionId, auto_record: true });

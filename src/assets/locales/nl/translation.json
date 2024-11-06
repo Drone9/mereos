@@ -1006,5 +1006,9 @@
 "detected_for_more_than_10_seconds": "Meer dan 10 seconden gedetecteerd! ",
 "select_preferred_camera_and_microphone":"Selecteer de gewenste camera en microfoon.",
 "user_interrupted_the_stream":"Gebruiker heeft de stream onderbroken!", 
-"mobile_phone disconnected":"Mobiele telefoon losgekoppeld"
+"mobile_phone disconnected":"Mobiele telefoon losgekoppeld",
+"no_person_detected_come_back_to_assessment":"Er is geen persoon gedetecteerd. Kom terug naar de beoordeling.",
+"multiple_people_detected":"Er zijn meerdere personen gedetecteerd.",
+"unauthorized_object_detected_please_put_it_away":"Er is een ongeautoriseerd object gedetecteerd. Leg het weg",
+"ai_recorder_unknown_violation":"Er is een onbekende overtreding geregistreerd door AI"
 }

@@ -58,6 +58,8 @@ export const MobileProctoring = async (tabContent) => {
 
 				case 'mobilePreChecksCompleted':
 					mobileSteps = 'precheckCompleted';
+					socket?.send(JSON.stringify({ event: 'requestMobileBroadcast' }));
+					disabledNextBtn = true;
 					renderUI();
 					break;
 
@@ -67,8 +69,6 @@ export const MobileProctoring = async (tabContent) => {
 
 				case 'mobile-broadcast': {
 					renderUI();
-
-					disabledNextBtn = true;
 					const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 					getUserMedia({ video: true, audio: false }, (mediaStream) => {
 						window.mobileStream = mediaStream;
@@ -85,7 +85,10 @@ export const MobileProctoring = async (tabContent) => {
 							});
 	
 							call?.on('close', () => {
-								remoteVideo.srcObject = null;
+								if(remoteVideo.srcObject){
+									remoteVideo.srcObject = null;
+								}
+								disabledNextBtn = false;
 							});
 	
 							call?.on('error', (error) => {
@@ -102,6 +105,9 @@ export const MobileProctoring = async (tabContent) => {
 					if (eventData?.message?.message === 'Violation') {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
+						if(window.mobileStream){
+							window.mobileStream.getTracks().forEach(track => track.stop());
+						}
 						renderUI();
 					} else {
 						console.error(eventData?.message?.message);
@@ -165,10 +171,7 @@ export const MobileProctoring = async (tabContent) => {
 	const nextStep = (newStep) => {
 		mobileSteps = newStep;
 		renderUI(); 
-		if(newStep === 'broadcasting') {
-			disabledNextBtn = true;
-			socket?.send(JSON.stringify({ event: 'requestMobileBroadcast' }));
-		} else if(newStep === 'step4'){
+		if(newStep === 'step4'){
 			window.mobileStream?.getTracks()?.forEach((track) => track.stop());
 			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successfull', eventValue: getDateTime() });
 			updatePersistData('preChecksSteps', { mobileConnection: true });
@@ -186,6 +189,9 @@ export const MobileProctoring = async (tabContent) => {
 	const prevStep = () => {
 		mobileSteps = 'tokenCode';
 		checkedVideo = false;
+		if(window.mobileStream){
+			window.mobileStream?.getTracks()?.forEach(track => track.stop());
+		}
 		if (socket.readyState === WebSocket.OPEN) {
 			socket?.send(JSON.stringify({ event: 'resetSession' }));
 		}
@@ -320,16 +326,25 @@ export const MobileProctoring = async (tabContent) => {
 			qrCodeContainer.appendChild(btnContainer);
 			wrapper.appendChild(qrCodeContainer);
 
-		} else if (mobileSteps === 'precheckCompleted') {
+		} else {
 			const remoteMobileVideo = document.createElement('div');
 			remoteMobileVideo.className = 'remote-mobile-video';
+
+			const bannerVideoContainer = document.createElement('div');
+			bannerVideoContainer.className = 'mobile-broadcastin-container';
 
 			const bannerImage = document.createElement('img');
 			bannerImage.className = 'banner-image';
 			bannerImage.src = cameraExample;
       
+			const remoteVideoRef = document.createElement('video');
+			remoteVideoRef.id = 'remote-mobile-video-container';
+			
 			const videoContainer = document.createElement('div');
-			videoContainer.appendChild(bannerImage);
+			videoContainer.appendChild(remoteVideoRef);
+
+			bannerVideoContainer.appendChild(bannerImage);
+			bannerVideoContainer.appendChild(videoContainer);
 
 			const exampleText = document.createElement('span');
 			exampleText.className = 'example-text';
@@ -351,12 +366,12 @@ export const MobileProctoring = async (tabContent) => {
 
 			bottomDescRemote.appendChild(checkbox);
 			bottomDescRemote.appendChild(label);
-			remoteMobileVideo.appendChild(videoContainer);
+			remoteMobileVideo.appendChild(bannerVideoContainer);
 			remoteMobileVideo.appendChild(exampleText);
 			remoteMobileVideo.appendChild(bottomDescRemote);
 
 			const btnContainer = document.createElement('div');
-			btnContainer.className = 'ivsf-btn-container';
+			btnContainer.className = 'mobile-btn-container';
 
 			const btnPrevious = document.createElement('button');
 			btnPrevious.className = 'orange-hollow-btn';
@@ -366,45 +381,14 @@ export const MobileProctoring = async (tabContent) => {
 			const btnNext = document.createElement('button');
 			btnNext.className = 'orange-filled-btn';
 			btnNext.innerText = t('next');
-			btnNext.disabled = !checkedVideo;
-			btnNext.onclick = () => nextStep('broadcasting');
-
-			btnContainer.appendChild(btnPrevious);
-			btnContainer.appendChild(btnNext);
-			remoteMobileVideo.appendChild(btnContainer);
-			wrapper.appendChild(remoteMobileVideo);
-
-		} else {
-			const remoteMobileVideo = document.createElement('div');
-			remoteMobileVideo.className = 'remote-mobile-video';
-
-			const videoContainer = document.createElement('div');
-
-			const remoteVideoRef = document.createElement('video');
-			remoteVideoRef.id = 'remote-mobile-video-container';
-			
-			videoContainer.appendChild(remoteVideoRef);
-
-			remoteMobileVideo.appendChild(videoContainer);
-
-			const btnContainer = document.createElement('div');
-			btnContainer.className = 'ivsf-btn-container';
-
-			const btnPrevious = document.createElement('button');
-			btnPrevious.className = 'orange-hollow-btn';
-			btnPrevious.innerText = t('previous_step');
-			btnPrevious.onclick = prevStep;
-
-			const btnNext = document.createElement('button');
-			btnNext.className = 'orange-filled-btn';
-			btnNext.innerText = t('next');
-			btnNext.disabled = !disabledNextBtn;
+			btnNext.disabled = !checkedVideo || disabledNextBtn;
 			btnNext.onclick = () => nextStep('step4');
 
 			btnContainer.appendChild(btnPrevious);
 			btnContainer.appendChild(btnNext);
 			remoteMobileVideo.appendChild(btnContainer);
 			wrapper.appendChild(remoteMobileVideo);
+
 		}
 
 		container.appendChild(wrapper);

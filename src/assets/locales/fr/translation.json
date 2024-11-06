@@ -1007,5 +1007,9 @@
 	"new_notification_from_mereos": "Nouvelle notification de mereos",
 	"hey_mate_ready_for_test_it_starting_soon": "Hé mon pote, prêt pour le test ? Cela va bientôt commencer.",
 	"detected_for_more_than_10_seconds": "Visage non détecté depuis plus de 10 secondes !",
-	"select_preferred_camera_and_microphone":"Sélectionnez la caméra et le microphone de votre choix."
+	"select_preferred_camera_and_microphone":"Sélectionnez la caméra et le microphone de votre choix.",
+	"no_person_detected_come_back_to_assessment":"Aucune personne n'est détectée. Veuillez revenir à l'évaluation.",
+	"multiple_people_detected":"Plusieurs personnes sont détectées.",
+	"unauthorized_object_detected_please_put_it_away":"Un objet non autorisé est détecté. S'il vous plaît, rangez-le.",
+	"ai_recorder_unknown_violation":"Il y a une violation inconnue enregistrée par AI."
 }

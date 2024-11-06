@@ -1006,5 +1006,9 @@
 "detected_for_more_than_10_seconds": "Rilevato per più di 10 secondi! ",
 "select_preferred_camera_and_microphone":"Seleziona la telecamera e il microfono preferiti.",
 "user_interrupted_the_stream":"L'utente ha interrotto lo streaming!", 
-"mobile_phone disconnected":"Telefono cellulare disconnesso"
+"mobile_phone disconnected":"Telefono cellulare disconnesso",
+"no_person_detected_come_back_to_assessment":"Nessuna persona rilevata. Torna alla valutazione.",
+"multiple_people_detected":"Sono state rilevate più persone.",
+"unauthorized_object_detected_please_put_it_away":"È stato rilevato un oggetto non autorizzato. Mettilo via",
+"ai_recorder_unknown_violation":"È stata registrata una violazione sconosciuta dall'IA"
 }

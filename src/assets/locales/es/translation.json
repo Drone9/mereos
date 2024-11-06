@@ -997,5 +997,9 @@
 "detected_for_more_than_10_seconds": "¡Se detectó durante más de 10 segundos!",
 "select_preferred_camera_and_microphone": "Seleccione la cámara y el micrófono preferidos.",
 "user_interrupted_the_stream": "El usuario interrumpió la transmisión", 
-"mobile_phone connected": "Teléfono móvil desconectado"
+"mobile_phone connected": "Teléfono móvil desconectado",
+"no_person_detected_come_back_to_assessment": "No se ha detectado ninguna persona. Vuelva a la evaluación.",
+"multiple_people_detected": "Se han detectado varias personas.",
+"unauthorized_object_detected_please_put_it_away": "Se ha detectado un objeto no autorizado. Guárdelo",
+"ai_recorder_unknown_violation": "La IA ha registrado una infracción desconocida"
 }

@@ -108,6 +108,7 @@ body {
   display: inline-flex;
   align-items: center;
   margin-left: 10px;
+  cursor: pointer;
 }
 
 .dropdown .select {
@@ -118,6 +119,7 @@ body {
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
+  z-index: 99999;
 }
 .dropdown .select label{
   cursor: pointer;

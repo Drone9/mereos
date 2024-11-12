@@ -269,14 +269,28 @@ export const runSystemDiagnostics = async (tab1Content) => {
 };
 
 // Update the text based on language change
+// Update the text based on language change
 const updateDiagnosticText = () => {
 	const diagnosticItems = ['webcam', 'microphone', 'connection','notification', 'location', 'screen'];
+
+	// Update the labels for each diagnostic item
 	diagnosticItems.forEach(item => {
 		const labelElement = document.querySelector(`#${item}DiagnosticItem label`);
 		if (labelElement) {
 			labelElement.textContent = i18next.t(item);
 		}
 	});
+
+	// Update the heading and description text
+	const heading = document.querySelector('.heading');
+	if (heading) {
+		heading.textContent = i18next.t('system_diagnostic');
+	}
+
+	const description = document.querySelector('.description');
+	if (description) {
+		description.textContent = i18next.t('system_diagnostic_msg');
+	}
 };
 
 // Language change event listener

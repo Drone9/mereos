@@ -81,7 +81,7 @@ tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
 tabContentsWrapper.appendChild(mobileProctingConatiner);
 
 modalContent.appendChild(tabContentsWrapper);
-const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
+const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 
 const navigate = (newTabId) => {
 	showTab(newTabId);

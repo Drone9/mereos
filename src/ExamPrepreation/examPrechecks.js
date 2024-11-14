@@ -12,6 +12,7 @@ import { PrevalidationInstructions } from './PrevalidationInstructions';
 import { languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
 import dropDownIcon from '../assets/images/dropdown-btn.svg';
+import 'notyf/notyf.min.css';
 
 const modal = document.createElement('div');
 modal.className = 'modal';

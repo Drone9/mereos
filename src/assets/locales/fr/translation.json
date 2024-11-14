@@ -1011,5 +1011,7 @@
 	"no_person_detected_come_back_to_assessment":"Aucune personne n'est détectée. Veuillez revenir à l'évaluation.",
 	"multiple_people_detected":"Plusieurs personnes sont détectées.",
 	"unauthorized_object_detected_please_put_it_away":"Un objet non autorisé est détecté. S'il vous plaît, rangez-le.",
-	"ai_recorder_unknown_violation":"Il y a une violation inconnue enregistrée par AI."
+	"ai_recorder_unknown_violation":"Il y a une violation inconnue enregistrée par AI.",
+	"mobile_phone_disconneted":"Téléphone portable déconnecté",
+	"user_interrupted_the_stream":"L'utilisateur a interrompu le flux!"
 }

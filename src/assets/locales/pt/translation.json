@@ -1011,5 +1011,6 @@
 "no_person_detected_come_back_to_assessment":"Nenhuma pessoa foi detectada. Por favor, volte para a avaliação.",
 "multiple_people_detected":"Várias pessoas foram detectadas.",
 "unauthorized_object_detected_please_put_it_away":"Objeto não autorizado foi detectado. Por favor, guarde-o",
-"ai_recorder_unknown_violation":"Há uma violação desconhecida registrada pela IA"
+"ai_recorder_unknown_violation":"Há uma violação desconhecida registrada pela IA",
+"mobile_phone_disconneted":"Telemóvel desligado"
 }

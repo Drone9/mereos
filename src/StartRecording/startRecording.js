@@ -1,6 +1,6 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
-import { convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import socket from '../utils/socket';
@@ -69,6 +69,7 @@ export const startRecording = async () => {
 							mobileConnection: false,
 							screenSharing: false
 						});
+						showToast('error',i18next.t('mobile_phone_disconneted'));
 						window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
 					}
 					registerEvent({ eventType: 'error', notify: false, eventName:eventData?.message?.message , eventValue: getDateTime() });
@@ -179,10 +180,12 @@ export const startRecording = async () => {
 						mobileConnection: false,
 						screenSharing: false
 					});
+					showToast('error',i18next.t('mobile_phone_disconneted'));		
 				}else{
 					updatePersistData('preChecksSteps', { 
 						screenSharing: false,
 					});
+					showToast('error',i18next.t('internet_connection_not_working'));		
 				}
 				if(window.startRecordingCallBack){
 					window.startRecordingCallBack({ message: 'web_internet_connection_disconnected' });
@@ -324,19 +327,17 @@ const startAIWebcam = async (mediaStream) => {
 						let message = '';
 						console.log('key',key);
 						if(key === 'person_missing'){
-							message = i18next.t('no_person_detected_come_back_to_assessment');
+							message = 'no_person_detected_come_back_to_assessment';
 						}else if(key === 'object_detected'){
-							message = i18next.t('unauthorized_object_detected_please_put_it_away');
+							message = 'unauthorized_object_detected_please_put_it_away';
 						}else if(key === 'multiple_people'){
-							message = i18next.t('multiple_people_detected');
+							message = 'multiple_people_detected';
 						}else{
-							message = i18next.t('ai_recorder_unknown_violation');
+							message = 'ai_recorder_unknown_violation';
 						}
 						console.log('message',message);
-						showNotification({
-							title: 'Warning',
-							body: message,
-						});
+						showToast('error', i18next.t(message));
+						
 						aiEvents.push(newLog);
 					} else if (log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
@@ -460,10 +461,7 @@ export const stopAllRecordings = async () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 	
 
-		showNotification({
-			title: 'Recording Stopped',
-			body: 'Recording session has ended.',
-		});
+		showToast('success', 'Recording stopped successfully');
 
 		return 'stop_recording';
 	} catch (e) {
@@ -554,10 +552,12 @@ function VideoChat(room) {
 						mobileConnection: false,
 						screenSharing: false
 					});
+					showToast('error',i18next.t('mobile_phone_disconneted'));
 				} else {
 					updatePersistData('preChecksSteps', { 
 						screenSharing: false
-					});					
+					});	
+					showToast('error',i18next.t('internet_connection_not_working'));					
 				}
 				setTimeout(() => {
 					if(window.startRecordingCallBack){

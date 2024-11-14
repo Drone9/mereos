@@ -7,6 +7,7 @@ import i18next from 'i18next';
 import { createEvent } from '../services/event.service';
 import { closeModal } from '../ExamPrepreation/examPrechecks';
 import mereosLogo from '../assets/images/mereos.png';
+import { Notyf } from 'notyf';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -620,16 +621,9 @@ export const detectUnfocusOfTab = () => {
 		try {
 			visibilityChangeHandler = () => {
 				if (document.hidden) {
-					showNotification({
-						title: 'Warning',
-						body: i18next.t('moved_away_from_page'),
-					});
+					showToast('error', i18next.t('moved_away_from_page'));
 					registerEvent({ eventType: 'error', notify: false, eventName: 'moved_away_from_page' });
 				} else {
-					showNotification({
-						title: 'Welcome Back',
-						body: i18next.t('moved_back_to_page'),
-					});
 					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });
 				}
 			};
@@ -962,4 +956,29 @@ export const findIncidentLevel = (ai_events) => {
 	}
 	console.log('result',result);
 	return result;
+};
+
+export const showToast = (type, message) => {
+	const notyf = new Notyf();
+	const options = {
+		message: message,
+		duration: 3000, 
+		position: { x: 'right', y: 'top' },
+		ripple: true 
+	};
+
+	switch (type) {
+		case 'error':
+			notyf.error(options);
+			break;
+		case 'success':
+			notyf.success(options);
+			break;
+		case 'warning':
+			notyf.warning(options);
+			break;
+		default:
+			console.log('Invalid notification type');
+			break;
+	}
 };

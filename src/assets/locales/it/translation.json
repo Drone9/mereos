@@ -1010,5 +1010,6 @@
 "no_person_detected_come_back_to_assessment":"Nessuna persona rilevata. Torna alla valutazione.",
 "multiple_people_detected":"Sono state rilevate più persone.",
 "unauthorized_object_detected_please_put_it_away":"È stato rilevato un oggetto non autorizzato. Mettilo via",
-"ai_recorder_unknown_violation":"È stata registrata una violazione sconosciuta dall'IA"
+"ai_recorder_unknown_violation":"È stata registrata una violazione sconosciuta dall'IA",
+"mobile_phone_disconneted":"Telefono cellulare disconnesso"
 }

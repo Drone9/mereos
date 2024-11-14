@@ -1009,5 +1009,7 @@
 	"no_person_detected_come_back_to_assessment":"No person is detected. Please come back to assessment.",
 	"multiple_people_detected":"Multiple people are detected.",
 	"unauthorized_object_detected_please_put_it_away":"Unauthorized object is detected. Please put it away",
-	"ai_recorder_unknown_violation":"There is an unknown violation recorded by AI"
+	"ai_recorder_unknown_violation":"There is an unknown violation recorded by AI",
+	"mobile_phone_disconneted":"Mobile phone disconneted",
+	"user_interrupted_the_stream":"User interrupted the stream!"
 }

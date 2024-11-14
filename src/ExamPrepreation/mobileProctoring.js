@@ -3,11 +3,11 @@ import Peer from 'peerjs';
 import socket from '../utils/socket';
 import '../assets/css/mobile-proctoring.css';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
-import { t } from 'i18next';
+import i18next, { t } from 'i18next';
 import QRCode from 'qrcode';
 import MobileBanner from '../assets/images/mobile-connection-banner.png';
 import infoBlue from '../assets/images/info-blue.svg';
-import { getAuthenticationToken, getDateTime, registerEvent, updatePersistData } from '../utils/functions';
+import { getAuthenticationToken, getDateTime, registerEvent, showToast, updatePersistData } from '../utils/functions';
 import { showTab } from './examPrechecks';
 import cameraExample from '../assets/images/user-video-tutorial.jpeg';
 import { v4 } from 'uuid';
@@ -105,6 +105,7 @@ export const MobileProctoring = async (tabContent) => {
 					if (eventData?.message?.message === 'Violation') {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
+						showToast('error',i18next.t('mobile_phone_disconneted'));
 						if(window.mobileStream){
 							window.mobileStream.getTracks().forEach(track => track.stop());
 						}

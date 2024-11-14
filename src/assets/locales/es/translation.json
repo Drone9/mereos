@@ -1001,5 +1001,6 @@
 "no_person_detected_come_back_to_assessment": "No se ha detectado ninguna persona. Vuelva a la evaluación.",
 "multiple_people_detected": "Se han detectado varias personas.",
 "unauthorized_object_detected_please_put_it_away": "Se ha detectado un objeto no autorizado. Guárdelo",
-"ai_recorder_unknown_violation": "La IA ha registrado una infracción desconocida"
+"ai_recorder_unknown_violation": "La IA ha registrado una infracción desconocida",
+"mobile_phone_disconneted":"Teléfono móvil desconectado"
 }

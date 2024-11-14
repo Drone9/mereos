@@ -19,6 +19,7 @@ import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import socket from './src/utils/socket';
 import { v4 } from 'uuid';
+import 'notyf/notyf.min.css';
 
 async function init(host, profileId, assessmentData,schoolTheme) {
 	try{

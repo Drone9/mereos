@@ -1010,5 +1010,6 @@
 "no_person_detected_come_back_to_assessment":"Er is geen persoon gedetecteerd. Kom terug naar de beoordeling.",
 "multiple_people_detected":"Er zijn meerdere personen gedetecteerd.",
 "unauthorized_object_detected_please_put_it_away":"Er is een ongeautoriseerd object gedetecteerd. Leg het weg",
-"ai_recorder_unknown_violation":"Er is een onbekende overtreding geregistreerd door AI"
+"ai_recorder_unknown_violation":"Er is een onbekende overtreding geregistreerd door AI",
+"mobile_phone_disconneted":"Mobiele telefoon losgekoppeld"
 }

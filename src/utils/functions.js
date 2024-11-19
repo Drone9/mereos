@@ -433,7 +433,7 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 			identity_photo: session?.candidatePhoto,
 			school: candidateInviteAssessmentSection?.school?.id || '',
 			assessment: session?.assessment?.id || 1,
-			candidate: candidateInviteAssessmentSection?.id,
+			candidate: candidateInviteAssessmentSection?.candidate?.id,
 			user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			user_audio_name: recordings?.data?.filter(recording => session.user_audio_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],

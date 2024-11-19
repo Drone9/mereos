@@ -110,6 +110,13 @@ body {
   margin-left: 10px;
   cursor: pointer;
 }
+.live-chat-container{
+  position: fixed;
+  bottom: 87px;
+  right: 33px;
+  height: 500px;
+  z-index: 99999999;
+}
 
 .dropdown .select {
   display: flex;

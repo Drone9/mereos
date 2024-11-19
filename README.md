@@ -26,6 +26,10 @@ var mereos = require('mereos');
 ```js
 var {init} = require('mereos');
 
+var credentials = {
+    client_id: '3425XXXXXXXXXXXXXXXXX',
+	client_secret: 'HZXXXXXXXXXXXXXXXXXXXXXXXXXX'
+}
 var candidate_object = {
     type: 'candidate',
     name: `John Doe`,
@@ -36,19 +40,26 @@ var candidate_object = {
     ...
 }
 var profile_id = 33212214;
+
 var assessment_object = {
     name: 'Geology',
     external_id: '3235235235' 
     ...
 }
-var resp = init(candidate_object, profile_id, assessment_object);
+var theme_object ={
+    language: 'es',
+    theming: '#00000',
+    ...
+}
+
+var resp = init(credentials, candidate_object, profile_id, assessment_object, theme_object);
 ```
 
-2. `start_prechecks` function is used to start prechecks. All the prechecks are based on profile used in `init` function. This function takes a callback function which runs once the whole process of prechecks is executed.
+2. `start_prechecks` function is used to start prechecks. All the prechecks are based on profile used in `init` function. This function takes a callback function which runs once the whole process of prechecks is executed.The session_resume key is an optional parameter for the start_prechecks function. When provided, it ensures that prechecks resume from the step where they were last left off in case of a page reload or any interruption. If this key is not passed, the prechecks process will start from the beginning. This feature helps maintain the continuity of the precheck process, providing a seamless experience for the user.
 
 ```js
 var {start_prechecks} = require('mereos');
-var resp = start_prechecks(callback);
+var resp = start_prechecks(callback,'session_resume');
 ```
 
 3. `start_session` function is used to start the session of proctoring through library. This function takes a callback function which runs once the whole process is executed.

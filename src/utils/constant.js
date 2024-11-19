@@ -44,7 +44,8 @@ export const initialSessionData = {
 	mobileAudios:[],
 	mobileRoomSessionId:null,
 	twilioToken:null,
-	incident_level:null
+	incident_level:null,
+	converationId:null
 };
 
 export const preChecksSteps = {

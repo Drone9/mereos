@@ -5,12 +5,10 @@ import '../assets/css/mobile-proctoring.css';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 import i18next, { t } from 'i18next';
 import QRCode from 'qrcode';
-import MobileBanner from '../assets/images/mobile-connection-banner.png';
-import infoBlue from '../assets/images/info-blue.svg';
 import { getAuthenticationToken, getDateTime, registerEvent, showToast, updatePersistData } from '../utils/functions';
 import { showTab } from './examPrechecks';
-import cameraExample from '../assets/images/user-video-tutorial.jpeg';
 import { v4 } from 'uuid';
+import { ASSET_URL } from '../utils/constant';
 
 window.mobileStream = null;
 export const MobileProctoring = async (tabContent) => {
@@ -228,7 +226,7 @@ export const MobileProctoring = async (tabContent) => {
 
 			const bannerImage = document.createElement('img');
 			bannerImage.className = 'banner-image';
-			bannerImage.src = MobileBanner;
+			bannerImage.src = `${ASSET_URL}/mobile-connection-banner.png`;
 			mobileConnectionBanner.appendChild(bannerImage);
 
 			const bannerInfoBox = document.createElement('div');
@@ -236,7 +234,7 @@ export const MobileProctoring = async (tabContent) => {
 
 			const title = document.createElement('div');
 			title.className = 'title';
-			title.innerHTML = `<img src="${infoBlue}" /> <p>${t('during_your_assessment')}</p>`;
+			title.innerHTML = `<img src="${ASSET_URL}/info-blue.svg" /> <p>${t('during_your_assessment')}</p>`;
 
 			const desc = document.createElement('p');
 			desc.className = 'desc';
@@ -336,7 +334,7 @@ export const MobileProctoring = async (tabContent) => {
 
 			const bannerImage = document.createElement('img');
 			bannerImage.className = 'banner-image';
-			bannerImage.src = cameraExample;
+			bannerImage.src = `${ASSET_URL}/user-video-tutorial.jpeg`;
       
 			const remoteVideoRef = document.createElement('video');
 			remoteVideoRef.id = 'remote-mobile-video-container';

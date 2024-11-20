@@ -1,9 +1,9 @@
 import '../assets/css/step4.css';
-import redDot from '../assets/images/red-dot.svg';
 import { showTab } from './examPrechecks';
 import { getDateTime, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
+import { ASSET_URL } from '../utils/constant';
 
 window.userMediaStream = null;
 
@@ -165,7 +165,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				
 				const dot = document.createElement('img');
 				dot.className = 'ivsf-recording-dot';
-				dot.src = redDot; 
+				dot.src = `${ASSET_URL}/red-dot.svg`; 
 				dot.alt = 'red-dot';
 				const webcam = document.createElement('video');
 				webcam.autoplay = true;

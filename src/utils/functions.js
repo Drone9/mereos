@@ -1,12 +1,11 @@
 import axios from 'axios';
-import { BASE_URL, prevalidationSteps, systemDiagnosticSteps } from './constant';
+import { ASSET_URL, BASE_URL, prevalidationSteps, systemDiagnosticSteps } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
 import i18next from 'i18next';
 import { createEvent } from '../services/event.service';
 import { closeModal } from '../ExamPrepreation/examPrechecks';
-import mereosLogo from '../assets/images/mereos.png';
 import { Notyf } from 'notyf';
 
 export const dataURIToBlob = (dataURI) => {
@@ -134,7 +133,7 @@ export const getMultipleCameraDevices = () => {
 export const showNotification = ({ title, body }) => {
 	try{
 		const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
-		let icons  = schoolTheme?.schoolLogo || mereosLogo;
+		let icons  = schoolTheme?.schoolLogo || `${ASSET_URL}/mereos.png`;
 		const notification = new Notification(title, { body: body, icon: icons });
 		console.log(notification);
 	}catch(error) {

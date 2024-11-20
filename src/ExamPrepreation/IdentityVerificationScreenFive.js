@@ -1,10 +1,10 @@
 import { detectMultipleScreens, getDateTime, getSecureFeatures, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
-import mockImage from '../assets/images/screen-recorder-mock.svg';
 import '../assets/css/step5.css';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 import socket from '../utils/socket';
+import { ASSET_URL } from '../utils/constant';
 
 export let newStream;
 
@@ -132,7 +132,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const reshareButton = document.createElement('button');
 	const headerImg = document.createElement('img');
 	headerImg.classList.add('screen-share-dummy');
-	headerImg.src = mockImage;
+	headerImg.src = `${ASSET_URL}/screen-recorder-mock.svg`;
 	headerImg.alt = 'camera-icon';
 	wrapper.appendChild(headerImg);
 

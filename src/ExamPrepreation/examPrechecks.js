@@ -9,9 +9,8 @@ import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive
 import { ExamPreparation } from './examPreprationScreen';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, loadZendeskWidget, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
-import { languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import { ASSET_URL, languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
-import dropDownIcon from '../assets/images/dropdown-btn.svg';
 import 'notyf/notyf.min.css';
 // import Talk from 'talkjs';
 // import interact from 'interactjs';
@@ -250,7 +249,7 @@ const openModal = (callback) => {
 	selectContainer.appendChild(label);
 
 	const dropdownIcon = document.createElement('img');
-	dropdownIcon.src = dropDownIcon;
+	dropdownIcon.src = `${ASSET_URL}/dropdown-btn.svg`;
 	selectContainer.appendChild(dropdownIcon);
 
 	languageContainer.appendChild(selectContainer);

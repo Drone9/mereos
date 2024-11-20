@@ -1,10 +1,9 @@
 import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step2.css';
-import greenCheckMark from '../assets/images/checkmark-green.svg';
-import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
+import { ASSET_URL } from '../utils/constant';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let photo;
@@ -244,7 +243,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			headerImgContainer.appendChild(img);
 
 			const resultImg = document.createElement('img');
-			resultImg.src = `${greenCheckMark}`;
+			resultImg.src = `${ASSET_URL}/checkmark-green.svg`;
 			resultImg.className = 'ivst-header-img-result';
 			resultImg.alt = 'tick-mark-green-bg';
 			headerImgContainer.appendChild(resultImg);
@@ -260,7 +259,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				photo.srcObject = stream;
 			}
 			const gridImg = document.createElement('img');
-			gridImg.src = `${screenCenter}`;
+			gridImg.src = `${ASSET_URL}/screen-centered-grid.svg`;
 			gridImg.className = 'ivst-screen-grid';
 			gridImg.alt = 'screen-centered-grid';
 			headerImgContainer.appendChild(gridImg);

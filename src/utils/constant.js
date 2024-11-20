@@ -1,11 +1,4 @@
-import germanyFlag from '../assets/images/flag-of-germany.svg';
-import UKFlag from '../assets/images/flag-of-uk.svg';
-import spainFlag from '../assets/images/flag-of-spain.svg';
-import franceFlag from '../assets/images/flag-of-france.svg';
-import brazilFlag from '../assets/images/flag-of-brazil.svg';
-import italyFlag from '../assets/images/flag-of-italy.svg';
-
-export const ASSET_URL = '../assets/images';
+export const ASSET_URL = 'https://mereos-corder.s3.eu-west-3.amazonaws.com/library_icons';
 
 export const BASE_URL = process.env.NODE_ENV === 'production'
 	? 'https://corder-api.mereos.eu'
@@ -98,10 +91,10 @@ export const prevalidationSteps = [
 ];
 
 export const languages = [
-	{name: 'English', value: 'english', src: UKFlag, alt: '', keyword: 'en' },
-	{name: 'Spanish', value: 'spanish', src: spainFlag, alt: '', keyword: 'es' },
-	{name: 'German', value: 'german', src: germanyFlag, alt: '', keyword: 'de' },
-	{name: 'French', value: 'french', src: franceFlag, alt: '', keyword: 'fr' },
-	{name: 'Portuguese (Brazil)', value: 'portuguese_brazil', src: brazilFlag, alt: '', keyword: 'pt' },
-	{name: 'Italian', value: 'italian', src: italyFlag, alt: '', keyword: 'it' },
+	{name: 'English', value: 'english', src: `${ASSET_URL}/flag-of-uk.svg`, alt: '', keyword: 'en' },
+	{name: 'Spanish', value: 'spanish', src: `${ASSET_URL}/flag-of-spain.svg`, alt: '', keyword: 'es' },
+	{name: 'German', value: 'german', src: `${ASSET_URL}/flag-of-germany.svg`, alt: '', keyword: 'de' },
+	{name: 'French', value: 'french', src: `${ASSET_URL}/flag-of-france.svg`, alt: '', keyword: 'fr' },
+	{name: 'Portuguese (Brazil)', value: 'portuguese_brazil', src: `${ASSET_URL}/flag-of-brazil.svg`, alt: '', keyword: 'pt' },
+	{name: 'Italian', value: 'italian', src: `${ASSET_URL}/flag-of-italy.svg`, alt: '', keyword: 'it' },
 ];

@@ -58,6 +58,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		showPlayer = false;
 		loading=false;
 		recordingMode ='startRecording';
+		textMessage = 'scan_your_room';
 		updateUI();
 	};
 
@@ -140,7 +141,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		wrapper.className = 'ivsf-wrapper';
 
 		const headerTitle = document.createElement('div');
-		headerTitle.className = 'ivsf-header-title';
+		headerTitle.className = 'room-scan-header-title';
 		headerTitle.textContent = i18next.t('workspace_checking');
 
 		const message = document.createElement('div');

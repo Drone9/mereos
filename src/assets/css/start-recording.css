@@ -19,7 +19,71 @@ body{
   display: block;
 }
 .remote-video  .video-attached{
-  width: 200px;
-  height: 155px;
+  width: 280px;
+  height: 182px;
   object-fit: cover;
+}
+
+.user-videos-remote{
+  display: flex;
+      position: absolute;
+      bottom: 10px;
+      z-index: 9999;
+      column-gap: 10px;
+      flex-direction: column;
+      width: 300px;
+      background-color: #E7EBEF;
+      border-radius: 10px;
+      box-shadow: 1px 1px 5px 1px #f1f1f1;
+      justify-content: center;
+      align-items: center;
+      row-gap: 10px;
+}
+
+.user-videos-remote .user-video-header{
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 10px;
+}
+.user-videos-remote .user-video-header p{
+  font-size: 17px;
+}
+
+.recording-badge-container-header {
+    background-color: #E95E5E;
+    border-radius: 5px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    column-gap: 8px;
+    padding: 5px 10px;
+    text-transform: lowercase;
+    height: 26px;
+    width: 103px;
+    margin-right: 14px;
+}
+
+.user-videos-remote .btn-container{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  column-gap: 11px;
+  padding-bottom: 10px;
+}
+
+.user-videos-remote .btn-container .arrow-icon-btn{
+  border: 2px solid var(--primary-color);
+  padding: 6px;
+  width: 40px;
+  height: auto;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.user-videos-remote .btn-container .arrow-icon-btn .bottom-icon{
+  transform: rotate(180deg);
 }

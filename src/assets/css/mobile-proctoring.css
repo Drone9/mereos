@@ -16,7 +16,7 @@
 }
 
 .mobile-connection-banner {
-  margin: 35px auto 20px;
+  margin: 10px auto 20px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -36,7 +36,7 @@
   position: absolute;
   padding: 10px;
   border-radius: 10px;
-  right: -225px;
+  right: -198px;
   top: 12%;
 }
 
@@ -65,7 +65,11 @@
   justify-content: center;
   text-align: center;
   color: #8D979F;
+  width: 53%;
+  margin-left: auto;
   font-size: 14px;
+  text-align: center;
+  margin-right: auto;
 }
 
 .bottom-desc p {
@@ -249,4 +253,48 @@
   align-items: center;
   flex-direction: column;
   row-gap: 15px;  
+}
+.video-loader{
+  position: relative;
+}
+.spinner {
+  position: absolute;
+  left: 50%;
+  top: -115px;
+  transform: translate(-50%, -50%);
+  z-index: 214748364;
+  text-align: center;
+}
+
+.spinner > div {
+  width: 18px;
+  height: 18px;
+  background-color: white;
+  border-radius: 100%;
+  display: inline-block;
+  animation: sk-bouncedelay 1.4s infinite ease-in-out both;
+}
+
+.spinner .bounce1 {
+  animation-delay: -0.32s;
+  background-color: var(--theme-color);;
+}
+
+.spinner .bounce2 {
+  animation-delay: -0.16s;
+  background-color: var(--theme-color);;
+}
+
+.spinner .bounce3 {
+  animation-delay: -0.16s;
+  background-color: var(--theme-color);;
+}
+
+@keyframes sk-bouncedelay {
+  0%, 80%, 100% {
+      transform: scale(0);
+  }
+  40% {
+      transform: scale(1);
+  }
 }

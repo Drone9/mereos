@@ -16,6 +16,7 @@ export const MobileProctoring = async (tabContent) => {
 	let disabledNextBtn = false; 
 	let checkedVideo = false;
 	const remoteVideoRef = document.createElement('video');
+	remoteVideoRef.id = 'remote-mobile-video-container';
 	const currentUserVideoRef = document.createElement('video');
 	let peerInstance = null;
   
@@ -80,6 +81,7 @@ export const MobileProctoring = async (tabContent) => {
 								remoteVideo.setAttribute('autoplay', true);
 								remoteVideo.setAttribute('playsinline', true);
 								disabledNextBtn = false;
+								renderUI();
 							});
 	
 							call?.on('close', () => {
@@ -336,11 +338,21 @@ export const MobileProctoring = async (tabContent) => {
 			bannerImage.className = 'banner-image';
 			bannerImage.src = `${ASSET_URL}/user-video-tutorial.jpeg`;
       
-			const remoteVideoRef = document.createElement('video');
-			remoteVideoRef.id = 'remote-mobile-video-container';
+			
 			
 			const videoContainer = document.createElement('div');
 			videoContainer.appendChild(remoteVideoRef);
+
+			if (disabledNextBtn) {
+				const loader = document.createElement('div');
+				loader.className = 'video-loader';
+				loader.innerHTML = `<div class='spinner'>
+				<div class='bounce1' style={colorStyles}></div>
+				<div class='bounce2' style={colorStyles}></div>
+				<div class='bounce3' style={colorStyles}></div>
+			</div>`;
+				videoContainer.appendChild(loader);
+			}
 
 			bannerVideoContainer.appendChild(bannerImage);
 			bannerVideoContainer.appendChild(videoContainer);
@@ -407,4 +419,6 @@ export const MobileProctoring = async (tabContent) => {
 	};
 
 	initProctoring();
+
+	i18next.on('languageChanged', renderUI);
 };

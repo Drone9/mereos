@@ -1,9 +1,9 @@
 import { dataURIToBlob, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step1.css';
-import screenCenter from '../assets/images/screen-centered-grid.svg';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
+import { ASSET_URL } from '../utils/constant';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
@@ -230,7 +230,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			ivsoWebcamContainer.appendChild(videoElement);
 	
 			const gridImg = document.createElement('img');
-			gridImg.src = screenCenter;
+			gridImg.src = `${ASSET_URL}/screen-centered-grid.svg`;
 			gridImg.className = 'ivso-screen-grid';
 			ivsoHeaderImgContainer.appendChild(gridImg);
 		}

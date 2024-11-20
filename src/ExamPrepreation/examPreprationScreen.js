@@ -1,25 +1,18 @@
 import '../assets/css/exam-prepration.css';
-import readingBook from '../assets/images/oc-reading-book.png';
-import addressIcon from '../assets/images/oc-address.svg';
-import lightBulb from '../assets/images/oc-lightbulb.svg';
-import megaphone from '../assets/images/oc-megaphone.svg';
-import stackBook from '../assets/images/stacked-up-books.svg';
-import vector1 from '../assets/images/vector-1.png';
-import vector2 from '../assets/images/vector-2.png';
-import vector3 from '../assets/images/vector-3.png';
 import { showTab } from './examPrechecks';
 import { registerEvent, updatePersistData } from '../utils/functions';
 import i18next from 'i18next';
+import { ASSET_URL } from '../utils/constant';
 
 const vectors = [
-	{ name: 'img1', src: addressIcon, alt: '' },
-	{ name: 'img2', src: lightBulb, alt: '' },
-	{ name: 'img3', src: megaphone, alt: '' },
-	{ name: 'img4', src: stackBook, alt: '' },
-	{ name: 'img5', src: vector2, alt: '' },
-	{ name: 'img6', src: vector1, alt: '' },
-	{ name: 'img7', src: vector3, alt: '' },
-	{ name: 'img8', src: vector1, alt: '' }
+	{ name: 'img1', src: `${ASSET_URL}/oc-address.svg`, alt: '' },
+	{ name: 'img2', src: `${ASSET_URL}/oc-lightbulb.svg`, alt: '' },
+	{ name: 'img3', src: `${ASSET_URL}/oc-megaphone.svg`, alt: '' },
+	{ name: 'img4', src: `${ASSET_URL}/stacked-up-books.svg`, alt: '' },
+	{ name: 'img5', src: `${ASSET_URL}/vector-2.png`, alt: '' },
+	{ name: 'img6', src: `${ASSET_URL}/vector-1.png`, alt: '' },
+	{ name: 'img7', src: `${ASSET_URL}/vector-3.png`, alt: '' },
+	{ name: 'img8', src: `${ASSET_URL}/vector-1.png`, alt: '' }
 ];
 
 const getDateTime = () => new Date().toISOString();
@@ -51,7 +44,7 @@ export const ExamPreparation = async (tabContent,callback) => {
 
 	const headerImg = document.createElement('img');
 	headerImg.className = 'header-img';
-	headerImg.src = readingBook;
+	headerImg.src = `${ASSET_URL}/oc-reading-book.png`;
 	headerImg.alt = 'header-img';
 	examPreparationContainer.appendChild(headerImg);
 

@@ -10,28 +10,25 @@ import {
 	updatePersistData 
 } from '../utils/functions';
 import '../assets/css/systemDiagnostic.css';
-import loadingGray from '../assets/images/loading-gray.svg';
-import checkMarkIcon from '../assets/images/checkmark-rounded-green.png';
-import XCircle from '../assets/images/x-circle.png';
-import videoCameraGray from '../assets/images/video-camera-light-gray.svg';
-import videoGreen from '../assets/images/video-camera-green.svg';
-import videoRed from '../assets/images/video-camera-red.svg';
-import microPhoneRed from '../assets/images/microphone-red.svg';
-import microPhoneGreen from '../assets/images/microphone-green.svg';
-import networkGreen from '../assets/images/spinner-gap-green.svg';
-import networkRed from '../assets/images/spinner-maroon.svg';
-import locationGreen from '../assets/images/location-pin-green.svg';
-import locationRed from '../assets/images/location-pin-red.svg';
-import notificationGreen from '../assets/images/bell-ringing-green.svg';
-import notificationRed from '../assets/images/bell-ringing-maroon.svg';
-import multipleScreenRed from '../assets/images/multiple-screen-red.svg';
-import multipleScreenGreen from '../assets/images/multiple-screen-green.svg';
-import prompMessage from '../assets/images/user-permission-english.svg';
 import i18next from 'i18next';
 import { showTab } from './examPrechecks';
+import { ASSET_URL } from '../utils/constant';
 
 let cameraStream = null;
 let audioStream = null;
+
+const videoGreen = `${ASSET_URL}/video-camera-green.svg`;
+const microPhoneGreen = `${ASSET_URL}/microphone-green.svg`;
+const networkGreen = `${ASSET_URL}/spinner-gap-green.svg`;
+const locationGreen = `${ASSET_URL}/location-pin-green.svg`;
+const notificationGreen = `${ASSET_URL}/bell-ringing-green.svg`;
+const multipleScreenGreen = `${ASSET_URL}/multiple-screen-green.svg`;
+const videoRed = `${ASSET_URL}/video-camera-red.svg`;
+const microPhoneRed = `${ASSET_URL}/microphone-red.svg`;
+const networkRed = `${ASSET_URL}/spinner-maroon.svg`;
+const locationRed = `${ASSET_URL}/location-pin-red.svg`;
+const notificationRed = `${ASSET_URL}/bell-ringing-maroon.svg`;
+const multipleScreenRed = `${ASSET_URL}/multiple-screen-red.svg`;
 
 const createDiagnosticItem = (id, label) => {
 	const diagnosticItem = document.createElement('div');
@@ -43,7 +40,7 @@ const createDiagnosticItem = (id, label) => {
 
 	const statusIcon = document.createElement('img');
 	statusIcon.id = `${id}StatusIcon`;
-	statusIcon.src = videoCameraGray; // Default gray icon
+	statusIcon.src = `${ASSET_URL}/video-camera-light-gray.svg`;
 	statusIcon.alt = '';
 
 	const labelElement = document.createElement('label');
@@ -54,7 +51,7 @@ const createDiagnosticItem = (id, label) => {
 
 	const loadingIcon = document.createElement('img');
 	loadingIcon.id = `${id}StatusLoading`;
-	loadingIcon.src = loadingGray;
+	loadingIcon.src = `${ASSET_URL}/loading-gray.svg`;
 	loadingIcon.alt = '';
 
 	greyBoxRight.appendChild(statusIcon);
@@ -93,7 +90,7 @@ const renderUI = (tab1Content) => {
 	containerPrompt.classList.add('container-prompt');
 
 	const promptImage = document.createElement('img');
-	promptImage.src = prompMessage;
+	promptImage.src = `${ASSET_URL}/user-permission-english.svg`;
 	promptImage.alt = '';
 	promptImage.width = 350;
 	promptImage.classList.add('prompt-image');
@@ -139,12 +136,21 @@ export const runSystemDiagnostics = async (tab1Content) => {
 	renderUI(tab1Content);
 
 	const setElementStatus = (id, status, isSuccess) => {
-		document.getElementById(`${id}StatusIcon`).src = isSuccess ? status.success : status.failure;
-		document.getElementById(`${id}StatusLoading`).src = isSuccess ? checkMarkIcon : XCircle;
+		const statusIcon = document.getElementById(`${id}StatusIcon`);
+		const statusLoading = document.getElementById(`${id}StatusLoading`);
+		if (!statusIcon || !statusLoading) {
+			return;
+		}
+		statusIcon.src = isSuccess ? status.success : status.failure;
+		statusLoading.src = isSuccess ? `${ASSET_URL}/checkmark-rounded-green.png` : `${ASSET_URL}/x-circle.png`;
 	};
 
 	const handleDiagnosticItemClick = (id, checkFunction) => {
-		document.getElementById(`${id}DiagnosticItem`).addEventListener('click', async () => {
+		const element = document.getElementById(`${id}DiagnosticItem`);
+		if (!element) {
+			return;
+		}
+		element.addEventListener('click', async () => {
 			const result = await checkFunction();
 			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
 		});
@@ -251,13 +257,17 @@ export const runSystemDiagnostics = async (tab1Content) => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 
-		const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {
-			const currentIconSrc = document.getElementById(`${item}StatusIcon`).src;
+		const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
+			const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
+			if (!currentIconSrc) {
+					return false;
+			}
 	
 			const currentIconPathname = new URL(currentIconSrc).pathname;
+			const expectedIconPathname = new URL(successIconMap[item]).pathname;
 	
-			return currentIconPathname === successIconMap[item];
-		});
+			return currentIconPathname === expectedIconPathname;
+	});
 	
 		document.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 	} catch (error) {
@@ -268,18 +278,27 @@ export const runSystemDiagnostics = async (tab1Content) => {
 	}
 };
 
-// Update the text based on language change
 const updateDiagnosticText = () => {
 	const diagnosticItems = ['webcam', 'microphone', 'connection','notification', 'location', 'screen'];
+
 	diagnosticItems.forEach(item => {
 		const labelElement = document.querySelector(`#${item}DiagnosticItem label`);
 		if (labelElement) {
 			labelElement.textContent = i18next.t(item);
 		}
 	});
+
+	const heading = document.querySelector('.heading');
+	if (heading) {
+		heading.textContent = i18next.t('system_diagnostic');
+	}
+
+	const description = document.querySelector('.description');
+	if (description) {
+		description.textContent = i18next.t('system_diagnostic_msg');
+	}
 };
 
-// Language change event listener
 i18next.on('languageChanged', () => {
 	updateDiagnosticText();
 });

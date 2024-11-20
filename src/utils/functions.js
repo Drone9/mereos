@@ -3,10 +3,10 @@ import { ASSET_URL, BASE_URL, prevalidationSteps, systemDiagnosticSteps } from '
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
-// import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import i18next from 'i18next';
 import { createEvent } from '../services/event.service';
 import { closeModal } from '../ExamPrepreation/examPrechecks';
+import { Notyf } from 'notyf';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -75,7 +75,6 @@ export const checkNotification = () => {
 			showNotification({
 				title: 'New notification message from mereos!',
 				body: 'Hey mate, Ready for the test ? It will be starting soon.',
-				icon: `${ASSET_URL}/mereos.png`
 			});
 			resolve(true);
 		} else if (Notification.permission === 'denied' || Notification.permission === 'default') {
@@ -85,7 +84,6 @@ export const checkNotification = () => {
 						showNotification({
 							title: 'New notification message from mereos!',
 							body: 'Hey mate, Ready for the test ? It will be starting soon.',
-							icon: `${ASSET_URL}/mereos.png`
 						});
 						resolve(true);
 					} else {
@@ -132,9 +130,15 @@ export const getMultipleCameraDevices = () => {
 	});
 };
 
-export const showNotification = ({title = 'New Message', body = 'How you doing?', icon = `${ASSET_URL}/mereos.png`}) => {
-	const notification = new Notification(title, { body: body, icon: icon, });
-	console.log(notification);
+export const showNotification = ({ title, body }) => {
+	try{
+		const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
+		let icons  = schoolTheme?.schoolLogo || `${ASSET_URL}/mereos.png`;
+		const notification = new Notification(title, { body: body, icon: icons });
+		console.log(notification);
+	}catch(error) {
+		console.error('Error in notification',error);
+	}
 };
 
 export const detectMultipleScreens = async () => {
@@ -412,10 +416,10 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 	return new Promise(async (resolve, _reject) => {
 		console.log('session',session,'candidateInviteAssessmentSection',candidateInviteAssessmentSection);
 		let recordings;
-		if(session?.user_video_name?.length || session?.audio_recordings?.length || session?.screen_sharing_video_name?.length || session?.mobileRecordings?.length || session?.mobileAudios?.length){
-			const sourceIds = [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
+		if(session?.user_video_name?.length || session?.user_audio_name?.length || session?.screen_sharing_video_name?.length || session?.mobileRecordings?.length || session?.mobileAudios?.length){
+			const sourceIds = [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
 			recordings = sourceIds?.length
-				? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.audio_recordings, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
+				? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
 				: [];
 		}
 		
@@ -428,9 +432,9 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 			identity_photo: session?.candidatePhoto,
 			school: candidateInviteAssessmentSection?.school?.id || '',
 			assessment: session?.assessment?.id || 1,
-			candidate: candidateInviteAssessmentSection?.id,
+			candidate: candidateInviteAssessmentSection?.candidate?.id,
 			user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			audio_recordings: recordings?.data?.filter(recording => session.audio_recordings.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+			user_audio_name: recordings?.data?.filter(recording => session.user_audio_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			roomscan_recordings: session?.roomScanRecordings,
 			session_id: session?.sessionId,
@@ -442,6 +446,7 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 			video_extension: null,
 			archive_id:null,
 			attempt_id:null,
+			incident_level: session?.incident_level,
 			mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 		};
@@ -466,9 +471,10 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 	return `${year}${_dateBreaker_}${date}${_dateBreaker_}${month}${_differentiator_}${hours}${_timeBreaker_}${minutes}${_timeBreaker_}${seconds}`;
 };
 
-export const registerAIEvent = async ({ notify, eventType, eventName, eventValue, startTime,endTime }) => {
+export const registerAIEvent = async ({ eventType, eventName, startTime,endTime }) => {
 	try{
 		const session = convertDataIntoParse('session');
+		console.log('eventType',eventType);
 
 		const event = {
 			name: eventName,
@@ -480,7 +486,6 @@ export const registerAIEvent = async ({ notify, eventType, eventName, eventValue
 		};
 				
 		await createAiEvent(event);
-		notify && showNotification({eventType, eventName, eventValue});
 	}catch(e){
 		console.log('error',e);
 	}
@@ -597,9 +602,6 @@ export const restoreRightClick = () => {
 
 export const preventPreClosure = () => {
 	return new Promise((resolve, _reject) => {
-		// window.onbeforeunload = (_error) => {
-		// 	return 'Really want to quit the exam, may lead to failure?';
-		// };
 		resolve(true);
 	});
 };
@@ -611,31 +613,20 @@ export const detectDualDisplay = () => {
 };
 
 
-let visibilityChangeHandler; // Declare a variable to store the handler
+let visibilityChangeHandler;
 
 export const detectUnfocusOfTab = () => {
 	return new Promise(async (resolve, _reject) => {
 		try {
-			// Define the visibility change handler
 			visibilityChangeHandler = () => {
 				if (document.hidden) {
-					showNotification({
-						title: 'Warning',
-						body: i18next.t('moved_away_from_page'),
-						icon: `${ASSET_URL}/mereos.png`
-					});
+					showToast('error', i18next.t('moved_away_from_page'));
 					registerEvent({ eventType: 'error', notify: false, eventName: 'moved_away_from_page' });
 				} else {
-					showNotification({
-						title: 'Welcome Back',
-						body: i18next.t('moved_back_to_page'),
-						icon: `${ASSET_URL}/mereos.png`
-					});
 					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });
 				}
 			};
 
-			// Add the visibility change listener
 			document.addEventListener('visibilitychange', visibilityChangeHandler);
 
 			resolve(true);
@@ -920,7 +911,7 @@ export const handlePreChecksRedirection = () => {
 		const secureFeatures = getSecureFeature?.entities || [];
 		const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
-		if (!preChecksSteps?.examPreparation && hasFeature('exam_perparation')) {
+		if (!preChecksSteps?.examPreparation && hasFeature('record_video')) {
 			return 'ExamPreparation';
 		} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
 			return 'runSystemDiagnostics';
@@ -944,5 +935,49 @@ export const handlePreChecksRedirection = () => {
 		}
 	}else{
 		return 'ExamPreparation';
+	}
+};
+
+export const findIncidentLevel = (ai_events) => {
+	let result = 'low';
+	console.log('ai_events findIncidentLevel',ai_events);
+
+	for (const item of ai_events || []) {
+		const { endTime, startTime } = item;
+		const difference = endTime - startTime;
+		console.log('difference',difference);
+
+		if (difference > 10) {
+			return 'high';
+		} else if (difference > 5) {
+			result = 'medium';
+		}
+	}
+	console.log('result',result);
+	return result;
+};
+
+export const showToast = (type, message) => {
+	const notyf = new Notyf();
+	const options = {
+		message: message,
+		duration: 3000, 
+		position: { x: 'right', y: 'top' },
+		ripple: true 
+	};
+
+	switch (type) {
+		case 'error':
+			notyf.error(options);
+			break;
+		case 'success':
+			notyf.success(options);
+			break;
+		case 'warning':
+			notyf.warning(options);
+			break;
+		default:
+			console.log('Invalid notification type');
+			break;
 	}
 };

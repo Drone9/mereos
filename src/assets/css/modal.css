@@ -108,6 +108,14 @@ body {
   display: inline-flex;
   align-items: center;
   margin-left: 10px;
+  cursor: pointer;
+}
+.live-chat-container{
+  position: fixed;
+  bottom: 87px;
+  right: 33px;
+  height: 500px;
+  z-index: 99999999;
 }
 
 .dropdown .select {
@@ -118,6 +126,7 @@ body {
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
+  z-index: 99999;
 }
 .dropdown .select label{
   cursor: pointer;

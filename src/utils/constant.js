@@ -1,11 +1,4 @@
-import germanyFlag from '../assets/images/flag-of-germany.svg';
-import UKFlag from '../assets/images/flag-of-uk.svg';
-import spainFlag from '../assets/images/flag-of-spain.svg';
-import franceFlag from '../assets/images/flag-of-france.svg';
-import brazilFlag from '../assets/images/flag-of-brazil.svg';
-import italyFlag from '../assets/images/flag-of-italy.svg';
-
-export const ASSET_URL = '../assets/images';
+export const ASSET_URL = 'https://mereos-corder.s3.eu-west-3.amazonaws.com/library_icons';
 
 export const BASE_URL = 'https://corder-api.mereos.eu';
 
@@ -17,6 +10,7 @@ export const CONTENT_TYPE = Object.freeze({
 });
 
 export const initialSessionData = {
+	aiEvents:[],
 	start_time: null,
 	submission_time: null,
 	duration_taken: 0,
@@ -26,7 +20,7 @@ export const initialSessionData = {
 	assessment: null,
 	candidate: null,
 	user_video_name:  [],
-	audio_recordings: [],
+	user_audio_name: [],
 	screen_sharing_video_name: [],
 	roomscan_recordings: [],
 	session_id: null,
@@ -41,6 +35,8 @@ export const initialSessionData = {
 	mobileAudios:[],
 	mobileRoomSessionId:null,
 	twilioToken:null,
+	incident_level:null,
+	converationId:null
 };
 
 export const preChecksSteps = {
@@ -93,10 +89,10 @@ export const prevalidationSteps = [
 ];
 
 export const languages = [
-	{name: 'English', value: 'english', src: UKFlag, alt: '', keyword: 'en' },
-	{name: 'Spanish', value: 'spanish', src: spainFlag, alt: '', keyword: 'es' },
-	{name: 'German', value: 'german', src: germanyFlag, alt: '', keyword: 'de' },
-	{name: 'French', value: 'french', src: franceFlag, alt: '', keyword: 'fr' },
-	{name: 'Portuguese (Brazil)', value: 'portuguese_brazil', src: brazilFlag, alt: '', keyword: 'pt' },
-	{name: 'Italian', value: 'italian', src: italyFlag, alt: '', keyword: 'it' },
+	{name: 'English', value: 'english', src: `${ASSET_URL}/flag-of-uk.svg`, alt: '', keyword: 'en' },
+	{name: 'Spanish', value: 'spanish', src: `${ASSET_URL}/flag-of-spain.svg`, alt: '', keyword: 'es' },
+	{name: 'German', value: 'german', src: `${ASSET_URL}/flag-of-germany.svg`, alt: '', keyword: 'de' },
+	{name: 'French', value: 'french', src: `${ASSET_URL}/flag-of-france.svg`, alt: '', keyword: 'fr' },
+	{name: 'Portuguese (Brazil)', value: 'portuguese_brazil', src: `${ASSET_URL}/flag-of-brazil.svg`, alt: '', keyword: 'pt' },
+	{name: 'Italian', value: 'italian', src: `${ASSET_URL}/flag-of-italy.svg`, alt: '', keyword: 'it' },
 ];

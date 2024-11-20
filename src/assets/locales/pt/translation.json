@@ -981,7 +981,7 @@
 "webcam_diagnostics": "Diagnóstico da webcam",
 "your_face_must_visible_on_screen": "Seu rosto deve estar totalmente visível na tela.",
 "synchronisation_mobile":"Sincronização móvel",
-"setting_up_your_phone_camera":"Configurando a câmera do seu telefone",
+"setting_up_your_phone_camera":"Configure seu telefone",
 "during_your_assessment":"Durante sua avaliação",
 "notifications_on_your_phone_should_be_turned_off":"As notificações no seu telefone devem ser desativadas. Eles podem interferir na gravação do fluxo de vídeo.",
 "do_not_lock_your_phone":"Não bloqueie seu telefone, você perderá sua conexão se sua tela bloquear.",
@@ -1007,5 +1007,10 @@
 "detected_for_more_than_10_seconds": "Detectado por mais de 10 segundos!",
 "select_preferred_camera_and_microphone":"Selecione a câmera e o microfone preferidos.",
 "user_interrupted_the_stream":"O usuário interrompeu a transmissão!", 
-"mobile_phone disconnected":"Celular desconectado"
+"mobile_phone disconnected":"Celular desconectado",
+"no_person_detected_come_back_to_assessment":"Nenhuma pessoa foi detectada. Por favor, volte para a avaliação.",
+"multiple_people_detected":"Várias pessoas foram detectadas.",
+"unauthorized_object_detected_please_put_it_away":"Objeto não autorizado foi detectado. Por favor, guarde-o",
+"ai_recorder_unknown_violation":"Há uma violação desconhecida registrada pela IA",
+"mobile_phone_disconneted":"Telemóvel desligado"
 }

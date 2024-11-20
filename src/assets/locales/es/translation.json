@@ -4,7 +4,7 @@
 "1366_x_768": "1366 x 768",
 "1920_x_1080_and_above": "1920 x 1080 y superior",
 "1_mbps": "1 Mbps",
-"360_video": "Vídeo de 360°",
+"360_video": "Vídeo 360",
 "3_mbps": "3 Mbps",
 "640x480_resolution": "Resolución de 640x480",
 "Unpublished": "Sin publicar",
@@ -970,8 +970,8 @@
 "invalid_phone_number": "Número de teléfono no válido",
 "webcam_diagnostics": "Diagnóstico de la cámara web",
 "your_face_must_visible_on_screen": "Tu cara debe ser completamente visible en la pantalla.",
-"synchronisation_mobile": "Sincronización móvil",
-"setting_up_your_phone_camera": "Configuración de la cámara de tu teléfono",
+"synchronisation_mobile": "Flujo móvil",
+"setting_up_your_phone_camera": "Configura tu teléfono",
 "during_your_assessment": "Durante tu evaluación",
 "notifications_on_your_phone_should_be_turned_off": "Las notificaciones de tu teléfono deben estar desactivadas. Pueden interferir con la grabación de la transmisión de video.",
 "do_not_lock_your_phone": "No bloquees tu teléfono, perderás tu conexión si tu pantalla se bloquea.",
@@ -997,5 +997,10 @@
 "detected_for_more_than_10_seconds": "¡Se detectó durante más de 10 segundos!",
 "select_preferred_camera_and_microphone": "Seleccione la cámara y el micrófono preferidos.",
 "user_interrupted_the_stream": "El usuario interrumpió la transmisión", 
-"mobile_phone connected": "Teléfono móvil desconectado"
+"mobile_phone connected": "Teléfono móvil desconectado",
+"no_person_detected_come_back_to_assessment": "No se ha detectado ninguna persona. Vuelva a la evaluación.",
+"multiple_people_detected": "Se han detectado varias personas.",
+"unauthorized_object_detected_please_put_it_away": "Se ha detectado un objeto no autorizado. Guárdelo",
+"ai_recorder_unknown_violation": "La IA ha registrado una infracción desconocida",
+"mobile_phone_disconneted":"Teléfono móvil desconectado"
 }

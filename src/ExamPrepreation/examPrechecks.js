@@ -9,9 +9,13 @@ import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive
 import { ExamPreparation } from './examPreprationScreen';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, loadZendeskWidget, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
-import { languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import { ASSET_URL, languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
-import dropDownIcon from '../assets/images/dropdown-btn.svg';
+import 'notyf/notyf.min.css';
+// import Talk from 'talkjs';
+// import interact from 'interactjs';
+// import mereosLogo from '../assets/images/mereos.svg';
+// import schoolLogo from '../assets/images/profile-draft-circled-orange.svg';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -80,8 +84,127 @@ tabContentsWrapper.appendChild(IdentityVerificationScreenFiveContainer);
 tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
 tabContentsWrapper.appendChild(mobileProctingConatiner);
 
+// const initializeLiveChat = () => {
+// 	const isLoggedIn = !!localStorage.getItem('mereosToken');
+// 	const getSecureFeature = getSecureFeatures();
+// 	const secureFeatures = getSecureFeature?.entities || [];
+// 	const hasChatBot = secureFeatures?.some(entity => entity.key === 'live_chat_bot');
+
+// 	if (!isLoggedIn || !hasChatBot) return;
+
+// 	const chatIcon = document.createElement('img');
+// 	chatIcon.className = 'chat-icon';
+// 	chatIcon.id = 'chat-icon';
+// 	chatIcon.style.position = 'fixed';
+// 	chatIcon.style.bottom = '20px';
+// 	chatIcon.style.right = '20px';
+// 	chatIcon.style.zIndex = '99999999';
+// 	chatIcon.style.cursor = 'pointer';
+// 	chatIcon.src = mereosLogo;
+// 	chatIcon.alt = 'Chat Icon';
+// 	chatIcon.style.width = '50px';
+// 	chatIcon.style.height = '50px';
+
+// 	chatIcon.addEventListener('click', toggleChat);
+
+// 	document.body.appendChild(chatIcon);
+
+// 	function toggleChat() {
+// 		const container = document.getElementById('talkjs-container');
+
+// 		if (container) {
+// 			if (container.style.display === 'none') {
+// 				container.style.display = 'block';
+// 			} else {
+// 				container.style.display = 'none';
+// 			}
+// 		} else {
+// 			const chatContainer = document.createElement('div');
+// 			chatContainer.id = 'talkjs-container';
+// 			chatContainer.className = 'live-chat-container';
+// 			chatContainer.style.width = '400px';
+// 			chatContainer.style.height = '500px';
+// 			chatContainer.style.position = 'fixed';
+// 			chatContainer.style.bottom = '100px';
+// 			chatContainer.style.right = '20px';
+// 			chatContainer.style.zIndex = '9999';
+// 			chatContainer.style.backgroundColor = 'white';
+// 			chatContainer.style.border = '1px solid #ccc';
+// 			chatContainer.style.borderRadius = '8px';
+// 			chatContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+
+// 			const loadingText = document.createElement('i');
+// 			chatContainer.appendChild(loadingText);
+
+// 			Talk.ready.then(() => {
+// 				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+
+// 				const me = new Talk.User({
+// 					id: candidateInviteAssessmentSection?.id,
+// 					name: candidateInviteAssessmentSection?.name,
+// 					email: candidateInviteAssessmentSection?.email,
+// 					photoUrl: candidateInviteAssessmentSection?.photo || schoolLogo,
+// 				});
+
+// 				const session = new Talk.Session({
+// 					appId: 'tl1lE0Vo',
+// 					me: me,
+// 				});
+
+// 				const other = new Talk.User({
+// 					id: candidateInviteAssessmentSection?.school?.id,
+// 					name: candidateInviteAssessmentSection?.school?.name,
+// 					email: candidateInviteAssessmentSection?.school?.email,
+// 					photoUrl: schoolLogo,
+// 				});
+
+// 				const conversationId = localStorage.getItem('conversationId');
+// 				const conversation = session.getOrCreateConversation(conversationId);
+// 				conversation.setParticipant(me);
+// 				conversation.setParticipant(other);
+
+// 				const chatbox = session.createChatbox();
+// 				chatbox.select(conversation);
+// 				chatbox.mount(chatContainer);
+// 			});
+
+// 			document.body.appendChild(chatContainer);
+
+// 			makeDraggable(chatContainer);
+// 		}
+// 	}
+
+// 	function makeDraggable(element) {
+// 		interact(element).draggable({
+// 			inertia: true,
+// 			listeners: {
+// 				start(event) {
+// 					console.log('Drag started', event);
+// 				},
+// 				move(event) {
+// 					const { target } = event;
+
+// 					// Calculate new position
+// 					const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+// 					const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+// 					// Apply translation
+// 					target.style.transform = `translate(${x}px, ${y}px)`;
+
+// 					// Save new position
+// 					target.setAttribute('data-x', x);
+// 					target.setAttribute('data-y', y);
+// 				},
+// 				end(event) {
+// 					console.log('Drag ended', event);
+// 				},
+// 			},
+// 		});
+// 	}
+// };
+
 modalContent.appendChild(tabContentsWrapper);
-const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
+const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
@@ -126,7 +249,7 @@ const openModal = (callback) => {
 	selectContainer.appendChild(label);
 
 	const dropdownIcon = document.createElement('img');
-	dropdownIcon.src = dropDownIcon;
+	dropdownIcon.src = `${ASSET_URL}/dropdown-btn.svg`;
 	selectContainer.appendChild(dropdownIcon);
 
 	languageContainer.appendChild(selectContainer);
@@ -180,7 +303,6 @@ const openModal = (callback) => {
 		languageDropdown.classList.remove('active');
 		updatePersistData('schoolTheme', { language: selectedLang.keyword });
 	}
-	
 };
 
 export const setLanguage = (lang) => {
@@ -208,6 +330,7 @@ function closeModal() {
 const showTab = async (tabId, callback) => {
 	try {
 		loadZendeskWidget();
+		// initializeLiveChat();
 
 		updateThemeColor();
 		const tabs = document.querySelectorAll('.tab');
@@ -231,7 +354,7 @@ const showTab = async (tabId, callback) => {
 		const secureFeatures = getSecureFeature?.entities || [];
 
 		if (tabId === 'ExamPreparation') {
-			if (!secureFeatures?.find(entity => entity.key === 'exam_perparation')) {
+			if (!secureFeatures?.find(entity => entity.key === 'record_video')) {
 				navigate('runSystemDiagnostics');
 				return;
 			}
@@ -366,5 +489,6 @@ window.addEventListener('unload', cleanupZendeskWidget);
 
 const checkInterval = 2000;
 setInterval(checkToken, checkInterval);
+
 
 export { openModal, closeModal, modalContent, showTab };

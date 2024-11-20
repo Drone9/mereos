@@ -1023,5 +1023,10 @@
 "detected_for_more_than_10_seconds": "Länger als 10 Sekunden erkannt! ",
 "select_preferred_camera_and_microphone":"Wählen Sie die bevorzugte Kamera und das Mikrofon aus.",
 "user_interrupted_the_stream":"Benutzer hat den Stream unterbrochen!",
-"mobile_phone disconnected":"Mobiltelefonverbindung getrennt"
+"mobile_phone disconnected":"Mobiltelefonverbindung getrennt",
+"no_person_detected_come_back_to_assessment":"Es wurde keine Person erkannt. Bitte kommen Sie zur Beurteilung zurück.",
+"multiple_people_detected":"Es wurden mehrere Personen erkannt.",
+"unauthorized_object_detected_please_put_it_away":"Es wurde ein nicht autorisierter Gegenstand erkannt. Bitte legen Sie ihn weg",
+"ai_recorder_unknown_violation":"Die KI hat einen unbekannten Verstoß aufgezeichnet",
+"mobile_phone_disconneted":"Mobiltelefon getrennt"
 }

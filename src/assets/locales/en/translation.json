@@ -1005,5 +1005,11 @@
 	"new_notification_from_mereos": "New notification from mereos",
 	"hey_mate_ready_for_test_it_starting_soon": "Hey mate, Ready for the test? It will be starting soon.",
 	"detected_for_more_than_10_seconds": "Detected for more than 10 seconds! ",
-	"select_preferred_camera_and_microphone":"Select the preferred camera and microphone."
+	"select_preferred_camera_and_microphone":"Select the preferred camera and microphone.",
+	"no_person_detected_come_back_to_assessment":"No person is detected. Please come back to assessment.",
+	"multiple_people_detected":"Multiple people are detected.",
+	"unauthorized_object_detected_please_put_it_away":"Unauthorized object is detected. Please put it away",
+	"ai_recorder_unknown_violation":"There is an unknown violation recorded by AI",
+	"mobile_phone_disconneted":"Mobile phone disconneted",
+	"user_interrupted_the_stream":"User interrupted the stream!"
 }

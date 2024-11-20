@@ -1,14 +1,14 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
-import { convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showNotification, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import socket from '../utils/socket';
 import { getCreateRoom } from '../services/twilio.services';
-import { LockDownOptions } from '../utils/constant';
+import { ASSET_URL, LockDownOptions } from '../utils/constant';
 import '../assets/css/start-recording.css';
-import i18next from 'i18next';
 import interact from 'interactjs';
+import i18next from 'i18next';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
@@ -52,6 +52,11 @@ export const startRecording = async () => {
 							VideoChat(twilioRoom);
 						}
 					}).catch((error)=>{
+						updatePersistData('preChecksSteps', { 
+							mobileConnection: false,
+							screenSharing: false
+						});
+						window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
 						console.log('error', error);
 					});
 
@@ -64,6 +69,7 @@ export const startRecording = async () => {
 							mobileConnection: false,
 							screenSharing: false
 						});
+						showToast('error',i18next.t('mobile_phone_disconneted'));
 						window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
 					}
 					registerEvent({ eventType: 'error', notify: false, eventName:eventData?.message?.message , eventValue: getDateTime() });
@@ -174,10 +180,12 @@ export const startRecording = async () => {
 						mobileConnection: false,
 						screenSharing: false
 					});
+					showToast('error',i18next.t('mobile_phone_disconneted'));		
 				}else{
 					updatePersistData('preChecksSteps', { 
 						screenSharing: false,
 					});
+					showToast('error',i18next.t('internet_connection_not_working'));		
 				}
 				if(window.startRecordingCallBack){
 					window.startRecordingCallBack({ message: 'web_internet_connection_disconnected' });
@@ -198,20 +206,46 @@ const setupWebcam = async (mediaStream) => {
 	if (!webcamContainer) {
 		webcamContainer = document.createElement('div');
 		webcamContainer.id = 'webcam-container';
-		webcamContainer.style.display = 'flex';
-		webcamContainer.style.zIndex = '999';
-		webcamContainer.style.position = 'absolute';
-		webcamContainer.style.rowGap = '10px';
-		webcamContainer.style.flexDirection = 'column';
-		webcamContainer.style.justifyContent = 'start';
-		webcamContainer.style.marginLeft = '10px';
+		// webcamContainer.style.display = 'flex';
+		// webcamContainer.style.zIndex = '999';
+		// webcamContainer.style.position = 'absolute';
+		webcamContainer.className='user-videos-remote';
+		// webcamContainer.style.rowGap = '10px';
+		// webcamContainer.style.flexDirection = 'column';
+		// webcamContainer.style.justifyContent = 'start';
+		// webcamContainer.style.marginLeft = '10px';
 		document.body.appendChild(webcamContainer);
 	}
 
+	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+	
+	const videoHeaderContainer = document.createElement('div');
+	videoHeaderContainer.className = 'user-video-header';
+
+	const videoHeading = document.createElement('p');
+	videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
+	const recordingIcon = document.createElement('div');
+	recordingIcon.className = 'recording-badge-container-header';
+	recordingIcon.innerHTML = `
+		<img
+				class='ivsf-recording-dot'
+				src="${ASSET_URL}/white-dot.svg"
+				alt='white-dot'
+		></img>
+		<p>${i18next.t('recording')}</p>
+	`;
+
+	videoHeaderContainer.appendChild(videoHeading);
+	videoHeaderContainer.appendChild(recordingIcon);
+
+	const remoteVideoRef = document.createElement('div');
+	remoteVideoRef.classList.add('remote-video');
+
 	const mediaWrapper = document.createElement('div');
 	mediaWrapper.style.position = 'relative';
-	mediaWrapper.style.width = '200px'; 
-	mediaWrapper.style.height = '150px'; 
+	mediaWrapper.style.width = '280px'; 
+	mediaWrapper.style.height = '200px'; 
+	mediaWrapper.style.objectFit = 'cover'; 
 
 	const videoElement = document.createElement('video');
 	videoElement.autoplay = true;
@@ -219,16 +253,18 @@ const setupWebcam = async (mediaStream) => {
 	videoElement.srcObject = mediaStream;
 	videoElement.style.position = 'absolute';
 	videoElement.style.width = '100%';
-	videoElement.style.height = 'auto'; 
+	videoElement.style.objectFit = 'cover';
+	videoElement.style.height = '100%'; 
 
 	const canvas = document.createElement('canvas');
 	canvas.id = 'canvas';
 	canvas.style.position = 'absolute'; 
-	canvas.style.top = '0';
+	// canvas.style.top = '0';
 	canvas.style.left = '0';
 	canvas.style.width = '100%'; 
 	canvas.style.height = '100%'; 
 
+	webcamContainer.appendChild(videoHeaderContainer);
 	mediaWrapper.appendChild(videoElement);
 	mediaWrapper.appendChild(canvas);
 	webcamContainer.appendChild(mediaWrapper); 
@@ -316,19 +352,31 @@ const startAIWebcam = async (mediaStream) => {
 					let lastLog = lastLogIndex > -1 ? aiEvents.splice(lastLogIndex, 1)[0] : undefined;
 					if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
 						const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
+						let message = '';
+						console.log('key',key);
+						if(key === 'person_missing'){
+							message = 'no_person_detected_come_back_to_assessment';
+						}else if(key === 'object_detected'){
+							message = 'unauthorized_object_detected_please_put_it_away';
+						}else if(key === 'multiple_people'){
+							message = 'multiple_people_detected';
+						}else{
+							message = 'ai_recorder_unknown_violation';
+						}
+						console.log('message',message);
+						showToast('error', i18next.t(message));
+						
 						aiEvents.push(newLog);
 					} else if (log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
 						aiEvents.push(lastLog);
-						if (lastLog.time_span === 10) {
-							showNotification({
-								title: 'Warning!',
-								body: `${i18next.t('detected_for_more_than_10_seconds')}`,
-							});
-						}
 					} else if (!log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, end_time: Number(lastLog.start_time) + Number(lastLog.time_span) };
-						registerAIEvent({ eventType: 'success', notify: false, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) });
+						const data = { eventType: 'success', notify: true, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) };
+						registerAIEvent(data);
+						updatePersistData('session',{
+							aiEvents: [data,...session.aiEvents]
+						});
 					}
 				});
 			}
@@ -360,10 +408,18 @@ export const cleanupLocalVideo = () => {
 export const stopAllRecordings = async () => {
 	try {
 		const secureFeatures = getSecureFeatures();
+		const session = convertDataIntoParse('session');
 
 		if (socket && socket.readyState === WebSocket.OPEN) {
 			socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
+
+		const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
+		updatePersistData('session', {
+			recordingEnded: true,
+			sessionStatus: 'Completed',
+			incident_level:findIncident
+		});
 
 		cleanupLocalVideo();
 
@@ -431,16 +487,9 @@ export const stopAllRecordings = async () => {
 		const dateTime = new Date();
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
+	
 
-		updatePersistData('session', {
-			recordingEnded: true,
-			sessionStatus: 'Completed',
-		});
-
-		showNotification({
-			title: 'Recording Stopped',
-			body: 'Recording session has ended.',
-		});
+		showToast('success', 'Recording stopped successfully');
 
 		return 'stop_recording';
 	} catch (e) {
@@ -531,10 +580,12 @@ function VideoChat(room) {
 						mobileConnection: false,
 						screenSharing: false
 					});
+					showToast('error',i18next.t('mobile_phone_disconneted'));
 				} else {
 					updatePersistData('preChecksSteps', { 
 						screenSharing: false
-					});					
+					});	
+					showToast('error',i18next.t('internet_connection_not_working'));					
 				}
 				setTimeout(() => {
 					if(window.startRecordingCallBack){

@@ -60,7 +60,7 @@
 	font-size: 12px;
 }
 
-.ivsf-header-title {
+.room-scan-header-title {
 	font-family: Poppins;
 	font-style: normal;
 	font-weight: bold;
@@ -69,7 +69,7 @@
 	align-items: center;
 	text-align: center;
 	color: #222222;
-	margin: 0px auto 0px !important;
+	margin: 27px auto 0px !important;
 }
 
 .ivsf-msg {

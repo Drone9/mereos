@@ -304,7 +304,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	renderUI();
 
 	i18next.on('languageChanged', () => {
-		state.msg.text = i18next.t(state.msg.text);
 		renderUI();
 	});
 };

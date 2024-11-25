@@ -20,9 +20,9 @@ import { createCandidateAssessment } from './src/services/assessment.services';
 import socket from './src/utils/socket';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
-import { createCandidate } from './src/services/candidate.services';
+import { createCandidate } from './src/services/candidate.services'; 
 
-async function init(credentials, candidateData,profileId, assessmentData,schoolTheme) {
+async function init(credentials, candidateData,profileId, assessmentData, schoolTheme) {
 	try{
 		const logonResp = await logonSchool(credentials);
 		if(logonResp.data){
@@ -34,12 +34,13 @@ async function init(credentials, candidateData,profileId, assessmentData,schoolT
 				school:logonResp?.data?.school,
 				candidate: resp?.data
 			};
+			
 			localStorage.setItem('candidateAssessment',JSON.stringify(updateData));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
 			localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
 			localStorage.setItem('socketGroupId',JSON.stringify({ groupName:v4() }));
 			localStorage.setItem('schoolTheme',schoolTheme ? JSON.stringify(schoolTheme) : JSON.stringify(defaultTheme));
-			// localStorage.setItem('conversationId',v4());
+			localStorage.setItem('conversationId',v4());
       
 			const data = {
 				'name': assessmentData?.name,
@@ -57,7 +58,7 @@ async function init(credentials, candidateData,profileId, assessmentData,schoolT
 				const profileResp = await getProfile({id: profileId });
 				localStorage.setItem('secureFeatures', JSON.stringify(profileResp.data));
 			}
-			return resp.data;
+			return logonResp.data;
 		}
 	}catch(e){
 		console.error('error',e);

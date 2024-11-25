@@ -60,7 +60,7 @@
     }
 }
 
-.ivst-header-title {
+.step-2-header-title {
     font-family: Poppins;
     font-style: normal;
     font-weight: bold;
@@ -69,7 +69,7 @@
     align-items: center;
     text-align: center;
     color: #222222;
-    margin: 4px auto 0px;
+    margin: 23px auto 0px;
 }
 
 .ivst-msg {

@@ -1,4 +1,4 @@
-import { dataURIToBlob, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { dataURIToBlob, logger, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step1.css';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
@@ -41,7 +41,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				}
 			}
 		} catch (err) {
-			console.error('Error accessing webcam:', err);
+			logger.error('Error accessing webcam:', err);
 		}
 	};
 

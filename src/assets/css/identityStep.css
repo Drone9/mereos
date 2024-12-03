@@ -43,7 +43,7 @@
   display: flex;
   align-items: center;
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 13px;
   line-height: 19px;
@@ -52,7 +52,7 @@
 
 .ivs-instruction-txt {
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: 500;
   font-size: 14px;
   line-height: 24px;
@@ -68,7 +68,7 @@
 .ivs-instruction-txt-orange {
   font-family: Poppins, sans-serif;
   white-space: nowrap;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: 500;
   font-size: 14px;
   line-height: 24px;
@@ -86,7 +86,7 @@
 
 .ivs-query-msg {
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 14px;
   line-height: 21px;

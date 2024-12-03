@@ -13,7 +13,7 @@ import { openModal } from './src/ExamPrepreation/examPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
 import { logonSchool } from './src/services/auth.services';
-import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, updatePersistData } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, logger, updatePersistData } from './src/utils/functions';
 import { defaultTheme, initialSessionData, preChecksSteps } from './src/utils/constant';
 import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
@@ -26,7 +26,6 @@ async function init(credentials, candidateData,profileId, assessmentData, school
 	try{
 		const logonResp = await logonSchool(credentials);
 		if(logonResp.data){
-			console.log = function() {};
 			localStorage.setItem('mereosToken', logonResp.data.token);
 
 			const resp = await createCandidate(candidateData);
@@ -61,7 +60,7 @@ async function init(credentials, candidateData,profileId, assessmentData, school
 			return logonResp.data;
 		}
 	}catch(e){
-		console.error('error',e);
+		logger.error('error',e);
 	}
 }
 
@@ -133,7 +132,7 @@ async function stop_session(callback) {
 			}
 		}
 	} catch(err) {
-		console.error(err);
+		logger.error(err);
 		callback({type: 'error', message: 'There is error in stopping the session'});
 	}
     

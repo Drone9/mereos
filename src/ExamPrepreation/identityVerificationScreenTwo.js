@@ -1,4 +1,4 @@
-import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, logger, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step2.css';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
@@ -143,7 +143,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 					}
 				}
 			} catch (error) {
-				console.error('Error verifying image:', error);
+				logger.error('Error verifying image:', error);
 			}
 			renderUI();
 		}

@@ -1,4 +1,4 @@
-import { detectMultipleScreens, getDateTime, getSecureFeatures, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
+import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
 import '../assets/css/step5.css';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
@@ -11,7 +11,7 @@ export let newStream;
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
 	if (!tabContent) {
-		console.error('tabContent is not defined or is not a valid DOM element');
+		logger.error('tabContent is not defined or is not a valid DOM element');
 		return;
 	}
 
@@ -34,7 +34,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const initSocketConnection = () => {
 		if (!socket) {
-			console.error('Socket not initialized');
+			logger.error('Socket not initialized');
 			return;
 		}
 
@@ -59,11 +59,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		};
 		
 		socket.onerror = (error) => {
-			console.error('WebSocket error:', error);
+			logger.error('WebSocket error:',error);
 		};
 
 		socket.onclose = () => {
-			console.log('WebSocket connection closed');
+			logger.error('WebSocket connection closed');
 		};
 	};
 
@@ -84,7 +84,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				throw i18next.t('please_share_entire_screen');
 			}
 		} catch (err) {
-			console.error('Error during screen sharing:', err);
+			logger.error('Error during screen sharing:',err);
 			mode = 'rerecordScreen';
 			msg = {
 				type: 'unsuccessful',

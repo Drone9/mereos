@@ -1,7 +1,7 @@
 import { 
 	checkCamera, 
 	checkMicrophone, 
-	checkNotification, 
+	// checkNotification, 
 	detectMultipleScreens, 
 	getLocation, 
 	getNetworkUploadSpeed, 
@@ -21,13 +21,13 @@ const videoGreen = `${ASSET_URL}/video-camera-green.svg`;
 const microPhoneGreen = `${ASSET_URL}/microphone-green.svg`;
 const networkGreen = `${ASSET_URL}/spinner-gap-green.svg`;
 const locationGreen = `${ASSET_URL}/location-pin-green.svg`;
-const notificationGreen = `${ASSET_URL}/bell-ringing-green.svg`;
+// const notificationGreen = `${ASSET_URL}/bell-ringing-green.svg`;
 const multipleScreenGreen = `${ASSET_URL}/multiple-screen-green.svg`;
 const videoRed = `${ASSET_URL}/video-camera-red.svg`;
 const microPhoneRed = `${ASSET_URL}/microphone-red.svg`;
 const networkRed = `${ASSET_URL}/spinner-maroon.svg`;
 const locationRed = `${ASSET_URL}/location-pin-red.svg`;
-const notificationRed = `${ASSET_URL}/bell-ringing-maroon.svg`;
+// const notificationRed = `${ASSET_URL}/bell-ringing-maroon.svg`;
 const multipleScreenRed = `${ASSET_URL}/multiple-screen-red.svg`;
 
 const createDiagnosticItem = (id, label) => {
@@ -98,7 +98,7 @@ const renderUI = (tab1Content) => {
 	const containerMiddle = document.createElement('div');
 	containerMiddle.classList.add('container-middle', 'box-section');
 
-	const diagnosticItems =  ['webcam', 'microphone', 'connection','notification', 'location', 'screen'];
+	const diagnosticItems =  ['webcam', 'microphone', 'connection', 'location', 'screen'];
 	diagnosticItems.forEach(item => {
 		const label = i18next.t(item);
 		const diagnosticItem = createDiagnosticItem(item, label);
@@ -130,7 +130,7 @@ const renderUI = (tab1Content) => {
 
 export const runSystemDiagnostics = async (tab1Content) => {
 	if (!tab1Content) {
-		console.error('Element with id "runSystemDiagnostics" not found.');
+		logger.error('Element with id "runSystemDiagnostics" not found.');
 		return;
 	}
 	renderUI(tab1Content);
@@ -161,7 +161,7 @@ export const runSystemDiagnostics = async (tab1Content) => {
 		microphone: microPhoneGreen,
 		connection: networkGreen,
 		location: locationGreen,
-		notification: notificationGreen,
+		// notification: notificationGreen,
 		screen: multipleScreenGreen
 	};
 
@@ -170,7 +170,7 @@ export const runSystemDiagnostics = async (tab1Content) => {
 		microphone: microPhoneRed,
 		connection: networkRed,
 		location: locationRed,
-		notification: notificationRed,
+		// notification: notificationRed,
 		screen: multipleScreenRed
 	};
 
@@ -183,7 +183,7 @@ export const runSystemDiagnostics = async (tab1Content) => {
 		let recordAudio = secureFeatures.find(entity => entity.key === 'record_audio');
 		let checkNetwork = secureFeatures.find(entity => entity.key === 'internet_speed');
 		let trackLocation = secureFeatures.find(entity => entity.key === 'track_location');
-		let enableNotifications = secureFeatures.find(entity => entity.key === 'enable_notifications');
+		// let enableNotifications = secureFeatures.find(entity => entity.key === 'enable_notifications');
 		let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
 		
 		const promises = [];
@@ -232,15 +232,15 @@ export const runSystemDiagnostics = async (tab1Content) => {
 			setElementStatus('location', { success: locationGreen, failure: locationRed }, true);
 		}
 
-		if (enableNotifications) {
-			promises.push(checkNotification().then(notification => {
-				setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, notification);
-				handleDiagnosticItemClick('notification', checkNotification);
-				return notification;
-			}));
-		} else {
-			setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, true);
-		}
+		// if (enableNotifications) {
+		// 	promises.push(checkNotification().then(notification => {
+		// 		setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, notification);
+		// 		handleDiagnosticItemClick('notification', checkNotification);
+		// 		return notification;
+		// 	}));
+		// } else {
+		// 	setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, true);
+		// }
 
 		if (multipleScreensCheck) {
 			promises.push(detectMultipleScreens().then(isDetected => {
@@ -274,7 +274,7 @@ export const runSystemDiagnostics = async (tab1Content) => {
 		continueBtn.disabled = !allDiagnosticsPassed;
 	}
 	} catch (error) {
-		console.error('Error running diagnostics:', error);
+		logger.error('Error running diagnostics:', error);
 	} finally {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
@@ -282,7 +282,7 @@ export const runSystemDiagnostics = async (tab1Content) => {
 };
 
 const updateDiagnosticText = () => {
-	const diagnosticItems = ['webcam', 'microphone', 'connection','notification', 'location', 'screen'];
+	const diagnosticItems = ['webcam', 'microphone', 'connection', 'location', 'screen'];
 
 	diagnosticItems.forEach(item => {
 		const labelElement = document.querySelector(`#${item}DiagnosticItem label`);

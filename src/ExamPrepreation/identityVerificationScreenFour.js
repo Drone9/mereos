@@ -26,10 +26,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 	const handleStartRecording = async (type) => {
 		try {
+			let options = { mimeType: 'video/webm' };
+
 			if (type === 'startRecording') {
-				mediaRecorder = new MediaRecorder(window.userMediaStream, {
-					mimeType: 'video/webm; codecs=vp9'
-				});
+				mediaRecorder = new MediaRecorder(window.userMediaStream, options);
 
 				mediaRecorder.ondataavailable = (event) => {
 					if (event.data.size > 0) {
@@ -204,6 +204,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				video: videoConstraints.video,
 			};
 
+			console.log('mediaOptions',mediaOptions);
 			window.userMediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
 			const webcam = document.createElement('video');
 			

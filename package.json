@@ -1,6 +1,6 @@
 {
   "name": "mereos",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "This is an ai-empowered proctoring solution for online assessments.",
   "main": "index.js",
   "scripts": {
@@ -31,7 +31,6 @@
     "@tensorflow/tfjs": "4.20.0",
     "axios": "^1.7.2",
     "babel-eslint": "^10.1.0",
-    "del": "^8.0.0",
     "eslint": "5.16.0",
     "eslint-loader": "^4.0.2",
     "i18next": "^23.11.5",

@@ -225,7 +225,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		wrapper.className = 'ivst-wrapper';
 
 		const headerTitle = document.createElement('div');
-		headerTitle.className = 'ivst-header-title';
+		headerTitle.className = 'step-2-header-title';
 		headerTitle.textContent = i18next.t('identity_validation');
 
 		const message = document.createElement('div');

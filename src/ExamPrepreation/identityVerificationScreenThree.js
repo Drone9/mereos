@@ -1,4 +1,4 @@
-import { getDateTime, getSecureFeatures, registerEvent, updatePersistData } from '../utils/functions';
+import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
 import { showTab } from './examPrechecks';
 import '../assets/css/step3.css';
 import i18next from 'i18next';
@@ -59,7 +59,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			}
 
 		} catch (error) {
-			console.error('no_mircophone_detected:', error);
+			logger.error('no_mircophone_detected:', error);
 		}
 	};
 

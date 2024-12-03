@@ -5,7 +5,7 @@ import '../assets/css/mobile-proctoring.css';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 import i18next, { t } from 'i18next';
 import QRCode from 'qrcode';
-import { getAuthenticationToken, getDateTime, registerEvent, showToast, updatePersistData } from '../utils/functions';
+import { getAuthenticationToken, getDateTime, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
 import { showTab } from './examPrechecks';
 import { v4 } from 'uuid';
 import { ASSET_URL } from '../utils/constant';
@@ -24,7 +24,7 @@ export const MobileProctoring = async (tabContent) => {
 
 	const initSocketConnection = () => {
 		if (!socket) {
-			console.error('Socket not initialized');
+			logger.error('Socket not initialized');
 			return;
 		}
 
@@ -33,7 +33,7 @@ export const MobileProctoring = async (tabContent) => {
 				socket.send(JSON.stringify({ event: 'resetSession' }));
 				mobileSteps = '';
 			} else {
-				console.warn('Socket is not open, cannot send resetSession');
+				logger.warn('Socket is not open, cannot send resetSession');
 			}
 		};
 
@@ -52,7 +52,7 @@ export const MobileProctoring = async (tabContent) => {
 
 			switch (eventData?.message?.event || eventData?.event) {
 				case 'mobile_connection':
-					console.log('mobile_connection', eventData.message);
+					logger.success('mobile_connection',eventData.message);
 					break;
 
 				case 'mobilePreChecksCompleted':
@@ -63,7 +63,7 @@ export const MobileProctoring = async (tabContent) => {
 					break;
 
 				case 'MobileRecordingStarted':
-					console.log('MobileRecordingStarted', eventData?.message?.message);
+					logger.success('MobileRecordingStarted',eventData.message);
 					break;
 
 				case 'mobile-broadcast': {
@@ -92,10 +92,10 @@ export const MobileProctoring = async (tabContent) => {
 							});
 	
 							call?.on('error', (error) => {
-								console.error('Error during call:', error);
+								logger.error('Error during call:',error);
 							});
 						} else {
-							console.error('peerInstance is not initialized');
+							logger.error('peerInstance is not initialized');
 						}
 					});
 					break;
@@ -111,22 +111,22 @@ export const MobileProctoring = async (tabContent) => {
 						}
 						renderUI();
 					} else {
-						console.error(eventData?.message?.message);
+						logger.error(eventData?.message?.message);
 					}
 					break;
 
 				default:
-					console.log('Unknown event:', eventData?.message);
+					logger.error('Unknown event:', eventData?.message);
 					break;
 			}
 		};
 
 		socket.onerror = (error) => {
-			console.error('WebSocket error:', error);
+			logger.error('WebSocket error:', error);
 		};
 
 		socket.onclose = () => {
-			console.log('WebSocket connection closed');
+			logger.error('WebSocket connection closed');
 		};
 	};
 
@@ -143,15 +143,15 @@ export const MobileProctoring = async (tabContent) => {
 			peerInstance = peer;
 
 			peer.on('open', (id) => {
-				console.log('Peer connection opened with ID:', id);
+				logger.success('Peer connection opened with ID:', id);
 			});
 		
 			peer.on('error', (error) => {
-				console.error('Peer connection error:', error);
+				logger.error('Peer connection error:', error);
 			});
 
 			peer.on('close', () => {
-				console.log('Peer connection closed');
+				logger.error('Peer connection closed');
 			});
 
 			peer.on('call', (call) => {
@@ -165,7 +165,7 @@ export const MobileProctoring = async (tabContent) => {
 				});
 			});
 		} catch (error) {
-			console.error('Failed to create Peer instance:', error);
+			logger.error('Failed to create Peer instance:', error);
 		}
 	};
 
@@ -277,7 +277,7 @@ export const MobileProctoring = async (tabContent) => {
 			qrCodeContainer.appendChild(canvas);
 
 			QRCode.toCanvas(canvas, 'https://mobile.mereos.eu/', function (error) {
-				if (error) console.error(error);
+				if (error) 	logger.error('error in QR code', error);
 			});
 
 			const bottomDesc = document.createElement('p');
@@ -307,7 +307,7 @@ export const MobileProctoring = async (tabContent) => {
 				token: getAuthenticationToken(),
 				groupName: socketGroupIds?.groupName
 			}), function (error) {
-				if (error) console.error(error);
+				if (error) 	logger.error('Error in QR code', error);
 			});
 
 			const bottomDesc = document.createElement('p');

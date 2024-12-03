@@ -1,6 +1,6 @@
 import '../assets/css/step4.css';
 import { showTab } from './examPrechecks';
-import { getDateTime, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
+import { getDateTime, logger, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 import { ASSET_URL } from '../utils/constant';
@@ -49,7 +49,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				updateUI();
 			}
 		} catch (error) {
-			console.error('Error accessing media devices:', error);
+			logger.error('Error accessing media devices:', error);
 		}
 	};
 
@@ -89,7 +89,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 			showTab('MobileProctoring');
 		} catch (error) {
-			console.error('Error navigating to next step:', error);
+			logger.error('Error navigating to next step:', error);
 		}
 	};
 
@@ -204,7 +204,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				video: videoConstraints.video,
 			};
 
-			console.log('mediaOptions',mediaOptions);
 			window.userMediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
 			const webcam = document.createElement('video');
 			

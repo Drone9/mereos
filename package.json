@@ -20,11 +20,11 @@
     "online",
     "assessment"
   ],
-  "author": "DT Education, France",
+  "author": "DT Education",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Drone9/mereos.git"
+    "url": "https://github.com/Drone9/mereos/tree/production"
   },
   "dependencies": {
     "@tensorflow-models/coco-ssd": "2.2.3",

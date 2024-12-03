@@ -1,4 +1,5 @@
 import i18next from 'i18next';
+import { logger } from '../utils/functions';
 
 export const LanguageDropdown = (languages) => {
 	const dropdown = document.createElement('div');
@@ -41,7 +42,7 @@ export const LanguageDropdown = (languages) => {
 // Function to set the language using i18next
 export const setLanguage = (lang) => {
 	i18next.changeLanguage(lang, (err) => {
-		if (err) return console.error(err);
+		if (err) return logger.error(err);
 		updateTranslations();
 	});
 };

@@ -1,6 +1,6 @@
 import * as TwilioVideo from 'twilio-video';
 import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
-import { convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import socket from '../utils/socket';
@@ -31,7 +31,7 @@ export const startRecording = async () => {
 
 	const initSocketConnection = () => {
 		if (!socket) {
-			console.error('Socket not initialized');
+			logger.error('Socket not initialized');
 			return;
 		}
 		socket.onmessage = (event) => {
@@ -57,7 +57,7 @@ export const startRecording = async () => {
 							screenSharing: false
 						});
 						window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
-						console.log('error', error);
+						logger.error('error',error);
 					});
 
 					break;
@@ -76,17 +76,13 @@ export const startRecording = async () => {
 					break;
 
 				default:
-					console.log('Unknown event:', eventData?.message);
+					logger.success('Unknown event:', eventData?.message);
 					break;
 			}
 		};
 		
 		socket.onerror = (error) => {
-			console.error('WebSocket error:', error);
-		};
-
-		socket.onclose = () => {
-			console.log('WebSocket connection closed');
+			logger.error('WebSocket error:', error);
 		};
 	};
 	
@@ -353,7 +349,6 @@ const startAIWebcam = async (mediaStream) => {
 					if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
 						const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
 						let message = '';
-						console.log('key',key);
 						if(key === 'person_missing'){
 							message = 'no_person_detected_come_back_to_assessment';
 						}else if(key === 'object_detected'){
@@ -363,7 +358,7 @@ const startAIWebcam = async (mediaStream) => {
 						}else{
 							message = 'ai_recorder_unknown_violation';
 						}
-						console.log('message',message);
+
 						showToast('error', i18next.t(message));
 						
 						aiEvents.push(newLog);
@@ -381,7 +376,7 @@ const startAIWebcam = async (mediaStream) => {
 				});
 			}
 		} catch (error) {
-			console.error('Error in AI processing:', error);
+			logger.error('Error in AI processing:', error);
 		}
 	}, 1000);
 };
@@ -493,7 +488,7 @@ export const stopAllRecordings = async () => {
 
 		return 'stop_recording';
 	} catch (e) {
-		console.error(e);
+		logger.error('Error in stop recording:', e);
 	}
 };
 
@@ -516,10 +511,10 @@ function VideoChat(room) {
 					container.appendChild(attachedElement);
 				}
 			} catch (error) {
-				console.error('Error attaching video track:', error);
+				logger.error('Error attaching video track:', error);
 			}
 		} else {
-			console.error('Track is not a video track or container is missing', { track, container });
+			logger.error('Track is not a video track or container is missing', { track, container });
 		}
 	}
 
@@ -606,7 +601,7 @@ function VideoChat(room) {
 				});
 			});
 		} catch (error) {
-			console.error('Error connecting to Twilio room:', error);
+			logger.error('Error connecting to Twilio room:', error);
 		}
 	}
 

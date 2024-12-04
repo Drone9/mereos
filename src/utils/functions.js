@@ -7,6 +7,7 @@ import i18next from 'i18next';
 import { createEvent } from '../services/event.service';
 import { closeModal } from '../ExamPrepreation/examPrechecks';
 import { Notyf } from 'notyf';
+import { testUploadSpeed } from '../services/general.services';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -193,10 +194,6 @@ export const getNetworkUploadSpeed = async () => {
 	}
 };
 
-export const testUploadSpeed = async (payload) => {
-	return axios.post(`${BASE_URL}/general/info/`, payload);
-};
-
 export const registerEvent = ({ eventName }) => {
 	try{
 		const session = convertDataIntoParse('session');
@@ -217,19 +214,42 @@ export const registerEvent = ({ eventName }) => {
 };
 
 export const updateThemeColor = () => {
-	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
-	
-	document.documentElement.style.setProperty('--theme-color', schoolTheme?.theming || '#FF961B');
-	document.documentElement.style.setProperty('--font-style', schoolTheme?.font || 'normal');
-	
-	// const fontStyle = schoolTheme?.font || 'italic';
-	// document.body.style.fontFamily = fontStyle;
+	const defaultTheme = {
+		theming: '#FF961B',  
+		font: 'normal'       
+	};
 
-	// const allTextElements = document.querySelectorAll('*');
-	// allTextElements.forEach((el) => {
-	// 	el.style.fontStyle = fontStyle;
-	// });
+	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
+
+	const isValidHex = (color) => {
+		const hexRegex = /^#[0-9A-F]{6}$/i;  
+		return hexRegex.test(color);
+	};
+
+	const isValidFontStyle = (font) => {
+		const validFontStyles = ['normal', 'italic', 'oblique'];
+		return validFontStyles.includes(font);
+	};
+
+	const themeColor = isValidHex(schoolTheme?.theming) 
+		? schoolTheme.theming 
+		: defaultTheme.theming; 
+
+	const fontStyle = isValidFontStyle(schoolTheme?.font) 
+		? schoolTheme.font 
+		: defaultTheme.font;  
+
+	const themeToStore = {
+		theming: themeColor,
+		font: fontStyle
+	};
+
+	localStorage.setItem('schoolTheme', JSON.stringify(themeToStore));
+
+	document.documentElement.style.setProperty('--theme-color', themeColor);
+	document.documentElement.style.setProperty('--font-style', fontStyle);
 };
+
 
 export const loadZendeskWidget = () => {
 	const getSecureFeature = getSecureFeatures();

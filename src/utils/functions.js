@@ -175,14 +175,14 @@ export const checkMicrophone = () => {
 
 export const getNetworkUploadSpeed = async () => {
 	try {
-		const myData = { 'test': 'a'.repeat(1024 * 1024) };
+		const myData = {text: 'a'.repeat(1024 * 1024)};
 		const startTime = new Date().getTime();
 
-		const response = await testUploadSpeed({ 'test': 'a'.repeat(1024 * 1024) });
+		const response = await testUploadSpeed(myData);
 		if(response){
 			const endTime = new Date().getTime();
 			const duration = (endTime - startTime) / 1000;
-			const bitsLoaded = myData.test.length * 8;
+			const bitsLoaded = myData.text.length * 8;
 			const speedMbps = ((bitsLoaded / duration) / 1024 / 1024).toFixed(2);
 			
 			return { speedMbps: speedMbps };

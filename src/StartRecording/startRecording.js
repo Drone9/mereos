@@ -95,7 +95,6 @@ export const startRecording = async () => {
 
 	const recordingEvents = ['record_screen','record_audio','record_video'];
 	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
-		logger.info('in the if condition');
 		if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 			await lockBrowserFromContent(secureFeatures?.entities || []);
 		}
@@ -196,7 +195,6 @@ export const startRecording = async () => {
 			});
 		}
 	}else{
-		logger.success('in the else condition');
 		if(window.startRecordingCallBack){
 			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 		}

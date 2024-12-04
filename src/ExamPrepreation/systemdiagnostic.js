@@ -6,6 +6,7 @@ import {
 	getLocation, 
 	getNetworkUploadSpeed, 
 	getSecureFeatures, 
+	logger, 
 	registerEvent, 
 	updatePersistData 
 } from '../utils/functions';
@@ -129,6 +130,7 @@ const renderUI = (tab1Content) => {
 };
 
 export const runSystemDiagnostics = async (tab1Content) => {
+	logger.success('runSystemDiagnostics trigger');
 	if (!tab1Content) {
 		logger.error('Element with id "runSystemDiagnostics" not found.');
 		return;
@@ -181,11 +183,11 @@ export const runSystemDiagnostics = async (tab1Content) => {
 
 		let recordVideo = secureFeatures.find(entity => entity.key === 'record_video');
 		let recordAudio = secureFeatures.find(entity => entity.key === 'record_audio');
-		let checkNetwork = secureFeatures.find(entity => entity.key === 'internet_speed');
+		let checkNetwork = secureFeatures.find(entity => entity.key === 'verify_connection');
 		let trackLocation = secureFeatures.find(entity => entity.key === 'track_location');
 		// let enableNotifications = secureFeatures.find(entity => entity.key === 'enable_notifications');
 		let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
-		
+
 		const promises = [];
 
 		if (recordVideo) {

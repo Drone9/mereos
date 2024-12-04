@@ -198,7 +198,12 @@ tabContentsWrapper.appendChild(mobileProctingConatiner);
 // 	}
 // };
 
+// const shadowRoot = modalContent.attachShadow({ mode: 'open' });
 modalContent.appendChild(tabContentsWrapper);
+// const link = document.createElement('link');
+// link.rel = 'stylesheet';
+// link.href = '../assets/css/modal.css';
+// shadowRoot.appendChild(link);
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
@@ -239,7 +244,6 @@ const createLanguageDropdown = () => {
 
 	const languageDropdown = document.createElement('section');
 	languageDropdown.className = 'dropdown-content';
-
 
 	languages.forEach((lang, index) => {
 		const optionDiv = document.createElement('div');

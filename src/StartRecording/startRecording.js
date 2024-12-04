@@ -93,7 +93,8 @@ export const startRecording = async () => {
 		return;
 	}
 
-	if (secureFeatures?.entities !== null) {
+	const recordingEvents = ['record_screen','record_audio','record_video'];
+	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
 		if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 			await lockBrowserFromContent(secureFeatures?.entities || []);
 		}
@@ -188,9 +189,14 @@ export const startRecording = async () => {
 				}
 			});
 		} catch (error) {
+			logger.error('error in startRecording',error);
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});
+		}
+	}else{
+		if(window.startRecordingCallBack){
+			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 		}
 	}
 };
@@ -202,14 +208,7 @@ const setupWebcam = async (mediaStream) => {
 	if (!webcamContainer) {
 		webcamContainer = document.createElement('div');
 		webcamContainer.id = 'webcam-container';
-		// webcamContainer.style.display = 'flex';
-		// webcamContainer.style.zIndex = '999';
-		// webcamContainer.style.position = 'absolute';
 		webcamContainer.className='user-videos-remote';
-		// webcamContainer.style.rowGap = '10px';
-		// webcamContainer.style.flexDirection = 'column';
-		// webcamContainer.style.justifyContent = 'start';
-		// webcamContainer.style.marginLeft = '10px';
 		document.body.appendChild(webcamContainer);
 	}
 
@@ -255,7 +254,6 @@ const setupWebcam = async (mediaStream) => {
 	const canvas = document.createElement('canvas');
 	canvas.id = 'canvas';
 	canvas.style.position = 'absolute'; 
-	// canvas.style.top = '0';
 	canvas.style.left = '0';
 	canvas.style.width = '100%'; 
 	canvas.style.height = '100%'; 

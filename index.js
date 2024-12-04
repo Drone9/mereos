@@ -92,7 +92,7 @@ async function start_session(callback) {
 					socket.send(JSON.stringify({ event: 'twilioToken', message: mobileTwilioToken?.data?.token }));
 				}
 			}
-			if(findConfigs(['record_video'], secureFeatures?.entities).length){
+			if(findConfigs(['record_video'], secureFeatures?.entities).length || findConfigs(['record_screen'], secureFeatures?.entities).length){
 				let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
 				let twilioToken = await getToken({ room_sid: resp.data.room_sid });
 				if (twilioToken) {

@@ -245,6 +245,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 					...state,
 					imageSrc: null,
 					captureMode: 'take',
+					isUploading:false,
 					videoConstraints: {
 						...state.videoConstraints,
 						deviceId: localStorage.getItem('deviceId') || undefined,

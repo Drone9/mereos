@@ -240,6 +240,7 @@ export const updateThemeColor = () => {
 		: defaultTheme.font;  
 
 	const themeToStore = {
+		...schoolTheme,
 		theming: themeColor,
 		font: fontStyle
 	};

@@ -3,7 +3,7 @@ import '../assets/css/step5.css';
 import { showTab } from './examPrechecks';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
-import socket from '../utils/socket';
+import {socket} from '../utils/socket';
 import { ASSET_URL } from '../utils/constant';
 
 export let newStream;

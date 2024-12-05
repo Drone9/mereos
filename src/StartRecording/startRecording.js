@@ -3,7 +3,7 @@ import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
 import { convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
-import socket from '../utils/socket';
+import {socket} from '../utils/socket';
 import { getCreateRoom } from '../services/twilio.services';
 import { ASSET_URL, LockDownOptions } from '../utils/constant';
 import '../assets/css/start-recording.css';
@@ -26,7 +26,9 @@ export const startRecording = async () => {
 	const session = convertDataIntoParse('session');
 	
 	window.addEventListener('popstate', () => {
-		window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+		if(window.startRecordingCallBack){
+			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+		}
 	});
 
 	const initSocketConnection = () => {
@@ -56,7 +58,9 @@ export const startRecording = async () => {
 							mobileConnection: false,
 							screenSharing: false
 						});
-						window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+						if(window.startRecordingCallBack){
+							window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+						}
 						logger.error('error',error);
 					});
 
@@ -70,7 +74,9 @@ export const startRecording = async () => {
 							screenSharing: false
 						});
 						showToast('error',i18next.t('mobile_phone_disconneted'));
-						window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+						if(window.startRecordingCallBack){
+							window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+						}
 					}
 					registerEvent({ eventType: 'error', notify: false, eventName:eventData?.message?.message , eventValue: getDateTime() });
 					break;
@@ -89,15 +95,18 @@ export const startRecording = async () => {
 	initSocketConnection();
 
 	if(!(newStream?.getTracks()?.length) && findConfigs(['record_screen'],secureFeatures?.entities)?.length){
-		window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+		if(window.startRecordingCallBack){
+			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+		}
 		return;
 	}
 
-	const recordingEvents = ['record_screen','record_audio','record_video'];
+	if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
+		await lockBrowserFromContent(secureFeatures?.entities || []);
+	}
+
+	const recordingEvents = ['record_screen','record_audio','record_video','mobile_proctoring'];
 	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
-		if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
-			await lockBrowserFromContent(secureFeatures?.entities || []);
-		}
 
 		let twilioOptions = {
 			audio: findConfigs(['record_audio'], secureFeatures?.entities).length ?
@@ -128,6 +137,7 @@ export const startRecording = async () => {
 
 			let room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
 			roomInstance = room;
+			logger.success('room',room);
 
 			mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
 				deviceId: { exact: localStorage.getItem('microphoneID') },
@@ -140,16 +150,20 @@ export const startRecording = async () => {
 			cameraTrack = new TwilioVideo.LocalVideoTrack(mediaStream.getVideoTracks()[0]);
 			await room.localParticipant.publishTrack(cameraTrack);
 			
-			if (secureFeatures?.entities.find(entity => entity.key === 'record_video')) {
+			if (findConfigs(['record_video'], secureFeatures?.entities).length){
 				cameraRecordings = [
 					...cameraRecordings,
 					...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
 				];
+				updatePersistData('session', { user_video_name: cameraRecordings || [], room_id: room?.sid });
+			}
+
+			if(findConfigs(['record_audio'], secureFeatures?.entities).length){
 				audioRecordings = [
 					...audioRecordings,
 					...Array.from(room?.localParticipant?.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
 				];
-				updatePersistData('session', { user_video_name: cameraRecordings || [], user_audio_name: audioRecordings, room_id: room?.sid });
+				updatePersistData('session', { user_audio_name: audioRecordings, room_id: room?.sid });
 			}
 
 			if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
@@ -214,10 +228,12 @@ const setupWebcam = async (mediaStream) => {
 
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 	
-	const videoHeaderContainer = document.createElement('div');
+	let videoHeaderContainer = document.createElement('div');
 	videoHeaderContainer.className = 'user-video-header';
+	videoHeaderContainer.id='user-video-header';
 
 	const videoHeading = document.createElement('p');
+	videoHeading.className='recording-heading';
 	videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
 	const recordingIcon = document.createElement('div');
 	recordingIcon.className = 'recording-badge-container-header';
@@ -227,7 +243,7 @@ const setupWebcam = async (mediaStream) => {
 				src="${ASSET_URL}/white-dot.svg"
 				alt='white-dot'
 		></img>
-		<p>${i18next.t('recording')}</p>
+		<p class='recording-text'>${i18next.t('recording')}</p>
 	`;
 
 	videoHeaderContainer.appendChild(videoHeading);
@@ -238,8 +254,10 @@ const setupWebcam = async (mediaStream) => {
 
 	const mediaWrapper = document.createElement('div');
 	mediaWrapper.style.position = 'relative';
-	mediaWrapper.style.width = '280px'; 
-	mediaWrapper.style.height = '200px'; 
+	mediaWrapper.style.marginLeft = 'auto';
+	mediaWrapper.style.marginRight = 'auto';
+	mediaWrapper.style.width = '180px'; 
+	mediaWrapper.style.height = '142px'; 
 	mediaWrapper.style.objectFit = 'cover'; 
 
 	const videoElement = document.createElement('video');
@@ -494,10 +512,55 @@ function VideoChat(room) {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 	let webcamContainer = document.getElementById('webcam-container');
+	let videoHeaderContainer = document.getElementById('user-video-header');
+	if (!webcamContainer) {
+		webcamContainer = document.createElement('div');
+		webcamContainer.id = 'webcam-container';
+		webcamContainer.className='user-videos-remote';
+		document.body.appendChild(webcamContainer);
+		interact(webcamContainer).draggable({
+			listeners: {
+				move(event) {
+					const target = event.target;
+					const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+					const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+	
+					target.style.transform = `translate(${x}px, ${y}px)`;
+	
+					target.setAttribute('data-x', x);
+					target.setAttribute('data-y', y);
+				}
+			}
+		});
+	}
+	if(!videoHeaderContainer){
+		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+	
+		videoHeaderContainer = document.createElement('div');
+		videoHeaderContainer.className = 'user-video-header';
+	
+		const videoHeading = document.createElement('p');
+		videoHeading.className='recording-heading';
+		videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
+		const recordingIcon = document.createElement('div');
+		recordingIcon.className = 'recording-badge-container-header';
+		recordingIcon.innerHTML = `
+			<img
+					class='ivsf-recording-dot'
+					src="${ASSET_URL}/white-dot.svg"
+					alt='white-dot'
+			></img>
+			<p class='recording-text'>${i18next.t('recording')}</p>
+		`;
+	
+		videoHeaderContainer.appendChild(videoHeading);
+		videoHeaderContainer.appendChild(recordingIcon);
+		webcamContainer.appendChild(videoHeaderContainer);
+	}
 	const localVideoRef = document.createElement('div');
 	const remoteVideoRef = document.createElement('div');
 	remoteVideoRef.classList.add('remote-video');
-
+	
 	webcamContainer.appendChild(remoteVideoRef); 
 
 	function attachTrack(track, container) {

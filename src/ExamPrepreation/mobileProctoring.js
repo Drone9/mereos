@@ -1,17 +1,18 @@
 
 import Peer from 'peerjs';
-import socket from '../utils/socket';
+import { initSocket, socket } from '../utils/socket';
 import '../assets/css/mobile-proctoring.css';
 import { renderIdentityVerificationSteps } from './IdentitySteps';
 import i18next, { t } from 'i18next';
 import QRCode from 'qrcode';
 import { getAuthenticationToken, getDateTime, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
 import { showTab } from './examPrechecks';
-import { v4 } from 'uuid';
 import { ASSET_URL } from '../utils/constant';
+import { v4 } from 'uuid';
 
 window.mobileStream = null;
 export const MobileProctoring = async (tabContent) => {
+	if (tabContent.querySelector('.mobile-conection-container')) return; 
 	let mobileSteps = ''; 
 	let disabledNextBtn = false; 
 	let checkedVideo = false;
@@ -20,31 +21,33 @@ export const MobileProctoring = async (tabContent) => {
 	const currentUserVideoRef = document.createElement('video');
 	let peerInstance = null;
   
-	const socketGroupIds = JSON.parse(localStorage.getItem('socketGroupId'));
 
 	const initSocketConnection = () => {
+		initSocket();
+
 		if (!socket) {
 			logger.error('Socket not initialized');
 			return;
 		}
 
-		const sendResetSession = () => {
-			if (socket.readyState === WebSocket.OPEN) {
-				socket.send(JSON.stringify({ event: 'resetSession' }));
-				mobileSteps = '';
-			} else {
-				logger.warn('Socket is not open, cannot send resetSession');
-			}
-		};
+		// const sendResetSession = () => {
+		// 	if (socket.readyState === WebSocket.OPEN) {
+		// 		socket.send(JSON.stringify({ event: 'resetSession' }));
+		// 		mobileSteps = '';
+		// 	} else {
+		// 		logger.warn('Socket is not open, cannot send resetSession');
+		// 	}
+		// };
 
-		if (!remoteVideoRef.srcObject?.getTracks()?.length) {
-			sendResetSession();
-		}
+		// if (!remoteVideoRef.srcObject?.getTracks()?.length) {
+		// 	sendResetSession();
+		// }
 
 		socket.onopen = () => {
-			if (!remoteVideoRef.srcObject?.getTracks()?.length) {
-				sendResetSession();
-			}
+			logger.success('WebSocket connection established');
+			// if (!remoteVideoRef.srcObject?.getTracks()?.length) {
+			// 	sendResetSession();
+			// }
 		};
 
 		socket.onmessage = (event) => {
@@ -200,10 +203,11 @@ export const MobileProctoring = async (tabContent) => {
 	};
 
 	function renderUI() {
-		let container = tabContent?.querySelector('.ivsf-container');
+		const socketGroupIds = JSON.parse(localStorage.getItem('socketGroupId'));
+		let container = tabContent?.querySelector('.mobile-conection-container');
 		if (!container) {
 			container = document.createElement('div');
-			container.className = 'ivsf-container';
+			container.className = 'mobile-conection-container';
 			tabContent.appendChild(container);
 			container.id = 'mobile-proctoring';
 		}
@@ -338,8 +342,6 @@ export const MobileProctoring = async (tabContent) => {
 			bannerImage.className = 'banner-image';
 			bannerImage.src = `${ASSET_URL}/user-video-tutorial.jpeg`;
       
-			
-			
 			const videoContainer = document.createElement('div');
 			videoContainer.appendChild(remoteVideoRef);
 
@@ -410,11 +412,8 @@ export const MobileProctoring = async (tabContent) => {
 		if(window.webStream) {
 			window.webStream.getTracks().forEach(track => track.stop());
 		}
-		
-		initPeerConnection();
-
 		initSocketConnection();
-
+		initPeerConnection();
 		renderUI();
 	};
 

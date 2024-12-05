@@ -18,51 +18,66 @@ body{
   height: auto;
   display: block;
 }
+.remote-video{
+  display: flex;
+  justify-content: center;
+}
 .remote-video  .video-attached{
-  width: 280px;
-  height: 182px;
+  width: 180px;
+  height: 140px;
   object-fit: cover;
 }
 
 .user-videos-remote{
   display: flex;
-      position: absolute;
-      bottom: 10px;
-      z-index: 9999;
-      column-gap: 10px;
-      flex-direction: column;
-      width: 300px;
-      background-color: #E7EBEF;
-      border-radius: 10px;
-      box-shadow: 1px 1px 5px 1px #f1f1f1;
-      justify-content: center;
-      align-items: center;
-      row-gap: 10px;
+  position: absolute;
+  bottom: 10px;
+  column-gap: 10px;
+  row-gap: 9px;
+  flex-direction: column;
+  width: 220px;
+  background-color: #e7ebef;
+  border-radius: 10px;
+  box-shadow: 1px 1px 5px 1px #f1f1f1;
+  z-index: 9999999;
+  left: 10px;
 }
 
 .user-videos-remote .user-video-header{
   display: flex;
-  width: 100%;
   justify-content: space-between;
   align-items: center;
   padding-left: 10px;
 }
-.user-videos-remote .user-video-header p{
-  font-size: 17px;
+.user-videos-remote .user-video-header .recording-heading{
+  font-size: 14px;
+  margin-bottom: 9px;
 }
 
 .recording-badge-container-header {
-    background-color: #E95E5E;
+    position: absolute;
+    right: 10px;
+    width: 61px;
+    white-space: nowrap;
+    background-color: #e95e5e;
     border-radius: 5px;
-    color: #ffffff;
+    color: #fff;
     display: flex;
     align-items: center;
-    column-gap: 8px;
-    padding: 5px 10px;
+    font-size: 10px;
+    column-gap: 4px;
+    padding: 5px 5px;
     text-transform: lowercase;
-    height: 26px;
-    width: 103px;
-    margin-right: 14px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.recording-badge-container-header .recording-text{
+  margin: 0;
+  font-size: 10px;
+  width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .user-videos-remote .btn-container{

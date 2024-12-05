@@ -14,13 +14,13 @@ import { getRoomSid, getToken } from './src/services/twilio.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
 import { logonSchool } from './src/services/auth.services';
 import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, logger, updatePersistData } from './src/utils/functions';
-import { defaultTheme, initialSessionData, preChecksSteps } from './src/utils/constant';
+import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
-import socket from './src/utils/socket';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
 import { createCandidate } from './src/services/candidate.services'; 
+import { socket } from './src/utils/socket';
 
 async function init(credentials, candidateData,profileId, assessmentData, schoolTheme) {
 	try{
@@ -33,12 +33,12 @@ async function init(credentials, candidateData,profileId, assessmentData, school
 				school:logonResp?.data?.school,
 				candidate: resp?.data
 			};
-			
+
 			localStorage.setItem('candidateAssessment',JSON.stringify(updateData));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
 			localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
 			localStorage.setItem('socketGroupId',JSON.stringify({ groupName:v4() }));
-			localStorage.setItem('schoolTheme',schoolTheme ? JSON.stringify(schoolTheme) : JSON.stringify(defaultTheme));
+			localStorage.setItem('schoolTheme',schoolTheme ? JSON.stringify(schoolTheme):{});
 			localStorage.setItem('conversationId',v4());
       
 			const data = {
@@ -92,7 +92,9 @@ async function start_session(callback) {
 					socket.send(JSON.stringify({ event: 'twilioToken', message: mobileTwilioToken?.data?.token }));
 				}
 			}
-			if(findConfigs(['record_video'], secureFeatures?.entities).length || findConfigs(['record_screen'], secureFeatures?.entities).length){
+
+			const roomCreation = ['record_screen','record_audio','record_video','mobile_proctoring'];
+			if(secureFeatures?.entities.filter(entity => roomCreation.includes(entity.key))?.length > 0){
 				let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
 				let twilioToken = await getToken({ room_sid: resp.data.room_sid });
 				if (twilioToken) {

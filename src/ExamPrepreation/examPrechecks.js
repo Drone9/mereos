@@ -64,15 +64,10 @@ const PrevalidationinstructionContainer = document.createElement('div');
 PrevalidationinstructionContainer.className = 'tab-content';
 PrevalidationinstructionContainer.id = 'Prevalidationinstruction';
 
-const identitySteps = document.createElement('div');
-identitySteps.className = 'steps-container';
-identitySteps.id = 'modal-steps-container';
+const mobileProctingContainer = document.createElement('div');
+mobileProctingContainer.className = 'tab-content';
+mobileProctingContainer.id = 'MobileProctoring';
 
-const mobileProctingConatiner = document.createElement('div');
-identitySteps.className = 'mobile-procting-conatiner';
-identitySteps.id = 'mobileProctingConatiner';
-
-tabContentsWrapper.appendChild(identitySteps);
 tabContentsWrapper.appendChild(ExamPreparationContainer);
 tabContentsWrapper.appendChild(SystemDiagnosticsContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenOneContainer);
@@ -81,7 +76,7 @@ tabContentsWrapper.appendChild(IdentityVerificationScreenThreeContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenFourContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenFiveContainer);
 tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
-tabContentsWrapper.appendChild(mobileProctingConatiner);
+tabContentsWrapper.appendChild(mobileProctingContainer);
 
 // const initializeLiveChat = () => {
 // 	const isLoggedIn = !!localStorage.getItem('mereosToken');
@@ -220,7 +215,7 @@ const createLanguageDropdown = () => {
 	const defaultLanguage = schoolTheme?.language || 'en';
 	const filterLanguage = normalizeLanguage(defaultLanguage);
 	let selectedLanguage = languages.find(lang => lang.keyword === filterLanguage.trim());
-	
+
 	const selectContainer = document.createElement('div');
 	selectContainer.className = 'select';
 	selectContainer.onclick = () => languageDropdown.classList.toggle('active');
@@ -392,7 +387,7 @@ const showTab = async (tabId, callback) => {
 			await IdentityVerificationScreenThree(IdentityVerificationScreenThreeContainer);
 		} else if (tabId === 'IdentityVerificationScreenFour') {
 			if (!secureFeatures?.find(entity => entity.key === 'record_room')) {
-				navigate('IdentityVerificationScreenFive');
+				navigate('MobileProctoring');
 				return;
 			}
 			await IdentityVerificationScreenFour(IdentityVerificationScreenFourContainer);
@@ -401,7 +396,7 @@ const showTab = async (tabId, callback) => {
 				navigate('IdentityVerificationScreenFive');
 				return;
 			}
-			await MobileProctoring(mobileProctingConatiner);
+			await MobileProctoring(mobileProctingContainer);
 		} else if (tabId === 'IdentityVerificationScreenFive') {
 			if (!secureFeatures?.find(entity => entity.key === 'record_screen')) {
 				closeModal(callback);
@@ -446,9 +441,10 @@ const initializeI18next = () => {
 	if (i18next.isInitialized) return;
 
 	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
+	const defaultLanguage = schoolLanguage?.language || 'en';
 
 	i18next.init({
-		lng: normalizeLanguage(schoolLanguage?.language),
+		lng: normalizeLanguage(defaultLanguage),
 		resources: {
 			en: {
 				translation: require('../assets/locales/en/translation.json')

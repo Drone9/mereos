@@ -1,4 +1,4 @@
-.ivsf-container {
+.mobile-conection-container {
   display: flex;
   flex-direction: column;
 }
@@ -16,7 +16,7 @@
 }
 
 .mobile-connection-banner {
-  margin: 10px auto 20px;
+  margin: 10px auto 5px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -252,7 +252,7 @@
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  row-gap: 15px;  
+  row-gap: 10px;  
 }
 .video-loader{
   position: relative;

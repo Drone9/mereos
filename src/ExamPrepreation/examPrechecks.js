@@ -7,13 +7,14 @@ import { IdentityVerificationScreenThree } from './identityVerificationScreenThr
 import { IdentityVerificationScreenFour } from './identityVerificationScreenFour';
 import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
 import { ExamPreparation } from './examPreprationScreen';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, loadZendeskWidget, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
 import { ASSET_URL, languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
 import 'notyf/notyf.min.css';
 // import Talk from 'talkjs';
 // import interact from 'interactjs';
+
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -63,15 +64,10 @@ const PrevalidationinstructionContainer = document.createElement('div');
 PrevalidationinstructionContainer.className = 'tab-content';
 PrevalidationinstructionContainer.id = 'Prevalidationinstruction';
 
-const identitySteps = document.createElement('div');
-identitySteps.className = 'steps-container';
-identitySteps.id = 'modal-steps-container';
+const mobileProctingContainer = document.createElement('div');
+mobileProctingContainer.className = 'tab-content';
+mobileProctingContainer.id = 'MobileProctoring';
 
-const mobileProctingConatiner = document.createElement('div');
-identitySteps.className = 'mobile-procting-conatiner';
-identitySteps.id = 'mobileProctingConatiner';
-
-tabContentsWrapper.appendChild(identitySteps);
 tabContentsWrapper.appendChild(ExamPreparationContainer);
 tabContentsWrapper.appendChild(SystemDiagnosticsContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenOneContainer);
@@ -80,7 +76,7 @@ tabContentsWrapper.appendChild(IdentityVerificationScreenThreeContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenFourContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenFiveContainer);
 tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
-tabContentsWrapper.appendChild(mobileProctingConatiner);
+tabContentsWrapper.appendChild(mobileProctingContainer);
 
 // const initializeLiveChat = () => {
 // 	const isLoggedIn = !!localStorage.getItem('mereosToken');
@@ -176,9 +172,7 @@ tabContentsWrapper.appendChild(mobileProctingConatiner);
 // 		interact(element).draggable({
 // 			inertia: true,
 // 			listeners: {
-// 				start(event) {
-// 					console.log('Drag started', event);
-// 				},
+// 			
 // 				move(event) {
 // 					const { target } = event;
 
@@ -193,44 +187,34 @@ tabContentsWrapper.appendChild(mobileProctingConatiner);
 // 					target.setAttribute('data-x', x);
 // 					target.setAttribute('data-y', y);
 // 				},
-// 				end(event) {
-// 					console.log('Drag ended', event);
-// 				},
+// 
 // 			},
 // 		});
 // 	}
 // };
 
+// const shadowRoot = modalContent.attachShadow({ mode: 'open' });
 modalContent.appendChild(tabContentsWrapper);
-const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
+// const link = document.createElement('link');
+// link.rel = 'stylesheet';
+// link.href = '../assets/css/modal.css';
+// shadowRoot.appendChild(link);
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
 };
 
-const openModal = (callback) => {
-	console.log = function() {};
-	document.body.appendChild(modal);
-	modal.style.display = 'block';
-
-	const activeTab = handlePreChecksRedirection(callback);
-	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
-
-	if (preChecksStep === null) {
-		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
-	}
-	showTab(activeTab, callback);
-	const session = convertDataIntoParse('session');
-	startSession(session);
-
+const createLanguageDropdown = () => {
 	const modalHeader = document.createElement('div');
 	modalHeader.className = 'header';
 
 	const languageContainer = document.createElement('section');
 	languageContainer.className = 'dropdown';
 
+	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolTheme?.language || 'en';
-	let selectedLanguage = languages.find(lang => lang.keyword === defaultLanguage);
+	const filterLanguage = normalizeLanguage(defaultLanguage);
+	let selectedLanguage = languages.find(lang => lang.keyword === filterLanguage.trim());
 
 	const selectContainer = document.createElement('div');
 	selectContainer.className = 'select';
@@ -239,6 +223,7 @@ const openModal = (callback) => {
 	const flagImg = document.createElement('img');
 	flagImg.src = selectedLanguage.src;
 	flagImg.alt = selectedLanguage.alt;
+	flagImg.className = 'flag-icon-img';
 	selectContainer.appendChild(flagImg);
 
 	const label = document.createElement('label');
@@ -258,16 +243,19 @@ const openModal = (callback) => {
 	languages.forEach((lang, index) => {
 		const optionDiv = document.createElement('div');
 		optionDiv.key = index;
+
 		optionDiv.className = `dropdown-option ${lang.keyword === selectedLanguage.keyword ? 'selected' : ''}`;
 		optionDiv.onclick = () => onTrigger(lang);
 
 		const optionFlag = document.createElement('img');
 		optionFlag.src = lang.src;
 		optionFlag.alt = lang.alt;
+		optionFlag.className = 'flag-icon-img';
 		optionDiv.appendChild(optionFlag);
 
 		const optionText = document.createElement('div');
 		optionText.className = 'text';
+		optionText.id='dropdown-text-language';
 		optionText.textContent = i18next.t(lang.value);
 		optionDiv.appendChild(optionText);
 
@@ -286,28 +274,36 @@ const openModal = (callback) => {
 				flagImg.src = selectedLang.src;
 				label.textContent = i18next.t(selectedLang.value);
 	
-				languages.forEach(lang => {
-					const optionDiv = Array.from(languageDropdown.children).find(
-						option => option.textContent.trim() === i18next.t(lang.value)
-					);
+				languages.forEach((lang,index) => {
+					const optionDiv = languageDropdown.children[index];
 					if (optionDiv) {
 						const optionText = optionDiv.querySelector('.text');
 						optionText.textContent = i18next.t(lang.value);
 					}
 				});
 			})
-			.catch(err => console.error(err));
+			.catch(err => logger.error(err));
 	
 		languageDropdown.classList.remove('active');
 		updatePersistData('schoolTheme', { language: selectedLang.keyword });
 	}
 };
 
-export const setLanguage = (lang) => {
-	i18next.changeLanguage(lang, (err) => {
-		if (err) return console.error(err);
-		updateTranslations();
-	});
+const openModal = (callback) => {
+	document.body.appendChild(modal);
+	modal.style.display = 'block';
+
+	const activeTab = handlePreChecksRedirection(callback);
+	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
+
+	if (preChecksStep === null) {
+		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
+	}
+	showTab(activeTab, callback);
+	const session = convertDataIntoParse('session');
+	startSession(session);
+
+	createLanguageDropdown();
 };
 
 function closeModal() {
@@ -329,6 +325,8 @@ const showTab = async (tabId, callback) => {
 	try {
 		loadZendeskWidget();
 		// initializeLiveChat();
+
+		initializeI18next();
 
 		updateThemeColor();
 		const tabs = document.querySelectorAll('.tab');
@@ -389,7 +387,7 @@ const showTab = async (tabId, callback) => {
 			await IdentityVerificationScreenThree(IdentityVerificationScreenThreeContainer);
 		} else if (tabId === 'IdentityVerificationScreenFour') {
 			if (!secureFeatures?.find(entity => entity.key === 'record_room')) {
-				navigate('IdentityVerificationScreenFive');
+				navigate('MobileProctoring');
 				return;
 			}
 			await IdentityVerificationScreenFour(IdentityVerificationScreenFourContainer);
@@ -398,7 +396,7 @@ const showTab = async (tabId, callback) => {
 				navigate('IdentityVerificationScreenFive');
 				return;
 			}
-			await MobileProctoring(mobileProctingConatiner);
+			await MobileProctoring(mobileProctingContainer);
 		} else if (tabId === 'IdentityVerificationScreenFive') {
 			if (!secureFeatures?.find(entity => entity.key === 'record_screen')) {
 				closeModal(callback);
@@ -411,7 +409,7 @@ const showTab = async (tabId, callback) => {
 			return;
 		}
 	} catch (e) {
-		console.error('error in showTab', e);
+		logger.error('error in showTab', e);
 	}
 };
 
@@ -430,7 +428,7 @@ const startSession = async (session) => {
 				sessionStatus: 'Initiated'
 			});
 	} catch (e) {
-		console.log('error', e);
+		logger.error('Error in start Session', e);
 	}
 };
 
@@ -439,41 +437,46 @@ export const updateTranslations = () => {
 	showTab(activeTab,window.globalCallback);
 };
 
-i18next.init({
-	lng: schoolTheme?.language.split('-')[0] || 'en',
-	resources: {
-		en: {
-			translation: require('../assets/locales/en/translation.json')
-		},
-       
-		fr: {
-			translation: require('../assets/locales/fr/translation.json')
-		},
-		it: {
-			translation: require('../assets/locales/it/translation.json')
-		},
-		pt: {
-			translation: require('../assets/locales/pt/translation.json')
-		},
-		nl: {
-			translation: require('../assets/locales/nl/translation.json')
-		},
-		es: {
-			translation: require('../assets/locales/es/translation.json')
-		},
-		de: {
-			translation: require('../assets/locales/de/translation.json')
-		},
-       
-	}
-}, (err) => {
-	if (err) return console.error(err);
-	updateTranslations();
-});
+const initializeI18next = () => {
+	if (i18next.isInitialized) return;
 
-document.addEventListener('DOMContentLoaded', () => {
-	updateTranslations();
-});
+	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
+	const defaultLanguage = schoolLanguage?.language || 'en';
+
+	i18next.init({
+		lng: normalizeLanguage(defaultLanguage),
+		resources: {
+			en: {
+				translation: require('../assets/locales/en/translation.json')
+			}, 
+			fr: {
+				translation: require('../assets/locales/fr/translation.json')
+			},
+			it: {
+				translation: require('../assets/locales/it/translation.json')
+			},
+			pt: {
+				translation: require('../assets/locales/pt/translation.json')
+			},
+			nl: {
+				translation: require('../assets/locales/nl/translation.json')
+			},
+			es: {
+				translation: require('../assets/locales/es/translation.json')
+			},
+			de: {
+				translation: require('../assets/locales/de/translation.json')
+			},	 
+		}
+	}, (err) => {
+		if (err) return logger.error('Error in language', err);
+		updateTranslations();
+	});
+	
+	document.addEventListener('DOMContentLoaded', () => {
+		updateTranslations();
+	});
+};
 
 function checkToken() {
 	if (!localStorage.getItem('mereosToken')) {

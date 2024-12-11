@@ -9,12 +9,11 @@ import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive
 import { ExamPreparation } from './examPreprationScreen';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
-import { ASSET_URL, languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import { ASSET_URL, examPreprationCss, identityStepsCss, languages, mobileProctoringCss, preChecksSteps, preValidationCss, prevalidationSteps, startRecordingCss, step1Css, step2Css, step3Css, step4Css, step5Css, systemDiagnosticCss, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
 import 'notyf/notyf.min.css';
 // import Talk from 'talkjs';
 // import interact from 'interactjs';
-
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -193,12 +192,13 @@ tabContentsWrapper.appendChild(mobileProctingContainer);
 // 	}
 // };
 
-// const shadowRoot = modalContent.attachShadow({ mode: 'open' });
-modalContent.appendChild(tabContentsWrapper);
-// const link = document.createElement('link');
-// link.rel = 'stylesheet';
-// link.href = '../assets/css/modal.css';
-// shadowRoot.appendChild(link);
+let shadowRoot = modalContent.attachShadow({ mode: 'open' });
+
+const styleElement = document.createElement('style');
+styleElement.textContent = `${examPreprationCss} ${systemDiagnosticCss} ${step1Css} ${step2Css} ${step3Css} ${step4Css} ${step5Css} ${mobileProctoringCss} ${preValidationCss} ${identityStepsCss} ${startRecordingCss}`;
+
+shadowRoot.appendChild(styleElement);
+shadowRoot.appendChild(tabContentsWrapper);
 
 const navigate = (newTabId) => {
 	showTab(newTabId);

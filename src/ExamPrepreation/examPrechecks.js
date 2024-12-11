@@ -9,12 +9,11 @@ import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive
 import { ExamPreparation } from './examPreprationScreen';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { PrevalidationInstructions } from './PrevalidationInstructions';
-import { ASSET_URL, languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import { ASSET_URL,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import { MobileProctoring } from './mobileProctoring';
 import 'notyf/notyf.min.css';
 // import Talk from 'talkjs';
 // import interact from 'interactjs';
-
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -193,12 +192,7 @@ tabContentsWrapper.appendChild(mobileProctingContainer);
 // 	}
 // };
 
-// const shadowRoot = modalContent.attachShadow({ mode: 'open' });
 modalContent.appendChild(tabContentsWrapper);
-// const link = document.createElement('link');
-// link.rel = 'stylesheet';
-// link.href = '../assets/css/modal.css';
-// shadowRoot.appendChild(link);
 
 const navigate = (newTabId) => {
 	showTab(newTabId);

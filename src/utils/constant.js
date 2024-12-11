@@ -1,8 +1,6 @@
 export const ASSET_URL = 'https://mereos-corder.s3.eu-west-3.amazonaws.com/library_icons';
 
-export const BASE_URL = process.env.NODE_ENV === 'production'
-	? 'https://corder-api.mereos.eu'
-	: 'https://corder-api.mereos-datasafe.com/';
+export const BASE_URL = 'https://corder-api.mereos.eu';
 
 export const SOCKET_URL = 'wss://mobile-socket.mereos.eu/websocket/';
 
@@ -55,6 +53,8 @@ export const preChecksSteps = {
 	mobileConnection:false,
 };
 
+export const recordingEvents = ['record_screen','record_audio','record_video','mobile_proctoring'];
+   
 export const LockDownOptions = [
 	'detect_unfocus',
 	'disable_downloading',

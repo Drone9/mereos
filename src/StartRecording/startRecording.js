@@ -5,7 +5,7 @@ import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import {socket} from '../utils/socket';
 import { getCreateRoom } from '../services/twilio.services';
-import { ASSET_URL, LockDownOptions } from '../utils/constant';
+import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
 import interact from 'interactjs';
 import i18next from 'i18next';
@@ -103,9 +103,9 @@ export const startRecording = async () => {
 
 	if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 		await lockBrowserFromContent(secureFeatures?.entities || []);
+		registerEvent({ eventType: 'success', notify: false, eventName: 'browser_locked_successfully', eventValue: getDateTime() });
 	}
 
-	const recordingEvents = ['record_screen','record_audio','record_video','mobile_proctoring'];
 	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
 
 		let twilioOptions = {
@@ -172,8 +172,6 @@ export const startRecording = async () => {
 				screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 			}
-
-			registerEvent({ eventType: 'success', notify: false, eventName: 'browser_locked_successfully', eventValue: getDateTime() });
 			
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
 			if (socket && socket.readyState === WebSocket.OPEN) {
@@ -209,6 +207,11 @@ export const startRecording = async () => {
 			});
 		}
 	}else{
+		const dateTime = new Date();
+		updatePersistData('session', {
+			sessionStartTime: getTimeInSeconds({ isUTC: true, inputDate: dateTime }),
+			sessionStatus:'Attending'
+		});
 		if(window.startRecordingCallBack){
 			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 		}
@@ -497,10 +500,13 @@ export const stopAllRecordings = async () => {
 		
 		const dateTime = new Date();
 
-		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
-	
+		if(secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
+			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
+		}
 
-		showToast('success', 'Recording stopped successfully');
+		registerEvent({ eventType: 'success', notify: false, eventName: 'assessment_completed', startAt: dateTime });
+
+		showToast('success', secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0 ? i18next.t('recording_stopped_successfully') : i18next.t('assessment_completed'));
 
 		return 'stop_recording';
 	} catch (e) {

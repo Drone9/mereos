@@ -14,9 +14,11 @@
   \****************************************************************************************/
 body {
   font-family: 'Poppins', sans-serif;
+  font-style: var(--font-style);
 }
 :root {
   --theme-color: #FF961B;
+  --font-style: var(--font-style);
 }
 
 .modal {
@@ -57,6 +59,10 @@ body {
   margin-top: 12px;
   padding-left: 12px;
   padding-bottom: 5px;
+}
+
+.flag-icon-img{
+  width: 25px;
 }
 .dropdown-content .text{
   font-size: 14px !important;
@@ -204,7 +210,7 @@ body {
 
 .system-diagnostic-test-screen .description {
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 16px;
   line-height: 160%;
@@ -497,6 +503,7 @@ body {
 .orange-filled-btn {
 	border-style: none;
 	font-size: 1em;
+  font-style: var(--font-style);
 	color: white;
 	font-weight: 500;
 	border-radius: 5px;
@@ -547,7 +554,7 @@ body {
 }
 .ivso-header-title {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: bold;
 	font-size: 32px;
 	display: flex;
@@ -559,7 +566,7 @@ body {
 
 .ivso-msg {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 16px;
 	display: flex;
@@ -640,7 +647,7 @@ body {
 	display: flex;
 	align-items: center;
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 13px;
 	line-height: 19px;
@@ -649,7 +656,7 @@ body {
 
 .ivso-instruction-txt {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: 500;
 	font-size: 16px;
 	line-height: 24px;
@@ -667,7 +674,7 @@ body {
 
 .ivso-query-msg {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 14px;
 	line-height: 21px;
@@ -749,7 +756,7 @@ body {
   display: flex;
   align-items: center;
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 13px;
   line-height: 19px;
@@ -758,7 +765,7 @@ body {
 
 .ivs-instruction-txt {
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: 500;
   font-size: 14px;
   line-height: 24px;
@@ -774,7 +781,7 @@ body {
 .ivs-instruction-txt-orange {
   font-family: Poppins, sans-serif;
   white-space: nowrap;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: 500;
   font-size: 14px;
   line-height: 24px;
@@ -792,7 +799,7 @@ body {
 
 .ivs-query-msg {
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 14px;
   line-height: 21px;
@@ -884,7 +891,7 @@ body {
 
 .step-2-header-title {
     font-family: Poppins;
-    font-style: normal;
+    font-style: var(--font-style);
     font-weight: bold;
     font-size: 35px;
     display: flex;
@@ -896,7 +903,7 @@ body {
 
 .ivst-msg {
     font-family: Poppins;
-    font-style: normal;
+    font-style: var(--font-style);
     font-weight: normal;
     font-size: 15px;
     display: flex;
@@ -927,7 +934,7 @@ body {
     display: flex;
     align-items: center;
     font-family: Poppins;
-    font-style: normal;
+    font-style: var(--font-style);
     font-weight: normal;
     font-size: 13px;
     line-height: 19px;
@@ -936,7 +943,7 @@ body {
 
 .ivst-instruction-txt {
     font-family: Poppins;
-    font-style: normal;
+    font-style: var(--font-style);
     font-weight: 500;
     font-size: 16px;
     line-height: 24px;
@@ -969,7 +976,7 @@ body {
 }
 .first-header-msg {
     font-family: Poppins;
-    font-style: normal;
+    font-style: var(--font-style);
     font-weight: normal;
     font-size: 16px;
     line-height: 160%;
@@ -1215,7 +1222,7 @@ body {
 
 .room-scan-header-title {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: bold;
 	font-size: 34px;
 	display: flex;
@@ -1227,7 +1234,7 @@ body {
 
 .ivsf-msg {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 15px;
 	display: flex;
@@ -1258,7 +1265,7 @@ body {
 	display: flex;
 	align-items: center;
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 13px;
 	line-height: 19px;
@@ -1267,7 +1274,7 @@ body {
 
 .ivsf-instruction-txt {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: 500;
 	font-size: 16px;
 	line-height: 24px;
@@ -1291,7 +1298,7 @@ body {
 
 .ivsf-query-msg {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 14px;
 	line-height: 21px;
@@ -1354,7 +1361,7 @@ body {
 
 .ivsf-header-titles {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: bold;
 	font-size: 35px;
 	display: flex;
@@ -1366,7 +1373,7 @@ body {
 
 .screen-desc {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 15px;
 	display: flex;
@@ -1397,7 +1404,7 @@ body {
 	display: flex;
 	align-items: center;
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 13px;
 	line-height: 19px;
@@ -1406,7 +1413,7 @@ body {
 
 .ivsf-instruction-txt {
 	font-family: Poppins;
-	font-style: normal;
+	font-style: var(--font-style);
 	font-weight: 500;
 	font-size: 16px;
 	line-height: 24px;
@@ -1650,7 +1657,7 @@ body {
 }
 .pvi-header-title {
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: bold;
   font-size: 26px;
   display: flex;
@@ -1664,7 +1671,7 @@ body {
 }
 .pvi-msg {
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 16px;
   line-height: 160%;
@@ -1689,7 +1696,7 @@ body {
 
 .pvi-instruction-txt {
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: 500;
   font-size: 16px;
   line-height: 24px;
@@ -1701,7 +1708,7 @@ body {
 
 .pvi-query-msg {
   font-family: Poppins, sans-serif;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 14px;
   line-height: 21px;
@@ -1734,7 +1741,7 @@ body {
 /*!************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!../mereos/src/assets/css/mobile-proctoring.css ***!
   \************************************************************************************************/
-.ivsf-container {
+.mobile-conection-container {
   display: flex;
   flex-direction: column;
 }
@@ -1752,7 +1759,7 @@ body {
 }
 
 .mobile-connection-banner {
-  margin: 10px auto 20px;
+  margin: 10px auto 5px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1896,7 +1903,7 @@ body {
 
 .mobile-header-title {
   font-family: Poppins;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: bold;
   font-size: 35px;
   display: flex;
@@ -1908,7 +1915,7 @@ body {
 
 .ivsf-msg {
   font-family: Poppins;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 16px;
   line-height: 160%;
@@ -1940,7 +1947,7 @@ body {
   display: flex;
   align-items: center;
   font-family: Poppins;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 13px;
   line-height: 19px;
@@ -1949,7 +1956,7 @@ body {
 
 .ivsf-instruction-txt {
   font-family: Poppins;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: 500;
   font-size: 16px;
   line-height: 24px;
@@ -1988,7 +1995,7 @@ body {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  row-gap: 15px;  
+  row-gap: 10px;  
 }
 .video-loader{
   position: relative;
@@ -2062,51 +2069,66 @@ body{
   height: auto;
   display: block;
 }
+.remote-video{
+  display: flex;
+  justify-content: center;
+}
 .remote-video  .video-attached{
-  width: 280px;
-  height: 182px;
+  width: 180px;
+  height: 140px;
   object-fit: cover;
 }
 
 .user-videos-remote{
   display: flex;
-      position: absolute;
-      bottom: 10px;
-      z-index: 9999;
-      column-gap: 10px;
-      flex-direction: column;
-      width: 300px;
-      background-color: #E7EBEF;
-      border-radius: 10px;
-      box-shadow: 1px 1px 5px 1px #f1f1f1;
-      justify-content: center;
-      align-items: center;
-      row-gap: 10px;
+  position: absolute;
+  bottom: 10px;
+  column-gap: 10px;
+  row-gap: 9px;
+  flex-direction: column;
+  width: 220px;
+  background-color: #e7ebef;
+  border-radius: 10px;
+  box-shadow: 1px 1px 5px 1px #f1f1f1;
+  z-index: 9999999;
+  left: 10px;
 }
 
 .user-videos-remote .user-video-header{
   display: flex;
-  width: 100%;
   justify-content: space-between;
   align-items: center;
   padding-left: 10px;
 }
-.user-videos-remote .user-video-header p{
-  font-size: 17px;
+.user-videos-remote .user-video-header .recording-heading{
+  font-size: 14px;
+  margin-bottom: 9px;
 }
 
 .recording-badge-container-header {
-    background-color: #E95E5E;
+    position: absolute;
+    right: 10px;
+    width: 61px;
+    white-space: nowrap;
+    background-color: #e95e5e;
     border-radius: 5px;
-    color: #ffffff;
+    color: #fff;
     display: flex;
     align-items: center;
-    column-gap: 8px;
-    padding: 5px 10px;
+    font-size: 10px;
+    column-gap: 4px;
+    padding: 5px 5px;
     text-transform: lowercase;
-    height: 26px;
-    width: 103px;
-    margin-right: 14px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.recording-badge-container-header .recording-text{
+  margin: 0;
+  font-size: 10px;
+  width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .user-videos-remote .btn-container{

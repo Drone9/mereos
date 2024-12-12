@@ -1,9 +1,9 @@
 import { dataURIToBlob, logger, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step1.css';
-import { showTab } from './examPrechecks';
 import i18next from 'i18next';
-import { renderIdentityVerificationSteps } from './IdentitySteps';
+import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
+import { showTab } from '../ExamsPrechecks';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {

@@ -9,18 +9,18 @@
 
 window.openModal = openModal;
 
-import { openModal } from './src/ExamPrepreation/examPrechecks';
+import { openModal } from './src/ExamsPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
-import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
+import { createCandidate } from './src/services/candidate.services'; 
+import { socket } from './src/utils/socket';
+import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
-import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, logger, updatePersistData } from './src/utils/functions';
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
+import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, logger, updatePersistData } from './src/utils/functions';
 import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
-import { createCandidate } from './src/services/candidate.services'; 
-import { socket } from './src/utils/socket';
 
 async function init(credentials, candidateData,profileId, assessmentData, schoolTheme) {
 	try{
@@ -128,6 +128,8 @@ async function stop_session(callback) {
 				localStorage.removeItem('secureFeatures');
 				localStorage.removeItem('schoolTheme');
 				localStorage.removeItem('conversationId');
+				localStorage.removeItem('precheckSetting');
+				localStorage.removeItem('socketGroupId');
 
 				callback({ type: 'success', message: 'session is finished successfully' });
 			} else {

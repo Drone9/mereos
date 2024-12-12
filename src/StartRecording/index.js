@@ -1,5 +1,5 @@
 import * as TwilioVideo from 'twilio-video';
-import { addSectionSessionRecord, convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import {socket} from '../utils/socket';
@@ -9,7 +9,7 @@ import '../assets/css/start-recording.css';
 import interact from 'interactjs';
 import i18next from 'i18next';
 import { v4 } from 'uuid';
-import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
+import { newStream } from '../IdentityVerificationScreenFive';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
@@ -437,6 +437,7 @@ export const stopAllRecordings = async () => {
 			incident_level:findIncident
 		});
 
+		cleanupZendeskWidget();
 		cleanupLocalVideo();
 
 		if(mediaStream){

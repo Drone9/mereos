@@ -1,8 +1,8 @@
 import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
-import { showTab } from './examPrechecks';
 import '../assets/css/step3.css';
 import i18next from 'i18next';
-import { renderIdentityVerificationSteps } from './IdentitySteps';
+import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
+import { showTab } from '../ExamsPrechecks';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
 	let canvasRef;

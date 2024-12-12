@@ -190,7 +190,7 @@ export const runSystemDiagnostics = async (tab1Content) => {
 
 		if (recordVideo) {
 			promises.push(checkCamera().then(stream => {
-				cameraStream = stream;
+				cameraStream = stream; // Save the camera stream
 				setElementStatus('webcam', { success: videoGreen, failure: videoRed }, stream);
 				handleDiagnosticItemClick('webcam', checkCamera);
 				return stream;
@@ -269,10 +269,7 @@ export const runSystemDiagnostics = async (tab1Content) => {
 			return currentIconPathname === expectedIconPathname;
 	});
 	
-	const continueBtn = document.getElementById('diagnosticContinueBtn');
-	if (continueBtn) {
-		continueBtn.disabled = !allDiagnosticsPassed;
-	}
+		document.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 	} catch (error) {
 		console.error('Error running diagnostics:', error);
 	} finally {

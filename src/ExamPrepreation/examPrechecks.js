@@ -14,6 +14,8 @@ import { MobileProctoring } from './mobileProctoring';
 import 'notyf/notyf.min.css';
 // import Talk from 'talkjs';
 // import interact from 'interactjs';
+// import mereosLogo from '../assets/images/mereos.svg';
+// import schoolLogo from '../assets/images/profile-draft-circled-orange.svg';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -98,7 +100,7 @@ tabContentsWrapper.appendChild(mobileProctingConatiner);
 // 	chatIcon.style.right = '20px';
 // 	chatIcon.style.zIndex = '99999999';
 // 	chatIcon.style.cursor = 'pointer';
-// 	chatIcon.src = `${ASSET_URL}/mereos.svg`;
+// 	chatIcon.src = mereosLogo;
 // 	chatIcon.alt = 'Chat Icon';
 // 	chatIcon.style.width = '50px';
 // 	chatIcon.style.height = '50px';
@@ -138,10 +140,10 @@ tabContentsWrapper.appendChild(mobileProctingConatiner);
 // 				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 
 // 				const me = new Talk.User({
-// 					id: candidateInviteAssessmentSection?.candidate?.id,
-// 					name: candidateInviteAssessmentSection?.candidate?.name,
-// 					email: candidateInviteAssessmentSection?.candidate?.email,
-// 					photoUrl: candidateInviteAssessmentSection?.candidate?.photo || `${ASSET_URL}/profile-draft-circled-orange.svg`,
+// 					id: candidateInviteAssessmentSection?.id,
+// 					name: candidateInviteAssessmentSection?.name,
+// 					email: candidateInviteAssessmentSection?.email,
+// 					photoUrl: candidateInviteAssessmentSection?.photo || schoolLogo,
 // 				});
 
 // 				const session = new Talk.Session({
@@ -153,7 +155,7 @@ tabContentsWrapper.appendChild(mobileProctingConatiner);
 // 					id: candidateInviteAssessmentSection?.school?.id,
 // 					name: candidateInviteAssessmentSection?.school?.name,
 // 					email: candidateInviteAssessmentSection?.school?.email,
-// 					photoUrl: `${ASSET_URL}/profile-draft-circled-orange.svg`,
+// 					photoUrl: schoolLogo,
 // 				});
 
 // 				const conversationId = localStorage.getItem('conversationId');

@@ -126,13 +126,10 @@ body {
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
-  max-width: 182px;
-  justify-content: space-between;
   z-index: 99999;
 }
 .dropdown .select label{
   cursor: pointer;
-  font-size: 15px;
 }
 
 .dropdown .select div {

@@ -1,17 +1,17 @@
 import i18next from 'i18next';
 import '../assets/css/modal.css';
-import { runSystemDiagnostics } from './systemdiagnostic';
-import { IdentityVerificationScreenOne } from './identityVerificationScreenOne';
-import { IdentityVerificationScreenTwo } from './identityVerificationScreenTwo';
-import { IdentityVerificationScreenThree } from './identityVerificationScreenThree';
-import { IdentityVerificationScreenFour } from './identityVerificationScreenFour';
-import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
-import { ExamPreparation } from './examPreprationScreen';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
-import { PrevalidationInstructions } from './PrevalidationInstructions';
 import { ASSET_URL,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
-import { MobileProctoring } from './mobileProctoring';
 import 'notyf/notyf.min.css';
+import { ExamPreparation } from '../ExamPreparation';
+import { SystemDiagnostics } from '../SystemDiagnostic';
+import { IdentityVerificationScreenOne } from '../IdentityVerificationScreenOne';
+import { IdentityVerificationScreenTwo } from '../IdentityVerificationScreenTwo';
+import { IdentityVerificationScreenThree } from '../IdentityVerificationScreenThree';
+import { MobileProctoring } from '../MobileProctoring';
+import { IdentityVerificationScreenFive } from '../IdentityVerificationScreenFive';
+import { IdentityVerificationScreenFour } from '../IdentityVerificationScreenFour';
+import { PrevalidationInstructions } from '../PrevalidationInstructions';
 // import Talk from 'talkjs';
 // import interact from 'interactjs';
 
@@ -302,14 +302,16 @@ const openModal = async (callback) => {
 };
 
 function closeModal() {
-	if (typeof window.globalCallback === 'function' && localStorage.getItem('mereosToken')) {
+	if (typeof window.globalCallback === 'function') {
 		window.globalCallback({ message: 'precheck_completed' });
 	}
 
-	cleanupZendeskWidget();
-
 	modal.style.display = 'none';
 	modal.remove();
+
+	if(!localStorage.getItem('mereosToken')){
+		cleanupZendeskWidget();
+	}
 }
 
 const showTab = async (tabId, callback) => {
@@ -351,7 +353,7 @@ const showTab = async (tabId, callback) => {
 				navigate('Prevalidationinstruction');
 				return;
 			}
-			runSystemDiagnostics(SystemDiagnosticsContainer);
+			SystemDiagnostics(SystemDiagnosticsContainer);
 		} else if (tabId === 'Prevalidationinstruction') {
 			if (!secureFeatures.filter(entity => prevalidationSteps.includes(entity.key))?.length) {
 				navigate('IdentityVerificationScreenOne');
@@ -470,18 +472,21 @@ const initializeI18next = () => {
 	});
 };
 
+window.addEventListener('storage', (event) => {
+	if (event.key === 'mereosToken' && event.newValue === null) {
+		closeModal();
+	}
+});
+
 function checkToken() {
 	if (!localStorage.getItem('mereosToken')) {
 		closeModal();
 	}
 }
 
-checkToken();
-
-window.addEventListener('unload', cleanupZendeskWidget);
+window.onload = checkToken; 
 
 const checkInterval = 2000;
 setInterval(checkToken, checkInterval);
-
 
 export { openModal, closeModal, modalContent, showTab };

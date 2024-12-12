@@ -12,8 +12,8 @@ import {
 } from '../utils/functions';
 import '../assets/css/systemDiagnostic.css';
 import i18next from 'i18next';
-import { showTab } from './examPrechecks';
 import { ASSET_URL } from '../utils/constant';
+import { showTab } from '../ExamsPrechecks';
 
 let cameraStream = null;
 let audioStream = null;
@@ -129,7 +129,7 @@ const renderUI = (tab1Content) => {
 	tab1Content.appendChild(container);
 };
 
-export const runSystemDiagnostics = async (tab1Content) => {
+export const SystemDiagnostics = async (tab1Content) => {
 	logger.success('runSystemDiagnostics trigger');
 	if (!tab1Content) {
 		logger.error('Element with id "runSystemDiagnostics" not found.');

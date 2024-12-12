@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger } from '../utils/functions';
 import '../assets/css/prevalidation.css';
-import { showTab } from './examPrechecks';
+import { showTab } from '../ExamsPrechecks';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {

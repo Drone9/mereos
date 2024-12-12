@@ -100,6 +100,7 @@ async function start_session(callback) {
 				if (twilioToken) {
 					updatePersistData('session', {
 						twilioToken:twilioToken.data.token,
+						sessionId:newRoomSessionId
 					});
 				}
 			}

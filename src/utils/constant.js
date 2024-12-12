@@ -25,7 +25,7 @@ export const initialSessionData = {
 	user_audio_name: [],
 	screen_sharing_video_name: [],
 	roomscan_recordings: [],
-	session_id: null,
+	sessionId: null,
 	collected_details: null,
 	video_codec: null,
 	video_extension: null,

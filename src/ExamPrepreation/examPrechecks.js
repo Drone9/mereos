@@ -283,11 +283,12 @@ const createLanguageDropdown = () => {
 	}
 };
 
-const openModal = (callback) => {
+const openModal = async (callback) => {
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
 
 	const activeTab = handlePreChecksRedirection(callback);
+	logger.warn('activeTab',activeTab);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
 
 	if (preChecksStep === null) {
@@ -295,7 +296,7 @@ const openModal = (callback) => {
 	}
 	showTab(activeTab, callback);
 	const session = convertDataIntoParse('session');
-	startSession(session);
+	await startSession(session);
 
 	createLanguageDropdown();
 };
@@ -305,8 +306,8 @@ function closeModal() {
 		window.globalCallback({ message: 'precheck_completed' });
 	}
 
-	if(window.sharedMediaStream){
-		window.sharedMediaStream?.getTracks()?.forEach(track => track.stop());
+	if(window.screenSharingStream){
+		window.screenSharingStream?.getTracks()?.forEach(track => track.stop());
 	}
 
 	cleanupZendeskWidget();
@@ -319,7 +320,7 @@ const showTab = async (tabId, callback) => {
 	try {
 		loadZendeskWidget();
 		// initializeLiveChat();
-
+		
 		initializeI18next();
 
 		updateThemeColor();
@@ -413,6 +414,7 @@ const startSession = async (session) => {
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp?.data) {
+			logger.info('resp?.data',resp?.data);
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
 			registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
 		}
@@ -427,8 +429,8 @@ const startSession = async (session) => {
 };
 
 export const updateTranslations = () => {
-	const activeTab = handlePreChecksRedirection(window.globalCallback);
-	showTab(activeTab,window.globalCallback);
+	// const activeTab = handlePreChecksRedirection(window.globalCallback);
+	// showTab(activeTab,window.globalCallback);
 };
 
 const initializeI18next = () => {

@@ -191,6 +191,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	tabContent.appendChild(container);
 
 	shareScreen();
+	
 	initSocketConnection();
 	
 	const candidateAssessment = getSecureFeatures();

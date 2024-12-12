@@ -1,6 +1,5 @@
 import * as TwilioVideo from 'twilio-video';
-import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
-import { convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import {socket} from '../utils/socket';
@@ -9,6 +8,8 @@ import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
 import interact from 'interactjs';
 import i18next from 'i18next';
+import { v4 } from 'uuid';
+import { newStream } from '../ExamPrepreation/IdentityVerificationScreenFive';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
@@ -24,7 +25,8 @@ export const startRecording = async () => {
 	let screenRecordings = [];
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
-	
+	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+
 	window.addEventListener('popstate', () => {
 		if(window.startRecordingCallBack){
 			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
@@ -125,9 +127,9 @@ export const startRecording = async () => {
 
 		try {
 			const dateTime = new Date();
-			const newRoomSessionId = dateTime.getTime();
-			const newSessionId = session?.sessionId ? session?.sessionId : dateTime.getTime();
-
+			const newRoomSessionId = v4();
+			const newSessionId = session?.sessionId ? session?.sessionId : v4();
+			
 			updatePersistData('session', {
 				roomSessionId: newRoomSessionId,
 				sessionId: newSessionId,
@@ -139,28 +141,25 @@ export const startRecording = async () => {
 			roomInstance = room;
 			logger.success('room',room);
 
-			mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
-				deviceId: { exact: localStorage.getItem('microphoneID') },
-			} : true) });
+			if(secureFeatures?.entities?.find(entity => entity.key === 'record_video')){
+				mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
+					deviceId: { exact: localStorage.getItem('microphoneID') },
+				} : true) });
 
-			if (secureFeatures?.entities?.find(entity => entity.key === 'record_video')) {
 				startAIWebcam(mediaStream);
-			}
-
-			cameraTrack = new TwilioVideo.LocalVideoTrack(mediaStream.getVideoTracks()[0]);
-			await room.localParticipant.publishTrack(cameraTrack);
-			
-			if (findConfigs(['record_video'], secureFeatures?.entities).length){
 				cameraRecordings = [
-					...cameraRecordings,
+					...session.user_video_name,
 					...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
 				];
-				updatePersistData('session', { user_video_name: cameraRecordings || [], room_id: room?.sid });
+				updatePersistData('session', { 
+					user_video_name: cameraRecordings || [], 
+					room_id: room?.sid 
+				});
 			}
 
 			if(findConfigs(['record_audio'], secureFeatures?.entities).length){
 				audioRecordings = [
-					...audioRecordings,
+					...session.user_audio_name,
 					...Array.from(room?.localParticipant?.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
 				];
 				updatePersistData('session', { user_audio_name: audioRecordings, room_id: room?.sid });
@@ -169,7 +168,7 @@ export const startRecording = async () => {
 			if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
 				screenTrack = new TwilioVideo.LocalVideoTrack(newStream?.getTracks()[0]);
 				let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
-				screenRecordings = [...screenRecordings, screenTrackPublished.trackSid];
+				screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 			}
 			
@@ -181,7 +180,7 @@ export const startRecording = async () => {
 			if(window.startRecordingCallBack){
 				window.startRecordingCallBack({ message: 'recording_started_successfully' });
 			}
-
+			
 			room.on('reconnecting', () => {
 				cleanupLocalVideo(cameraTrack);
 				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
@@ -200,6 +199,9 @@ export const startRecording = async () => {
 					window.startRecordingCallBack({ message: 'web_internet_connection_disconnected' });
 				}
 			});
+
+			const updatedSession = convertDataIntoParse('session');
+			await addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
 		} catch (error) {
 			logger.error('error in startRecording',error);
 			updatePersistData('session', {
@@ -437,25 +439,13 @@ export const stopAllRecordings = async () => {
 
 		cleanupLocalVideo();
 
-		if(window.sharedMediaStream){
-			window.sharedMediaStream.getTracks().forEach(track => track.stop());
-			window.sharedMediaStream = null;
-		}
-
 		if(mediaStream){
 			mediaStream.getTracks().forEach(track => track.stop());
 			mediaStream=null;
 		}
 
 		if (newStream) {
-			newStream.getVideoTracks().forEach(track => {
-				track.stop();
-				track.enabled = false;
-			});
-		}
-
-		if (newStream) {
-			newStream.getAudioTracks().forEach(track => {
+			newStream.getTracks().forEach(track => {
 				track.stop();
 				track.enabled = false;
 			});

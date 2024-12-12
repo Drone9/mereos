@@ -1011,5 +1011,6 @@
 "multiple_people_detected":"Er zijn meerdere personen gedetecteerd.",
 "unauthorized_object_detected_please_put_it_away":"Er is een ongeautoriseerd object gedetecteerd. Leg het weg",
 "ai_recorder_unknown_violation":"Er is een onbekende overtreding geregistreerd door AI",
-"mobile_phone_disconneted":"Mobiele telefoon losgekoppeld"
+"mobile_phone_disconneted":"Mobiele telefoon losgekoppeld",
+"recording_stopped_successfully":"Opname succesvol gestopt"
 }

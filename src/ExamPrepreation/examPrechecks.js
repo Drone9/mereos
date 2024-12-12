@@ -306,10 +306,6 @@ function closeModal() {
 		window.globalCallback({ message: 'precheck_completed' });
 	}
 
-	if(window.screenSharingStream){
-		window.screenSharingStream?.getTracks()?.forEach(track => track.stop());
-	}
-
 	cleanupZendeskWidget();
 
 	modal.style.display = 'none';

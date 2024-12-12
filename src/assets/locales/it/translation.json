@@ -1011,5 +1011,6 @@
 "multiple_people_detected":"Sono state rilevate più persone.",
 "unauthorized_object_detected_please_put_it_away":"È stato rilevato un oggetto non autorizzato. Mettilo via",
 "ai_recorder_unknown_violation":"È stata registrata una violazione sconosciuta dall'IA",
-"mobile_phone_disconneted":"Telefono cellulare disconnesso"
+"mobile_phone_disconneted":"Telefono cellulare disconnesso",
+"recording_stopped_successfully":"Registrazione interrotta con successo"
 }

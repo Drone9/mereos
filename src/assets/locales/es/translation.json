@@ -1002,5 +1002,6 @@
 "multiple_people_detected": "Se han detectado varias personas.",
 "unauthorized_object_detected_please_put_it_away": "Se ha detectado un objeto no autorizado. Guárdelo",
 "ai_recorder_unknown_violation": "La IA ha registrado una infracción desconocida",
-"mobile_phone_disconneted":"Teléfono móvil desconectado"
+"mobile_phone_disconneted":"Teléfono móvil desconectado",
+"recording_stopped_successfully": "La grabación se detuvo correctamente"
 }

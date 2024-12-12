@@ -1,9 +1,9 @@
 import '../assets/css/step4.css';
-import { showTab } from './examPrechecks';
 import { getDateTime, logger, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
 import i18next from 'i18next';
-import { renderIdentityVerificationSteps } from './IdentitySteps';
+import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
+import { showTab } from '../ExamsPrechecks';
 
 window.userMediaStream = null;
 

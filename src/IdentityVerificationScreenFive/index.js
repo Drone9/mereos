@@ -1,10 +1,10 @@
 import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
 import '../assets/css/step5.css';
-import { showTab } from './examPrechecks';
 import i18next from 'i18next';
-import { renderIdentityVerificationSteps } from './IdentitySteps';
 import {socket} from '../utils/socket';
 import { ASSET_URL } from '../utils/constant';
+import { showTab } from '../ExamsPrechecks';
+import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 
 export let newStream;
 

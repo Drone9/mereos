@@ -1012,5 +1012,7 @@
 "unauthorized_object_detected_please_put_it_away":"Er is een ongeautoriseerd object gedetecteerd. Leg het weg",
 "ai_recorder_unknown_violation":"Er is een onbekende overtreding geregistreerd door AI",
 "mobile_phone_disconneted":"Mobiele telefoon losgekoppeld",
-"recording_stopped_successfully":"Opname succesvol gestopt"
+"recording_stopped_successfully":"Opname succesvol gestopt",
+"session_completed": "De sessie is voltooid",
+"session_completed_successfully": "De sessie is succesvol voltooid"
 }

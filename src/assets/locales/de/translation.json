@@ -1029,5 +1029,7 @@
 "unauthorized_object_detected_please_put_it_away":"Es wurde ein nicht autorisierter Gegenstand erkannt. Bitte legen Sie ihn weg",
 "ai_recorder_unknown_violation":"Die KI hat einen unbekannten Verstoß aufgezeichnet",
 "mobile_phone_disconneted":"Mobiltelefon getrennt",
-"recording_stopped_successfully": "Aufnahme erfolgreich gestoppt"
+"recording_stopped_successfully": "Aufnahme erfolgreich gestoppt",
+"session_completed": "Die Sitzung ist abgeschlossen",
+"session_completed_successfully": "Die Sitzung wurde erfolgreich abgeschlossen"
 }

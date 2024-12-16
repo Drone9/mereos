@@ -1004,5 +1004,7 @@
 "ai_recorder_unknown_violation": "La IA ha registrado una infracción desconocida",
 "mobile_phone_disconneted":"Teléfono móvil desconectado",
 "recording_stopped_successfully": "La grabación se detuvo correctamente",
-"screen_sharing_stopped": "Se detuvo el uso compartido de pantalla"
+"screen_sharing_stopped": "Se detuvo el uso compartido de pantalla",
+"session_completed": "La sesión está completada",
+"session_completed_successfully": "La sesión se completó con éxito"
 }

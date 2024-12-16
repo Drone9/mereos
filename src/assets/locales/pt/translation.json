@@ -1014,5 +1014,7 @@
 "ai_recorder_unknown_violation":"Há uma violação desconhecida registrada pela IA",
 "mobile_phone_disconneted":"Telemóvel desligado",
 "recording_stopped_successfully":"Gravação interrompida com sucesso",
-"screen_sharing_stopped":"Compartilhamento de tela interrompido"
+"screen_sharing_stopped":"Compartilhamento de tela interrompido",
+"session_completed": "A sessão está concluída",
+"session_completed_successfully": "A sessão foi concluída com sucesso"
 }

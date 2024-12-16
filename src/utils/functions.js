@@ -475,7 +475,8 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 			incident_level: session?.incident_level,
 			mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			conversation_id:localStorage.getItem('conversationId') || ''
+			conversation_id:localStorage.getItem('conversationId') || '',
+			candidate_assessment:session?.candidate_assessment
 		};
 
 		if (session?.id) {

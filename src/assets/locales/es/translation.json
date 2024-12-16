@@ -1003,5 +1003,6 @@
 "unauthorized_object_detected_please_put_it_away": "Se ha detectado un objeto no autorizado. Guárdelo",
 "ai_recorder_unknown_violation": "La IA ha registrado una infracción desconocida",
 "mobile_phone_disconneted":"Teléfono móvil desconectado",
-"recording_stopped_successfully": "La grabación se detuvo correctamente"
+"recording_stopped_successfully": "La grabación se detuvo correctamente",
+"screen_sharing_stopped": "Se detuvo el uso compartido de pantalla"
 }

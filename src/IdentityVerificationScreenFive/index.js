@@ -10,6 +10,7 @@ export let newStream;
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
+
 	if (!tabContent) {
 		logger.error('tabContent is not defined or is not a valid DOM element');
 		return;
@@ -23,7 +24,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const checkMultipleScreens = async () => {
-		const resp = detectMultipleScreens();
+		const resp = await detectMultipleScreens();
 		if (resp) {
 			multipleScreens = true;
 		} else {
@@ -70,29 +71,50 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const shareScreen = async () => {
 		try {
 			newStream = await shareScreenFromContent();
+
 			updatePersistData('session', { screenRecordingStream: location });
 
-			if (newStream.getVideoTracks()[0].getSettings().displaySurface === 'monitor') {
+			const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+
+			const videoTrack = newStream.getVideoTracks()[0];
+			const trackSettings = videoTrack.getSettings();
+
+			const isScreenShared = isFirefox ? true
+				: trackSettings.displaySurface === 'monitor';
+
+			if (isScreenShared) {
 				stream = newStream;
 				mode = 'startScreenRecording';
 				msg = {
 					type: 'successful',
 					text: i18next.t('screen_shared_successfully')
 				};
+
+				videoTrack.addEventListener('ended', () => {
+					logger.info('Screen sharing stopped by user');
+					msg = {
+						type: 'unsuccessful',
+						text: i18next.t('screen_sharing_stopped')
+					};
+					mode = 'rerecordScreen';
+					updateUI();
+				});
 			} else {
-				newStream.getVideoTracks()[0].stop();
-				throw i18next.t('please_share_entire_screen');
+				mode = 'rerecordScreen';
+				videoTrack.stop();
+				throw new Error(i18next.t('please_share_entire_screen'));
 			}
 		} catch (err) {
-			logger.error('Error during screen sharing:',err);
+			logger.error('Error during screen sharing:', err);
 			mode = 'rerecordScreen';
 			msg = {
 				type: 'unsuccessful',
-				text: err
+				text: err.message || err
 			};
 		}
-		updateUI(); 
+		updateUI();
 	};
+
 
 	const nextStep = () => {
 		updatePersistData('preChecksSteps', { screenSharing: true });
@@ -136,7 +158,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	headerImg.alt = 'camera-icon';
 	wrapper.appendChild(headerImg);
 
-	let queryMsg = document.createElement('div'); // Declare queryMsg here
+	let queryMsg = document.createElement('div');
 	queryMsg.classList.add('ivsf-query-msg');
 	if (msg.text) {
 		queryMsg.textContent = i18next.t(msg.text);
@@ -148,31 +170,31 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const btnContainer = document.createElement('div');
 	btnContainer.classList.add('ivsf-btn-container');
+	let doneButton = document.createElement('button'); 
 
-	const prevButton = document.createElement('button');
-	prevButton.className = 'orange-hollow-btn';
-	prevButton.textContent = i18next.t('previous_step');
-	prevButton.addEventListener('click', prevStep);
-	btnContainer.appendChild(prevButton);
+	// const prevButton = document.createElement('button');
+	// prevButton.className = 'orange-hollow-btn';
+	// prevButton.textContent = i18next.t('previous_step');
+	// prevButton.addEventListener('click', prevStep);
+	// btnContainer.appendChild(prevButton);
 
-	let doneButton; // Declare doneButton outside the conditional block
+	// console.log('mode',mode);
 
-	if (mode === 'startScreenRecording') {
-		doneButton = document.createElement('button'); 
-		doneButton.className = 'orange-filled-btn';
-		doneButton.textContent = i18next.t('done');
-		doneButton.disabled = multipleScreens;
-		doneButton.addEventListener('click', nextStep);
-		btnContainer.appendChild(doneButton);
-	} else if (mode === 'rerecordScreen') {
+	// if (mode === 'startScreenRecording') {
+	// 	doneButton.className = 'orange-filled-btn';
+	// 	doneButton.textContent = i18next.t('done');
+	// 	doneButton.disabled = multipleScreens;
+	// 	doneButton.addEventListener('click', nextStep);
+	// 	btnContainer.appendChild(doneButton);
+	// } else if (mode === 'rerecordScreen') {
 		
-		reshareButton.className = 'orange-filled-btn';
-		reshareButton.textContent = i18next.t('reshare_screen');
-		reshareButton.addEventListener('click', shareScreen);
-		btnContainer.appendChild(reshareButton);
-	}
+	// 	reshareButton.className = 'orange-filled-btn';
+	// 	reshareButton.textContent = i18next.t('reshare_screen');
+	// 	reshareButton.addEventListener('click', shareScreen);
+	// 	btnContainer.appendChild(reshareButton);
+	// }
 
-	wrapper.appendChild(btnContainer);
+	// wrapper.appendChild(btnContainer);
 	container.appendChild(wrapper);
 
 	const styleElement = document.createElement('style');
@@ -205,13 +227,39 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		headerTitle.textContent = i18next.t('verification_completed');
 		msgElement.textContent = i18next.t('verification_completed_msg');
 		queryMsg.textContent = i18next.t(msg.text);
-		prevButton.textContent = i18next.t('previous_step');
-		if (mode === 'startScreenRecording') {
-			doneButton.textContent = i18next.t('done');
-		} else if (mode === 'rerecordScreen') {
-			reshareButton.textContent = i18next.t('reshare_screen');
+
+		if (msg.type === 'unsuccessful') {
+			queryMsg.style.color = '#E95E5E';
+		} else {
+			queryMsg.style.color = ''; 
 		}
+
+		btnContainer.innerHTML = '';
+
+		const prevButton = document.createElement('button');
+		prevButton.className = 'orange-hollow-btn';
+		prevButton.textContent = i18next.t('previous_step');
+		prevButton.addEventListener('click', prevStep);
+		btnContainer.appendChild(prevButton);
+
+		console.log('multipleScreens',multipleScreens);
+		if (mode === 'startScreenRecording') {
+			doneButton = document.createElement('button');
+			doneButton.className = 'orange-filled-btn';
+			doneButton.textContent = i18next.t('done');
+			doneButton.disabled = multipleScreens;
+			doneButton.addEventListener('click', nextStep);
+			btnContainer.appendChild(doneButton);
+		} else if (mode === 'rerecordScreen') {
+			reshareButton.className = 'orange-filled-btn';
+			reshareButton.textContent = i18next.t('reshare_screen');
+			reshareButton.addEventListener('click', shareScreen);
+			btnContainer.appendChild(reshareButton);
+		}
+
+		wrapper.appendChild(btnContainer);
 	};
+
 
 	// Update UI when language changes
 	i18next.on('languageChanged', updateUI);

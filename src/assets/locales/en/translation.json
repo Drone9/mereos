@@ -1012,5 +1012,6 @@
 	"ai_recorder_unknown_violation":"There is an unknown violation recorded by AI",
 	"mobile_phone_disconneted":"Mobile phone disconneted",
 	"user_interrupted_the_stream":"User interrupted the stream!",
-	"recording_stopped_successfully":"Recording stopped successfully"
+	"recording_stopped_successfully":"Recording stopped successfully",
+	"screen_sharing_stopped":"Screen sharing stopped"
 }

@@ -1014,5 +1014,6 @@
 	"ai_recorder_unknown_violation":"Il y a une violation inconnue enregistrée par AI.",
 	"mobile_phone_disconneted":"Téléphone portable déconnecté",
 	"user_interrupted_the_stream":"L'utilisateur a interrompu le flux!",
-	"recording_stopped_successfully": "L'enregistrement a été arrêté avec succès"
+	"recording_stopped_successfully": "L'enregistrement a été arrêté avec succès",
+	"screen_sharing_stopped": "Partage d'écran arrêté"
 }

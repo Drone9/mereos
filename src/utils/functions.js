@@ -350,13 +350,14 @@ export const dataURLtoFile = (dataurl, filename) => {
 
 export const shareScreenFromContent = () => {
 	return new Promise((resolve, reject) => {
-		navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'monitor' } })
-			.then(stream => {
-				resolve(stream);
-			})
-			.catch(err => {
-				reject(err);
-			});
+		const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+		const constraints = isFirefox
+			? { video: { mediaSource: 'screen' } } 
+			: { video: { displaySurface: 'monitor' } }; 
+
+		navigator.mediaDevices.getDisplayMedia(constraints)
+			.then(stream => resolve(stream))
+			.catch(err => reject(err));
 	});
 };
 

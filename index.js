@@ -17,12 +17,12 @@ import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, logger, updatePersistData } from './src/utils/functions';
-import { getProfile } from './src/services/profile.services';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
+import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 
-async function init(credentials, candidateData,profileId, assessmentData, schoolTheme) {
+async function init(credentials, candidateData, profileId, assessmentData, schoolTheme) {
 	try{
 		const logonResp = await logonSchool(credentials);
 		if(logonResp.data){
@@ -50,12 +50,18 @@ async function init(credentials, candidateData,profileId, assessmentData, school
 			};
 			const assessmentResp = await createCandidateAssessment(data);
 			if (assessmentResp?.data) {
+				const candidateAssessmentData = {
+					status: 'Initiated',
+					candidate: resp?.data?.id,
+					assessment: assessmentResp?.data?.id,
+					profile:profileId
+				};
+				const candidateAssessmentResp = await customCandidateAssessmentStatus(candidateAssessmentData);
 				updatePersistData('session', {
 					assessment: assessmentResp?.data,
 					candidate:resp?.data?.id
 				});
-				const profileResp = await getProfile({id: profileId });
-				localStorage.setItem('secureFeatures', JSON.stringify(profileResp.data));
+				localStorage.setItem('secureFeatures', JSON.stringify(candidateAssessmentResp?.data?.profile));
 			}
 			return logonResp.data;
 		}

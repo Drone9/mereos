@@ -1030,6 +1030,7 @@
 "ai_recorder_unknown_violation":"Die KI hat einen unbekannten Verstoß aufgezeichnet",
 "mobile_phone_disconneted":"Mobiltelefon getrennt",
 "recording_stopped_successfully": "Aufnahme erfolgreich gestoppt",
+"screen_sharing_stopped":"Bildschirmfreigabe gestoppt",
 "session_completed": "Die Sitzung ist abgeschlossen",
 "session_completed_successfully": "Die Sitzung wurde erfolgreich abgeschlossen"
 }

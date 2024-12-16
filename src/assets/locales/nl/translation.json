@@ -1013,6 +1013,7 @@
 "ai_recorder_unknown_violation":"Er is een onbekende overtreding geregistreerd door AI",
 "mobile_phone_disconneted":"Mobiele telefoon losgekoppeld",
 "recording_stopped_successfully":"Opname succesvol gestopt",
+"screen_sharing_stopped":"Schermdeling gestopt",
 "session_completed": "De sessie is voltooid",
 "session_completed_successfully": "De sessie is succesvol voltooid"
 }

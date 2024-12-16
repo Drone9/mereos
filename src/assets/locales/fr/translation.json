@@ -1015,6 +1015,7 @@
 	"mobile_phone_disconneted":"Téléphone portable déconnecté",
 	"user_interrupted_the_stream":"L'utilisateur a interrompu le flux!",
 	"recording_stopped_successfully": "L'enregistrement a été arrêté avec succès",
+	"screen_sharing_stopped": "Partage d'écran arrêté",
 	"session_completed": "La session est terminée",
 	"session_completed_successfully": "La session s'est terminée avec succès"
 }

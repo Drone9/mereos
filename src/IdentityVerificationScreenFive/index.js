@@ -109,7 +109,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			mode = 'rerecordScreen';
 			msg = {
 				type: 'unsuccessful',
-				text: err.message || err
+				text: 'screen_sharing_stopped'
 			};
 		}
 		updateUI();

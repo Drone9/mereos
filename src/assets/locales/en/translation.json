@@ -1010,7 +1010,9 @@
 	"multiple_people_detected":"Multiple people are detected.",
 	"unauthorized_object_detected_please_put_it_away":"Unauthorized object is detected. Please put it away",
 	"ai_recorder_unknown_violation":"There is an unknown violation recorded by AI",
-	"mobile_phone_disconneted":"Mobile phone disconneted",
+	"mobile_phone_disconneted":"Mobile phone is disconneted",
 	"user_interrupted_the_stream":"User interrupted the stream!",
-	"recording_stopped_successfully":"Recording stopped successfully"
+	"recording_stopped_successfully":"Recording is stopped successfully",
+	"session_completed": "Session is completed",
+	"session_completed_successfully": "Session is completed successfully"
 }

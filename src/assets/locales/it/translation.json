@@ -1012,5 +1012,8 @@
 "unauthorized_object_detected_please_put_it_away":"È stato rilevato un oggetto non autorizzato. Mettilo via",
 "ai_recorder_unknown_violation":"È stata registrata una violazione sconosciuta dall'IA",
 "mobile_phone_disconneted":"Telefono cellulare disconnesso",
-"recording_stopped_successfully":"Registrazione interrotta con successo"
+"recording_stopped_successfully":"Registrazione interrotta con successo",
+"session_completed": "La sessione è completata",
+"session_completed_successfully": "La sessione è stata completata con successo"
+
 }

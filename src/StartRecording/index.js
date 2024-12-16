@@ -485,19 +485,19 @@ export const stopAllRecordings = async () => {
 			aiProcessingInterval = null;
 		}
 
-		if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
+		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 			unlockBrowserFromContent();
 		}
 		
 		const dateTime = new Date();
 
-		if(secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
+		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 		}
 
-		registerEvent({ eventType: 'success', notify: false, eventName: 'assessment_completed', startAt: dateTime });
+		registerEvent({ eventType: 'success', notify: false, eventName: 'session_completed', startAt: dateTime });
 
-		showToast('success', secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0 ? i18next.t('recording_stopped_successfully') : i18next.t('assessment_completed'));
+		showToast('success', i18next.t('session_completed'));
 
 		return 'stop_recording';
 	} catch (e) {

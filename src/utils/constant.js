@@ -38,7 +38,8 @@ export const initialSessionData = {
 	mobileRoomSessionId:null,
 	twilioToken:null,
 	incident_level:null,
-	converationId:null
+	converationId:null,
+	candidate_assessment:null
 };
 
 export const preChecksSteps = {

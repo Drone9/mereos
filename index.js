@@ -58,6 +58,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 				};
 				const candidateAssessmentResp = await customCandidateAssessmentStatus(candidateAssessmentData);
 				updatePersistData('session', {
+					candidate_assessment:candidateAssessmentResp?.data?.id,
 					assessment: assessmentResp?.data,
 					candidate:resp?.data?.id
 				});

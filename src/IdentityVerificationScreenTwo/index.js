@@ -300,10 +300,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		} else {
 			const retakeBtn = createButton(`${i18next.t('retake_id_photo')}`, 'orange-filled-btn', handleRestart);
 			btnContainer.appendChild(retakeBtn);
-
 			if (currentState.captureMode !== 'uploaded_photo') {
 				const uploadBtn = createButton(`${i18next.t('upload')}`, 'orange-filled-btn', uploadCandidateIdentityCard);
-				uploadBtn.disabled = currentState.msg.type === 'loading';
+				uploadBtn.disabled = currentState.msg.type === 'unsuccessful';
 				btnContainer.appendChild(uploadBtn);
 			} else {
 				const nextBtn = createButton(`${i18next.t('next_step')}`, 'orange-filled-btn', nextStep);

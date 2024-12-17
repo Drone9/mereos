@@ -1,3 +1,5 @@
+import { logger } from './functions';
+
 const { SOCKET_URL } = require('./constant');
 
 const { v4 } = require('uuid');
@@ -14,7 +16,7 @@ const getGroupId = () => {
 		localStorage.setItem('socketGroupId', JSON.stringify({ groupName: newId }));
 		return newId;
 	} catch (error) {
-		console.warn('Error accessing localStorage or invalid UUID:', error);
+		logger.warn('Error accessing localStorage or invalid UUID:', error);
 		return generatePeerId();
 	}
 };
@@ -31,15 +33,15 @@ const initSocket = () => {
 	socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
 
 	socket.onerror = (error) => {
-		console.error('WebSocket error:', error);
+		logger.error('WebSocket error:', error);
 	};
 
 	socket.onclose = (event) => {
-		console.warn('WebSocket connection closed:', event.reason);
+		logger.warn('WebSocket connection closed:', event.reason);
 	};
 
 	socket.onopen = () => {
-		console.log('WebSocket connection opened');
+		logger.log('WebSocket connection opened');
 	};
 };
 
@@ -47,7 +49,7 @@ const sendMessage = (message) => {
 	if (socket && socket.readyState === WebSocket.OPEN) {
 		socket.send(message);
 	} else {
-		console.error('WebSocket is not open. Unable to send message');
+		logger.error('WebSocket is not open. Unable to send message');
 	}
 };
 
@@ -55,7 +57,7 @@ const closeSocket = () => {
 	if (socket) {
 		socket.close();
 	} else {
-		console.error('WebSocket is not initialized');
+		logger.error('WebSocket is not initialized');
 	}
 };
 

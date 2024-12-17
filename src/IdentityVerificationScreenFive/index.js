@@ -242,7 +242,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		prevButton.addEventListener('click', prevStep);
 		btnContainer.appendChild(prevButton);
 
-		console.log('multipleScreens',multipleScreens);
 		if (mode === 'startScreenRecording') {
 			doneButton = document.createElement('button');
 			doneButton.className = 'orange-filled-btn';

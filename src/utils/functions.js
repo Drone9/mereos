@@ -485,6 +485,8 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 		
 		const resp = session?.id ? await editSectionSession(sectionSessionDetails) : await addSectionSession(sectionSessionDetails);
 		resolve(resp);
+	}).catch(err =>{
+		logger.error('error on candidate session',err);
 	});
 };
 
@@ -646,7 +648,7 @@ export const detectUnfocusOfTab = () => {
 		try {
 			visibilityChangeHandler = () => {
 				if (document.hidden) {
-					showToast('error', i18next.t('moved_away_from_page'));
+					showToast('error', 'moved_away_from_page');
 					registerEvent({ eventType: 'error', notify: false, eventName: 'moved_away_from_page' });
 				} else {
 					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });
@@ -923,7 +925,7 @@ export const handlePreChecksRedirection = () => {
 		}
 		else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
 			return 'IdentityVerificationScreenOne';
-		}else if(!preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
+		}else if(!preChecksSteps?.identityCardPhoto && hasFeature('verify_id')){
 			return 'IdentityVerificationScreenTwo';
 		}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
 			return 'IdentityVerificationScreenThree';
@@ -957,30 +959,6 @@ export const findIncidentLevel = (ai_events) => {
 	return result;
 };
 
-export const showToast = (type, message) => {
-	const notyf = new Notyf();
-	const options = {
-		message: message,
-		duration: 3000, 
-		position: { x: 'right', y: 'top' },
-		ripple: true 
-	};
-
-	switch (type) {
-		case 'error':
-			notyf.error(options);
-			break;
-		case 'success':
-			notyf.success(options);
-			break;
-		case 'warning':
-			notyf.warning(options);
-			break;
-		default:
-			logger.warn('Invalid notification type');
-			break;
-	}
-};
 
 export const normalizeLanguage = (input) => {
 	if (!input) return 'en'; 
@@ -1019,4 +997,69 @@ export const logger = {
 		logWithStyle(message, 'color: red; font-weight: bold;', object),
 	warn: (message, object) =>
 		logWithStyle(message, 'color: yellow; font-weight: bold;', object),
+};
+
+export const initializeI18next = () => {
+	if (i18next.isInitialized) return;
+
+	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
+	const defaultLanguage = schoolLanguage?.language || 'en';
+
+	i18next.init({
+		lng: normalizeLanguage(defaultLanguage),
+		resources: {
+			en: {
+				translation: require('../assets/locales/en/translation.json')
+			}, 
+			fr: {
+				translation: require('../assets/locales/fr/translation.json')
+			},
+			it: {
+				translation: require('../assets/locales/it/translation.json')
+			},
+			pt: {
+				translation: require('../assets/locales/pt/translation.json')
+			},
+			nl: {
+				translation: require('../assets/locales/nl/translation.json')
+			},
+			es: {
+				translation: require('../assets/locales/es/translation.json')
+			},
+			de: {
+				translation: require('../assets/locales/de/translation.json')
+			},	 
+		}
+	}, (err) => {
+		if (err) return logger.error('Error in language', err);
+	});
+};
+
+export const showToast = (type, message) => {
+	if (!i18next.isInitialized) {
+		initializeI18next();
+	}
+	const notyf = new Notyf();
+	const translatedMessage = i18next.t(message);
+	const options = {
+		message: i18next.t(translatedMessage),
+		duration: 3000, 
+		position: { x: 'right', y: 'top' },
+		ripple: true 
+	};
+
+	switch (type) {
+		case 'error':
+			notyf.error(options);
+			break;
+		case 'success':
+			notyf.success(options);
+			break;
+		case 'warning':
+			notyf.warning(options);
+			break;
+		default:
+			logger.warn('Invalid notification type');
+			break;
+	}
 };

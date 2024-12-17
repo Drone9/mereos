@@ -69,7 +69,7 @@
     align-items: center;
     text-align: center;
     color: #222222;
-    margin: 23px auto 0px;
+    margin: 5px auto 0px;
 }
 
 .ivst-msg {
@@ -127,7 +127,7 @@
     display: flex;
     justify-content: center;
     gap: 20px;
-    margin: 10px auto 0px;
+    margin: 20px auto 0px;
 }
 
 @media (max-width: 720px) {
@@ -142,7 +142,7 @@
     line-height: 21px;
     text-align: center;
     color: #8D979F;
-    margin: 0px auto 0px;
+    margin: 6px auto 0px;
     max-width: 600px;
 }
 .first-header-msg {

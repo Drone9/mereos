@@ -5,8 +5,8 @@ import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
-	let canvasRef;
-	let audioStream= null;
+	let canvasRef = null;
+	let audioStream = null;
 	let audioContext;
 	let analyserNode;
 	let disabledBtn = false;
@@ -14,12 +14,16 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		type: '',
 		text: 'be_loud_clear'
 	};
+	const getSecureFeature = getSecureFeatures();
+	const secureFeatures = getSecureFeature?.entities || [];
+
 	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
 
 	let animationFrameId = null;
 
 	const drawAudioSpikes = async () => {
 		try {
+			stopRecording(); 
 			const audioPermission = await navigator.permissions.query({ name: 'microphone' });
 			if (audioPermission.state === 'granted') {
 				audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -30,29 +34,34 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				const mediaStreamSource = audioContext.createMediaStreamSource(audioStream);
 				mediaStreamSource.connect(analyserNode);
 
-				const canvas = canvasRef;
+				const canvas = canvasRef || document.getElementById('audio-wavesform-canvas');
 				const canvasCtx = canvas?.getContext('2d');
 
 				const drawOnCanvas = () => {
-					const bufferLength = analyserNode.frequencyBinCount;
-					const frequencyData = new Uint8Array(bufferLength);
-					analyserNode.getByteFrequencyData(frequencyData);
-
-					canvasCtx?.clearRect(0, 0, canvas.width, canvas.height);
-					canvasCtx.fillStyle = schoolTheme?.theming || '#FF961B';
-					const barWidth = (canvas.width / bufferLength) * 8.5;
-					let barHeight;
-					let x = 0;
-
-					for (let i = 0; i < bufferLength; i++) {
-						barHeight = frequencyData[i] / 2;
-						canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-						x += barWidth + 1;
+					if (!animationFrameId) { 
+						animationFrameId = requestAnimationFrame(() => {
+							const bufferLength = analyserNode.frequencyBinCount;
+							const frequencyData = new Uint8Array(bufferLength);
+							analyserNode.getByteFrequencyData(frequencyData);
+			
+							canvasCtx?.clearRect(0, 0, canvas.width, canvas.height);
+							canvasCtx.fillStyle = schoolTheme?.theming || '#FF961B';
+							const barWidth = (canvas.width / bufferLength) * 8.5;
+							let barHeight;
+							let x = 0;
+	
+							for (let i = 0; i < bufferLength; i++) {
+								barHeight = frequencyData[i] / 2;
+								canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+								x += barWidth + 1;
+							}
+	
+							animationFrameId = null;
+							drawOnCanvas(); 
+						});
 					}
-
-					animationFrameId = requestAnimationFrame(drawOnCanvas);
 				};
-
+			
 				drawOnCanvas();
 			} else {
 				throw audioPermission.state;
@@ -77,7 +86,6 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		const timer = setInterval(() => {
 			try {
 				counter += 1;
-				const getSecureFeature = getSecureFeatures();
 				const profileSettings = getSecureFeature?.settings || [];
 
 				const bufferLength = analyserNode.frequencyBinCount;
@@ -111,27 +119,30 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	};
 
 	const stopRecording = () => {
-		cancelAnimationFrame(animationFrameId);
-		animationFrameId = null;
+		if (animationFrameId) {
+			cancelAnimationFrame(animationFrameId);
+			animationFrameId = null; // Reset the ID
+		}
 		if (audioStream) {
-			audioStream.getTracks().forEach(track => {
-				track.stop();
-			});
+			audioStream.getTracks().forEach(track => track.stop());
 		}
 	};
 
 	const nextStep = async () => {
-		if(audioStream){
+		if (audioStream) {
 			audioStream.getAudioTracks().forEach(track => track.stop());
 		}
-		updatePersistData('preChecksSteps',{ audioDetection:true });
-		registerEvent({eventType: 'success', notify: false, eventName: 'audio_check_completed', eventValue: getDateTime()});
+		cleanup();
+		updatePersistData('preChecksSteps', { audioDetection: true });
+		registerEvent({ eventType: 'success', notify: false, eventName: 'audio_check_completed', eventValue: getDateTime() });
 		showTab('IdentityVerificationScreenFour');
 	};
 
 	const prevStep = () => {
-		updatePersistData('preChecksSteps',{ audioDetection:false });
-		showTab('IdentityVerificationScreenTwo');
+		cleanup();
+		updatePersistData('preChecksSteps', { audioDetection: false });
+		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
+		showTab(navHistory[navHistory.length - 2]);
 	};
 
 	const updateUI = () => {
@@ -145,45 +156,45 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		const stepsContainer = document.createElement('div');
 		renderIdentityVerificationSteps(stepsContainer, 3);
 		let wrapper = container.querySelector('.ivst-wrapper');
-		
+    
 		if (!wrapper) {
 			wrapper = document.createElement('div');
 			wrapper.className = 'ivst-wrapper';
-    
+
 			const headerTitle = document.createElement('div');
 			headerTitle.className = 'ivst-header-title';
 			wrapper.appendChild(headerTitle);
-    
+
 			wrapper.appendChild(stepsContainer);
 
 			const message = document.createElement('div');
 			message.className = 'ivst-msg';
-			
-    
+        
 			const audioText = document.createElement('div');
 			audioText.className = 'ivst-audio-text';
 			audioText.style.textAlign = 'center';
 			wrapper.appendChild(audioText);
-    
+
 			canvasRef = document.createElement('canvas');
 			canvasRef.width = 800;
+			canvasRef.id = 'audio-wavesform-canvas';
 			canvasRef.height = 200;
-    
+
 			wrapper.appendChild(canvasRef);
 			wrapper.appendChild(message);
 			container.appendChild(wrapper);
 		}
-    
+
 		const headerTitle = wrapper.querySelector('.ivst-header-title');
 		if (headerTitle) {
 			headerTitle.textContent = i18next.t('audio_check');
 		}
-    
+
 		const audioText = wrapper.querySelector('.ivst-audio-text');
 		if (audioText) {
 			audioText.textContent = i18next.t('no_point_in_running_leave_in_time');
 		}
-    
+
 		const messageElement = wrapper.querySelector('.ivst-msg');
 		if (messageElement) {
 			messageElement.textContent = i18next.t(msg.text);
@@ -193,7 +204,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				messageElement.style.color = '';
 			}
 		}
-    
+
 		let btnContainer = wrapper.querySelector('.ivst-btn-container');
 		if (!btnContainer) {
 			btnContainer = document.createElement('div');
@@ -202,7 +213,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		} else {
 			btnContainer.innerHTML = '';
 		}
-    
+
 		if (msg.type === '') {
 			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
 			prevButton.disabled = disabledBtn;
@@ -213,7 +224,10 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		} else if (msg.type === 'unsuccessful') {
 			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
 			const reRecordButton = createButton(`${i18next.t('re_record_audio')}`, 'orange-filled-btn', startRecording);
-			btnContainer.appendChild(prevButton);
+			const prevStepsEntities = ['verify_candidate', 'verify_id'];
+			if (secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0) {
+				btnContainer.appendChild(prevButton);
+			}
 			btnContainer.appendChild(reRecordButton);
 		} else {
 			const reRecordButton = createButton(`${i18next.t('re_record_audio')}`, 'orange-hollow-btn', startRecording);
@@ -221,7 +235,11 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			btnContainer.appendChild(reRecordButton);
 			btnContainer.appendChild(doneButton);
 		}
-	};    
+
+		if (canvasRef) {
+			drawAudioSpikes(); 
+		}
+	};
 
 	const createButton = (text, className, onClick) => {
 		const button = document.createElement('button');
@@ -231,9 +249,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		return button;
 	};
 
-	// renderIdentityVerificationSteps(tabContent.querySelector('.ivst-container'), 3);
-	drawAudioSpikes();
 	updateUI();
+	drawAudioSpikes();
 
 	i18next.on('languageChanged', () => {
 		msg.text = i18next.t(msg.text);
@@ -241,13 +258,26 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	});
 
 	const cleanup = () => {
-		if (audioContext) {
-			audioContext.close();
+		if (audioStream) {
+			audioStream.getTracks().forEach(track => track.stop()); 
 		}
-		stopRecording();
+		if (audioContext) {
+			audioContext.close(); 
+		}
+		if (animationFrameId) {
+			cancelAnimationFrame(animationFrameId);
+		}
+
+		if (canvasRef) {
+			const canvasCtx = canvasRef.getContext('2d');
+			if (canvasCtx) {
+				canvasCtx.clearRect(0, 0, canvasRef.width, canvasRef.height);
+			}
+		}
 	};
 
 	return {
 		cleanup
 	};
 };
+

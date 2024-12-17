@@ -1,7 +1,6 @@
 import { 
 	checkCamera, 
 	checkMicrophone, 
-	// checkNotification, 
 	detectMultipleScreens, 
 	getLocation, 
 	getNetworkUploadSpeed, 
@@ -130,7 +129,6 @@ const renderUI = (tab1Content) => {
 };
 
 export const SystemDiagnostics = async (tab1Content) => {
-	logger.success('runSystemDiagnostics trigger');
 	if (!tab1Content) {
 		logger.error('Element with id "runSystemDiagnostics" not found.');
 		return;

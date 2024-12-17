@@ -1,15 +1,14 @@
-import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
+import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, showToast, updatePersistData } from '../utils/functions';
 import '../assets/css/step5.css';
 import i18next from 'i18next';
-import {socket} from '../utils/socket';
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 
-export let newStream;
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
+	window.newStream = null;
 
 	if (!tabContent) {
 		logger.error('tabContent is not defined or is not a valid DOM element');
@@ -34,20 +33,26 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const initSocketConnection = () => {
-		if (!socket) {
+		if (!window.socket) {
+			updatePersistData('preChecksSteps', { 
+				mobileConnection: false,
+				screenSharing: false
+			});
+			window.globalCallback({ message: 'mobile_phone_disconneted' });
+			showToast('error','mobile_phone_disconneted');
 			logger.error('Socket not initialized');
 			return;
 		}
 
-		socket.onmessage = (event) => {
+		window.socket.onmessage = (event) => {
 			const eventData = JSON.parse(event?.data);
 
 			switch (eventData?.message?.event || eventData?.event) {
 				case 'violation':
 					if(eventData?.message?.message === 'Violation'){
 						updatePersistData('preChecksSteps', { mobileConnection: false,screenSharing:false });
-						if(newStream){
-							newStream?.getVideoTracks()[0].stop();
+						if(window.newStream){
+							window.newStream?.getVideoTracks()[0].stop();
 						}
 						showTab('MobileProctoring');
 					}
@@ -59,31 +64,31 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			}
 		};
 		
-		socket.onerror = (error) => {
+		window.socket.onerror = (error) => {
 			logger.error('WebSocket error:',error);
 		};
 
-		socket.onclose = () => {
+		window.socket.onclose = () => {
 			logger.error('WebSocket connection closed');
 		};
 	};
 
 	const shareScreen = async () => {
 		try {
-			newStream = await shareScreenFromContent();
+			window.newStream = await shareScreenFromContent();
 
 			updatePersistData('session', { screenRecordingStream: location });
 
 			const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 
-			const videoTrack = newStream.getVideoTracks()[0];
+			const videoTrack = window.newStream.getVideoTracks()[0];
 			const trackSettings = videoTrack.getSettings();
 
 			const isScreenShared = isFirefox ? true
 				: trackSettings.displaySurface === 'monitor';
 
 			if (isScreenShared) {
-				stream = newStream;
+				stream = window.newStream;
 				mode = 'startScreenRecording';
 				msg = {
 					type: 'successful',
@@ -91,7 +96,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				};
 
 				videoTrack.addEventListener('ended', () => {
-					logger.info('Screen sharing stopped by user');
 					msg = {
 						type: 'unsuccessful',
 						text: i18next.t('screen_sharing_stopped')
@@ -115,7 +119,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		updateUI();
 	};
 
-
 	const nextStep = () => {
 		updatePersistData('preChecksSteps', { screenSharing: true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'screen_recording_window_shared', eventValue: getDateTime() });
@@ -126,8 +129,12 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		if (stream) {
 			stream.getVideoTracks()[0].stop();
 		}
-		updatePersistData('preChecksSteps',{ screenSharing:false });
-		showTab('IdentityVerificationScreenFour');
+		if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+			window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+		}
+		updatePersistData('preChecksSteps',{  mobileConnection: false,screenSharing:false });
+		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
+		showTab(navHistory[navHistory.length - 2]);
 	};
 
 	const container = document.createElement('div');
@@ -177,8 +184,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	// prevButton.textContent = i18next.t('previous_step');
 	// prevButton.addEventListener('click', prevStep);
 	// btnContainer.appendChild(prevButton);
-
-	// console.log('mode',mode);
 
 	// if (mode === 'startScreenRecording') {
 	// 	doneButton.className = 'orange-filled-btn';
@@ -239,8 +244,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const prevButton = document.createElement('button');
 		prevButton.className = 'orange-hollow-btn';
 		prevButton.textContent = i18next.t('previous_step');
-		prevButton.addEventListener('click', prevStep);
-		btnContainer.appendChild(prevButton);
+		const prevStepsEntities = ['verify_candidate','verify_id','record_audio','record_room'];
+		if(secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0){
+			prevButton.addEventListener('click', prevStep);
+			btnContainer.appendChild(prevButton);
+		}
 
 		if (mode === 'startScreenRecording') {
 			doneButton = document.createElement('button');

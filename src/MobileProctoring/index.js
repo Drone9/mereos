@@ -1,6 +1,6 @@
 
 import Peer from 'peerjs';
-import { initSocket, socket } from '../utils/socket';
+import { initSocket } from '../utils/socket';
 import '../assets/css/mobile-proctoring.css';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import i18next, { t } from 'i18next';
@@ -10,9 +10,10 @@ import { ASSET_URL } from '../utils/constant';
 import { v4 } from 'uuid';
 import { showTab } from '../ExamsPrechecks';
 
-window.mobileStream = null;
+
 export const MobileProctoring = async (tabContent) => {
-	if (tabContent.querySelector('.mobile-conection-container')) return; 
+	// if (tabContent.querySelector('.mobile-conection-container')) return; 
+	window.mobileStream = null;
 	let mobileSteps = ''; 
 	let disabledNextBtn = false; 
 	let checkedVideo = false;
@@ -20,37 +21,36 @@ export const MobileProctoring = async (tabContent) => {
 	remoteVideoRef.id = 'remote-mobile-video-container';
 	const currentUserVideoRef = document.createElement('video');
 	let peerInstance = null;
-  
-
+	
 	const initSocketConnection = () => {
 		initSocket();
 
-		if (!socket) {
+		if (!window.socket) {
 			logger.error('Socket not initialized');
 			return;
 		}
 
-		// const sendResetSession = () => {
-		// 	if (socket.readyState === WebSocket.OPEN) {
-		// 		socket.send(JSON.stringify({ event: 'resetSession' }));
-		// 		mobileSteps = '';
-		// 	} else {
-		// 		logger.warn('Socket is not open, cannot send resetSession');
-		// 	}
-		// };
-
-		// if (!remoteVideoRef.srcObject?.getTracks()?.length) {
-		// 	sendResetSession();
-		// }
-
-		socket.onopen = () => {
-			logger.success('WebSocket connection established');
-			// if (!remoteVideoRef.srcObject?.getTracks()?.length) {
-			// 	sendResetSession();
-			// }
+		const sendResetSession = () => {
+			if (window.socket.readyState === WebSocket.OPEN) {
+				window.socket.send(JSON.stringify({ event: 'resetSession' }));
+				mobileSteps = '';
+			} else {
+				logger.warn('Socket is not open, cannot send resetSession');
+			}
 		};
 
-		socket.onmessage = (event) => {
+		if (!remoteVideoRef.srcObject?.getTracks()?.length) {
+			sendResetSession();
+		}
+
+		window.socket.onopen = () => {
+			logger.success('WebSocket connection established');
+			if (!remoteVideoRef.srcObject?.getTracks()?.length) {
+				sendResetSession();
+			}
+		};
+
+		window.socket.onmessage = (event) => {
 			const eventData = JSON.parse(event.data);
 
 			switch (eventData?.message?.event || eventData?.event) {
@@ -60,7 +60,7 @@ export const MobileProctoring = async (tabContent) => {
 
 				case 'mobilePreChecksCompleted':
 					mobileSteps = 'precheckCompleted';
-					socket?.send(JSON.stringify({ event: 'requestMobileBroadcast' }));
+					window.socket?.send(JSON.stringify({ event: 'requestMobileBroadcast' }));
 					disabledNextBtn = true;
 					renderUI();
 					break;
@@ -108,7 +108,7 @@ export const MobileProctoring = async (tabContent) => {
 					if (eventData?.message?.message === 'Violation') {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
-						showToast('error',i18next.t('mobile_phone_disconneted'));
+						showToast('error','mobile_phone_disconneted');
 						if(window.mobileStream){
 							window.mobileStream.getTracks().forEach(track => track.stop());
 						}
@@ -124,11 +124,11 @@ export const MobileProctoring = async (tabContent) => {
 			}
 		};
 
-		socket.onerror = (error) => {
+		window.socket.onerror = (error) => {
 			logger.error('WebSocket error:', error);
 		};
 
-		socket.onclose = () => {
+		window.socket.onclose = () => {
 			logger.error('WebSocket connection closed');
 		};
 	};
@@ -196,8 +196,8 @@ export const MobileProctoring = async (tabContent) => {
 		if(window.mobileStream){
 			window.mobileStream?.getTracks()?.forEach(track => track.stop());
 		}
-		if (socket.readyState === WebSocket.OPEN) {
-			socket?.send(JSON.stringify({ event: 'resetSession' }));
+		if (window.socket.readyState === WebSocket.OPEN) {
+			window.socket?.send(JSON.stringify({ event: 'resetSession' }));
 		}
 		renderUI(); 
 	};

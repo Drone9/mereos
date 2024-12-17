@@ -96,6 +96,12 @@ export const startRecording = async () => {
 	
 	initSocketConnection();
 
+	if( findConfigs(['record_screen'],secureFeatures?.entities)?.length){
+		newStream?.getVideoTracks()[0]?.addEventListener('ended', () => {
+			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+		});
+	}
+
 	if(!(newStream?.getTracks()?.length) && findConfigs(['record_screen'],secureFeatures?.entities)?.length){
 		if(window.startRecordingCallBack){
 			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });

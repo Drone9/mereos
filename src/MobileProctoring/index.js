@@ -12,7 +12,6 @@ import { showTab } from '../ExamsPrechecks';
 
 
 export const MobileProctoring = async (tabContent) => {
-	// if (tabContent.querySelector('.mobile-conection-container')) return; 
 	window.mobileStream = null;
 	let mobileSteps = ''; 
 	let disabledNextBtn = false; 

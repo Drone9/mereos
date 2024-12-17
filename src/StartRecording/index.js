@@ -101,7 +101,9 @@ export const startRecording = async () => {
 		};
 	};
 	
-	initSocketConnection();
+	if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
+		initSocketConnection();
+	}
 
 	if( findConfigs(['record_screen'],secureFeatures?.entities)?.length){
 		window?.newStream?.getVideoTracks()[0]?.addEventListener('ended', () => {

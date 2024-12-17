@@ -1,7 +1,6 @@
-import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, updatePersistData } from '../utils/functions';
+import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, showToast, updatePersistData } from '../utils/functions';
 import '../assets/css/step5.css';
 import i18next from 'i18next';
-import { initSocket } from '../utils/socket';
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
@@ -35,7 +34,12 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const initSocketConnection = () => {
 		if (!window.socket) {
-			initSocket();
+			updatePersistData('preChecksSteps', { 
+				mobileConnection: false,
+				screenSharing: false
+			});
+			window.globalCallback({ message: 'mobile_phone_disconneted' });
+			showToast('error','mobile_phone_disconneted');
 			logger.error('Socket not initialized');
 			return;
 		}

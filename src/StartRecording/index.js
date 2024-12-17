@@ -1,5 +1,5 @@
 import * as TwilioVideo from 'twilio-video';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import { getCreateRoom } from '../services/twilio.services';
@@ -28,10 +28,11 @@ export const startRecording = async () => {
 	window.addEventListener('popstate', () => {
 		if(window.startRecordingCallBack){
 			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+			}
 		}
 	});
-
-	logger.success('window',window);
 
 	const initSocketConnection = () => {
 		if (!window.socket) {
@@ -105,6 +106,9 @@ export const startRecording = async () => {
 	if( findConfigs(['record_screen'],secureFeatures?.entities)?.length){
 		window?.newStream?.getVideoTracks()[0]?.addEventListener('ended', () => {
 			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+			}
 		});
 	}
 
@@ -235,6 +239,9 @@ export const startRecording = async () => {
 const PREDICTION = ['cell phone', 'book'];
 
 const setupWebcam = async (mediaStream) => {
+	if (!i18next.isInitialized) {
+		initializeI18next();
+	}
 	let webcamContainer = document.getElementById('webcam-container');
 	if (!webcamContainer) {
 		webcamContainer = document.createElement('div');

@@ -9,7 +9,9 @@ import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
 	window.newStream = null;
-
+	const candidateAssessment = getSecureFeatures();
+	const secureFeatures = candidateAssessment?.entities || [];
+	
 	if (!tabContent) {
 		logger.error('tabContent is not defined or is not a valid DOM element');
 		return;
@@ -71,6 +73,49 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		window.socket.onclose = () => {
 			logger.error('WebSocket connection closed');
 		};
+	};
+
+	let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
+
+	multipleScreensCheck && checkMultipleScreens();
+
+	const updateUI = () => {
+		headerTitle.textContent = i18next.t('verification_completed');
+		msgElement.textContent = i18next.t('verification_completed_msg');
+		queryMsg.textContent = i18next.t(msg.text);
+
+		if (msg.type === 'unsuccessful') {
+			queryMsg.style.color = '#E95E5E';
+		} else {
+			queryMsg.style.color = ''; 
+		}
+
+		btnContainer.innerHTML = '';
+
+		const prevButton = document.createElement('button');
+		prevButton.className = 'orange-hollow-btn';
+		prevButton.textContent = i18next.t('previous_step');
+		const prevStepsEntities = ['verify_candidate','verify_id','record_audio','record_room'];
+		if(secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0){
+			prevButton.addEventListener('click', prevStep);
+			btnContainer.appendChild(prevButton);
+		}
+
+		if (mode === 'startScreenRecording') {
+			doneButton = document.createElement('button');
+			doneButton.className = 'orange-filled-btn';
+			doneButton.textContent = i18next.t('done');
+			doneButton.disabled = multipleScreens;
+			doneButton.addEventListener('click', nextStep);
+			btnContainer.appendChild(doneButton);
+		} else if (mode === 'rerecordScreen') {
+			reshareButton.className = 'orange-filled-btn';
+			reshareButton.textContent = i18next.t('reshare_screen');
+			reshareButton.addEventListener('click', shareScreen);
+			btnContainer.appendChild(reshareButton);
+		}
+
+		wrapper.appendChild(btnContainer);
 	};
 
 	const shareScreen = async () => {
@@ -218,57 +263,10 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	tabContent.appendChild(container);
 
 	shareScreen();
-	
-	initSocketConnection();
-	
-	const candidateAssessment = getSecureFeatures();
-	const secureFeatures = candidateAssessment?.entities || [];
-    
-	let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
+	if(secureFeatures.find(entity => entity.key === 'mobile_proctoring')){
+		initSocketConnection();
+	}	
 
-	multipleScreensCheck && checkMultipleScreens();
-
-	const updateUI = () => {
-		headerTitle.textContent = i18next.t('verification_completed');
-		msgElement.textContent = i18next.t('verification_completed_msg');
-		queryMsg.textContent = i18next.t(msg.text);
-
-		if (msg.type === 'unsuccessful') {
-			queryMsg.style.color = '#E95E5E';
-		} else {
-			queryMsg.style.color = ''; 
-		}
-
-		btnContainer.innerHTML = '';
-
-		const prevButton = document.createElement('button');
-		prevButton.className = 'orange-hollow-btn';
-		prevButton.textContent = i18next.t('previous_step');
-		const prevStepsEntities = ['verify_candidate','verify_id','record_audio','record_room'];
-		if(secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0){
-			prevButton.addEventListener('click', prevStep);
-			btnContainer.appendChild(prevButton);
-		}
-
-		if (mode === 'startScreenRecording') {
-			doneButton = document.createElement('button');
-			doneButton.className = 'orange-filled-btn';
-			doneButton.textContent = i18next.t('done');
-			doneButton.disabled = multipleScreens;
-			doneButton.addEventListener('click', nextStep);
-			btnContainer.appendChild(doneButton);
-		} else if (mode === 'rerecordScreen') {
-			reshareButton.className = 'orange-filled-btn';
-			reshareButton.textContent = i18next.t('reshare_screen');
-			reshareButton.addEventListener('click', shareScreen);
-			btnContainer.appendChild(reshareButton);
-		}
-
-		wrapper.appendChild(btnContainer);
-	};
-
-
-	// Update UI when language changes
 	i18next.on('languageChanged', updateUI);
 
 	return container;

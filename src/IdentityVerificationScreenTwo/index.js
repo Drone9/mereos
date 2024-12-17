@@ -1,4 +1,4 @@
-import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, logger, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step2.css';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
@@ -18,6 +18,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			text: ''
 		}
 	};
+	const getSecureFeature = getSecureFeatures();
+	const secureFeatures = getSecureFeature?.entities || [];
 
 	const videoConstraints = {
 		width: 350,
@@ -205,7 +207,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 
 	const prevStep = () => {
 		updatePersistData('preChecksSteps',{ identityCardPhoto:false });
-		showTab('IdentityVerificationScreenOne');
+		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
+		showTab(navHistory[navHistory.length - 2]);
 	};
 
 	const renderUI = async () => {
@@ -295,7 +298,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			const prevBtn = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
 			const takePhotoBtn = createButton(`${i18next.t('take_id_photo')}`, 'orange-filled-btn', capturePhoto);
 			takePhotoBtn.disabled = disabledBtn || !!currentState.imageSrc;
-			btnContainer.appendChild(prevBtn);
+			if(secureFeatures.find(entity => entity.key === 'verify_candidate')){
+				btnContainer.appendChild(prevBtn);
+			}
 			btnContainer.appendChild(takePhotoBtn);
 		} else {
 			const retakeBtn = createButton(`${i18next.t('retake_id_photo')}`, 'orange-filled-btn', handleRestart);

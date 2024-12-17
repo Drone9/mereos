@@ -89,7 +89,7 @@ export const systemDiagnosticSteps = [
 export const prevalidationSteps = [
 	'record_video', 
 	'record_audio',
-	'identity_card_requirement',
+	'verify_id',
 	'record_room'
 ];
 

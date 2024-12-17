@@ -1,14 +1,14 @@
 import '../assets/css/step4.css';
-import { getDateTime, logger, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
+import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
 import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 
-window.userMediaStream = null;
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
 	if (tabContent.querySelector('.screen-four-container')) return; 
+	window.userMediaStream = null;	
 	let recordingMode = 'startRecording';
 	let showPlayer = false;
 	let textMessage = 'scan_your_room';
@@ -16,6 +16,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	let blob = null;
 	let mediaRecorder = null;
 	let recordedChunks = [];
+	const getSecureFeature = getSecureFeatures();
+	const secureFeatures = getSecureFeature?.entities || [];
 
 	const videoConstraints = {
 		width: 640,
@@ -95,7 +97,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 	const prevStep = () => {
 		updatePersistData('preChecksSteps',{ roomScanningVideo:false });
-		showTab('IdentityVerificationScreenThree');
+		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
+		showTab(navHistory[navHistory.length - 2]);
 	};
 
 	const uploadUserRoomVideo = async () => {
@@ -221,7 +224,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		} else if (recordingMode === 'beingRecorded') {
 			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
 			const stopButton = createButton(`${i18next.t('stop_recording')}`, 'orange-filled-btn', handleStopRecording);
-			btnContainer.appendChild(prevButton);
+			const prevStepsEntities = ['verify_candidate','verify_id','record_audio'];
+			if(secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0){
+				btnContainer.appendChild(prevButton);
+			}
 			btnContainer.appendChild(stopButton);
 		} else if (recordingMode === 'stopRecording' || recordingMode === 'uploaded_file') {
 			const resetButton = createButton('Reset', 'orange-hollow-btn', handleRestartRecording);

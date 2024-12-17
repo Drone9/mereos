@@ -12,7 +12,6 @@ window.openModal = openModal;
 import { openModal } from './src/ExamsPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
-import { socket } from './src/utils/socket';
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
@@ -95,8 +94,8 @@ async function start_session(callback) {
 					mobileRoomSessionId:mobileRoomSessionId
 				});
 	
-				if (socket && socket.readyState === WebSocket.OPEN) {
-					socket.send(JSON.stringify({ event: 'twilioToken', message: mobileTwilioToken?.data?.token }));
+				if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+					window.socket.send(JSON.stringify({ event: 'twilioToken', message: mobileTwilioToken?.data?.token }));
 				}
 			}
 
@@ -137,6 +136,9 @@ async function stop_session(callback) {
 				localStorage.removeItem('conversationId');
 				localStorage.removeItem('precheckSetting');
 				localStorage.removeItem('socketGroupId');
+				localStorage.removeItem('navHistory');
+				localStorage.removeItem('deviceId');
+				localStorage.removeItem('microphoneID');
 
 				callback({ type: 'success', message: 'session is finished successfully' });
 			} else {

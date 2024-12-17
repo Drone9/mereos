@@ -67,7 +67,9 @@
 	top: 37px;
 	height: 195px;
 }
-
+.ivso-webcam-container video{
+	object-fit: cover;
+}
 @media (max-width: 720px) {
 	.ivso-header-img-container {
 		width: 98%;

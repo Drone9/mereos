@@ -8,10 +8,6 @@ const generatePeerId = () => v4();
 
 const getGroupId = () => {
 	try {
-		const storedId = JSON.parse(localStorage.getItem('socketGroupId'));
-		if (storedId?.groupName) {
-			return storedId.groupName;
-		}
 		const newId = generatePeerId();
 		localStorage.setItem('socketGroupId', JSON.stringify({ groupName: newId }));
 		return newId;
@@ -21,44 +17,44 @@ const getGroupId = () => {
 	}
 };
 
-let socket;
-
 const initSocket = () => {
 	if (!SOCKET_URL) {
 		throw new Error('SOCKET_URL is not defined');
 	}
 
+	window.socket = null;
+
 	let finalGroupName = getGroupId();
 
-	socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
+	window.socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
 
-	socket.onerror = (error) => {
+	window.socket.onerror = (error) => {
 		logger.error('WebSocket error:', error);
 	};
 
-	socket.onclose = (event) => {
+	window.socket.onclose = (event) => {
 		logger.warn('WebSocket connection closed:', event.reason);
 	};
 
-	socket.onopen = () => {
-		logger.log('WebSocket connection opened');
+	window.socket.onopen = () => {
+		logger.success('WebSocket connection opened');
 	};
 };
 
 const sendMessage = (message) => {
-	if (socket && socket.readyState === WebSocket.OPEN) {
-		socket.send(message);
+	if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+		window.socket.send(message);
 	} else {
 		logger.error('WebSocket is not open. Unable to send message');
 	}
 };
 
 const closeSocket = () => {
-	if (socket) {
-		socket.close();
+	if (window.socket) {
+		window.socket.close();
 	} else {
 		logger.error('WebSocket is not initialized');
 	}
 };
 
-export { initSocket, sendMessage, closeSocket , socket };
+export { initSocket, sendMessage, closeSocket  };

@@ -113,7 +113,7 @@ body {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  margin-left: 10px;
+  margin-left: -13px;
   cursor: pointer;
 }
 .live-chat-container{
@@ -148,7 +148,7 @@ body {
 .dropdown-content {
   position: absolute;
   top: 42px;
-  right: 0;
+  right: -22px;
   background-color: white;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 4px;

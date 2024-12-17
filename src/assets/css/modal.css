@@ -2,9 +2,11 @@
 
 body {
   font-family: 'Poppins', sans-serif;
+  font-style: var(--font-style);
 }
 :root {
   --theme-color: #FF961B;
+  --font-style: var(--font-style);
 }
 
 .modal {
@@ -45,6 +47,10 @@ body {
   margin-top: 12px;
   padding-left: 12px;
   padding-bottom: 5px;
+}
+
+.flag-icon-img{
+  width: 25px;
 }
 .dropdown-content .text{
   font-size: 14px !important;
@@ -107,7 +113,7 @@ body {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  margin-left: 10px;
+  margin-left: -13px;
   cursor: pointer;
 }
 .live-chat-container{
@@ -126,10 +132,13 @@ body {
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
+  max-width: 182px;
+  justify-content: space-between;
   z-index: 99999;
 }
 .dropdown .select label{
   cursor: pointer;
+  font-size: 14px;
 }
 
 .dropdown .select div {
@@ -139,7 +148,7 @@ body {
 .dropdown-content {
   position: absolute;
   top: 42px;
-  right: 0;
+  right: -22px;
   background-color: white;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 4px;

@@ -1028,5 +1028,9 @@
 "multiple_people_detected":"Es wurden mehrere Personen erkannt.",
 "unauthorized_object_detected_please_put_it_away":"Es wurde ein nicht autorisierter Gegenstand erkannt. Bitte legen Sie ihn weg",
 "ai_recorder_unknown_violation":"Die KI hat einen unbekannten Verstoß aufgezeichnet",
-"mobile_phone_disconneted":"Mobiltelefon getrennt"
+"mobile_phone_disconneted":"Mobiltelefon getrennt",
+"recording_stopped_successfully": "Aufnahme erfolgreich gestoppt",
+"screen_sharing_stopped":"Bildschirmfreigabe gestoppt",
+"session_completed": "Die Sitzung ist abgeschlossen",
+"session_completed_successfully": "Die Sitzung wurde erfolgreich abgeschlossen"
 }

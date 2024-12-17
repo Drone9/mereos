@@ -10,3 +10,13 @@ export const changeCandidateAssessmentStatus = async (data) => {
 	};
 	return axiosInstance.put('/candidate/change_candidate_assessment_status/', data, config);
 };
+
+export const customCandidateAssessmentStatus = async (data) => {
+	const token =  getAuthenticationToken();
+	const config = {
+		headers: {
+			token: token,
+		},
+	};
+	return axiosInstance.post('/candidates/custom_candidate_assessment/', data, config);
+};

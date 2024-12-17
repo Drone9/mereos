@@ -1,4 +1,4 @@
-.ivsf-container {
+.mobile-conection-container {
   display: flex;
   flex-direction: column;
 }
@@ -16,7 +16,7 @@
 }
 
 .mobile-connection-banner {
-  margin: 10px auto 20px;
+  margin: 10px auto 5px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -160,7 +160,7 @@
 
 .mobile-header-title {
   font-family: Poppins;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: bold;
   font-size: 35px;
   display: flex;
@@ -172,7 +172,7 @@
 
 .ivsf-msg {
   font-family: Poppins;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 16px;
   line-height: 160%;
@@ -204,7 +204,7 @@
   display: flex;
   align-items: center;
   font-family: Poppins;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: normal;
   font-size: 13px;
   line-height: 19px;
@@ -213,7 +213,7 @@
 
 .ivsf-instruction-txt {
   font-family: Poppins;
-  font-style: normal;
+  font-style: var(--font-style);
   font-weight: 500;
   font-size: 16px;
   line-height: 24px;
@@ -252,7 +252,7 @@
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  row-gap: 15px;  
+  row-gap: 10px;  
 }
 .video-loader{
   position: relative;

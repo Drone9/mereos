@@ -1,8 +1,8 @@
 import '../assets/css/exam-prepration.css';
-import { showTab } from './examPrechecks';
-import { registerEvent, updatePersistData } from '../utils/functions';
+import { logger, registerEvent, updatePersistData } from '../utils/functions';
 import i18next from 'i18next';
 import { ASSET_URL } from '../utils/constant';
+import { showTab } from '../ExamsPrechecks';
 
 const vectors = [
 	{ name: 'img1', src: `${ASSET_URL}/oc-address.svg`, alt: '' },
@@ -19,7 +19,7 @@ const getDateTime = () => new Date().toISOString();
 
 export const ExamPreparation = async (tabContent,callback) => {
 	if (!tabContent) {
-		console.error('tabContent is not defined or is not a valid DOM element');
+		logger.error('tabContent is not defined or is not a valid DOM element');
 		return;
 	}
 

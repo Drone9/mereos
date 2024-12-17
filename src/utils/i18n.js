@@ -1,4 +1,5 @@
 import i18next from 'i18next';
+import { logger } from './functions';
 
 i18next.init({
 	lng: 'en',
@@ -14,7 +15,7 @@ i18next.init({
 		}
 	}
 }, (err) => {
-	if (err) return console.error(err);
+	if (err) return logger.error(err);
 	updateTranslations();
 });
 

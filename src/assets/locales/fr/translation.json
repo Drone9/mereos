@@ -630,7 +630,7 @@
 	"record_screen": "Écran d'enregistrement",
 	"record_video": "Enregistrer la vidéo",
 	"record_web_traffic": "Enregistrer le trafic Web",
-	"recording": "Enregistrement en cours…",
+	"recording": "Enregistrement",
 	"recording_started_successfully": "L'enregistrement a démarré avec succès",
 	"recruiter": "Recruteur",
 	"refresh": "Rafraîchir",
@@ -1013,5 +1013,9 @@
 	"unauthorized_object_detected_please_put_it_away":"Un objet non autorisé est détecté. S'il vous plaît, rangez-le.",
 	"ai_recorder_unknown_violation":"Il y a une violation inconnue enregistrée par AI.",
 	"mobile_phone_disconneted":"Téléphone portable déconnecté",
-	"user_interrupted_the_stream":"L'utilisateur a interrompu le flux!"
+	"user_interrupted_the_stream":"L'utilisateur a interrompu le flux!",
+	"recording_stopped_successfully": "L'enregistrement a été arrêté avec succès",
+	"screen_sharing_stopped": "Partage d'écran arrêté",
+	"session_completed": "La session est terminée",
+	"session_completed_successfully": "La session s'est terminée avec succès"
 }

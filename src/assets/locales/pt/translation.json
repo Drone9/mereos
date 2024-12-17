@@ -1012,5 +1012,9 @@
 "multiple_people_detected":"Várias pessoas foram detectadas.",
 "unauthorized_object_detected_please_put_it_away":"Objeto não autorizado foi detectado. Por favor, guarde-o",
 "ai_recorder_unknown_violation":"Há uma violação desconhecida registrada pela IA",
-"mobile_phone_disconneted":"Telemóvel desligado"
+"mobile_phone_disconneted":"Telemóvel desligado",
+"recording_stopped_successfully":"Gravação interrompida com sucesso",
+"screen_sharing_stopped":"Compartilhamento de tela interrompido",
+"session_completed": "A sessão está concluída",
+"session_completed_successfully": "A sessão foi concluída com sucesso"
 }

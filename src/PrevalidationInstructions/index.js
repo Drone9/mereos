@@ -1,7 +1,7 @@
 import i18next from 'i18next';
-import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData } from '../utils/functions';
+import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger } from '../utils/functions';
 import '../assets/css/prevalidation.css';
-import { showTab } from './examPrechecks';
+import { showTab } from '../ExamsPrechecks';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
@@ -76,7 +76,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 			},
 		];
 
-		console.log('currentCaptureMode',currentCaptureMode);
+		logger.success('currentCaptureMode',currentCaptureMode);
 
 		const handleDeviceId = async (id, type) => {
 			if (type === 'camera') {
@@ -301,8 +301,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 				currentCaptureMode = 'done';
 				updateUI();
 			} catch (error) {
-				console.log('Webcam error:', error);
-				alert('Error accessing webcam: ' + error.message);
+				logger.error('Webcam error:', error);
 				updateUI();
 			}
 		};
@@ -321,6 +320,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 		});
 	
 	} catch (error) {
-		console.error('Failed to initialize; error: ' + error);
+		logger.error('Failed to initialize; error: ' + error);
 	}
 };

@@ -281,7 +281,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			const uploadPhotoBtn = document.createElement('button');
 			uploadPhotoBtn.textContent = i18next.t('upload');
 			uploadPhotoBtn.className = 'orange-filled-btn';
-			uploadPhotoBtn.disabled = state.isUploading; 
+			uploadPhotoBtn.disabled = state.isUploading || state.msg.type !== 'successful'; 
 			uploadPhotoBtn.addEventListener('click', uploadUserCapturedPhoto);
 			ivsoBtnContainer.appendChild(uploadPhotoBtn);
 		}

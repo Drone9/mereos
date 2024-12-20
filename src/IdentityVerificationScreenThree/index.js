@@ -142,7 +142,9 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		cleanup();
 		updatePersistData('preChecksSteps', { audioDetection: false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		showTab(navHistory[navHistory.length - 2]);
+		const currentIndex = navHistory.indexOf('IdentityVerificationScreenThree');
+		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+		showTab(previousPage);
 	};
 
 	const updateUI = () => {

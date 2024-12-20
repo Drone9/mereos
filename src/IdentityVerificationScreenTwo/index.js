@@ -208,7 +208,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	const prevStep = () => {
 		updatePersistData('preChecksSteps',{ identityCardPhoto:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		showTab(navHistory[navHistory.length - 2]);
+		const currentIndex = navHistory.indexOf('IdentityVerificationScreenTwo');
+		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+		console.log('previousPage',previousPage);
+		showTab(previousPage);
 	};
 
 	const renderUI = async () => {

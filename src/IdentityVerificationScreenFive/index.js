@@ -179,7 +179,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		}
 		updatePersistData('preChecksSteps',{  mobileConnection: false,screenSharing:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		showTab(navHistory[navHistory.length - 2]);
+		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFive');
+		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+		showTab(previousPage);
 	};
 
 	const container = document.createElement('div');

@@ -98,7 +98,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	const prevStep = () => {
 		updatePersistData('preChecksSteps',{ roomScanningVideo:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		showTab(navHistory[navHistory.length - 2]);
+		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFour');
+		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+		showTab(previousPage);
 	};
 
 	const uploadUserRoomVideo = async () => {

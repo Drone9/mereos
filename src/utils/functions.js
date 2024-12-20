@@ -907,6 +907,42 @@ export const unlockBrowserFromContent = () => {
 	window.alert = function(){};
 };
 
+export const getPreviousRoute = (currentRoute, navHistory, hasFeature) => {
+	// Find the index of the current route in the navigation history
+	const currentIndex = navHistory.indexOf(currentRoute);
+
+	// Ensure the current route is valid and there's a previous route
+	if (currentIndex > 0) {
+		// Get the previous route
+		const previousRoute = navHistory[currentIndex - 1];
+
+		// Map of features required for each route
+		const featureMap = {
+			'ExamPreparation': 'record_video',
+			'runSystemDiagnostics': 'systemDiagnosticSteps',
+			'Prevalidationinstruction': 'prevalidationSteps',
+			'IdentityVerificationScreenOne': 'verify_candidate',
+			'IdentityVerificationScreenTwo': 'verify_id',
+			'IdentityVerificationScreenThree': 'record_audio',
+			'IdentityVerificationScreenFour': 'record_room',
+			'MobileProctoring': 'mobile_proctoring',
+			'IdentityVerificationScreenFive': 'record_screen',
+		};
+
+		// Get the feature required for the previous route
+		const requiredFeature = featureMap[previousRoute];
+
+		// Check if the feature is allowed
+		if (!requiredFeature || hasFeature(requiredFeature)) {
+			return previousRoute;
+		}
+	}
+
+	// Return null if no valid previous route is found
+	return null;
+};
+
+
 export const handlePreChecksRedirection = () => {
 	const sessionSetting = localStorage.getItem('precheckSetting');
 

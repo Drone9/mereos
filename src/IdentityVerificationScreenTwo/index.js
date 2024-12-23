@@ -249,10 +249,12 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			headerImgContainer.appendChild(img);
 
 			const resultImg = document.createElement('img');
-			resultImg.src = `${ASSET_URL}/checkmark-green.svg`;
+			resultImg.src = currentState.msg.type === 'unsuccessful' ? `${ASSET_URL}/close-red.svg` :`${ASSET_URL}/checkmark-green.svg`;
 			resultImg.className = 'ivst-header-img-result';
 			resultImg.alt = 'tick-mark-green-bg';
-			headerImgContainer.appendChild(resultImg);
+			if(currentState.msg.type !== 'checking'){
+				headerImgContainer.appendChild(resultImg);
+			}
 		} else {
 			photo = document.createElement('video');
 			photo.width = videoConstraints.width;

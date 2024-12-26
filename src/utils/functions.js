@@ -1,12 +1,13 @@
 import axios from 'axios';
-import { ASSET_URL, BASE_URL, prevalidationSteps, systemDiagnosticSteps } from './constant';
+import { BASE_URL, prevalidationSteps, systemDiagnosticSteps } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.servicer';
 import i18next from 'i18next';
 import { createEvent } from '../services/event.service';
-import { closeModal } from '../ExamPrepreation/examPrechecks';
 import { Notyf } from 'notyf';
+import { testUploadSpeed } from '../services/general.services';
+import { closeModal } from '../ExamsPrechecks';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -67,35 +68,35 @@ export const getLocation = () => {
 	});
 };
 
-export const checkNotification = () => {
-	return new Promise((resolve, _reject) => {
-		if (!('Notification' in window)) {
-			resolve(false);
-		} else if (Notification.permission === 'granted') {
-			showNotification({
-				title: 'New notification message from mereos!',
-				body: 'Hey mate, Ready for the test ? It will be starting soon.',
-			});
-			resolve(true);
-		} else if (Notification.permission === 'denied' || Notification.permission === 'default') {
-			Notification.requestPermission()
-				.then((permission) => {
-					if (permission === 'granted') {
-						showNotification({
-							title: 'New notification message from mereos!',
-							body: 'Hey mate, Ready for the test ? It will be starting soon.',
-						});
-						resolve(true);
-					} else {
-						resolve(false);
-					}
-				})
-				.catch(err => {
-					console.log('err', err);
-				});
-		}
-	});
-};
+// export const checkNotification = () => {
+// 	return new Promise((resolve, _reject) => {
+// 		if (!('Notification' in window)) {
+// 			resolve(false);
+// 		} else if (Notification.permission === 'granted') {
+// 			showNotification({
+// 				title: 'New notification message from mereos!',
+// 				body: 'Hey mate, Ready for the test ? It will be starting soon.',
+// 			});
+// 			resolve(true);
+// 		} else if (Notification.permission === 'denied' || Notification.permission === 'default') {
+// 			Notification.requestPermission()
+// 				.then((permission) => {
+// 					if (permission === 'granted') {
+// 						showNotification({
+// 							title: 'New notification message from mereos!',
+// 							body: 'Hey mate, Ready for the test ? It will be starting soon.',
+// 						});
+// 						resolve(true);
+// 					} else {
+// 						resolve(false);
+// 					}
+// 				})
+// 				.catch(err => {
+// 					logger.error('err', err);
+// 				});
+// 		}
+// 	});
+// };
 
 export const getMultipleCameraDevices = () => {
 	return new Promise((resolve, reject) => {
@@ -124,22 +125,22 @@ export const getMultipleCameraDevices = () => {
 				resolve(videoDevices);
 			})
 			.catch(error => {
-				console.error('Error enumerating devices:', error);
+				logger.error('Error enumerating devices:', error);
 				reject(error);
 			});
 	});
 };
 
-export const showNotification = ({ title, body }) => {
-	try{
-		const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
-		let icons  = schoolTheme?.schoolLogo || `${ASSET_URL}/mereos.png`;
-		const notification = new Notification(title, { body: body, icon: icons });
-		console.log(notification);
-	}catch(error) {
-		console.error('Error in notification',error);
-	}
-};
+// export const showNotification = ({ title, body }) => {
+// 	try{
+// 		const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
+// 		let icons  = schoolTheme?.schoolLogo || `${ASSET_URL}/mereos.png`;
+// 		const notification = new Notification(title, { body: body, icon: icons });
+// 		logger.success(notification);
+// 	}catch(error) {
+// 		logger.error('Error in notification',error);
+// 	}
+// };
 
 export const detectMultipleScreens = async () => {
 	if (window.screen.isExtended) {
@@ -174,33 +175,28 @@ export const checkMicrophone = () => {
 
 export const getNetworkUploadSpeed = async () => {
 	try {
-		const myData = { 'test': 'a'.repeat(1024 * 1024) };
+		const myData = {text: 'a'.repeat(1024 * 1024)};
 		const startTime = new Date().getTime();
 
-		const response = await testUploadSpeed({ 'test': 'a'.repeat(1024 * 1024) });
+		const response = await testUploadSpeed(myData);
 		if(response){
 			const endTime = new Date().getTime();
 			const duration = (endTime - startTime) / 1000;
-			const bitsLoaded = myData.test.length * 8;
+			const bitsLoaded = myData.text.length * 8;
 			const speedMbps = ((bitsLoaded / duration) / 1024 / 1024).toFixed(2);
 			
 			return { speedMbps: speedMbps };
 		}
         
 	} catch (err) {
-		console.error(err);
+		logger.error('Error in network speed:', err);
 		return false;
 	}
-};
-
-export const testUploadSpeed = async (text) => {
-	return axios.post(`https://dashboard-api.mereos-datasafe.com/general/test-upload-speed`, { 'test': text });
 };
 
 export const registerEvent = ({ eventName }) => {
 	try{
 		const session = convertDataIntoParse('session');
-		console.log('session',session);
 
 		if(session?.id){
 			const event = {
@@ -213,14 +209,48 @@ export const registerEvent = ({ eventName }) => {
 			return createEvent(event);
 		}
 	}catch(error){
-		console.log(error);
+		logger.error('Error in register event', error);
 	}
 };
 
 export const updateThemeColor = () => {
-	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme')); 
-	document.documentElement.style.setProperty('--theme-color', schoolTheme?.theming || '#FF961B');
+	const defaultTheme = {
+		theming: '#FF961B',  
+		font: 'normal'       
+	};
+
+	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
+
+	const isValidHex = (color) => {
+		const hexRegex = /^#[0-9A-F]{6}$/i;  
+		return hexRegex.test(color);
+	};
+
+	const isValidFontStyle = (font) => {
+		const validFontStyles = ['normal', 'italic', 'oblique'];
+		return validFontStyles.includes(font);
+	};
+
+	const themeColor = isValidHex(schoolTheme?.theming) 
+		? schoolTheme.theming 
+		: defaultTheme.theming; 
+
+	const fontStyle = isValidFontStyle(schoolTheme?.font) 
+		? schoolTheme.font 
+		: defaultTheme.font;  
+
+	const themeToStore = {
+		...schoolTheme,
+		theming: themeColor,
+		font: fontStyle
+	};
+
+	localStorage.setItem('schoolTheme', JSON.stringify(themeToStore));
+
+	document.documentElement.style.setProperty('--theme-color', themeColor);
+	document.documentElement.style.setProperty('--font-style', fontStyle);
 };
+
 
 export const loadZendeskWidget = () => {
 	const getSecureFeature = getSecureFeatures();
@@ -247,7 +277,7 @@ export const cleanupZendeskWidget = () => {
 		try {
 			window.zE('messenger', 'hide');
 		} catch (e) {
-			console.error('Error resetting the Zendesk widget:', e);
+			logger.error('Error resetting the Zendesk widget:', e);
 		}
 	}
 };
@@ -303,9 +333,6 @@ export const acceptableText = (detectedText, acceptedValue = 80) => {
 		totalTextConfidence = totalTextConfidence + text.Confidence;
 		totalAcceptedTexts = totalAcceptedTexts + 1;
 	});
-
-	console.log('totalTextConfidence / totalAcceptedTexts', totalTextConfidence, totalAcceptedTexts);
-
 	return totalTextConfidence / totalAcceptedTexts >= acceptedValue;
 };
 
@@ -323,13 +350,14 @@ export const dataURLtoFile = (dataurl, filename) => {
 
 export const shareScreenFromContent = () => {
 	return new Promise((resolve, reject) => {
-		navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'monitor' } })
-			.then(stream => {
-				resolve(stream);
-			})
-			.catch(err => {
-				reject(err);
-			});
+		const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+		const constraints = isFirefox
+			? { video: { mediaSource: 'screen' } } 
+			: { video: { displaySurface: 'monitor' } }; 
+
+		navigator.mediaDevices.getDisplayMedia(constraints)
+			.then(stream => resolve(stream))
+			.catch(err => reject(err));
 	});
 };
 
@@ -375,7 +403,6 @@ export const checkForMultipleMicrophones = async () => {
 		const devices = await navigator.mediaDevices.enumerateDevices();
 
 		const microphones = devices.filter(device => device.kind === 'audioinput');
-		console.log('Microphones found:', microphones);
 
 		if (microphones.length > 0) {
 			return microphones;
@@ -384,9 +411,9 @@ export const checkForMultipleMicrophones = async () => {
 		return [];
 	} catch (err) {
 		if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-			console.error('Permission denied:', err);
+			logger.error('Permission denied:', err);
 		} else {
-			console.error('Error:', err);
+			logger.error('Permission denied:', err);
 		}
 		return [];
 	}
@@ -408,13 +435,12 @@ export const updatePersistData = (key, updates) => {
 
 		localStorage.setItem(key, updatedItemJSON);
 	} else {
-		console.warn(`No item found in localStorage with key "${key}"`);
+		logger.warn(`No item found in localStorage with key "${key}"`);
 	}
 };
 
 export const addSectionSessionRecord = (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {
-		console.log('session',session,'candidateInviteAssessmentSection',candidateInviteAssessmentSection);
 		let recordings;
 		if(session?.user_video_name?.length || session?.user_audio_name?.length || session?.screen_sharing_video_name?.length || session?.mobileRecordings?.length || session?.mobileAudios?.length){
 			const sourceIds = [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
@@ -449,7 +475,8 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 			incident_level: session?.incident_level,
 			mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 			mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			conversation_id:localStorage.getItem('conversationId') || ''
+			conversation_id:localStorage.getItem('conversationId') || '',
+			candidate_assessment:session?.candidate_assessment
 		};
 
 		if (session?.id) {
@@ -458,6 +485,8 @@ export const addSectionSessionRecord = (session, candidateInviteAssessmentSectio
 		
 		const resp = session?.id ? await editSectionSession(sectionSessionDetails) : await addSectionSession(sectionSessionDetails);
 		resolve(resp);
+	}).catch(err =>{
+		logger.error('error on candidate session',err);
 	});
 };
 
@@ -472,11 +501,9 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 	return `${year}${_dateBreaker_}${date}${_dateBreaker_}${month}${_differentiator_}${hours}${_timeBreaker_}${minutes}${_timeBreaker_}${seconds}`;
 };
 
-export const registerAIEvent = async ({ eventType, eventName, startTime,endTime }) => {
+export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 	try{
 		const session = convertDataIntoParse('session');
-		console.log('eventType',eventType);
-
 		const event = {
 			name: eventName,
 			start_at: startTime,
@@ -488,7 +515,7 @@ export const registerAIEvent = async ({ eventType, eventName, startTime,endTime 
 				
 		await createAiEvent(event);
 	}catch(e){
-		console.log('error',e);
+		logger.error('Error in register ai event',e);
 	}
 };
 
@@ -621,7 +648,7 @@ export const detectUnfocusOfTab = () => {
 		try {
 			visibilityChangeHandler = () => {
 				if (document.hidden) {
-					showToast('error', i18next.t('moved_away_from_page'));
+					showToast('error', 'moved_away_from_page');
 					registerEvent({ eventType: 'error', notify: false, eventName: 'moved_away_from_page' });
 				} else {
 					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });
@@ -632,7 +659,7 @@ export const detectUnfocusOfTab = () => {
 
 			resolve(true);
 		} catch (error) {
-			console.error('Notification permission error:', error);
+			logger.error('Notification permission error:', error);
 			resolve(false);
 		}
 	});
@@ -648,18 +675,8 @@ export const getMediaStream = async ({ audio, video }) => {
 		window.sharedMediaStream = await navigator.mediaDevices.getUserMedia({ audio: audio, video: video });
 		return window.sharedMediaStream;
 	} catch (error) {
-		console.error('Error accessing media devices: ', error);
+		logger.error('Error accessing media devices: ', error);
 		throw error;
-	}
-};
-
-export const stopMediaStream = () => {
-	if (window.sharedMediaStream) {
-		window.sharedMediaStream.getTracks().forEach(track => track.stop());
-		window.sharedMediaStream = null;
-		console.log('Media stream stopped.');
-	} else {
-		console.log('No media stream to stop.');
 	}
 };
 
@@ -673,7 +690,6 @@ export const removeUnfocusListener = () => {
 export const preventShortCuts = (allowedFunctionKeys = []) => {
 	return new Promise((resolve, _reject) => {
 		document.onkeydown = (event) => {
-			console.log('preventShortCuts', event);
 			event = event || window.event;
 
 			// List of key codes to be blocked
@@ -765,7 +781,6 @@ let isResizing = false;
 const handleResize = () => {
 	if (!isResizing) {
 		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
-		console.log('Resize started');
 		isResizing = true;
 	}
 
@@ -773,7 +788,6 @@ const handleResize = () => {
 
 	resizeTimeout = setTimeout(() => {
 		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
-		console.log('Resize ended');
 		isResizing = false;
 	}, 500);
 };
@@ -796,7 +810,7 @@ export const exitFullScreen = () => {
 			document.msExitFullscreen();
 		}
 	} catch (error) {
-		console.error('An error occurred while attempting to exit fullscreen:', error);
+		logger.error('An error occurred while attempting to exit fullscreen:', error);
 	}
 };
 
@@ -840,7 +854,7 @@ export const forceFullScreen = (element = document.documentElement) => {
 
 		document.addEventListener('fullscreenchange', handleFullscreenChange);
 	} catch (error) {
-		console.error('An error occurred while attempting to enter fullscreen:', error);
+		logger.error('An error occurred while attempting to enter fullscreen:', error);
 	}
 };
 
@@ -891,16 +905,6 @@ export const unlockBrowserFromContent = () => {
 	}
 
 	window.alert = function(){};
-
-	// Close notifications
-	if (Notification.permission === 'granted') {
-		const notifications = document.querySelectorAll('.notification'); 
-		notifications.forEach((notification) => {
-			notification.close();
-		});
-	}
-
-	console.log('All functionalities removed, page is restored to previous state.');
 };
 
 export const handlePreChecksRedirection = () => {
@@ -921,7 +925,7 @@ export const handlePreChecksRedirection = () => {
 		}
 		else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
 			return 'IdentityVerificationScreenOne';
-		}else if(!preChecksSteps?.identityCardPhoto && hasFeature('identity_card_requirement')){
+		}else if(!preChecksSteps?.identityCardPhoto && hasFeature('verify_id')){
 			return 'IdentityVerificationScreenTwo';
 		}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
 			return 'IdentityVerificationScreenThree';
@@ -941,12 +945,10 @@ export const handlePreChecksRedirection = () => {
 
 export const findIncidentLevel = (ai_events) => {
 	let result = 'low';
-	console.log('ai_events findIncidentLevel',ai_events);
 
 	for (const item of ai_events || []) {
 		const { endTime, startTime } = item;
 		const difference = endTime - startTime;
-		console.log('difference',difference);
 
 		if (difference > 10) {
 			return 'high';
@@ -954,14 +956,93 @@ export const findIncidentLevel = (ai_events) => {
 			result = 'medium';
 		}
 	}
-	console.log('result',result);
 	return result;
 };
 
+
+export const normalizeLanguage = (input) => {
+	if (!input) return 'en'; 
+	input = input.toLowerCase();
+	if (input.includes('-')) {
+		return input.split('-')[0];
+	}
+	const languageMap = {
+		french: 'fr',
+		english: 'en',
+		spanish: 'es',
+		german:'de',
+		italian:'it',
+		dutch:'nl',
+		portugese:'pt'
+	};
+	return languageMap[input] || input;
+};
+
+const logWithStyle = (message, style, object = null) => {
+	if (object) {
+		console.log(`%c${message}`, style, object);
+	} else {
+		console.log(`%c${message}`, style);
+	}
+};
+
+export const logger = {
+	info: (message, object) =>
+		logWithStyle(message, 'color: blue; font-weight: bold;', object),
+	success: (message, object) =>
+		logWithStyle(message, 'color: green; font-weight: bold', object),
+	debug: (message, object) =>
+		logWithStyle(message, 'color: orange; font-weight: bold;', object),
+	error: (message, object) =>
+		logWithStyle(message, 'color: red; font-weight: bold;', object),
+	warn: (message, object) =>
+		logWithStyle(message, 'color: yellow; font-weight: bold;', object),
+};
+
+export const initializeI18next = () => {
+	if (i18next.isInitialized) return;
+
+	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
+	const defaultLanguage = schoolLanguage?.language || 'en';
+
+	i18next.init({
+		lng: normalizeLanguage(defaultLanguage),
+		resources: {
+			en: {
+				translation: require('../assets/locales/en/translation.json')
+			}, 
+			fr: {
+				translation: require('../assets/locales/fr/translation.json')
+			},
+			it: {
+				translation: require('../assets/locales/it/translation.json')
+			},
+			pt: {
+				translation: require('../assets/locales/pt/translation.json')
+			},
+			nl: {
+				translation: require('../assets/locales/nl/translation.json')
+			},
+			es: {
+				translation: require('../assets/locales/es/translation.json')
+			},
+			de: {
+				translation: require('../assets/locales/de/translation.json')
+			},	 
+		}
+	}, (err) => {
+		if (err) return logger.error('Error in language', err);
+	});
+};
+
 export const showToast = (type, message) => {
+	if (!i18next.isInitialized) {
+		initializeI18next();
+	}
 	const notyf = new Notyf();
+	const translatedMessage = i18next.t(message);
 	const options = {
-		message: message,
+		message: i18next.t(translatedMessage),
 		duration: 3000, 
 		position: { x: 'right', y: 'top' },
 		ripple: true 
@@ -978,7 +1059,7 @@ export const showToast = (type, message) => {
 			notyf.warning(options);
 			break;
 		default:
-			console.log('Invalid notification type');
+			logger.warn('Invalid notification type');
 			break;
 	}
 };

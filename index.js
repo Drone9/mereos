@@ -9,24 +9,22 @@
 
 window.openModal = openModal;
 
-import { openModal } from './src/ExamPrepreation/examPrechecks';
+import { openModal } from './src/ExamsPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
-import { startRecording, stopAllRecordings } from './src/StartRecording/startRecording';
+import { createCandidate } from './src/services/candidate.services'; 
+import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
-import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, updatePersistData } from './src/utils/functions';
-import { defaultTheme, initialSessionData, preChecksSteps } from './src/utils/constant';
-import { getProfile } from './src/services/profile.services';
+import { initialSessionData, preChecksSteps } from './src/utils/constant';
+import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, logger, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
-import socket from './src/utils/socket';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
-import { createCandidate } from './src/services/candidate.services'; 
+import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 
-async function init(credentials, candidateData,profileId, assessmentData, schoolTheme) {
+async function init(credentials, candidateData, profileId, assessmentData, schoolTheme) {
 	try{
 		const logonResp = await logonSchool(credentials);
 		if(logonResp.data){
-			console.log = function() {};
 			localStorage.setItem('mereosToken', logonResp.data.token);
 
 			const resp = await createCandidate(candidateData);
@@ -34,12 +32,12 @@ async function init(credentials, candidateData,profileId, assessmentData, school
 				school:logonResp?.data?.school,
 				candidate: resp?.data
 			};
-			
+
 			localStorage.setItem('candidateAssessment',JSON.stringify(updateData));
 			localStorage.setItem('session',JSON.stringify(initialSessionData));
 			localStorage.setItem('preChecksSteps',JSON.stringify(preChecksSteps));
 			localStorage.setItem('socketGroupId',JSON.stringify({ groupName:v4() }));
-			localStorage.setItem('schoolTheme',schoolTheme ? JSON.stringify(schoolTheme) : JSON.stringify(defaultTheme));
+			localStorage.setItem('schoolTheme',schoolTheme ? JSON.stringify(schoolTheme):{});
 			localStorage.setItem('conversationId',v4());
       
 			const data = {
@@ -51,17 +49,24 @@ async function init(credentials, candidateData,profileId, assessmentData, school
 			};
 			const assessmentResp = await createCandidateAssessment(data);
 			if (assessmentResp?.data) {
+				const candidateAssessmentData = {
+					status: 'Initiated',
+					candidate: resp?.data?.id,
+					assessment: assessmentResp?.data?.id,
+					profile:profileId
+				};
+				const candidateAssessmentResp = await customCandidateAssessmentStatus(candidateAssessmentData);
 				updatePersistData('session', {
+					candidate_assessment:candidateAssessmentResp?.data?.id,
 					assessment: assessmentResp?.data,
 					candidate:resp?.data?.id
 				});
-				const profileResp = await getProfile({id: profileId });
-				localStorage.setItem('secureFeatures', JSON.stringify(profileResp.data));
+				localStorage.setItem('secureFeatures', JSON.stringify(candidateAssessmentResp?.data?.profile));
 			}
 			return logonResp.data;
 		}
 	}catch(e){
-		console.error('error',e);
+		logger.error('error',e);
 	}
 }
 
@@ -89,16 +94,19 @@ async function start_session(callback) {
 					mobileRoomSessionId:mobileRoomSessionId
 				});
 	
-				if (socket && socket.readyState === WebSocket.OPEN) {
-					socket.send(JSON.stringify({ event: 'twilioToken', message: mobileTwilioToken?.data?.token }));
+				if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+					window.socket.send(JSON.stringify({ event: 'twilioToken', message: mobileTwilioToken?.data?.token }));
 				}
 			}
-			if(findConfigs(['record_video'], secureFeatures?.entities).length){
+
+			const roomCreation = ['record_screen','record_audio','record_video','mobile_proctoring'];
+			if(secureFeatures?.entities.filter(entity => roomCreation.includes(entity.key))?.length > 0){
 				let resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
 				let twilioToken = await getToken({ room_sid: resp.data.room_sid });
 				if (twilioToken) {
 					updatePersistData('session', {
 						twilioToken:twilioToken.data.token,
+						sessionId:newRoomSessionId
 					});
 				}
 			}
@@ -126,6 +134,11 @@ async function stop_session(callback) {
 				localStorage.removeItem('secureFeatures');
 				localStorage.removeItem('schoolTheme');
 				localStorage.removeItem('conversationId');
+				localStorage.removeItem('precheckSetting');
+				localStorage.removeItem('socketGroupId');
+				localStorage.removeItem('navHistory');
+				localStorage.removeItem('deviceId');
+				localStorage.removeItem('microphoneID');
 
 				callback({ type: 'success', message: 'session is finished successfully' });
 			} else {
@@ -133,7 +146,7 @@ async function stop_session(callback) {
 			}
 		}
 	} catch(err) {
-		console.error(err);
+		logger.error(err);
 		callback({type: 'error', message: 'There is error in stopping the session'});
 	}
     

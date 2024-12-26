@@ -1,6 +1,8 @@
 export const ASSET_URL = 'https://mereos-corder.s3.eu-west-3.amazonaws.com/library_icons';
 
-export const BASE_URL = 'https://corder-api.mereos.eu';
+export const BASE_URL = process.env.NODE_ENV === 'production'
+	? 'https://corder-api.mereos.eu'
+	: 'https://corder-api.mereos-datasafe.com';
 
 export const SOCKET_URL = 'wss://mobile-socket.mereos.eu/websocket/';
 
@@ -23,7 +25,7 @@ export const initialSessionData = {
 	user_audio_name: [],
 	screen_sharing_video_name: [],
 	roomscan_recordings: [],
-	session_id: null,
+	sessionId: null,
 	collected_details: null,
 	video_codec: null,
 	video_extension: null,
@@ -36,7 +38,8 @@ export const initialSessionData = {
 	mobileRoomSessionId:null,
 	twilioToken:null,
 	incident_level:null,
-	converationId:null
+	converationId:null,
+	candidate_assessment:null
 };
 
 export const preChecksSteps = {
@@ -53,6 +56,8 @@ export const preChecksSteps = {
 	mobileConnection:false,
 };
 
+export const recordingEvents = ['record_screen','record_audio','record_video','mobile_proctoring'];
+   
 export const LockDownOptions = [
 	'detect_unfocus',
 	'disable_downloading',
@@ -84,7 +89,7 @@ export const systemDiagnosticSteps = [
 export const prevalidationSteps = [
 	'record_video', 
 	'record_audio',
-	'identity_card_requirement',
+	'verify_id',
 	'record_room'
 ];
 

@@ -1,19 +1,21 @@
 import i18next from 'i18next';
 import '../assets/css/modal.css';
-import { runSystemDiagnostics } from './systemdiagnostic';
-import { IdentityVerificationScreenOne } from './identityVerificationScreenOne';
-import { IdentityVerificationScreenTwo } from './identityVerificationScreenTwo';
-import { IdentityVerificationScreenThree } from './identityVerificationScreenThree';
-import { IdentityVerificationScreenFour } from './identityVerificationScreenFour';
-import { IdentityVerificationScreenFive } from './IdentityVerificationScreenFive';
-import { ExamPreparation } from './examPreprationScreen';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
-import { PrevalidationInstructions } from './PrevalidationInstructions';
-import { ASSET_URL, languages, preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
-import { MobileProctoring } from './mobileProctoring';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
+import { ASSET_URL,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import 'notyf/notyf.min.css';
+import { ExamPreparation } from '../ExamPreparation';
+import { SystemDiagnostics } from '../SystemDiagnostic';
+import { IdentityVerificationScreenOne } from '../IdentityVerificationScreenOne';
+import { IdentityVerificationScreenTwo } from '../IdentityVerificationScreenTwo';
+import { IdentityVerificationScreenThree } from '../IdentityVerificationScreenThree';
+import { MobileProctoring } from '../MobileProctoring';
+import { IdentityVerificationScreenFive } from '../IdentityVerificationScreenFive';
+import { IdentityVerificationScreenFour } from '../IdentityVerificationScreenFour';
+import { PrevalidationInstructions } from '../PrevalidationInstructions';
 // import Talk from 'talkjs';
 // import interact from 'interactjs';
+// import mereosLogo from '../assets/images/mereos.svg';
+// import schoolLogo from '../assets/images/profile-draft-circled-orange.svg';
 
 
 const modal = document.createElement('div');
@@ -94,7 +96,7 @@ tabContentsWrapper.appendChild(mobileProctingContainer);
 // 	chatIcon.style.right = '20px';
 // 	chatIcon.style.zIndex = '99999999';
 // 	chatIcon.style.cursor = 'pointer';
-// 	chatIcon.src = `${ASSET_URL}/mereos.svg`;
+// 	chatIcon.src = mereosLogo;
 // 	chatIcon.alt = 'Chat Icon';
 // 	chatIcon.style.width = '50px';
 // 	chatIcon.style.height = '50px';
@@ -134,10 +136,10 @@ tabContentsWrapper.appendChild(mobileProctingContainer);
 // 				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 
 // 				const me = new Talk.User({
-// 					id: candidateInviteAssessmentSection?.candidate?.id,
-// 					name: candidateInviteAssessmentSection?.candidate?.name,
-// 					email: candidateInviteAssessmentSection?.candidate?.email,
-// 					photoUrl: candidateInviteAssessmentSection?.candidate?.photo || `${ASSET_URL}/profile-draft-circled-orange.svg`,
+// 					id: candidateInviteAssessmentSection?.id,
+// 					name: candidateInviteAssessmentSection?.name,
+// 					email: candidateInviteAssessmentSection?.email,
+// 					photoUrl: candidateInviteAssessmentSection?.photo || schoolLogo,
 // 				});
 
 // 				const session = new Talk.Session({
@@ -149,7 +151,7 @@ tabContentsWrapper.appendChild(mobileProctingContainer);
 // 					id: candidateInviteAssessmentSection?.school?.id,
 // 					name: candidateInviteAssessmentSection?.school?.name,
 // 					email: candidateInviteAssessmentSection?.school?.email,
-// 					photoUrl: `${ASSET_URL}/profile-draft-circled-orange.svg`,
+// 					photoUrl: schoolLogo,
 // 				});
 
 // 				const conversationId = localStorage.getItem('conversationId');
@@ -289,11 +291,12 @@ const createLanguageDropdown = () => {
 	}
 };
 
-const openModal = (callback) => {
+const openModal = async (callback) => {
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
 
 	const activeTab = handlePreChecksRedirection(callback);
+	logger.warn('activeTab',activeTab);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
 
 	if (preChecksStep === null) {
@@ -301,34 +304,62 @@ const openModal = (callback) => {
 	}
 	showTab(activeTab, callback);
 	const session = convertDataIntoParse('session');
-	startSession(session);
+	await startSession(session);
 
 	createLanguageDropdown();
 };
 
 function closeModal() {
-	if (typeof window.globalCallback === 'function' && localStorage.getItem('mereosToken')) {
+	if (typeof window.globalCallback === 'function') {
 		window.globalCallback({ message: 'precheck_completed' });
 	}
 
-	if(window.sharedMediaStream){
-		window.sharedMediaStream?.getTracks()?.forEach(track => track.stop());
-	}
-
-	cleanupZendeskWidget();
-
 	modal.style.display = 'none';
 	modal.remove();
+
+	if(!localStorage.getItem('mereosToken')){
+		cleanupZendeskWidget();
+	}
 }
 
 const showTab = async (tabId, callback) => {
 	try {
+		const getSecureFeature = getSecureFeatures();
+		const secureFeatures = getSecureFeature?.entities || [];
+
+		const featureMap = {
+			'ExamPreparation': 'record_video',
+			'runSystemDiagnostics': systemDiagnosticSteps,
+			'Prevalidationinstruction': prevalidationSteps,
+			'IdentityVerificationScreenOne': 'verify_candidate',
+			'IdentityVerificationScreenTwo': 'verify_id',
+			'IdentityVerificationScreenThree': 'record_audio',
+			'IdentityVerificationScreenFour': 'record_room',
+			'MobileProctoring': 'mobile_proctoring',
+			'IdentityVerificationScreenFive': 'record_screen',
+		};
+
+		const featureKey = featureMap[tabId];
+		const isFeatureAllowed = Array.isArray(featureKey)
+			? secureFeatures.some(entity => featureKey.includes(entity.key))
+			: secureFeatures.some(entity => entity.key === featureKey);
+
+		if (isFeatureAllowed || !featureKey) {
+			let navHistory = JSON.parse(localStorage.getItem('navHistory')) || [];
+    
+			let filterNav = navHistory.filter(item => item !== 'IdentityVerificationScreenSix');
+    
+			if (!filterNav.includes(tabId)) {
+				filterNav.push(tabId);
+			}
+    
+			localStorage.setItem('navHistory', JSON.stringify(filterNav));
+		}
+
 		loadZendeskWidget();
-		// initializeLiveChat();
-
 		initializeI18next();
-
 		updateThemeColor();
+
 		const tabs = document.querySelectorAll('.tab');
 		const tabContents = document.querySelectorAll('.tab-content');
 
@@ -346,64 +377,60 @@ const showTab = async (tabId, callback) => {
 			}
 		});
 
-		const getSecureFeature = getSecureFeatures();
-		const secureFeatures = getSecureFeature?.entities || [];
-
 		if (tabId === 'ExamPreparation') {
-			if (!secureFeatures?.find(entity => entity.key === 'record_video')) {
+			if (!isFeatureAllowed) {
 				navigate('runSystemDiagnostics');
 				return;
 			}
 			await ExamPreparation(ExamPreparationContainer);
 		} else if (tabId === 'runSystemDiagnostics') {
-			if (!secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length) {
+			if (!isFeatureAllowed) {
 				navigate('Prevalidationinstruction');
 				return;
 			}
-			runSystemDiagnostics(SystemDiagnosticsContainer);
+			SystemDiagnostics(SystemDiagnosticsContainer);
 		} else if (tabId === 'Prevalidationinstruction') {
-			if (!secureFeatures.filter(entity => prevalidationSteps.includes(entity.key))?.length) {
+			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenOne');
 				return;
 			}
 			await PrevalidationInstructions(PrevalidationinstructionContainer);
 		} else if (tabId === 'IdentityVerificationScreenOne') {
-			if (!secureFeatures?.find(entity => entity.key === 'verify_candidate')) {
-				navigate('IdentityVerificationScreenTwo',callback);
+			if (!isFeatureAllowed) {
+				navigate('IdentityVerificationScreenTwo', callback);
 				return;
 			}
-			await IdentityVerificationScreenOne(IdentityVerificationScreenOneContainer,callback);
+			await IdentityVerificationScreenOne(IdentityVerificationScreenOneContainer, callback);
 		} else if (tabId === 'IdentityVerificationScreenTwo') {
-			if (!secureFeatures?.find(entity => entity.key === 'verify_id')) {
+			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenThree');
 				return;
 			}
 			await IdentityVerificationScreenTwo(IdentityVerificationScreenTwoConatiner);
 		} else if (tabId === 'IdentityVerificationScreenThree') {
-			if (!secureFeatures?.find(entity => entity.key === 'record_audio')) {
+			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenFour');
 				return;
 			}
 			await IdentityVerificationScreenThree(IdentityVerificationScreenThreeContainer);
 		} else if (tabId === 'IdentityVerificationScreenFour') {
-			if (!secureFeatures?.find(entity => entity.key === 'record_room')) {
+			if (!isFeatureAllowed) {
 				navigate('MobileProctoring');
 				return;
 			}
 			await IdentityVerificationScreenFour(IdentityVerificationScreenFourContainer);
 		} else if (tabId === 'MobileProctoring') {
-			if (!secureFeatures?.find(entity => entity.key === 'mobile_proctoring')) {
+			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenFive');
 				return;
 			}
 			await MobileProctoring(mobileProctingContainer);
 		} else if (tabId === 'IdentityVerificationScreenFive') {
-			if (!secureFeatures?.find(entity => entity.key === 'record_screen')) {
+			if (!isFeatureAllowed) {
 				closeModal(callback);
 				return;
 			}
-			
-			await IdentityVerificationScreenFive(IdentityVerificationScreenFiveContainer,callback);
+			await IdentityVerificationScreenFive(IdentityVerificationScreenFiveContainer, callback);
 		} else {
 			closeModal(callback);
 			return;
@@ -419,6 +446,7 @@ const startSession = async (session) => {
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp?.data) {
+			logger.info('resp?.data',resp?.data);
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
 			registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
 		}
@@ -432,51 +460,12 @@ const startSession = async (session) => {
 	}
 };
 
-export const updateTranslations = () => {
-	const activeTab = handlePreChecksRedirection(window.globalCallback);
-	showTab(activeTab,window.globalCallback);
-};
 
-const initializeI18next = () => {
-	if (i18next.isInitialized) return;
-
-	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
-	const defaultLanguage = schoolLanguage?.language || 'en';
-
-	i18next.init({
-		lng: normalizeLanguage(defaultLanguage),
-		resources: {
-			en: {
-				translation: require('../assets/locales/en/translation.json')
-			}, 
-			fr: {
-				translation: require('../assets/locales/fr/translation.json')
-			},
-			it: {
-				translation: require('../assets/locales/it/translation.json')
-			},
-			pt: {
-				translation: require('../assets/locales/pt/translation.json')
-			},
-			nl: {
-				translation: require('../assets/locales/nl/translation.json')
-			},
-			es: {
-				translation: require('../assets/locales/es/translation.json')
-			},
-			de: {
-				translation: require('../assets/locales/de/translation.json')
-			},	 
-		}
-	}, (err) => {
-		if (err) return logger.error('Error in language', err);
-		updateTranslations();
-	});
-	
-	document.addEventListener('DOMContentLoaded', () => {
-		updateTranslations();
-	});
-};
+window.addEventListener('storage', (event) => {
+	if (event.key === 'mereosToken' && event.newValue === null) {
+		closeModal();
+	}
+});
 
 function checkToken() {
 	if (!localStorage.getItem('mereosToken')) {
@@ -484,12 +473,9 @@ function checkToken() {
 	}
 }
 
-checkToken();
-
-window.addEventListener('unload', cleanupZendeskWidget);
+window.onload = checkToken; 
 
 const checkInterval = 2000;
 setInterval(checkToken, checkInterval);
-
 
 export { openModal, closeModal, modalContent, showTab };

@@ -1,9 +1,9 @@
-import { dataURIToBlob, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { dataURIToBlob, logger, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
 import '../assets/css/step1.css';
-import { showTab } from './examPrechecks';
 import i18next from 'i18next';
-import { renderIdentityVerificationSteps } from './IdentitySteps';
+import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
+import { showTab } from '../ExamsPrechecks';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
@@ -41,7 +41,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				}
 			}
 		} catch (err) {
-			console.error('Error accessing webcam:', err);
+			logger.error('Error accessing webcam:', err);
 		}
 	};
 
@@ -245,6 +245,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 					...state,
 					imageSrc: null,
 					captureMode: 'take',
+					isUploading:false,
 					videoConstraints: {
 						...state.videoConstraints,
 						deviceId: localStorage.getItem('deviceId') || undefined,
@@ -280,7 +281,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			const uploadPhotoBtn = document.createElement('button');
 			uploadPhotoBtn.textContent = i18next.t('upload');
 			uploadPhotoBtn.className = 'orange-filled-btn';
-			uploadPhotoBtn.disabled = state.isUploading; 
+			uploadPhotoBtn.disabled = state.isUploading || state.msg.type !== 'successful'; 
 			uploadPhotoBtn.addEventListener('click', uploadUserCapturedPhoto);
 			ivsoBtnContainer.appendChild(uploadPhotoBtn);
 		}
@@ -304,6 +305,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	renderUI();
 
 	i18next.on('languageChanged', () => {
+		state.msg.text = i18next.t(state.msg.text);
 		renderUI();
 	});
 };

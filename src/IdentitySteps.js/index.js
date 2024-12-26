@@ -6,7 +6,6 @@ const UNVERIFIED = 'UNVERIFIED';
 const VERIFIED = 'VERIFIED';
 const VERIFING = 'VERIFING';
 
-// Function to render a single step
 const renderStep = (stepStatus, stepText) => {
 	const container = document.createElement('div');
 	container.className = 'ivs-instruction-step-container';

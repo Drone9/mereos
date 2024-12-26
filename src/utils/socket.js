@@ -1,21 +1,60 @@
-import { SOCKET_URL } from './constant';
-import { v4 } from 'uuid';
+import { logger } from './functions';
+
+const { SOCKET_URL } = require('./constant');
+
+const { v4 } = require('uuid');
 
 const generatePeerId = () => v4();
 
 const getGroupId = () => {
-	const storedId = JSON.parse(localStorage.getItem('socketGroupId'));
-	if (storedId?.groupName) {
-		return storedId.groupName;
-	} else {
-		const newId = generatePeerId(); // Generate a new group ID here if none exists
+	try {
+		const newId = generatePeerId();
 		localStorage.setItem('socketGroupId', JSON.stringify({ groupName: newId }));
 		return newId;
+	} catch (error) {
+		logger.warn('Error accessing localStorage or invalid UUID:', error);
+		return generatePeerId();
 	}
 };
 
-let finalGroupName = getGroupId();
+const initSocket = () => {
+	if (!SOCKET_URL) {
+		throw new Error('SOCKET_URL is not defined');
+	}
 
-const socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
+	window.socket = null;
 
-export default socket;
+	let finalGroupName = getGroupId();
+
+	window.socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
+
+	window.socket.onerror = (error) => {
+		logger.error('WebSocket error:', error);
+	};
+
+	window.socket.onclose = (event) => {
+		logger.warn('WebSocket connection closed:', event.reason);
+	};
+
+	window.socket.onopen = () => {
+		logger.success('WebSocket connection opened');
+	};
+};
+
+const sendMessage = (message) => {
+	if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+		window.socket.send(message);
+	} else {
+		logger.error('WebSocket is not open. Unable to send message');
+	}
+};
+
+const closeSocket = () => {
+	if (window.socket) {
+		window.socket.close();
+	} else {
+		logger.error('WebSocket is not initialized');
+	}
+};
+
+export { initSocket, sendMessage, closeSocket  };

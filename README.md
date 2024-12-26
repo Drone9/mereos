@@ -28,7 +28,7 @@ var {init} = require('mereos');
 
 var credentials = {
     client_id: '3425XXXXXXXXXXXXXXXXX',
-    client_secret: 'HZXXXXXXXXXXXXXXXXXXXXXXXXXX'
+	client_secret: 'HZXXXXXXXXXXXXXXXXXXXXXXXXXX'
 }
 var candidate_object = {
     type: 'candidate',

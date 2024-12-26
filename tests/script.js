@@ -1,9 +1,10 @@
-const mereos = require('mereos')
+const mereos = require('mereos');
+const { logger } = require('../src/utils/functions');
 
 mereos.init('hello')
 .then(resp => {
-    console.log(resp);
+    logger.success(resp);
 })
 .catch (err => {
-    console.log(err);
+    logger.error(err);
 })

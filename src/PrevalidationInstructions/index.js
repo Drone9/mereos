@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger } from '../utils/functions';
 import '../assets/css/prevalidation.css';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
@@ -109,7 +109,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const createUIElements = () => {
-			let container = tabContent.querySelector('.ivso-container');
+			let container = shadowRoot.querySelector('.ivso-container');
 	
 			if (!container) {
 				container = document.createElement('div');
@@ -239,9 +239,9 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const updateUI = () => {
-			const cameraDropdown = document.getElementById('cameraDropdown');
-			const microphoneDropdown = document.getElementById('microphoneDropdown');
-			const messageElement = document.getElementById('message');
+			const cameraDropdown = shadowRoot.getElementById('cameraDropdown');
+			const microphoneDropdown = shadowRoot.getElementById('microphoneDropdown');
+			const messageElement = shadowRoot.getElementById('message');
 		
 			cameraDropdown.innerHTML = '';
 			microphoneDropdown.innerHTML = '';
@@ -280,13 +280,13 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 		
 		const startWebcam = async () => {
-			const videoContainer = document.getElementById('videoContainer');
+			const videoContainer = shadowRoot.getElementById('videoContainer');
 			videoContainer.innerHTML = '';
 	
 			try {
 				mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
 	
-				let videoElement = document.getElementById('myVideo');
+				let videoElement = shadowRoot.getElementById('myVideo');
 				if (!videoElement) {
 					videoElement = document.createElement('video');
 					videoElement.id = 'myVideo';
@@ -311,10 +311,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 		init();
 
 		i18next.on('languageChanged', () => {
-			const headingContainer = document.querySelector('.pvi-header-title');
-			const subHeadingContainer = document.querySelector('.pvi-msg');
-			const messageElement = document.getElementById('message');
-			const iconTextElements = document.querySelectorAll('.pvi-instruction-txt');
+			const headingContainer = shadowRoot.querySelector('.pvi-header-title');
+			const subHeadingContainer = shadowRoot.querySelector('.pvi-msg');
+			const messageElement = shadowRoot.getElementById('message');
+			const iconTextElements = shadowRoot.querySelectorAll('.pvi-instruction-txt');
 	
 			setTextContent(headingContainer, subHeadingContainer, messageElement, Array.from(iconTextElements),iconData);
 		});

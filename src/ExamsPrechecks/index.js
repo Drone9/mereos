@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import '../assets/css/modal.css';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
-import { ASSET_URL,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import { ASSET_URL,examPreprationCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,languages,  MobileProctoringCss,  modalCss,  preChecksSteps, preValidationCss, prevalidationSteps, spinner, systemDiagnosticCss, systemDiagnosticSteps } from '../utils/constant';
 import 'notyf/notyf.min.css';
 import { ExamPreparation } from '../ExamPreparation';
 import { SystemDiagnostics } from '../SystemDiagnostic';
@@ -17,14 +17,31 @@ import { PrevalidationInstructions } from '../PrevalidationInstructions';
 // import mereosLogo from '../assets/images/mereos.svg';
 // import schoolLogo from '../assets/images/profile-draft-circled-orange.svg';
 
-
 const modal = document.createElement('div');
 modal.className = 'modal';
+
+export const shadowRoot = modal.attachShadow({ mode: 'open' });
+const mainStylying = document.createElement('style');
+mainStylying.textContent = `
+	${spinner}
+	${examPreprationCss} 
+	${modalCss} 
+	${systemDiagnosticCss} 
+	${preValidationCss} 
+	${IdentityVerificationScreenOneCss} 
+	${identityStepsCss} 
+	${IdentityVerificationScreenTwoCss} 
+	${IdentityVerificationScreenThreeCss} 
+	${IdentityVerificationScreenFourCss} 
+	${IdentityVerificationScreenFiveCss} 
+	${MobileProctoringCss}`;
+
+shadowRoot.appendChild(mainStylying);
 
 const modalContent = document.createElement('div');
 modalContent.className = 'modal-content';
 
-modal.appendChild(modalContent);
+shadowRoot.appendChild(modalContent);
 
 const tabsContainer = document.createElement('div');
 tabsContainer.className = 'tabs-container';
@@ -79,6 +96,8 @@ tabContentsWrapper.appendChild(IdentityVerificationScreenFourContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenFiveContainer);
 tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
 tabContentsWrapper.appendChild(mobileProctingContainer);
+
+modalContent.appendChild(tabContentsWrapper);
 
 // const initializeLiveChat = () => {
 // 	const isLoggedIn = !!localStorage.getItem('mereosToken');
@@ -195,13 +214,6 @@ tabContentsWrapper.appendChild(mobileProctingContainer);
 // 	}
 // };
 
-// const shadowRoot = modalContent.attachShadow({ mode: 'open' });
-modalContent.appendChild(tabContentsWrapper);
-// const link = document.createElement('link');
-// link.rel = 'stylesheet';
-// link.href = '../assets/css/modal.css';
-// shadowRoot.appendChild(link);
-
 const navigate = (newTabId) => {
 	showTab(newTabId);
 };
@@ -296,7 +308,6 @@ const openModal = async (callback) => {
 	modal.style.display = 'block';
 
 	const activeTab = handlePreChecksRedirection(callback);
-	logger.warn('activeTab',activeTab);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
 
 	if (preChecksStep === null) {
@@ -309,12 +320,13 @@ const openModal = async (callback) => {
 	createLanguageDropdown();
 };
 
+
 function closeModal() {
 	if (typeof window.globalCallback === 'function') {
 		window.globalCallback({ message: 'precheck_completed' });
 	}
 
-	modal.style.display = 'none';
+	modal.style.display = 'block';
 	modal.remove();
 
 	if(!localStorage.getItem('mereosToken')){
@@ -360,16 +372,16 @@ const showTab = async (tabId, callback) => {
 		initializeI18next();
 		updateThemeColor();
 
-		const tabs = document.querySelectorAll('.tab');
-		const tabContents = document.querySelectorAll('.tab-content');
+		const tabs = shadowRoot.querySelectorAll('.tab');
+		const tabContents = shadowRoot.querySelectorAll('.tab-content');
 
 		tabs.forEach(tab => {
 			tab.classList.remove('active');
-			if (tab.dataset.tab === tabId) {
+			if (tab.dataset.tab === tabId) {	
 				tab.classList.add('active');
 			}
 		});
-
+		
 		tabContents.forEach(content => {
 			content.classList.remove('active');
 			if (content.id === tabId) {
@@ -446,7 +458,6 @@ const startSession = async (session) => {
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp?.data) {
-			logger.info('resp?.data',resp?.data);
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
 			registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
 		}

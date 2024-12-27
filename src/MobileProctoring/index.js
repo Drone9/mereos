@@ -8,7 +8,7 @@ import QRCode from 'qrcode';
 import { getAuthenticationToken, getDateTime, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { v4 } from 'uuid';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 
 export const MobileProctoring = async (tabContent) => {
@@ -76,7 +76,7 @@ export const MobileProctoring = async (tabContent) => {
 
 						if (peerInstance) { 
 							const call = peerInstance.call(eventData?.message?.message, mediaStream);
-							let remoteVideo = document.getElementById('remote-mobile-video-container');
+							let remoteVideo = shadowRoot.getElementById('remote-mobile-video-container');
 				
 							call?.on('stream', (remoteStream) => {
 								remoteVideo.srcObject = remoteStream;
@@ -179,7 +179,7 @@ export const MobileProctoring = async (tabContent) => {
 			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successfull', eventValue: getDateTime() });
 			updatePersistData('preChecksSteps', { mobileConnection: true });
 			showTab('IdentityVerificationScreenFive');
-			let container = document.getElementById('mobile-proctoring');
+			let container = shadowRoot.getElementById('mobile-proctoring');
 			if(container){
 				container.innerHTML = '';
 			}

@@ -12,7 +12,7 @@ import {
 import '../assets/css/systemDiagnostic.css';
 import i18next from 'i18next';
 import { ASSET_URL } from '../utils/constant';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 let cameraStream = null;
 let audioStream = null;
@@ -136,8 +136,8 @@ export const SystemDiagnostics = async (tab1Content) => {
 	renderUI(tab1Content);
 
 	const setElementStatus = (id, status, isSuccess) => {
-		const statusIcon = document.getElementById(`${id}StatusIcon`);
-		const statusLoading = document.getElementById(`${id}StatusLoading`);
+		const statusIcon = shadowRoot.getElementById(`${id}StatusIcon`);
+		const statusLoading = shadowRoot.getElementById(`${id}StatusLoading`);
 		if (!statusIcon || !statusLoading) {
 			return;
 		}
@@ -146,7 +146,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 	};
 
 	const handleDiagnosticItemClick = (id, checkFunction) => {
-		const element = document.getElementById(`${id}DiagnosticItem`);
+		const element = shadowRoot.getElementById(`${id}DiagnosticItem`);
 		if (!element) {
 			return;
 		}
@@ -258,7 +258,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 
 		const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
-			const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
+			const currentIconSrc = shadowRoot.getElementById(`${item}StatusIcon`)?.src;
 			if (!currentIconSrc) {
 					return false;
 			}
@@ -269,7 +269,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 			return currentIconPathname === expectedIconPathname;
 	});
 	
-		document.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
+	shadowRoot.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 	} catch (error) {
 		logger.error('Error running diagnostics:', error);
 	} finally {

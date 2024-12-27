@@ -208,7 +208,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	const prevStep = () => {
 		updatePersistData('preChecksSteps',{ identityCardPhoto:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		showTab(navHistory[navHistory.length - 2]);
+		const currentIndex = navHistory.indexOf('IdentityVerificationScreenTwo');
+		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+		console.log('previousPage',previousPage);
+		showTab(previousPage);
 	};
 
 	const renderUI = async () => {
@@ -246,10 +249,12 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			headerImgContainer.appendChild(img);
 
 			const resultImg = document.createElement('img');
-			resultImg.src = `${ASSET_URL}/checkmark-green.svg`;
+			resultImg.src = currentState.msg.type === 'unsuccessful' ? `${ASSET_URL}/close-red.svg` :`${ASSET_URL}/checkmark-green.svg`;
 			resultImg.className = 'ivst-header-img-result';
 			resultImg.alt = 'tick-mark-green-bg';
-			headerImgContainer.appendChild(resultImg);
+			if(currentState.msg.type !== 'checking'){
+				headerImgContainer.appendChild(resultImg);
+			}
 		} else {
 			photo = document.createElement('video');
 			photo.width = videoConstraints.width;

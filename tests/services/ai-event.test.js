@@ -1,5 +1,5 @@
 import axios from '../../src/utils/axios';
-import { getAllAiEvents, createAiEvent, editAiEvent, deleteEvent } from '../../src/services/ai-event.servicer'; // Adjust the path as needed
+import { getAllAiEvents, createAiEvent, editAiEvent, deleteEvent } from '../../src/services/ai-event.services'; // Adjust the path as needed
 
 jest.mock('../../src/utils/axios', () => {
   return {

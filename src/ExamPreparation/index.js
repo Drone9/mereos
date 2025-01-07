@@ -1,8 +1,11 @@
-import '../assets/css/exam-prepration.css';
-import { logger, registerEvent, updatePersistData } from '../utils/functions';
 import i18next from 'i18next';
+
+import { logger, registerEvent, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
+
 import { showTab } from '../ExamsPrechecks';
+
+import '../assets/css/exam-prepration.css';
 
 const vectors = [
 	{ name: 'img1', src: `${ASSET_URL}/oc-address.svg`, alt: '' },

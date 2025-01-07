@@ -1,13 +1,15 @@
 import axios from 'axios';
+import i18next from 'i18next';
+import { Notyf } from 'notyf';
+
+import { closeModal } from '../ExamsPrechecks';
+
 import { BASE_URL, prevalidationSteps, systemDiagnosticSteps } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
-import { createAiEvent } from '../services/ai-event.servicer';
-import i18next from 'i18next';
+import { createAiEvent } from '../services/ai-event.services';
 import { createEvent } from '../services/event.service';
-import { Notyf } from 'notyf';
 import { testUploadSpeed } from '../services/general.services';
-import { closeModal } from '../ExamsPrechecks';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');

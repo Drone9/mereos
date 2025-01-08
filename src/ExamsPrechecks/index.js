@@ -455,21 +455,33 @@ const startSession = async (session) => {
 };
 
 
+let isModalClosed = false;
+
 window.addEventListener('storage', (event) => {
-	if (event.key === 'mereosToken' && event.newValue === null) {
-		closeModal();
+	if (event.key === 'mereosToken' && event.newValue === null && !isModalClosed) {
+		closeModalOnce();
 	}
 });
 
 function checkToken() {
-	if (!localStorage.getItem('mereosToken')) {
-		closeModal();
+	if (!localStorage.getItem('mereosToken') && !isModalClosed) {
+		closeModalOnce();
 	}
 }
 
+function closeModalOnce() {
+	isModalClosed = true;
+	closeModal(); // Call your modal closing logic here
+}
+
+// Check the token on page load
 window.onload = checkToken; 
 
+// Periodically check the token with a limited interval
 const checkInterval = 2000;
-setInterval(checkToken, checkInterval);
+setInterval(() => {
+	checkToken();
+}, checkInterval);
+
 
 export { openModal, closeModal, modalContent, showTab };

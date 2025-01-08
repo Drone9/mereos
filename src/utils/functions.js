@@ -714,7 +714,6 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 				174,
 				114,
 				145,
-				91
 			];
 
 			// Check for Ctrl/Meta + any alphabet key
@@ -1039,27 +1038,33 @@ export const showToast = (type, message) => {
 	if (!i18next.isInitialized) {
 		initializeI18next();
 	}
-	const notyf = new Notyf();
-	const translatedMessage = i18next.t(message);
-	const options = {
-		message: i18next.t(translatedMessage),
-		duration: 3000, 
-		position: { x: 'right', y: 'top' },
-		ripple: true 
-	};
+	const getSecureFeature = getSecureFeatures();
+	const secureFeatures = getSecureFeature?.entities || [];
+	const hasNotifyFeature = secureFeatures?.some(entity => entity.key === 'notify');
 
-	switch (type) {
-		case 'error':
-			notyf.error(options);
-			break;
-		case 'success':
-			notyf.success(options);
-			break;
-		case 'warning':
-			notyf.warning(options);
-			break;
-		default:
-			logger.warn('Invalid notification type');
-			break;
+	if(hasNotifyFeature){
+		const notyf = new Notyf();
+		const translatedMessage = i18next.t(message);
+		const options = {
+			message: i18next.t(translatedMessage),
+			duration: 3000, 
+			position: { x: 'right', y: 'top' },
+			ripple: true 
+		};
+	
+		switch (type) {
+			case 'error':
+				notyf.error(options);
+				break;
+			case 'success':
+				notyf.success(options);
+				break;
+			case 'warning':
+				notyf.warning(options);
+				break;
+			default:
+				logger.warn('Invalid notification type');
+				break;
+		}
 	}
 };

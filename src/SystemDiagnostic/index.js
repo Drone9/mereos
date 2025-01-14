@@ -1,3 +1,5 @@
+import i18next from 'i18next';
+
 import { 
 	checkCamera, 
 	checkMicrophone, 
@@ -9,10 +11,10 @@ import {
 	registerEvent, 
 	updatePersistData 
 } from '../utils/functions';
-import '../assets/css/systemDiagnostic.css';
-import i18next from 'i18next';
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
+
+import '../assets/css/systemDiagnostic.css';
 
 let cameraStream = null;
 let audioStream = null;

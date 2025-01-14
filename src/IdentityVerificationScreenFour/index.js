@@ -1,9 +1,12 @@
-import '../assets/css/step4.css';
-import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
 import i18next from 'i18next';
+
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
+
+import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
+import { ASSET_URL } from '../utils/constant';
+
+import '../assets/css/step4.css';
 
 
 export const IdentityVerificationScreenFour = async (tabContent) => {

@@ -1,14 +1,17 @@
 
 import Peer from 'peerjs';
-import { initSocket } from '../utils/socket';
-import '../assets/css/mobile-proctoring.css';
-import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
+import { v4 } from 'uuid';
 import i18next, { t } from 'i18next';
 import QRCode from 'qrcode';
+
+import { showTab } from '../ExamsPrechecks';
+
+import { initSocket } from '../utils/socket';
+import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { v4 } from 'uuid';
-import { showTab } from '../ExamsPrechecks';
+
+import '../assets/css/mobile-proctoring.css';
 
 export const MobileProctoring = async (tabContent) => {
 	window.mobileStream = null;

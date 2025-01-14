@@ -1,6 +1,6 @@
 
 /*!
- * Mereos - v1.1.2
+ * Mereos - v1.1.1
  * Copyright (c) DT Education
  * Licensed under the MIT
  */
@@ -2103,27 +2103,22 @@ body{
   padding-left: 10px;
 }
 .user-videos-remote .user-video-header .recording-heading{
-  font-size: 12px;
+  font-size: 14px;
   margin-bottom: 9px;
-  width: 112px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
 }
 
 .recording-badge-container-header {
     position: absolute;
     right: 10px;
-    width: 71px;
+    width: 61px;
     white-space: nowrap;
     background-color: #e95e5e;
     border-radius: 5px;
     color: #fff;
     display: flex;
     align-items: center;
-    font-size: 9px;
-    column-gap: 0px;
+    font-size: 10px;
+    column-gap: 4px;
     padding: 5px 5px;
     text-transform: lowercase;
     text-overflow: ellipsis;

@@ -1,9 +1,12 @@
-import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, showToast, updatePersistData } from '../utils/functions';
-import '../assets/css/step5.css';
 import i18next from 'i18next';
+
+import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
+
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
+
+import '../assets/css/step5.css';
 
 
 export const IdentityVerificationScreenFive = async (tabContent) => {

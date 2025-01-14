@@ -1,8 +1,10 @@
 import i18next from 'i18next';
-import '../assets/css/modal.css';
+import 'notyf/notyf.min.css';
+// import Talk from 'talkjs';
+// import interact from 'interactjs';
+
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { ASSET_URL,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
-import 'notyf/notyf.min.css';
 import { ExamPreparation } from '../ExamPreparation';
 import { SystemDiagnostics } from '../SystemDiagnostic';
 import { IdentityVerificationScreenOne } from '../IdentityVerificationScreenOne';
@@ -12,10 +14,10 @@ import { MobileProctoring } from '../MobileProctoring';
 import { IdentityVerificationScreenFive } from '../IdentityVerificationScreenFive';
 import { IdentityVerificationScreenFour } from '../IdentityVerificationScreenFour';
 import { PrevalidationInstructions } from '../PrevalidationInstructions';
-// import Talk from 'talkjs';
-// import interact from 'interactjs';
 // import mereosLogo from '../assets/images/mereos.svg';
 // import schoolLogo from '../assets/images/profile-draft-circled-orange.svg';
+
+import '../assets/css/modal.css';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -455,21 +457,33 @@ const startSession = async (session) => {
 };
 
 
+let isModalClosed = false;
+
 window.addEventListener('storage', (event) => {
-	if (event.key === 'mereosToken' && event.newValue === null) {
-		closeModal();
+	if (event.key === 'mereosToken' && event.newValue === null && !isModalClosed) {
+		closeModalOnce();
 	}
 });
 
 function checkToken() {
-	if (!localStorage.getItem('mereosToken')) {
-		closeModal();
+	if (!localStorage.getItem('mereosToken') && !isModalClosed) {
+		closeModalOnce();
 	}
 }
 
+function closeModalOnce() {
+	isModalClosed = true;
+	closeModal(); // Call your modal closing logic here
+}
+
+// Check the token on page load
 window.onload = checkToken; 
 
+// Periodically check the token with a limited interval
 const checkInterval = 2000;
-setInterval(checkToken, checkInterval);
+setInterval(() => {
+	checkToken();
+}, checkInterval);
+
 
 export { openModal, closeModal, modalContent, showTab };

@@ -1006,5 +1006,8 @@
 "recording_stopped_successfully": "La grabación se detuvo correctamente",
 "screen_sharing_stopped": "Se detuvo el uso compartido de pantalla",
 "session_completed": "La sesión está completada",
-"session_completed_successfully": "La sesión se completó con éxito"
+"session_completed_successfully": "La sesión se completó con éxito",
+"no_person_detected_for_more_than_10_seconds": "No se ha detectado ninguna persona durante más de 10 segundos",
+"unauthorized_object_detected_for_more_than_10_seconds": "Se ha detectado un objeto no autorizado durante más de 10 segundos",
+"multiple_people_detected_for_more_than_10_seconds": "Se han detectado varias personas durante más de 10 segundos"
 }

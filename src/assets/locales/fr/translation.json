@@ -1017,5 +1017,8 @@
 	"recording_stopped_successfully": "L'enregistrement a été arrêté avec succès",
 	"screen_sharing_stopped": "Partage d'écran arrêté",
 	"session_completed": "La session est terminée",
-	"session_completed_successfully": "La session s'est terminée avec succès"
+	"session_completed_successfully": "La session s'est terminée avec succès",
+	"no_person_detected_for_more_than_10_seconds": "Aucune personne n'a été détectée pendant plus de 10 secondes",
+"unauthorized_object_detected_for_more_than_10_seconds": "Objet non autorisé détecté pendant plus de 10 secondes",
+"multiple_people_detected_for_more_than_10_seconds": "Plusieurs personnes détectées pendant plus de 10 secondes"
 }

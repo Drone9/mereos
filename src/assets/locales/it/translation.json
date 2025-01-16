@@ -1015,5 +1015,8 @@
 "recording_stopped_successfully":"Registrazione interrotta con successo",
 "screen_sharing_stopped": "Condivisione dello schermo interrotta",
 "session_completed": "La sessione è completata",
-"session_completed_successfully": "La sessione è stata completata con successo"
+"session_completed_successfully": "La sessione è stata completata con successo",
+"no_person_detected_for_more_than_10_seconds":"Nessuna persona rilevata per più di 10 secondi",
+"unauthorized_object_detected_for_more_than_10_seconds":"Oggetto non autorizzato rilevato per più di 10 secondi",
+"multiple_people_detected_for_more_than_10_seconds":"Più persone rilevate per più di 10 secondi"
 }

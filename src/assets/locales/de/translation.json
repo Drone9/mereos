@@ -1032,5 +1032,8 @@
 "recording_stopped_successfully": "Aufnahme erfolgreich gestoppt",
 "screen_sharing_stopped":"Bildschirmfreigabe gestoppt",
 "session_completed": "Die Sitzung ist abgeschlossen",
-"session_completed_successfully": "Die Sitzung wurde erfolgreich abgeschlossen"
+"session_completed_successfully": "Die Sitzung wurde erfolgreich abgeschlossen",
+"no_person_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurde keine Person erkannt",
+"unauthorized_object_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurde ein nicht autorisiertes Objekt erkannt",
+"multiple_people_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurden mehrere Personen erkannt"
 }

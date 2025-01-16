@@ -392,23 +392,21 @@ const startAIWebcam = async (mediaStream) => {
 					let lastLog = lastLogIndex > -1 ? aiEvents.splice(lastLogIndex, 1)[0] : undefined;
 					if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
 						const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
-						let message = '';
-						if(key === 'person_missing'){
-							message = 'no_person_detected_come_back_to_assessment';
-						}else if(key === 'object_detected'){
-							message = 'unauthorized_object_detected_please_put_it_away';
-						}else if(key === 'multiple_people'){
-							message = 'multiple_people_detected';
-						}else{
-							message = 'ai_recorder_unknown_violation';
-						}
-
-						showToast('error', message);
-						
 						aiEvents.push(newLog);
 					} else if (log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
 						aiEvents.push(lastLog);
+						if (lastLog.time_span === 10) {
+							let message = '';
+							if (key === 'person_missing') {
+								message = 'no_person_detected_for_more_than_10_seconds';
+							} else if (key === 'object_detected') {
+								message = 'unauthorized_object_detected_for_more_than_10_seconds';
+							} else if (key === 'multiple_people') {
+								message = 'multiple_people_detected_for_more_than_10_seconds';
+							}
+							showToast('error', message);
+						}
 					} else if (!log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, end_time: Number(lastLog.start_time) + Number(lastLog.time_span) };
 						const data = { eventType: 'success', notify: true, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) };

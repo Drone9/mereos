@@ -1015,5 +1015,8 @@
 "recording_stopped_successfully":"Opname succesvol gestopt",
 "screen_sharing_stopped":"Schermdeling gestopt",
 "session_completed": "De sessie is voltooid",
-"session_completed_successfully": "De sessie is succesvol voltooid"
+"session_completed_successfully": "De sessie is succesvol voltooid",
+"no_person_detected_for_more_than_10_seconds":"Geen persoon gedetecteerd gedurende meer dan 10 seconden",
+"unauthorized_object_detected_for_more_than_10_seconds":"Ongeautoriseerd object gedetecteerd gedurende meer dan 10 seconden",
+"multiple_people_detected_for_more_than_10_seconds":"Meerdere personen gedetecteerd gedurende meer dan 10 seconden"
 }

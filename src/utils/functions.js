@@ -5,6 +5,9 @@ import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.services';
 import { createEvent } from '../services/event.service';
 import { testUploadSpeed } from '../services/general.services';
+import i18next from 'i18next';
+import { closeModal } from '../ExamsPrechecks';
+import { Notyf } from 'notyf';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');

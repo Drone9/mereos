@@ -1,8 +1,7 @@
 import i18next from 'i18next';
 
-import { logger, registerEvent, updatePersistData } from '../utils/functions';
-import { ASSET_URL } from '../utils/constant';
 import { getDateTime, logger, registerEvent, updatePersistData } from '../utils/functions';
+import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import '../assets/css/exam-preparations.css';
 

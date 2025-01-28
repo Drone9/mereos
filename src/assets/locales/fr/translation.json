@@ -317,7 +317,7 @@
 	"exam_instructions_text": "Maintenant, préparez votre environnement de travail",
 	"exam_prep_msg": "Préparez une pièce d'identité avec photo émise par le gouvernement.\nSi vous avez besoin de récupérer votre pièce d'identité ou de faire une pause rapide, veuillez le faire maintenant.",
 	"exam_preparation": "Préparation à l'examen",
-	"exam_preparation_msg": "L'extension enregistrera votre session d'examen afin de (potentiellement) l'analyser.\nVos données sont cryptées et ne sont accessibles qu'aux surveillants accrédités par votre établissement. L'enregistrement démarrera après une vérification de votre matériel informatique et de votre environnement de test.",
+	"exam_preparation_msg": "La bibliothèque devra enregistrer votre session d'examen pour une éventuelle révision.\nCes informations sont cryptées et ne sont accessibles qu'aux personnes autorisées par votre établissement. L'enregistrement commencera après vérification de votre système et de votre environnement.",
 	"exam_preparation_tnc": "Je confirme avoir pris connaissance du règlement de cet examen et les accepte avant d'y accéder avec l'extension Mereos.",
 	"exam_security_level": "Niveau de sécurité de l'examen (en fonction des options sélectionnées) :",
 	"exam_settings_summary": "Résumé des paramètres d'examen",

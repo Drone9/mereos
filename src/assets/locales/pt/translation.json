@@ -317,7 +317,7 @@
 "exam_instructions_text": "Agora, prepare seu ambiente de trabalho",
 "exam_prep_msg": "Tenha um documento de identificação com foto emitido pelo governo pronto.\nSe precisar recuperar seu documento de identificação ou fazer uma pausa rápida, faça isso agora.",
 "exam_preparation": "Preparação para o exame",
-"exam_preparation_msg": "A extensão precisará gravar sua sessão de exame para possível revisão.\nEsta informação é criptografada e pode ser acessado somente por indivíduos autorizados pela sua instituição. A gravação começará após a verificação do seu sistema e ambiente.",
+"exam_preparation_msg": "A biblioteca precisará gravar sua sessão de exame para possível revisão.\nEstas informações são criptografadas e podem ser acessadas somente por indivíduos autorizados por sua instituição. A gravação começará após a verificação do seu sistema e ambiente.",
 "exam_preparation_tnc": "Concordo que entendi as regras do exame antes de iniciar o exame com extensão.",
 "exam_security_level": "Nível de segurança do exame (com base nas opções selecionadas):",
 "exam_settings_summary": "Resumo das configurações do exame",

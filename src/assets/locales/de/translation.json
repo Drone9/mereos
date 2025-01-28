@@ -317,7 +317,7 @@
 "exam_instructions_text": "Bereiten Sie jetzt bitte Ihre Arbeitsumgebung vor",
 "exam_prep_msg": "Halten Sie einen amtlichen Lichtbildausweis bereit.\nWenn Sie Ihren Ausweis abholen oder eine kurze Pause einlegen müssen, tun Sie dies bitte jetzt.",
 "exam_preparation": "Prüfung Vorbereitung",
-"exam_preparation_msg": "Die Erweiterung muss Ihre Prüfungssitzung für eine mögliche Überprüfung aufzeichnen.\nDiese Informationen sind verschlüsselt und können nur von Personen abgerufen werden, die von Ihrer Institution autorisiert wurden. Die Aufzeichnung beginnt, nachdem Ihr System und Ihre Umgebung überprüft wurden.",
+"exam_preparation_msg": "Die Bibliothek muss Ihre Prüfungssitzung für eine mögliche Überprüfung aufzeichnen.\nDiese Informationen sind verschlüsselt und können nur von Personen abgerufen werden, die von Ihrer Institution autorisiert sind. Die Aufzeichnung beginnt nach der Überprüfung Ihres Systems und Ihrer Umgebung.",
 "exam_preparation_tnc": "Ich bestätige, dass ich die Prüfungsregeln verstanden habe, bevor ich mit der Erweiterung mit der Prüfung beginne.",
 "exam_security_level": "Prüfungssicherheitsstufe (basierend auf ausgewählten Optionen):",
 "exam_settings_summary": "Zusammenfassung der Prüfungseinstellungen",

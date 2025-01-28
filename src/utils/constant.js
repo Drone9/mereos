@@ -44,6 +44,7 @@ export const initialSessionData = {
 
 export const preChecksSteps = {
 	examPreparation:false,
+	identityConfirmation:false,
 	diagnosticStep:false,
 	preValidation:false,
 	userPhoto:false,
@@ -84,6 +85,12 @@ export const systemDiagnosticSteps = [
 	'enable_notifications', 
 	'record_room',
 	'record_audio'
+];
+
+export const examPreparationSteps = [
+	'record_video', 
+	'record_audio',
+	'record_screen',
 ];
 
 export const prevalidationSteps = [

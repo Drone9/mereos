@@ -317,7 +317,7 @@
 "exam_instructions_text": "Ora prepara il tuo ambiente di lavoro",
 "exam_prep_msg": "Tieni pronto un documento d'identità con foto rilasciato dal governo.\nSe hai bisogno di recuperare il tuo documento d'identità o di fare una breve pausa, fallo ora.",
 "exam_preparation": "Preparazione esame",
-"exam_preparation_msg": "L'estensione dovrà registrare la tua sessione d'esame per una potenziale revisione.\nQueste informazioni sono crittografate e possono accessibile solo a persone autorizzate dal tuo istituto. La registrazione inizierà dopo aver controllato il tuo sistema e l'ambiente.",
+"exam_preparation_msg": "La biblioteca dovrà registrare la tua sessione d'esame per una potenziale revisione.\nQueste informazioni sono crittografate e possono essere accessibili solo da individui autorizzati dal tuo istituto. La registrazione inizierà dopo aver controllato il tuo sistema e l'ambiente.",
 "exam_preparation_tnc": "Accetto di aver compreso le regole dell'esame prima di iniziare l'esame con estensione.",
 "exam_security_level": "Livello di sicurezza dell'esame (in base alle opzioni selezionate):",
 "exam_settings_summary": "Riepilogo delle impostazioni dell'esame",

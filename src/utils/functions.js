@@ -1,15 +1,13 @@
 import axios from 'axios';
-import i18next from 'i18next';
-import { Notyf } from 'notyf';
-
-import { closeModal } from '../ExamsPrechecks';
-
-import { BASE_URL, prevalidationSteps, systemDiagnosticSteps } from './constant';
+import { BASE_URL, examPreparationSteps, prevalidationSteps, systemDiagnosticSteps } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.services';
 import { createEvent } from '../services/event.service';
 import { testUploadSpeed } from '../services/general.services';
+import i18next from 'i18next';
+import { closeModal } from '../ExamsPrechecks';
+import { Notyf } from 'notyf';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -953,8 +951,10 @@ export const handlePreChecksRedirection = () => {
 		const secureFeatures = getSecureFeature?.entities || [];
 		const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
-		if (!preChecksSteps?.examPreparation && hasFeature('record_video')) {
+		if (!preChecksSteps?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
 			return 'ExamPreparation';
+		}if (!preChecksSteps?.identityConfirmation && hasFeature('verify_id')) {
+			return 'IdentityCardRequirement';
 		} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
 			return 'runSystemDiagnostics';
 		}else if(!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){

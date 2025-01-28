@@ -4,8 +4,9 @@ import 'notyf/notyf.min.css';
 // import interact from 'interactjs';
 
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
-import { ASSET_URL,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
-import { ExamPreparation } from '../ExamPreparation';
+import { ASSET_URL,examPreparationSteps,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import 'notyf/notyf.min.css';
+import { IdentityCardRequirement } from '../IdentityCardRequirement';
 import { SystemDiagnostics } from '../SystemDiagnostic';
 import { IdentityVerificationScreenOne } from '../IdentityVerificationScreenOne';
 import { IdentityVerificationScreenTwo } from '../IdentityVerificationScreenTwo';
@@ -14,6 +15,9 @@ import { MobileProctoring } from '../MobileProctoring';
 import { IdentityVerificationScreenFive } from '../IdentityVerificationScreenFive';
 import { IdentityVerificationScreenFour } from '../IdentityVerificationScreenFour';
 import { PrevalidationInstructions } from '../PrevalidationInstructions';
+import { ExamPreparation } from '../ExamPreparation';
+// import Talk from 'talkjs';
+// import interact from 'interactjs';
 // import mereosLogo from '../assets/images/mereos.svg';
 // import schoolLogo from '../assets/images/profile-draft-circled-orange.svg';
 
@@ -38,6 +42,10 @@ tabContentsWrapper.className = 'tab-contents-wrapper';
 const ExamPreparationContainer = document.createElement('div');
 ExamPreparationContainer.className = 'tab-content';
 ExamPreparationContainer.id = 'ExamPreparation';
+
+const IdentityCardRequirementContainer = document.createElement('div');
+IdentityCardRequirementContainer.className = 'tab-content';
+IdentityCardRequirementContainer.id = 'IdentityCardRequirement';
 
 const SystemDiagnosticsContainer = document.createElement('div');
 SystemDiagnosticsContainer.className = 'tab-content';
@@ -72,6 +80,7 @@ mobileProctingContainer.className = 'tab-content';
 mobileProctingContainer.id = 'MobileProctoring';
 
 tabContentsWrapper.appendChild(ExamPreparationContainer);
+tabContentsWrapper.appendChild(IdentityCardRequirementContainer);
 tabContentsWrapper.appendChild(SystemDiagnosticsContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenOneContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenTwoConatiner);
@@ -324,7 +333,8 @@ const showTab = async (tabId, callback) => {
 		const secureFeatures = getSecureFeature?.entities || [];
 
 		const featureMap = {
-			'ExamPreparation': 'record_video',
+			'IdentityCardRequirement':'verify_id',
+			'ExamPreparation': examPreparationSteps,
 			'runSystemDiagnostics': systemDiagnosticSteps,
 			'Prevalidationinstruction': prevalidationSteps,
 			'IdentityVerificationScreenOne': 'verify_candidate',
@@ -374,11 +384,18 @@ const showTab = async (tabId, callback) => {
 		});
 
 		if (tabId === 'ExamPreparation') {
+			console.log('isFeatureAllowed',isFeatureAllowed);
+			if (!isFeatureAllowed) {
+				navigate('IdentityCardRequirement');
+				return;
+			}
+			await ExamPreparation(ExamPreparationContainer);
+		} else if (tabId === 'IdentityCardRequirement') {
 			if (!isFeatureAllowed) {
 				navigate('runSystemDiagnostics');
 				return;
 			}
-			await ExamPreparation(ExamPreparationContainer);
+			await IdentityCardRequirement(IdentityCardRequirementContainer);
 		} else if (tabId === 'runSystemDiagnostics') {
 			if (!isFeatureAllowed) {
 				navigate('Prevalidationinstruction');
@@ -442,7 +459,6 @@ const startSession = async (session) => {
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp?.data) {
-			logger.info('resp?.data',resp?.data);
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
 			registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
 		}
@@ -455,7 +471,6 @@ const startSession = async (session) => {
 		logger.error('Error in start Session', e);
 	}
 };
-
 
 let isModalClosed = false;
 
@@ -473,17 +488,14 @@ function checkToken() {
 
 function closeModalOnce() {
 	isModalClosed = true;
-	closeModal(); // Call your modal closing logic here
+	closeModal();
 }
 
-// Check the token on page load
 window.onload = checkToken; 
 
-// Periodically check the token with a limited interval
 const checkInterval = 2000;
 setInterval(() => {
 	checkToken();
 }, checkInterval);
-
 
 export { openModal, closeModal, modalContent, showTab };

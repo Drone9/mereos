@@ -1,5 +1,8 @@
 import i18next from 'i18next';
-import '../assets/css/modal.css';
+import 'notyf/notyf.min.css';
+// import Talk from 'talkjs';
+// import interact from 'interactjs';
+
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { ASSET_URL,examPreparationSteps,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import 'notyf/notyf.min.css';
@@ -17,6 +20,8 @@ import { ExamPreparation } from '../ExamPreparation';
 // import interact from 'interactjs';
 // import mereosLogo from '../assets/images/mereos.svg';
 // import schoolLogo from '../assets/images/profile-draft-circled-orange.svg';
+
+import '../assets/css/modal.css';
 
 const modal = document.createElement('div');
 modal.className = 'modal';

@@ -1,13 +1,15 @@
 import * as TwilioVideo from 'twilio-video';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import * as tf from '@tensorflow/tfjs';
-import { getCreateRoom } from '../services/twilio.services';
-import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
-import '../assets/css/start-recording.css';
 import interact from 'interactjs';
 import i18next from 'i18next';
 import { v4 } from 'uuid';
+import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import * as tf from '@tensorflow/tfjs';
+
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { getCreateRoom } from '../services/twilio.services';
+import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
+
+import '../assets/css/start-recording.css';
 
 let roomInstance = null;
 let aiProcessingInterval = null;

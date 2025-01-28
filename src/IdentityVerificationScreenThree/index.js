@@ -1,8 +1,11 @@
-import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
-import '../assets/css/step3.css';
 import i18next from 'i18next';
+
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
+
+import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
+
+import '../assets/css/step3.css';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
 	let canvasRef = null;
@@ -142,7 +145,9 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		cleanup();
 		updatePersistData('preChecksSteps', { audioDetection: false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		showTab(navHistory[navHistory.length - 2]);
+		const currentIndex = navHistory.indexOf('IdentityVerificationScreenThree');
+		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+		showTab(previousPage);
 	};
 
 	const updateUI = () => {

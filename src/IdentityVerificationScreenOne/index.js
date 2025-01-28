@@ -1,9 +1,12 @@
-import { dataURIToBlob, logger, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
-import '../assets/css/step1.css';
 import i18next from 'i18next';
+
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
+
+import { dataURIToBlob, logger, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { ASSET_URL } from '../utils/constant';
+
+import '../assets/css/step1.css';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
@@ -79,51 +82,89 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			const data = new FormData();
 			const imageUrl = await dataURLtoFile(state.imageSrc);
 			data.append('image', imageUrl);
-			const resp = await userRekognitionInfo(data);
-			const predictions = resp?.data?.face?.FaceDetails;
-
-			img.onload = async function () {
-				if (predictions?.length && predictions?.length === 1) {
-					state = {
-						...state,
-						imageSrc: state.imageSrc,
-						msg: {
-							type: 'successful',
-							text: 'detected_face_successfully',
-						},
-					};
-					registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
-				} else if (predictions?.length > 1) {
-					state = {
-						...state,
-						imageSrc: null,
-						captureMode: 'take',
-						msg: {
-							type: 'unsuccessful',
-							text: 'multiple_face_detected',
-						},
-					};
-					startWebcam();
-					registerEvent({ eventType: 'success', notify: false, eventName: 'multiple_face_detected' });
-				} else {
-					state = {
-						...state,
-						imageSrc: null,
-						captureMode: 'take',
-						msg: {
-							type: 'unsuccessful',
-							text: 'face_not_detected',
-						},
-					};
-					startWebcam();
-					registerEvent({ eventType: 'success', notify: false, eventName: 'face_not_detected' });
-				}
+			
+			try {
+				const resp = await userRekognitionInfo(data);
+				const predictions = resp?.data?.face?.FaceDetails;
+				console.log('predictions', predictions);
+	
+				img.onload = async function () {
+					if (predictions?.length && predictions.length === 1) {
+						const face = predictions[0];
+	
+						const { Pose, Confidence } = face;
+						const isFullFace = 
+						Confidence >= 95 &&
+						Math.abs(Pose.Yaw) <= 10 && 
+						Math.abs(Pose.Pitch) <= 10 && 
+						Math.abs(Pose.Roll) <= 10;
+	
+						if (isFullFace) {
+							state = {
+								...state,
+								imageSrc: state.imageSrc,
+								msg: {
+									type: 'successful',
+									text: 'detected_face_successfully',
+								},
+							};
+							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
+						} else {
+							state = {
+								...state,
+								imageSrc: null,
+								captureMode: 'retake',
+								msg: {
+									type: 'unsuccessful',
+									text: 'face_not_detected',
+								},
+							};
+							startWebcam();
+							registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
+						}
+					} else if (predictions?.length > 1) {
+						state = {
+							...state,
+							imageSrc: null,
+							captureMode: 'retake',
+							msg: {
+								type: 'unsuccessful',
+								text: 'multiple_face_detected',
+							},
+						};
+						startWebcam();
+						registerEvent({ eventType: 'error', notify: true, eventName: 'multiple_face_detected' });
+					} else {
+						state = {
+							...state,
+							imageSrc: null,
+							captureMode: 'retake',
+							msg: {
+								type: 'unsuccessful',
+								text: 'face_not_detected',
+							},
+						};
+						startWebcam();
+						registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
+					}
+	
+					renderUI();
+				};
+				img.src = state.imageSrc;
+			} catch (error) {
+				console.error('Error processing the image:', error);
+				state = {
+					...state,
+					msg: {
+						type: 'error',
+						text: 'face_processing_failed',
+					},
+				};
 				renderUI();
-			};
-			img.src = state.imageSrc;
+			}
 		}
 	};
-
+	
 	const nextStep = () => {
 		if(webcamStream){
 			webcamStream?.getTracks()?.forEach((track) => track.stop());
@@ -201,9 +242,17 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 		renderIdentityVerificationSteps(stepsContainer, 1);
 	
-		const ivsMsg = document.createElement('div');
-		ivsMsg.className = 'ivso-msg';
-		ivsMsg.textContent = i18next.t(state.msg.text);
+		let ivsMsg = document.createElement('div');
+	
+		if (state.msg.text) {
+			ivsMsg.className = 'ivso-msg';
+
+			if (state.msg.type === 'unsuccessful' || state.msg.type === 'something_went_wrong_please_upload_again') {
+				ivsMsg.style.color = '#E95E5E';
+			}
+
+			ivsMsg.textContent = i18next.t(state.msg.text);
+		}
 	
 		const ivsoWebcamContainer = document.createElement('div');
 		ivsoWebcamContainer.className = 'ivso-webcam-container';
@@ -223,7 +272,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			img.className = 'ivso-captured-img';
 			ivsoHeaderImgContainer.appendChild(img);
 		} else {
-			// Check webcam stream
 			if (!webcamStream) {
 				startWebcam();
 			}
@@ -235,7 +283,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			ivsoHeaderImgContainer.appendChild(gridImg);
 		}
 	
-		// Handle buttons
 		if (state.captureMode !== 'take') {
 			const retakePhotoBtn = document.createElement('button');
 			retakePhotoBtn.textContent = i18next.t('retake_photo');

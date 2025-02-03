@@ -4,20 +4,22 @@ import i18next from 'i18next';
 import { v4 } from 'uuid';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
-
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import { getCreateRoom } from '../services/twilio.services';
 import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
-
 import '../assets/css/start-recording.css';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
 let aiEvents = [];
-let mediaStream=null;
+let mediaStream = null;
 let mobileRoomInstance = null;
 
-export const startRecording = async () => {
+export const startRecording = async () => {	
+	if(window.recordingStart) {
+		return;
+	}
+
 	let cameraTrack = null;
 	let screenTrack = null;
 	let cameraRecordings = [];
@@ -26,6 +28,8 @@ export const startRecording = async () => {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+
+	if(roomInstance !== null) return;
 
 	window.addEventListener('popstate', () => {
 		if(window.startRecordingCallBack){
@@ -72,6 +76,7 @@ export const startRecording = async () => {
 						if(window.startRecordingCallBack){
 							window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
 						}
+						window.recordingStart = false;
 						logger.error('error',error);
 					});
 
@@ -113,6 +118,7 @@ export const startRecording = async () => {
 			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
 			}
+			window.recordingStart = false;
 		});
 	}
 
@@ -120,6 +126,7 @@ export const startRecording = async () => {
 		if(window.startRecordingCallBack){
 			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
 		}
+		window.recordingStart = false;
 		return;
 	}
 
@@ -193,6 +200,7 @@ export const startRecording = async () => {
 			}
 			
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
+			
 			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 				window.socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
 			}
@@ -200,7 +208,9 @@ export const startRecording = async () => {
 			if(window.startRecordingCallBack){
 				window.startRecordingCallBack({ message: 'recording_started_successfully' });
 			}
-			
+
+			window.recordingStart = true;
+
 			room.on('reconnecting', () => {
 				cleanupLocalVideo(cameraTrack);
 				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
@@ -217,6 +227,7 @@ export const startRecording = async () => {
 				}
 				if(window.startRecordingCallBack){
 					window.startRecordingCallBack({ message: 'web_internet_connection_disconnected' });
+					window.recordingStart = false;
 				}
 			});
 
@@ -227,6 +238,7 @@ export const startRecording = async () => {
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});
+			window.recordingStart = false;
 		}
 	}else{
 		const dateTime = new Date();
@@ -237,12 +249,14 @@ export const startRecording = async () => {
 		if(window.startRecordingCallBack){
 			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 		}
+		window.recordingStart = true;
 	}
 };
 
 const PREDICTION = ['cell phone', 'book'];
 
 const setupWebcam = async (mediaStream) => {
+	const secureFeatures = getSecureFeatures();
 	if (!i18next.isInitialized) {
 		initializeI18next();
 	}
@@ -251,7 +265,9 @@ const setupWebcam = async (mediaStream) => {
 		webcamContainer = document.createElement('div');
 		webcamContainer.id = 'webcam-container';
 		webcamContainer.className='user-videos-remote';
-		document.body.appendChild(webcamContainer);
+		if(findConfigs(['camera_view'],secureFeatures?.entities)?.length){
+			document.body.appendChild(webcamContainer);
+		}
 	}
 
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
@@ -425,6 +441,17 @@ const startAIWebcam = async (mediaStream) => {
 
 export const cleanupLocalVideo = () => {
 	const webcamContainer = document.getElementById('webcam-container');
+	const webVideoContainer = document.getElementById('user-video-header');
+	const imgContainer = document.getElementById('chat-icon');
+
+	if(imgContainer){
+		imgContainer.remove();
+	}
+	
+	if(webVideoContainer){
+		webVideoContainer.remove();
+	}
+
 	if (webcamContainer) {
 		const videoElement = webcamContainer.querySelector('video');
 		if (videoElement) {
@@ -535,7 +562,11 @@ function VideoChat(room) {
 		webcamContainer = document.createElement('div');
 		webcamContainer.id = 'webcam-container';
 		webcamContainer.className='user-videos-remote';
-		document.body.appendChild(webcamContainer);
+
+		if(findConfigs(['camera_view'],secureFeatures?.entities)?.length){
+			document.body.appendChild(webcamContainer);
+		}
+
 		interact(webcamContainer).draggable({
 			listeners: {
 				move(event) {

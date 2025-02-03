@@ -283,7 +283,20 @@ export const cleanupZendeskWidget = () => {
 };
 
 export const getAuthenticationToken = () => {
-	return localStorage.getItem('mereosToken');
+	const tokenData = localStorage.getItem('mereosToken');
+
+	if (tokenData) {
+		const { token, expiresAt } = JSON.parse(tokenData);
+        
+		if (Date.now() > expiresAt) {
+			localStorage.removeItem('mereosToken');
+			return null;
+		}
+        
+		return token; 
+	}
+
+	return null; 
 };
 
 export const userRekognitionInfo = async (data) => {
@@ -709,12 +722,17 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 				122, // F11
 				123, // F12
 				91, // window btn
-				44,   // Print Screen,
+				44, // Print Screen,
 				173,
 				174,
 				114,
 				145,
 			];
+
+			if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
+				event.preventDefault();
+				event.stopPropagation();
+			}
 
 			// Check for Ctrl/Meta + any alphabet key
 			if (
@@ -752,24 +770,29 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 export const stopPrinting = () => {
 	return new Promise((resolve, _reject) => {
 		let css = `
-			body {
-				display: none;
-				visibility: hidden;
+			@media print {
+				* {
+					display: none !important;
+				}
 			}
 		`;
 		let head = document.head || document.getElementsByTagName('head')[0];
 		let style = document.createElement('style');
 
 		head.appendChild(style);
-
 		style.type = 'text/css';
 		style.media = 'print';
+
 		if (style.styleSheet) {
-			// This is required for IE8 and below.
 			style.styleSheet.cssText = css;
 		} else {
 			style.appendChild(document.createTextNode(css));
 		}
+
+		window.onbeforeprint = function () {
+			return false;
+		};
+
 		resolve(true);
 	});
 };

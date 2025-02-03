@@ -24,11 +24,14 @@ import { customCandidateAssessmentStatus } from './src/services/candidate-assess
 async function init(credentials, candidateData, profileId, assessmentData, schoolTheme) {
 	return new Promise(async (resolve, reject) => {
 		try {
-			logger.success('schoolTheme',schoolTheme);
 			const logonResp = await logonSchool(credentials);
 
 			if (logonResp.data) {
-				localStorage.setItem('mereosToken', logonResp.data.token);
+				const token = logonResp.data.token;
+				const expiresInDays = 7;
+				const expiresAt = Date.now() + expiresInDays * 24 * 60 * 60 * 1000;
+				
+				localStorage.setItem('mereosToken', JSON.stringify({ token, expiresAt }));
 
 				const resp = await createCandidate(candidateData);
 				const updateData = {
@@ -50,6 +53,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 					course_id: assessmentData?.course_id,
 					others: { test: 'value' },
 				};
+				
 				const assessmentResp = await createCandidateAssessment(data);
 
 				if (assessmentResp?.data) {
@@ -140,11 +144,13 @@ async function start_session() {
 							);
 						}
 					} catch (err) {
-						window.startRecordingCallBack({
-							type: 'error',
-							message: 'Error in mobile proctoring setup',
-							details: err,
-						});
+						if(window.startRecordingCallBack){
+							window.startRecordingCallBack({
+								type: 'error',
+								message: 'Error in mobile proctoring setup',
+								details: err,
+							});
+						}
 						return;
 					}
 				}
@@ -177,11 +183,13 @@ async function start_session() {
 				window.startRecordingCallBack({ message: 'recording_started_successfully' });
 			}
 		} catch (err) {
-			window.startRecordingCallBack({
-				type: 'error',
-				message: 'There was an error in starting the session',
-				details: err,
-			});
+			if(window.startRecordingCallBack){
+				window.startRecordingCallBack({
+					type: 'error',
+					message: 'There was an error in starting the session',
+					details: err,
+				});
+			}
 		}
 	});
 }

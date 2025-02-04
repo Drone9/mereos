@@ -1,9 +1,6 @@
 import i18next from 'i18next';
 import 'notyf/notyf.min.css';
-// import Talk from 'talkjs';
-// import interact from 'interactjs';
-
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
 import { ASSET_URL,examPreparationSteps,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
 import 'notyf/notyf.min.css';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
@@ -16,12 +13,10 @@ import { IdentityVerificationScreenFive } from '../IdentityVerificationScreenFiv
 import { IdentityVerificationScreenFour } from '../IdentityVerificationScreenFour';
 import { PrevalidationInstructions } from '../PrevalidationInstructions';
 import { ExamPreparation } from '../ExamPreparation';
-// import Talk from 'talkjs';
-// import interact from 'interactjs';
-// import mereosLogo from '../assets/images/mereos.svg';
-// import schoolLogo from '../assets/images/profile-draft-circled-orange.svg';
-
+import Talk from 'talkjs';
+import interact from 'interactjs';
 import '../assets/css/modal.css';
+import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -90,120 +85,118 @@ tabContentsWrapper.appendChild(IdentityVerificationScreenFiveContainer);
 tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
 tabContentsWrapper.appendChild(mobileProctingContainer);
 
-// const initializeLiveChat = () => {
-// 	const isLoggedIn = !!localStorage.getItem('mereosToken');
-// 	const getSecureFeature = getSecureFeatures();
-// 	const secureFeatures = getSecureFeature?.entities || [];
-// 	const hasChatBot = secureFeatures?.some(entity => entity.key === 'live_chat_bot');
+const initializeLiveChat = () => {
+	const isLoggedIn = !!getAuthenticationToken();
+	const getSecureFeature = getSecureFeatures();
+	const secureFeatures = getSecureFeature?.entities || [];
+	const hasChatBot = secureFeatures?.some(entity => entity.key === 'live_chat');
 
-// 	if (!isLoggedIn || !hasChatBot) return;
+	if (!isLoggedIn || !hasChatBot) return;
 
-// 	const chatIcon = document.createElement('img');
-// 	chatIcon.className = 'chat-icon';
-// 	chatIcon.id = 'chat-icon';
-// 	chatIcon.style.position = 'fixed';
-// 	chatIcon.style.bottom = '20px';
-// 	chatIcon.style.right = '20px';
-// 	chatIcon.style.zIndex = '99999999';
-// 	chatIcon.style.cursor = 'pointer';
-// 	chatIcon.src = mereosLogo;
-// 	chatIcon.alt = 'Chat Icon';
-// 	chatIcon.style.width = '50px';
-// 	chatIcon.style.height = '50px';
+	const chatIcon = document.createElement('img');
+	chatIcon.className = 'chat-icon';
+	chatIcon.id = 'chat-icon';
+	chatIcon.style.position = 'fixed';
+	chatIcon.style.bottom = '20px';
+	chatIcon.style.right = '20px';
+	chatIcon.style.zIndex = '99999999';
+	chatIcon.style.cursor = 'pointer';
+	chatIcon.src = `${ASSET_URL}/mereos.svg`;
+	chatIcon.alt = 'Chat Icon';
+	chatIcon.style.width = '50px';
+	chatIcon.style.height = '50px';
 
-// 	chatIcon.addEventListener('click', toggleChat);
+	chatIcon.addEventListener('click', toggleChat);
 
-// 	document.body.appendChild(chatIcon);
+	document.body.appendChild(chatIcon);
 
-// 	function toggleChat() {
-// 		const container = document.getElementById('talkjs-container');
+	function toggleChat() {
+		const container = document.getElementById('talkjs-container');
 
-// 		if (container) {
-// 			if (container.style.display === 'none') {
-// 				container.style.display = 'block';
-// 			} else {
-// 				container.style.display = 'none';
-// 			}
-// 		} else {
-// 			const chatContainer = document.createElement('div');
-// 			chatContainer.id = 'talkjs-container';
-// 			chatContainer.className = 'live-chat-container';
-// 			chatContainer.style.width = '400px';
-// 			chatContainer.style.height = '500px';
-// 			chatContainer.style.position = 'fixed';
-// 			chatContainer.style.bottom = '100px';
-// 			chatContainer.style.right = '20px';
-// 			chatContainer.style.zIndex = '9999';
-// 			chatContainer.style.backgroundColor = 'white';
-// 			chatContainer.style.border = '1px solid #ccc';
-// 			chatContainer.style.borderRadius = '8px';
-// 			chatContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+		if (container) {
+			if (container.style.display === 'none') {
+				container.style.display = 'block';
+			} else {
+				container.style.display = 'none';
+			}
+		} else {
+			const chatContainer = document.createElement('div');
+			chatContainer.id = 'talkjs-container';
+			chatContainer.className = 'live-chat-container';
+			chatContainer.style.width = '400px';
+			chatContainer.style.height = '500px';
+			chatContainer.style.position = 'fixed';
+			chatContainer.style.bottom = '100px';
+			chatContainer.style.right = '20px';
+			chatContainer.style.zIndex = '9999';
+			chatContainer.style.backgroundColor = 'white';
+			chatContainer.style.border = '1px solid #ccc';
+			chatContainer.style.borderRadius = '8px';
+			chatContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
 
-// 			const loadingText = document.createElement('i');
-// 			chatContainer.appendChild(loadingText);
+			const loadingText = document.createElement('i');
+			chatContainer.appendChild(loadingText);
 
-// 			Talk.ready.then(() => {
-// 				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+			Talk.ready.then(() => {
+				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+				logger.success('candidateInviteAssessmentSection',candidateInviteAssessmentSection);
 
-// 				const me = new Talk.User({
-// 					id: candidateInviteAssessmentSection?.id,
-// 					name: candidateInviteAssessmentSection?.name,
-// 					email: candidateInviteAssessmentSection?.email,
-// 					photoUrl: candidateInviteAssessmentSection?.photo || schoolLogo,
-// 				});
+				const me = new Talk.User({
+					id: candidateInviteAssessmentSection?.candidate?.id,
+					name: candidateInviteAssessmentSection?.candidate?.name,
+					email: candidateInviteAssessmentSection?.candidate?.email,
+					photoUrl: candidateInviteAssessmentSection?.candidate?.photo || `${ASSET_URL}/profile-draft-circled-orange.svg`,
+				});
 
-// 				const session = new Talk.Session({
-// 					appId: 'tl1lE0Vo',
-// 					me: me,
-// 				});
+				const session = new Talk.Session({
+					appId: 'tl1lE0Vo',
+					me: me,
+				});
 
-// 				const other = new Talk.User({
-// 					id: candidateInviteAssessmentSection?.school?.id,
-// 					name: candidateInviteAssessmentSection?.school?.name,
-// 					email: candidateInviteAssessmentSection?.school?.email,
-// 					photoUrl: schoolLogo,
-// 				});
+				const other = new Talk.User({
+					id: candidateInviteAssessmentSection?.school?.id,
+					name: candidateInviteAssessmentSection?.school?.name,
+					email: candidateInviteAssessmentSection?.school?.email,
+					photoUrl: `${ASSET_URL}/profile-draft-circled-orange.svg`,
+				});
 
-// 				const conversationId = localStorage.getItem('conversationId');
-// 				const conversation = session.getOrCreateConversation(conversationId);
-// 				conversation.setParticipant(me);
-// 				conversation.setParticipant(other);
+				const conversationId = localStorage.getItem('conversationId');
+				const conversation = session.getOrCreateConversation(conversationId);
+				conversation.setParticipant(me);
+				conversation.setParticipant(other);
 
-// 				const chatbox = session.createChatbox();
-// 				chatbox.select(conversation);
-// 				chatbox.mount(chatContainer);
-// 			});
+				const chatbox = session.createChatbox();
+				chatbox.select(conversation);
+				chatbox.mount(chatContainer);
+			});
 
-// 			document.body.appendChild(chatContainer);
+			document.body.appendChild(chatContainer);
 
-// 			makeDraggable(chatContainer);
-// 		}
-// 	}
+			makeDraggable(chatContainer);
+		}
+	}
 
-// 	function makeDraggable(element) {
-// 		interact(element).draggable({
-// 			inertia: true,
-// 			listeners: {
-// 			
-// 				move(event) {
-// 					const { target } = event;
+	function makeDraggable(element) {
+		interact(element).draggable({
+			inertia: true,
+			listeners: {
+			
+				move(event) {
+					const { target } = event;
 
-// 					// Calculate new position
-// 					const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-// 					const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+					const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+					const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
 
-// 					// Apply translation
-// 					target.style.transform = `translate(${x}px, ${y}px)`;
+					target.style.transform = `translate(${x}px, ${y}px)`;
 
-// 					// Save new position
-// 					target.setAttribute('data-x', x);
-// 					target.setAttribute('data-y', y);
-// 				},
-// 
-// 			},
-// 		});
-// 	}
-// };
+					target.setAttribute('data-x', x);
+					target.setAttribute('data-y', y);
+				},
+
+			},
+		});
+	}
+};
 
 modalContent.appendChild(tabContentsWrapper);
 
@@ -299,7 +292,8 @@ const createLanguageDropdown = () => {
 const openModal = async (callback) => {
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
-
+	initializeLiveChat();
+	
 	const activeTab = handlePreChecksRedirection(callback);
 	logger.warn('activeTab',activeTab);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
@@ -322,7 +316,7 @@ function closeModal() {
 	modal.style.display = 'none';
 	modal.remove();
 
-	if(!localStorage.getItem('mereosToken')){
+	if(!getAuthenticationToken()){
 		cleanupZendeskWidget();
 	}
 }
@@ -455,7 +449,7 @@ const showTab = async (tabId, callback) => {
 
 const startSession = async (session) => {
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-
+	logger.success('session',session);
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp?.data) {
@@ -467,6 +461,12 @@ const startSession = async (session) => {
 				id: resp.data.id,
 				sessionStatus: 'Initiated'
 			});
+			
+		await changeCandidateAssessmentStatus({
+			status: 'Attending',
+			id:session?.candidate_assessment
+		});
+
 	} catch (e) {
 		logger.error('Error in start Session', e);
 	}
@@ -480,8 +480,12 @@ window.addEventListener('storage', (event) => {
 	}
 });
 
+if(getAuthenticationToken()){
+	initializeLiveChat();
+}
+
 function checkToken() {
-	if (!localStorage.getItem('mereosToken') && !isModalClosed) {
+	if (!getAuthenticationToken() && !isModalClosed) {
 		closeModalOnce();
 	}
 }

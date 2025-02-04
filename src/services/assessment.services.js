@@ -10,3 +10,13 @@ export const createCandidateAssessment = async (data) => {
 	};
 	return axios.post('/assessments/candidate_assessment/', data, config);
 };
+
+export const updateCandidateAssessment = async (data) => {
+	const mereosToken = getAuthenticationToken();
+	const config = {
+		headers: {
+			token: mereosToken,
+		},
+	};
+	return axios.put('/assessments/candidate_assessment/', data, config);
+};

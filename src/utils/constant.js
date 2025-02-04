@@ -82,7 +82,6 @@ export const systemDiagnosticSteps = [
 	'record_audio', 
 	'verify_connection', 
 	'track_location', 
-	'enable_notifications', 
 	'record_room',
 	'record_audio'
 ];

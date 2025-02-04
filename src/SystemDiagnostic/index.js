@@ -130,6 +130,7 @@ const renderUI = (tab1Content) => {
 	tab1Content.appendChild(container);
 };
 
+
 export const SystemDiagnostics = async (tab1Content) => {
 	if (!tab1Content) {
 		logger.error('Element with id "runSystemDiagnostics" not found.');
@@ -155,9 +156,25 @@ export const SystemDiagnostics = async (tab1Content) => {
 		element.addEventListener('click', async () => {
 			const result = await checkFunction();
 			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
+			updateContinueButtonState();
 		});
 	};
 
+	const updateContinueButtonState = () => {
+		const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
+				const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
+				if (!currentIconSrc) {
+						return false;
+				}
+	
+				const currentIconPathname = new URL(currentIconSrc).pathname;
+				const expectedIconPathname = new URL(successIconMap[item]).pathname;
+	
+				return currentIconPathname === expectedIconPathname;
+		});
+	
+		document.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
+	};
 	const successIconMap = {
 		webcam: videoGreen,
 		microphone: microPhoneGreen,
@@ -256,22 +273,13 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 		await Promise.all(promises);
 
+		
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 
-		const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
-			const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
-			if (!currentIconSrc) {
-					return false;
-			}
+		updateContinueButtonState();
 	
-			const currentIconPathname = new URL(currentIconSrc).pathname;
-			const expectedIconPathname = new URL(successIconMap[item]).pathname;
 	
-			return currentIconPathname === expectedIconPathname;
-	});
-	
-		document.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 	} catch (error) {
 		logger.error('Error running diagnostics:', error);
 	} finally {

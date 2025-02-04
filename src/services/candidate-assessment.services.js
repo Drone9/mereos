@@ -8,7 +8,7 @@ export const changeCandidateAssessmentStatus = async (data) => {
 			token: token,
 		},
 	};
-	return axiosInstance.put('/candidate/change_candidate_assessment_status/', data, config);
+	return axiosInstance.put('/candidates/custom_candidate_assessment/', data, config);
 };
 
 export const customCandidateAssessmentStatus = async (data) => {

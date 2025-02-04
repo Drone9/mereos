@@ -1,15 +1,13 @@
 import axios from 'axios';
-import i18next from 'i18next';
-import { Notyf } from 'notyf';
-
-import { closeModal } from '../ExamsPrechecks';
-
-import { BASE_URL, prevalidationSteps, systemDiagnosticSteps } from './constant';
+import { BASE_URL, examPreparationSteps, prevalidationSteps, systemDiagnosticSteps } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.services';
 import { createEvent } from '../services/event.service';
 import { testUploadSpeed } from '../services/general.services';
+import i18next from 'i18next';
+import { closeModal } from '../ExamsPrechecks';
+import { Notyf } from 'notyf';
 
 export const dataURIToBlob = (dataURI) => {
 	const splitDataURI = dataURI.split(',');
@@ -285,7 +283,20 @@ export const cleanupZendeskWidget = () => {
 };
 
 export const getAuthenticationToken = () => {
-	return localStorage.getItem('mereosToken');
+	const tokenData = localStorage.getItem('mereosToken');
+
+	if (tokenData) {
+		const { token, expiresAt } = JSON.parse(tokenData);
+        
+		if (Date.now() > expiresAt) {
+			localStorage.removeItem('mereosToken');
+			return null;
+		}
+        
+		return token; 
+	}
+
+	return null; 
 };
 
 export const userRekognitionInfo = async (data) => {
@@ -711,12 +722,17 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 				122, // F11
 				123, // F12
 				91, // window btn
-				44,   // Print Screen,
+				44, // Print Screen,
 				173,
 				174,
 				114,
 				145,
 			];
+
+			if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
+				event.preventDefault();
+				event.stopPropagation();
+			}
 
 			// Check for Ctrl/Meta + any alphabet key
 			if (
@@ -754,24 +770,29 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 export const stopPrinting = () => {
 	return new Promise((resolve, _reject) => {
 		let css = `
-			body {
-				display: none;
-				visibility: hidden;
+			@media print {
+				* {
+					display: none !important;
+				}
 			}
 		`;
 		let head = document.head || document.getElementsByTagName('head')[0];
 		let style = document.createElement('style');
 
 		head.appendChild(style);
-
 		style.type = 'text/css';
 		style.media = 'print';
+
 		if (style.styleSheet) {
-			// This is required for IE8 and below.
 			style.styleSheet.cssText = css;
 		} else {
 			style.appendChild(document.createTextNode(css));
 		}
+
+		window.onbeforeprint = function () {
+			return false;
+		};
+
 		resolve(true);
 	});
 };
@@ -953,8 +974,10 @@ export const handlePreChecksRedirection = () => {
 		const secureFeatures = getSecureFeature?.entities || [];
 		const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
-		if (!preChecksSteps?.examPreparation && hasFeature('record_video')) {
+		if (!preChecksSteps?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
 			return 'ExamPreparation';
+		}if (!preChecksSteps?.identityConfirmation && hasFeature('verify_id')) {
+			return 'IdentityCardRequirement';
 		} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
 			return 'runSystemDiagnostics';
 		}else if(!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){

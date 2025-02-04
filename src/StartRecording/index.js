@@ -8,6 +8,7 @@ import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, fi
 import { getCreateRoom } from '../services/twilio.services';
 import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
+import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 
 let roomInstance = null;
 let aiProcessingInterval = null;
@@ -538,15 +539,19 @@ export const stopAllRecordings = async () => {
 		}
 		
 		const dateTime = new Date();
+		await changeCandidateAssessmentStatus({
+			status: 'Completed',
+			id:session?.candidate_assessment
+		});
 
 		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 		}
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'session_completed', startAt: dateTime });
-
+		
 		showToast('success', 'session_completed');
-
+		
 		return 'stop_recording';
 	} catch (e) {
 		logger.error('Error in stop recording:', e);

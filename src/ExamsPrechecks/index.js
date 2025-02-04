@@ -16,6 +16,7 @@ import { ExamPreparation } from '../ExamPreparation';
 import Talk from 'talkjs';
 import interact from 'interactjs';
 import '../assets/css/modal.css';
+import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -448,7 +449,7 @@ const showTab = async (tabId, callback) => {
 
 const startSession = async (session) => {
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-
+	logger.success('session',session);
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp?.data) {
@@ -460,6 +461,12 @@ const startSession = async (session) => {
 				id: resp.data.id,
 				sessionStatus: 'Initiated'
 			});
+			
+		await changeCandidateAssessmentStatus({
+			status: 'Attending',
+			id:session?.candidate_assessment
+		});
+
 	} catch (e) {
 		logger.error('Error in start Session', e);
 	}

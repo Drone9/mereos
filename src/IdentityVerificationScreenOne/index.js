@@ -87,7 +87,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			try {
 				const resp = await userRekognitionInfo(data);
 				const predictions = resp?.data?.face?.FaceDetails;
-				console.log('predictions', predictions);
 	
 				img.onload = async function () {
 					if (predictions?.length && predictions.length === 1) {
@@ -153,7 +152,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				};
 				img.src = state.imageSrc;
 			} catch (error) {
-				console.error('Error processing the image:', error);
+				logger.error('Error processing the image:', error);
 				state = {
 					...state,
 					msg: {
@@ -177,11 +176,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 	const uploadUserCapturedPhoto = async () => {
 		try {
-			if (!state.imageSrc) {
-				console.error('No image source available to upload.');
-				return;
-			}
-	
 			state.isUploading = true;
 			renderUI();
 			state = {
@@ -192,11 +186,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				},
 			};
 	
-			// Ensure conversion is successful
 			const blob = dataURIToBlob(state.imageSrc);
-			if (!blob || blob.size === 0) {
-				throw new Error('Converted blob is empty or invalid.');
-			}
 	
 			let resp = await uploadFileInS3Folder({
 				folderName: 'candidate_images',
@@ -216,7 +206,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_uploaded_successfully' });
 			}
 		} catch (e) {
-			console.error('Upload failed:', e);
+			logger.error('Upload failed:', e);
 			state = {
 				...state,
 				captureMode: 'take',

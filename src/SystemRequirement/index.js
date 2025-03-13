@@ -149,16 +149,11 @@ export const SystemRequirement = async (tab1Content) => {
   
         const currentIconPathname = new URL(currentIconSrc).pathname;
         const expectedIconPathname = new URL(successIconMap[item]).pathname;
-        console.log('currentIconPathname',currentIconPathname,'expectedIconPathname',expectedIconPathname)
         return currentIconPathname === expectedIconPathname;
     });
     
-    console.log('allDiagnosticsPassed',allDiagnosticsPassed);
-    console.log('contunieBtn',continueButton);
     if(continueButton){
       continueButton.disabled = !allDiagnosticsPassed;
-    }else{
-      console.log('button not found ');
     }
   };
 

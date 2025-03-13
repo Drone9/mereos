@@ -386,7 +386,6 @@ const showTab = async (tabId, callback) => {
 		});
 
 		if (tabId === 'ExamPreparation') {
-			console.log('isFeatureAllowed',isFeatureAllowed);
 			if (!isFeatureAllowed) {
 				navigate('IdentityCardRequirement');
 				return;

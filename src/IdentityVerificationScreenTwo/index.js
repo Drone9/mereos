@@ -214,7 +214,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenTwo');
 		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
-		console.log('previousPage',previousPage);
 		showTab(previousPage);
 	};
 

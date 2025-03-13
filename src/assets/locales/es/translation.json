@@ -1010,5 +1010,6 @@
 "no_person_detected_for_more_than_10_seconds": "No se ha detectado ninguna persona durante más de 10 segundos",
 "unauthorized_object_detected_for_more_than_10_seconds": "Se ha detectado un objeto no autorizado durante más de 10 segundos",
 "multiple_people_detected_for_more_than_10_seconds": "Se han detectado varias personas durante más de 10 segundos",
-"system_requirements": "Comprobación de los requisitos del sistema"
+"system_requirements": "Comprobación de los requisitos del sistema",
+"your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality": "Su conexión a Internet es muy lenta. Asegúrese de tener una conexión a Internet estable"
 }

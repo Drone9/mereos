@@ -1019,5 +1019,6 @@
 "session_completed_successfully": "A sessão foi concluída com sucesso",
 "no_person_detected_for_more_than_10_seconds":"Nenhuma pessoa foi detectada por mais de 10 segundos",
 "unauthorized_object_detected_for_more_than_10_seconds":"Objeto não autorizado detectado por mais de 10 segundos",
-"multiple_people_detected_for_more_than_10_seconds":"Várias pessoas detectadas por mais de 10 segundos"
+"multiple_people_detected_for_more_than_10_seconds":"Várias pessoas detectadas por mais de 10 segundos",
+"system_requirements":"Verificação de requisitos do sistema"
 }

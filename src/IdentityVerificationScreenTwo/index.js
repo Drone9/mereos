@@ -2,11 +2,12 @@ import i18next from 'i18next';
 
 import { showTab } from '../ExamsPrechecks';
 
-import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 
 import '../assets/css/step2.css';
+import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let photo;

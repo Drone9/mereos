@@ -3,10 +3,11 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { dataURIToBlob, logger, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
+import { dataURIToBlob, logger, registerEvent, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 
 import '../assets/css/step1.css';
+import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
@@ -176,7 +177,12 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 	const uploadUserCapturedPhoto = async () => {
 		try {
-			state.isUploading = true; 
+			if (!state.imageSrc) {
+				console.error('No image source available to upload.');
+				return;
+			}
+	
+			state.isUploading = true;
 			renderUI();
 			state = {
 				...state,
@@ -185,10 +191,18 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 					text: 'file_is_being_uploaded',
 				},
 			};
+	
+			// Ensure conversion is successful
+			const blob = dataURIToBlob(state.imageSrc);
+			if (!blob || blob.size === 0) {
+				throw new Error('Converted blob is empty or invalid.');
+			}
+	
 			let resp = await uploadFileInS3Folder({
 				folderName: 'candidate_images',
-				file: dataURIToBlob(state.imageSrc),
+				file: blob,
 			});
+	
 			if (resp?.data?.file_url) {
 				updatePersistData('session', { candidatePhoto: resp.data.file_url });
 				state = {
@@ -202,6 +216,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_uploaded_successfully' });
 			}
 		} catch (e) {
+			console.error('Upload failed:', e);
 			state = {
 				...state,
 				captureMode: 'take',
@@ -212,11 +227,12 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				},
 			};
 			registerEvent({ eventType: 'error', notify: false, eventName: 'internet_connection_unstable' });
-		}finally{
-			state.isUploading = true; 
+		} finally {
+			state.isUploading = false;
+			renderUI();
 		}
-		renderUI();
 	};
+	
 
 	const renderUI = () => {
 		let ivsoContainer = tabContent.querySelector('.ivso-container');

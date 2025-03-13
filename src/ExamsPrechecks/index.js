@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import 'notyf/notyf.min.css';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, updatePersistData, updateThemeColor } from '../utils/functions';
-import { ASSET_URL,examPreparationSteps,languages,  preChecksSteps, prevalidationSteps, systemDiagnosticSteps } from '../utils/constant';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
+import { ASSET_URL,examPreparationSteps,languages,  preChecksSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from '../utils/constant';
 import 'notyf/notyf.min.css';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
 import { SystemDiagnostics } from '../SystemDiagnostic';
@@ -17,6 +17,7 @@ import Talk from 'talkjs';
 import interact from 'interactjs';
 import '../assets/css/modal.css';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+import { SystemRequirement } from '../SystemRequirement';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -45,6 +46,11 @@ IdentityCardRequirementContainer.id = 'IdentityCardRequirement';
 const SystemDiagnosticsContainer = document.createElement('div');
 SystemDiagnosticsContainer.className = 'tab-content';
 SystemDiagnosticsContainer.id = 'runSystemDiagnostics';
+
+
+const SystemRequirementContainer = document.createElement('div');
+SystemRequirementContainer.className = 'tab-content';
+SystemRequirementContainer.id = 'SystemRequirements';
 
 const IdentityVerificationScreenOneContainer = document.createElement('div');
 IdentityVerificationScreenOneContainer.className = 'tab-content';
@@ -77,6 +83,7 @@ mobileProctingContainer.id = 'MobileProctoring';
 tabContentsWrapper.appendChild(ExamPreparationContainer);
 tabContentsWrapper.appendChild(IdentityCardRequirementContainer);
 tabContentsWrapper.appendChild(SystemDiagnosticsContainer);
+tabContentsWrapper.appendChild(SystemRequirementContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenOneContainer);
 tabContentsWrapper.appendChild(IdentityVerificationScreenTwoConatiner);
 tabContentsWrapper.appendChild(IdentityVerificationScreenThreeContainer);
@@ -330,6 +337,7 @@ const showTab = async (tabId, callback) => {
 			'IdentityCardRequirement':'verify_id',
 			'ExamPreparation': examPreparationSteps,
 			'runSystemDiagnostics': systemDiagnosticSteps,
+			'SystemRequirements': SYSTEM_REQUIREMENT_STEP,
 			'Prevalidationinstruction': prevalidationSteps,
 			'IdentityVerificationScreenOne': 'verify_candidate',
 			'IdentityVerificationScreenTwo': 'verify_id',
@@ -396,6 +404,12 @@ const showTab = async (tabId, callback) => {
 				return;
 			}
 			SystemDiagnostics(SystemDiagnosticsContainer);
+		}  else if (tabId === 'SystemRequirements') {
+			if (!isFeatureAllowed) {
+				navigate('Prevalidationinstruction');
+				return;
+			}
+			await SystemRequirement(SystemRequirementContainer);
 		} else if (tabId === 'Prevalidationinstruction') {
 			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenOne');
@@ -449,7 +463,6 @@ const showTab = async (tabId, callback) => {
 
 const startSession = async (session) => {
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-	logger.success('session',session);
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp?.data) {
@@ -468,7 +481,8 @@ const startSession = async (session) => {
 		});
 
 	} catch (e) {
-		logger.error('Error in start Session', e);
+		showToast('error',e.response?.data?.detail);
+		logger.error('Error in start Session', e.response?.data?.detail);
 	}
 };
 

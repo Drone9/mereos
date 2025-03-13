@@ -1018,5 +1018,6 @@
 	"session_completed_successfully": "Session is completed successfully",
 	"no_person_detected_for_more_than_10_seconds":"No Person is detected for more than 10 seconds",
 	"unauthorized_object_detected_for_more_than_10_seconds":"Unauthorized object detected for more than 10 seconds",
-	"multiple_people_detected_for_more_than_10_seconds":"Multiple People detected for more than 10 seconds"
+	"multiple_people_detected_for_more_than_10_seconds":"Multiple People detected for more than 10 seconds",
+	"system_requirements":"System requirements checking"
 }

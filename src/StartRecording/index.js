@@ -139,6 +139,17 @@ export const startRecording = async () => {
 	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
 
 		let twilioOptions = {
+			preferredVideoCodecs: 'auto', 
+			bandwidthProfile: { 
+				video: {
+					contentPreferencesMode: 'auto',
+					clientTrackSwitchOffControl: 'auto'
+				}
+			},
+			networkQuality: { 
+				local: 3, 
+				remote: 3 
+			},
 			audio: findConfigs(['record_audio'], secureFeatures?.entities).length ?
 				(localStorage.getItem('microphoneID') !== null ? {
 					deviceId: { exact: localStorage.getItem('microphoneID') },
@@ -212,6 +223,12 @@ export const startRecording = async () => {
 
 			window.recordingStart = true;
 
+			const localParticipant = room.localParticipant;
+			localParticipant.on('networkQualityLevelChanged', (level) => {
+				if (level <= 2) {
+					showToast('error',i18next.t('your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality'));
+				}
+			});
 			room.on('reconnecting', () => {
 				cleanupLocalVideo(cameraTrack);
 				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){

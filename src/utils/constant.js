@@ -44,6 +44,7 @@ export const preChecksSteps = {
 	examPreparation:false,
 	identityConfirmation:false,
 	diagnosticStep:false,
+	requirementStep:false,
 	preValidation:false,
 	userPhoto:false,
 	identityCardPhoto:false,
@@ -83,6 +84,7 @@ export const systemDiagnosticSteps = [
 	'record_room',
 	'record_audio'
 ];
+export const SYSTEM_REQUIREMENT_STEP = ['verify_cpu', 'verify_ram', 'verify_upload_speed', 'verify_download_speed'];
 
 export const examPreparationSteps = [
 	'record_video', 

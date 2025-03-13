@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BASE_URL, examPreparationSteps, prevalidationSteps, systemDiagnosticSteps } from './constant';
+import { BASE_URL, examPreparationSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.services';
@@ -10,16 +10,23 @@ import { closeModal } from '../ExamsPrechecks';
 import { Notyf } from 'notyf';
 
 export const dataURIToBlob = (dataURI) => {
+	
 	const splitDataURI = dataURI.split(',');
+	if (splitDataURI.length < 2) {
+		return null;
+	}
+
 	const byteString = splitDataURI[0].indexOf('base64') >= 0 ? atob(splitDataURI[1]) : decodeURI(splitDataURI[1]);
 	const mimeString = splitDataURI[0].split(':')[1].split(';')[0];
 
 	const ia = new Uint8Array(byteString.length);
-	for (let i = 0; i < byteString.length; i++)
+	for (let i = 0; i < byteString.length; i++) {
 		ia[i] = byteString.charCodeAt(i);
+	}
 
 	return new Blob([ia], { type: mimeString });
 };
+
 
 export const getTimeInSeconds = ({ isUTC = false, inputDate = new Date() }) => {
 	const currentDate = new Date(inputDate);
@@ -171,27 +178,6 @@ export const checkMicrophone = () => {
 			resolve(false);
 		}
 	});
-};
-
-export const getNetworkUploadSpeed = async () => {
-	try {
-		const myData = {text: 'a'.repeat(1024 * 1024)};
-		const startTime = new Date().getTime();
-
-		const response = await testUploadSpeed(myData);
-		if(response){
-			const endTime = new Date().getTime();
-			const duration = (endTime - startTime) / 1000;
-			const bitsLoaded = myData.text.length * 8;
-			const speedMbps = ((bitsLoaded / duration) / 1024 / 1024).toFixed(2);
-			
-			return { speedMbps: speedMbps };
-		}
-        
-	} catch (err) {
-		logger.error('Error in network speed:', err);
-		return false;
-	}
 };
 
 export const registerEvent = ({ eventName }) => {
@@ -374,23 +360,6 @@ export const shareScreenFromContent = () => {
 	});
 };
 
-export const uploadFileInS3Folder = async (data) => {
-	const token = localStorage.getItem('mereosToken');
-	
-	const myHeaders = new Headers();
-	const formData = new FormData();
-	formData.append('files', data.file, `${Date.now()}`);
-	formData.append('folder_name',data.folderName);
-	
-	const config = {
-		headers: {
-			...myHeaders, 
-			token: token,
-		},
-	};
-	return axios.post(`${BASE_URL}/general/candidate_upload_file/`, formData,config);
-};
-
 export const findConfigs = (configs, entities) => {
 	let result = [];
 	for (const entity of entities) {
@@ -452,54 +421,61 @@ export const updatePersistData = (key, updates) => {
 	}
 };
 
-export const addSectionSessionRecord = (session, candidateInviteAssessmentSection) => {
+export const addSectionSessionRecord = async (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {
-		let recordings;
-		if(session?.user_video_name?.length || session?.user_audio_name?.length || session?.screen_sharing_video_name?.length || session?.mobileRecordings?.length || session?.mobileAudios?.length){
-			const sourceIds = [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
-			recordings = sourceIds?.length
-				? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
-				: [];
-		}
-	
-		let sectionSessionDetails = {
-			start_time: session?.sessionStartTime,
-			submission_time: session?.submissionTime,
-			duration_taken: session?.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
-			identity_card: session?.identityCard,
-			room_scan_video:session?.room_scan_video,
-			identity_photo: session?.candidatePhoto,
-			school: candidateInviteAssessmentSection?.school?.id || '',
-			assessment: session?.assessment?.id || 1,
-			candidate: candidateInviteAssessmentSection?.candidate?.id,
-			user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			user_audio_name: recordings?.data?.filter(recording => session.user_audio_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			roomscan_recordings: session?.roomScanRecordings,
-			session_id: session?.sessionId,
-			collected_details: {
-				location: session?.location,
-			},
-			status: session?.sessionStatus,
-			video_codec: null,
-			video_extension: null,
-			archive_id:null,
-			attempt_id:null,
-			incident_level: session?.incident_level,
-			mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-			conversation_id:localStorage.getItem('conversationId') || '',
-			candidate_assessment:session?.candidate_assessment
-		};
-
-		if (session?.id) {
-			sectionSessionDetails['id'] = session?.id;
-		}
+		try{
+			let recordings;
+			if(session?.user_video_name?.length || session?.user_audio_name?.length || session?.screen_sharing_video_name?.length || session?.mobileRecordings?.length || session?.mobileAudios?.length){
+				const sourceIds = [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
+				recordings = sourceIds?.length
+					? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
+					: [];
+			}
 		
-		const resp = session?.id ? await editSectionSession(sectionSessionDetails) : await addSectionSession(sectionSessionDetails);
-		resolve(resp);
-	}).catch(err =>{
-		logger.error('error on candidate session',err);
+			let sectionSessionDetails = {
+				start_time: session?.sessionStartTime,
+				submission_time: session?.submissionTime,
+				duration_taken: session?.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
+				identity_card: session?.identityCard,
+				room_scan_video:session?.room_scan_video,
+				identity_photo: session?.candidatePhoto,
+				school: candidateInviteAssessmentSection?.school?.id || '',
+				assessment: session?.assessment?.id || 1,
+				candidate: candidateInviteAssessmentSection?.candidate?.id,
+				user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+				user_audio_name: recordings?.data?.filter(recording => session.user_audio_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+				screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+				roomscan_recordings: session?.roomScanRecordings,
+				session_id: session?.sessionId,
+				collected_details: {
+					location: session?.location,
+				},
+				status: session?.sessionStatus,
+				video_codec: null,
+				video_extension: null,
+				archive_id:null,
+				attempt_id:null,
+				incident_level: session?.incident_level,
+				mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+				mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+				conversation_id:localStorage.getItem('conversationId') || '',
+				candidate_assessment:session?.candidate_assessment
+			};
+	
+			if (session?.id) {
+				sectionSessionDetails['id'] = session?.id;
+			}
+			
+			const resp = session?.id ? await editSectionSession(sectionSessionDetails) : await addSectionSession(sectionSessionDetails);
+			resolve(resp);
+		}catch(err){
+			if (err.response?.status === 403) {
+				window.globalCallback({ message: err.response?.data?.detail });
+			} else {
+				window.globalCallback({ message: 'error_starting_prechecks'});
+			}
+			_reject(err);
+		}
 	});
 };
 
@@ -880,18 +856,6 @@ export const forceFullScreen = (element = document.documentElement) => {
 	}
 };
 
-export const getCPUInfo = () => {
-	return new Promise((resolve, _reject) => {
-		resolve(navigator.hardwareConcurrency);
-	});
-};
-
-export const getRAMInfo = () => {
-	return new Promise((resolve, _reject) => {
-		resolve(navigator.deviceMemory);
-	});
-};
-
 const handleDefaultEvent = e => {
 	e.preventDefault();
 	e.stopPropagation();
@@ -980,7 +944,9 @@ export const handlePreChecksRedirection = () => {
 			return 'IdentityCardRequirement';
 		} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
 			return 'runSystemDiagnostics';
-		}else if(!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
+		} else if(!preChecksSteps?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
+			return 'SystemRequirements';
+		} else if(!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
 			return 'Prevalidationinstruction';
 		}
 		else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
@@ -1018,7 +984,6 @@ export const findIncidentLevel = (ai_events) => {
 	}
 	return result;
 };
-
 
 export const normalizeLanguage = (input) => {
 	if (!input) return 'en'; 
@@ -1127,5 +1092,111 @@ export const showToast = (type, message) => {
 				logger.warn('Invalid notification type');
 				break;
 		}
+	}
+};
+
+export const getRAMInfo = async () => {
+	const memoryInfo = {
+		capacity: 'Unknown',
+		availableCapacity: 'Unknown',
+	};
+	
+	if ('deviceMemory' in navigator) {
+		memoryInfo.capacity = (navigator.deviceMemory * 1024 ** 3).toFixed(0);
+	} 
+	else if ('hardwareConcurrency' in navigator) {
+		memoryInfo.capacity = (navigator.hardwareConcurrency * 2 * 1024 ** 3).toFixed(0);
+	} else {
+		console.warn('Cannot determine RAM capacity in this browser.');
+	}
+
+	if ('memory' in performance) {
+		memoryInfo.availableCapacity = performance.memory.jsHeapSizeLimit - performance.memory.usedJSHeapSize;
+	} else {
+		console.warn('performance.memory is not supported in this browser.');
+	}
+
+	return memoryInfo;
+};
+
+export const getCPUInfo = () => {
+	return new Promise((resolve, _reject) => {
+		const noOfPrcessor = navigator.hardwareConcurrency || 'Unknown';
+		const memoryGB = navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'Unknown';
+
+		let cpuSpeedGHz = '';
+		let modelName = 'Unknown';
+
+		if (window.WebGLRenderingContext) {
+			const gl = document.createElement('canvas').getContext('webgl');
+			if (gl) {
+				const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+				if (debugInfo) {
+					modelName = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'Unknown';
+
+					const match = modelName.match(/@?\s*(\d+(\.\d+)?)\s*GHz/i);
+					if (match) {
+						cpuSpeedGHz = `${match[1]} GHz`;
+					}
+				}
+			}
+		}
+
+		resolve({
+			modelName,
+			noOfPrcessor,
+			cpuSpeedGHz,
+			memoryGB,
+		});
+	});
+};
+
+export const getNetworkDownloadSpeed = () => {
+	return new Promise((resolve, _reject) => {
+		const imageAddr = 'http://d3ia9qn5swl78e.cloudfront.net/images/detection-side-img.svg'; 
+		var downloadSize = 1263621; // bytes
+		
+		let startTime, endTime;
+		const download = new Image();
+		download.onload = function () {
+			endTime = (new Date()).getTime();
+			const duration = (endTime - startTime) / 1000;
+			const bitsLoaded = downloadSize * 8;
+			const speedBps = (bitsLoaded / duration).toFixed(2);
+			const speedKbps = (speedBps / 1024).toFixed(2);
+			const speedMbps = (speedKbps / 1024).toFixed(2);
+			const speed = {
+				speedBps, 
+				speedKbps,
+				speedMbps
+			};
+			resolve(speed);
+		};
+		
+		startTime = (new Date()).getTime();
+		var cacheBuster = '?nnn=' + startTime;
+		download.src = imageAddr + cacheBuster;
+	});
+};
+
+export const getNetworkUploadSpeed = async () => {
+	try {
+		const myData = { 'test': 'a'.repeat(1024 * 1024) };
+		const startTime = new Date().getTime();
+
+		const response = await testUploadSpeed({ 'test': 'a'.repeat(1024 * 1024) });
+
+		if(response){
+			const endTime = new Date().getTime();
+			const duration = (endTime - startTime) / 1000;
+			const bitsLoaded = myData.test.length * 8;
+			const speedMbps = ((bitsLoaded / duration) / 1024 / 1024).toFixed(2);
+	
+			return { speedMbps: speedMbps };
+		}
+        
+	} catch (err) {
+		console.error(err);
+		return false;
 	}
 };

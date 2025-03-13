@@ -3,10 +3,11 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData, uploadFileInS3Folder } from '../utils/functions';
+import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 
 import '../assets/css/step4.css';
+import { uploadFileInS3Folder } from '../services/general.services.js';
 
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
@@ -21,6 +22,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	let recordedChunks = [];
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
+	let stopButtonDisabled = true;
 
 	const videoConstraints = {
 		width: 640,
@@ -28,6 +30,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		facingMode: 'user',
 		video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true
 	};
+
 
 	const handleStartRecording = async (type) => {
 		try {
@@ -51,12 +54,20 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 				mediaRecorder.start();
 				recordingMode = 'beingRecorded';
+				stopButtonDisabled = true; // Disable the stop button initially
 				updateUI();
+
+				// Enable stop button after 3 seconds
+				setTimeout(() => {
+					stopButtonDisabled = false;
+					updateUI();
+				}, 3000);
 			}
 		} catch (error) {
 			logger.error('Error accessing media devices:', error);
 		}
 	};
+
 
 
 	const handleRestartRecording = async () => {
@@ -229,17 +240,18 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		} else if (recordingMode === 'beingRecorded') {
 			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
 			const stopButton = createButton(`${i18next.t('stop_recording')}`, 'orange-filled-btn', handleStopRecording);
+			stopButton.disabled = stopButtonDisabled; 
 			const prevStepsEntities = ['verify_candidate','verify_id','record_audio'];
 			if(secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0){
 				btnContainer.appendChild(prevButton);
 			}
 			btnContainer.appendChild(stopButton);
 		} else if (recordingMode === 'stopRecording' || recordingMode === 'uploaded_file') {
-			const resetButton = createButton('Reset', 'orange-hollow-btn', handleRestartRecording);
+			const resetButton = createButton(`${i18next.t('reset')}`, 'orange-hollow-btn', handleRestartRecording);
 			btnContainer.appendChild(resetButton);
 
 			if (recordingMode !== 'uploaded_file') {
-				const uploadButton = createButton(`${i18next.t('Upload')}`, 'orange-filled-btn', uploadUserRoomVideo);
+				const uploadButton = createButton(`${i18next.t('upload')}`, 'orange-filled-btn', uploadUserRoomVideo);
 				uploadButton.disabled = loading;
 				btnContainer.appendChild(uploadButton);
 			} else {

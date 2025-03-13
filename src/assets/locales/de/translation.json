@@ -1035,5 +1035,7 @@
 "session_completed_successfully": "Die Sitzung wurde erfolgreich abgeschlossen",
 "no_person_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurde keine Person erkannt",
 "unauthorized_object_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurde ein nicht autorisiertes Objekt erkannt",
-"multiple_people_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurden mehrere Personen erkannt"
+"multiple_people_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurden mehrere Personen erkannt",
+"system_requirements":"Überprüfung der Systemanforderungen",
+"your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality": "Ihr Internet ist sehr langsam. Bitte stellen Sie sicher, dass Sie über eine stabile Internetverbindung verfügen."
 }

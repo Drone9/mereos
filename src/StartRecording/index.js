@@ -41,13 +41,48 @@ export const startRecording = async () => {
 		}
 	});
 
+	const forceClosure = async () => {
+		try {
+			if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
+				try {
+					const updatedSession = convertDataIntoParse('session');
+					addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
+					registerEvent({ 
+						eventType: 'success', 
+						notify: false, 
+						eventName: 'signaling_connection_disconnected', 
+						eventValue: getDateTime() 
+					});
+				} catch (apiError) {
+					resetSessionData();
+				}
+				resetSessionData();
+			} else {
+				if(window.startRecordingCallBack){
+					window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+				}
+			}
+		} catch (error) {
+			logger.error('Error in resetSession:', error);
+		}
+	};
+
+	const resetSessionData = () => {
+		if(window.startRecordingCallBack){
+			window.startRecordingCallBack({ message: 'session_has_been_terminated_force_close_the_assessment' });
+		}
+		localStorage.clear();
+	};
+
 	const initSocketConnection = () => {
 		if (!window.socket) {
 			updatePersistData('preChecksSteps', { 
 				mobileConnection: false,
 				screenSharing: false
 			});
-			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+			if(window.startRecordingCallBack){
+				window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+			}
 			logger.error('Socket not initialized');
 			return;
 		}
@@ -115,7 +150,9 @@ export const startRecording = async () => {
 
 	if( findConfigs(['record_screen'],secureFeatures?.entities)?.length){
 		window?.newStream?.getVideoTracks()[0]?.addEventListener('ended', () => {
-			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+			if(window.startRecordingCallBack){
+				window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+			}
 			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
 			}
@@ -224,11 +261,13 @@ export const startRecording = async () => {
 			window.recordingStart = true;
 
 			const localParticipant = room.localParticipant;
+
 			localParticipant.on('networkQualityLevelChanged', (level) => {
 				if (level <= 2) {
-					showToast('error',i18next.t('your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality'));
+					showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
 				}
 			});
+
 			room.on('reconnecting', () => {
 				cleanupLocalVideo(cameraTrack);
 				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
@@ -247,6 +286,9 @@ export const startRecording = async () => {
 					window.startRecordingCallBack({ message: 'web_internet_connection_disconnected' });
 					window.recordingStart = false;
 				}
+				setTimeout(async () => {
+					forceClosure();
+				},3000);
 			});
 
 			const updatedSession = convertDataIntoParse('session');

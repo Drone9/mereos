@@ -95,7 +95,7 @@ const renderUI = (tab1Content) => {
 
   const continueBtn = document.createElement('button');
   continueBtn.classList.add('orange-filled-btn');
-  continueBtn.id = 'diagnosticContinueBtn';
+  continueBtn.id = 'requirementContinueBtn';
   continueBtn.disabled = true;
   continueBtn.textContent = 'Continue';
   continueBtn.addEventListener('click', () => {
@@ -123,6 +123,7 @@ export const SystemRequirement = async (tab1Content) => {
     if (!statusIcon || !statusLoading) {
       return;
     }
+  
     statusIcon.src = isSuccess ? status.success : status.failure;
     statusLoading.src = isSuccess ? `${ASSET_URL}/checkmark-rounded-green.png` : `${ASSET_URL}/x-circle.png`;
   };
@@ -140,19 +141,20 @@ export const SystemRequirement = async (tab1Content) => {
   };
 
   const updateContinueButtonState = () => {
-    const continueButton = document.getElementById('diagnosticContinueBtn');
-    const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
-        const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
-        if (!currentIconSrc) {
-            return false;
-        }
+    const continueButton = document.getElementById('requirementContinueBtn');
   
-        const currentIconPathname = new URL(currentIconSrc).pathname;
-        const expectedIconPathname = new URL(successIconMap[item]).pathname;
-        return currentIconPathname === expectedIconPathname;
+    const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
+      const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
+      if (!currentIconSrc) {
+        return false;
+      }
+  
+      const currentIconPathname = new URL(currentIconSrc).pathname;
+      const expectedIconPathname = new URL(successIconMap[item]).pathname;
+      return currentIconPathname === expectedIconPathname;
     });
     
-    if(continueButton){
+    if (continueButton) {
       continueButton.disabled = !allDiagnosticsPassed;
     }
   };
@@ -198,7 +200,6 @@ export const SystemRequirement = async (tab1Content) => {
       promises.push(getCPUInfo().then(resp => {
         const isGoodCpu = resp?.noOfPrcessor > profileSettings?.cpu_size || 1.0;
         setElementStatus('cpu', { success: cpuGreen, failure: cpuRed }, isGoodCpu);
-        handleDiagnosticItemClick('cpu', getCPUInfo);
         return isGoodCpu;
       }));
     } else {
@@ -219,7 +220,7 @@ export const SystemRequirement = async (tab1Content) => {
     if (verifyDownloadSpeed) {
       promises.push(getNetworkDownloadSpeed().then(network => {
         const isGoodDownload = network.speedMbps > profileSettings?.download_speed || 0.168;
-        setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, location);
+        setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, isGoodDownload);
         handleDiagnosticItemClick('download_speed', getNetworkDownloadSpeed);
         return isGoodDownload;
       }));
@@ -229,9 +230,7 @@ export const SystemRequirement = async (tab1Content) => {
 
     await Promise.all(promises);
 
-   setTimeout(() => {
-      updateContinueButtonState();
-    }, 500);
+    updateContinueButtonState();
 
   } catch (error) {
     logger.error('Error running diagnostics:', error);

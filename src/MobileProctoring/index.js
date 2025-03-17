@@ -1,21 +1,25 @@
 
 import Peer from 'peerjs';
-import { initSocket } from '../utils/socket';
-import '../assets/css/mobile-proctoring.css';
-import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
+import { v4 } from 'uuid';
 import i18next, { t } from 'i18next';
 import QRCode from 'qrcode';
-import { getAuthenticationToken, getDateTime, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
-import { ASSET_URL } from '../utils/constant';
-import { v4 } from 'uuid';
+
 import { showTab } from '../ExamsPrechecks';
 
+import { initSocket } from '../utils/socket';
+import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
+import { getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
+import { ASSET_URL } from '../utils/constant';
+
+import '../assets/css/mobile-proctoring.css';
 
 export const MobileProctoring = async (tabContent) => {
 	window.mobileStream = null;
 	let mobileSteps = ''; 
 	let disabledNextBtn = false; 
 	let checkedVideo = false;
+	const getSecureFeature = getSecureFeatures();
+	const secureFeatures = getSecureFeature?.entities || [];
 	const remoteVideoRef = document.createElement('video');
 	remoteVideoRef.id = 'remote-mobile-video-container';
 	const currentUserVideoRef = document.createElement('video');
@@ -189,16 +193,24 @@ export const MobileProctoring = async (tabContent) => {
 		}
 	};
 
-	const prevStep = () => {
-		mobileSteps = 'tokenCode';
-		checkedVideo = false;
-		if(window.mobileStream){
-			window.mobileStream?.getTracks()?.forEach(track => track.stop());
+	const prevStep = (previousStep) => {
+		if(previousStep === 'previousStep'){
+			updatePersistData('preChecksSteps',{ mobileConnection:false });
+			let navHistory = JSON.parse(localStorage.getItem('navHistory'));
+			const currentIndex = navHistory.indexOf('MobileProctoring');
+			const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+			showTab(previousPage);
+		}else{
+			mobileSteps = 'tokenCode';
+			checkedVideo = false;
+			if(window.mobileStream){
+				window.mobileStream?.getTracks()?.forEach(track => track.stop());
+			}
+			if (window.socket.readyState === WebSocket.OPEN) {
+				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+			}
+			renderUI(); 
 		}
-		if (window.socket.readyState === WebSocket.OPEN) {
-			window.socket?.send(JSON.stringify({ event: 'resetSession' }));
-		}
-		renderUI(); 
 	};
 
 	function renderUI() {
@@ -290,11 +302,20 @@ export const MobileProctoring = async (tabContent) => {
 			const btnContainer = document.createElement('div');
 			btnContainer.className = 'ivsf-btn-container';
 
+			const previousBtn = document.createElement('button');
+			previousBtn.className = 'orange-hollow-btn';
+			previousBtn.innerText = t('previous_step');
+			previousBtn.onclick = () => prevStep('previousStep');
+
 			const btnDownloaded = document.createElement('button');
 			btnDownloaded.className = 'orange-filled-btn';
 			btnDownloaded.innerText = t('i_downloaded_the_app');
 			btnDownloaded.onclick = () => nextStep('tokenCode');
 
+			const prevStepsEntities = ['verify_candidate', 'verify_id','record_audio','record_room'];
+			if (secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0) {
+				btnContainer.appendChild(previousBtn);
+			}
 			btnContainer.appendChild(btnDownloaded);
 			qrCodeContainer.appendChild(bottomDesc);
 			qrCodeContainer.appendChild(btnContainer);
@@ -320,11 +341,20 @@ export const MobileProctoring = async (tabContent) => {
 			const btnContainer = document.createElement('div');
 			btnContainer.className = 'ivsf-btn-container';
 
+			const previousBtn = document.createElement('button');
+			previousBtn.className = 'orange-hollow-btn';
+			previousBtn.innerText = t('previous_step');
+			previousBtn.onclick = () => prevStep('previousStep');
+
 			const btnDownloaded = document.createElement('button');
 			btnDownloaded.className = 'orange-filled-btn';
 			btnDownloaded.innerText = t('i_dont_have_the_app');
 			btnDownloaded.onclick = () => nextStep('downloadApp');
 
+			const prevStepsEntities = ['verify_candidate', 'verify_id','record_audio','record_room'];
+			if (secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0) {
+				btnContainer.appendChild(previousBtn);
+			}
 			btnContainer.appendChild(btnDownloaded);
 			qrCodeContainer.appendChild(bottomDesc);
 			qrCodeContainer.appendChild(btnContainer);

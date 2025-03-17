@@ -1,9 +1,12 @@
-import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, showToast, updatePersistData } from '../utils/functions';
-import '../assets/css/step5.css';
 import i18next from 'i18next';
+
+import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
+
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
+
+import '../assets/css/step5.css';
 
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
@@ -179,7 +182,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		}
 		updatePersistData('preChecksSteps',{  mobileConnection: false,screenSharing:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		showTab(navHistory[navHistory.length - 2]);
+		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFive');
+		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+		showTab(previousPage);
 	};
 
 	const container = document.createElement('div');

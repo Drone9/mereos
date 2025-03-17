@@ -1,0 +1,117 @@
+.exam-preparation-container {
+	display: flex;
+	flex-direction: column;
+	background-color: #ffffff;
+}
+
+.exam-preparation-wrapper {
+	margin: auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.exam-preparation-header-img {
+	width: 110px;
+	height: 70.71px;
+	margin: 26px auto 0px;
+}
+
+.exam-preparation-header-title {
+	font-family: Poppins;
+	font-style: normal;
+	font-weight: bold;
+	font-size: 42px;
+	line-height: 63px;
+	display: flex;
+	align-items: center;
+	text-align: center;
+	color: #222222;
+	margin: 26px auto 0px;
+}
+
+.exam-preparation-msg {
+	font-family: Poppins;
+	font-style: normal;
+	font-weight: normal;
+	font-size: 16px;
+	line-height: 160%;
+	display: flex;
+	align-items: center;
+	text-align: center;
+	color: #8D979F;
+	width: 650px;
+	margin: auto;
+}
+
+.exam-preparation-tnc-block {
+	text-align: center;
+	display: flex;
+	font-size: 15px;
+	flex-direction: row;
+	margin: 32px auto 0px;
+	color: #9DAAB5;
+	max-width: 650px;
+}
+
+.exam-preparation-tnc-checkbox {
+	margin-right: 5px;
+	cursor: pointer;
+	display: flex;
+	align-self: flex-start;
+}
+
+.exam-preparation-tnc-txt {
+	font-family: Poppins;
+	font-style: normal;
+	line-height: 21px;
+	display: flex;
+	align-items: center;
+}
+
+.exam-preparation-sd-container {
+	font-family: Poppins;
+	font-style: normal;
+	font-weight: normal;
+	font-size: 14px;
+	line-height: 21px;
+	align-items: center;
+	color: #9DAAB5;
+	margin: 25px auto 0px;
+}
+
+.exam-preparation-sd-link {
+	color: var(--theme-color);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.exam-preparation-error-msg {
+	font-family: Poppins;
+	font-style: normal;
+	font-weight: normal;
+	font-size: 16px;
+	line-height: 24px;
+	display: flex;
+	align-items: center;
+	text-align: center;
+	color: #E95E5E;
+	max-width: 650px;
+	margin: auto;
+}
+
+.exam-preparation-btn-container {
+	margin: 30px auto 30px;
+}
+
+.exam-preparation-btn {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	padding: 11px 32px;
+	background: var(--theme-color);
+	border-radius: 5px;
+	border: 0px;
+	color: #ffffff;
+	cursor: pointer;
+}

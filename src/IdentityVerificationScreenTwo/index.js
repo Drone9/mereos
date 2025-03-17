@@ -1,9 +1,13 @@
-import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
-import '../assets/css/step2.css';
 import i18next from 'i18next';
+
+import { showTab } from '../ExamsPrechecks';
+
+import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
-import { showTab } from '../ExamsPrechecks';
+
+import '../assets/css/step2.css';
+import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let photo;
@@ -208,7 +212,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	const prevStep = () => {
 		updatePersistData('preChecksSteps',{ identityCardPhoto:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		showTab(navHistory[navHistory.length - 2]);
+		const currentIndex = navHistory.indexOf('IdentityVerificationScreenTwo');
+		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+		showTab(previousPage);
 	};
 
 	const renderUI = async () => {
@@ -228,7 +234,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		wrapper.className = 'ivst-wrapper';
 
 		const headerTitle = document.createElement('div');
-		headerTitle.className = 'step-2-header-title';
+		headerTitle.className = 'ivst-header-title';
 		headerTitle.textContent = i18next.t('identity_validation');
 
 		const message = document.createElement('div');
@@ -246,10 +252,12 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			headerImgContainer.appendChild(img);
 
 			const resultImg = document.createElement('img');
-			resultImg.src = `${ASSET_URL}/checkmark-green.svg`;
+			resultImg.src = currentState.msg.type === 'unsuccessful' ? `${ASSET_URL}/close-red.svg` :`${ASSET_URL}/checkmark-green.svg`;
 			resultImg.className = 'ivst-header-img-result';
 			resultImg.alt = 'tick-mark-green-bg';
-			headerImgContainer.appendChild(resultImg);
+			if(currentState.msg.type !== 'checking'){
+				headerImgContainer.appendChild(resultImg);
+			}
 		} else {
 			photo = document.createElement('video');
 			photo.width = videoConstraints.width;

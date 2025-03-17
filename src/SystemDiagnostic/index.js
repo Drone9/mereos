@@ -1,3 +1,5 @@
+import i18next from 'i18next';
+
 import { 
 	checkCamera, 
 	checkMicrophone, 
@@ -9,10 +11,10 @@ import {
 	registerEvent, 
 	updatePersistData 
 } from '../utils/functions';
-import '../assets/css/systemDiagnostic.css';
-import i18next from 'i18next';
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
+
+import '../assets/css/systemDiagnostic.css';
 
 let cameraStream = null;
 let audioStream = null;
@@ -98,7 +100,7 @@ const renderUI = (tab1Content) => {
 	const containerMiddle = document.createElement('div');
 	containerMiddle.classList.add('container-middle', 'box-section');
 
-	const diagnosticItems =  ['webcam', 'microphone', 'connection', 'location', 'screen'];
+	const diagnosticItems =  ['webcam', 'microphone', 'location', 'screen'];
 	diagnosticItems.forEach(item => {
 		const label = i18next.t(item);
 		const diagnosticItem = createDiagnosticItem(item, label);
@@ -119,7 +121,7 @@ const renderUI = (tab1Content) => {
 		
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
 		updatePersistData('preChecksSteps',{ diagnosticStep:true });
-		showTab('Prevalidationinstruction');
+		showTab('SystemRequirements');
 	});
 	buttonSection.appendChild(continueBtn);
 	innerContainer.append(containerTop, description, containerPrompt, promptImage, containerMiddle, buttonSection);
@@ -127,6 +129,7 @@ const renderUI = (tab1Content) => {
 	container.append(heading, diagnosticStatus);
 	tab1Content.appendChild(container);
 };
+
 
 export const SystemDiagnostics = async (tab1Content) => {
 	if (!tab1Content) {
@@ -153,13 +156,29 @@ export const SystemDiagnostics = async (tab1Content) => {
 		element.addEventListener('click', async () => {
 			const result = await checkFunction();
 			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
+			updateContinueButtonState();
 		});
 	};
 
+	const updateContinueButtonState = () => {
+		const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
+				const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
+				if (!currentIconSrc) {
+						return false;
+				}
+	
+				const currentIconPathname = new URL(currentIconSrc).pathname;
+				const expectedIconPathname = new URL(successIconMap[item]).pathname;
+	
+				return currentIconPathname === expectedIconPathname;
+		});
+	
+		document.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
+	};
 	const successIconMap = {
 		webcam: videoGreen,
 		microphone: microPhoneGreen,
-		connection: networkGreen,
+		// connection: networkGreen,
 		location: locationGreen,
 		// notification: notificationGreen,
 		screen: multipleScreenGreen
@@ -168,7 +187,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 	const failureIconMap = {
 		webcam: videoRed,
 		microphone: microPhoneRed,
-		connection: networkRed,
+		// connection: networkRed,
 		location: locationRed,
 		// notification: notificationRed,
 		screen: multipleScreenRed
@@ -181,7 +200,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 		let recordVideo = secureFeatures.find(entity => entity.key === 'record_video');
 		let recordAudio = secureFeatures.find(entity => entity.key === 'record_audio');
-		let checkNetwork = secureFeatures.find(entity => entity.key === 'verify_connection');
+		// let checkNetwork = secureFeatures.find(entity => entity.key === 'verify_connection');
 		let trackLocation = secureFeatures.find(entity => entity.key === 'track_location');
 		// let enableNotifications = secureFeatures.find(entity => entity.key === 'enable_notifications');
 		let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
@@ -190,7 +209,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 		if (recordVideo) {
 			promises.push(checkCamera().then(stream => {
-				cameraStream = stream;
+				cameraStream = stream; // Save the camera stream
 				setElementStatus('webcam', { success: videoGreen, failure: videoRed }, stream);
 				handleDiagnosticItemClick('webcam', checkCamera);
 				return stream;
@@ -210,16 +229,16 @@ export const SystemDiagnostics = async (tab1Content) => {
 			setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, true);
 		}
 
-		if (checkNetwork) {
-			promises.push(getNetworkUploadSpeed().then(network => {
-				const isNetworkGood = network.speedMbps > profileSettings?.upload_speed || 0.168;
-				setElementStatus('connection', { success: networkGreen, failure: networkRed }, isNetworkGood);
-				handleDiagnosticItemClick('connection', getNetworkUploadSpeed);
-				return isNetworkGood;
-			}));
-		} else {
-			setElementStatus('connection', { success: networkGreen, failure: networkRed }, true);
-		}
+		// if (checkNetwork) {
+		// 	promises.push(getNetworkUploadSpeed().then(network => {
+		// 		const isNetworkGood = network.speedMbps > profileSettings?.upload_speed || 0.168;
+		// 		setElementStatus('connection', { success: networkGreen, failure: networkRed }, isNetworkGood);
+		// 		handleDiagnosticItemClick('connection', getNetworkUploadSpeed);
+		// 		return isNetworkGood;
+		// 	}));
+		// } else {
+		// 	setElementStatus('connection', { success: networkGreen, failure: networkRed }, true);
+		// }
 
 		if (trackLocation) {
 			promises.push(getLocation().then(location => {
@@ -254,25 +273,13 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 		await Promise.all(promises);
 
+		
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 
-		const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
-			const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
-			if (!currentIconSrc) {
-					return false;
-			}
+		updateContinueButtonState();
 	
-			const currentIconPathname = new URL(currentIconSrc).pathname;
-			const expectedIconPathname = new URL(successIconMap[item]).pathname;
 	
-			return currentIconPathname === expectedIconPathname;
-	});
-	
-	const continueBtn = document.getElementById('diagnosticContinueBtn');
-	if (continueBtn) {
-		continueBtn.disabled = !allDiagnosticsPassed;
-	}
 	} catch (error) {
 		logger.error('Error running diagnostics:', error);
 	} finally {
@@ -282,7 +289,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 };
 
 const updateDiagnosticText = () => {
-	const diagnosticItems = ['webcam', 'microphone', 'connection', 'location', 'screen'];
+	const diagnosticItems = ['webcam', 'microphone', 'location', 'screen'];
 
 	diagnosticItems.forEach(item => {
 		const labelElement = document.querySelector(`#${item}DiagnosticItem label`);

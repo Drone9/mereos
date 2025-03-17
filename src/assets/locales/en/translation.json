@@ -317,7 +317,7 @@
 	"exam_instructions_text": "Now please prepare your working environment",
 	"exam_prep_msg": "Have a form of government-issued photo ID ready.\nIf you need to retrieve your ID or take a quick break, please do so now.",
 	"exam_preparation": "Exam Preparation",
-	"exam_preparation_msg": "The extension will need to record your exam session for potential review.\nThis information is encrypted and can be accessed only by individuals authorized by your institution. Recording will begin after check your system and environment.",
+	"exam_preparation_msg": "The library will need to record your exam session for potential review.\nThis information is encrypted and can be accessed only by individuals authorized by your institution. Recording will begin after check your system and environment.",
 	"exam_preparation_tnc": "I agree that I understand the exam rules prior to starting exam with extension.",
 	"exam_security_level": "Exam security level (based on selected options):",
 	"exam_settings_summary": "Exam Settings Summary",
@@ -1015,5 +1015,10 @@
 	"screen_sharing_stopped":"Screen sharing stopped",
 	"recording_stopped_successfully":"Recording is stopped successfully",
 	"session_completed": "Session is completed",
-	"session_completed_successfully": "Session is completed successfully"
+	"session_completed_successfully": "Session is completed successfully",
+	"no_person_detected_for_more_than_10_seconds":"No Person is detected for more than 10 seconds",
+	"unauthorized_object_detected_for_more_than_10_seconds":"Unauthorized object detected for more than 10 seconds",
+	"multiple_people_detected_for_more_than_10_seconds":"Multiple People detected for more than 10 seconds",
+	"system_requirements":"System requirements checking",
+	"your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality":"Your internet is very slow Please make sure you have a stable Internet connection"
 }

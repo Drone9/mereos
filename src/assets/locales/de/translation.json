@@ -317,7 +317,7 @@
 "exam_instructions_text": "Bereiten Sie jetzt bitte Ihre Arbeitsumgebung vor",
 "exam_prep_msg": "Halten Sie einen amtlichen Lichtbildausweis bereit.\nWenn Sie Ihren Ausweis abholen oder eine kurze Pause einlegen müssen, tun Sie dies bitte jetzt.",
 "exam_preparation": "Prüfung Vorbereitung",
-"exam_preparation_msg": "Die Erweiterung muss Ihre Prüfungssitzung für eine mögliche Überprüfung aufzeichnen.\nDiese Informationen sind verschlüsselt und können nur von Personen abgerufen werden, die von Ihrer Institution autorisiert wurden. Die Aufzeichnung beginnt, nachdem Ihr System und Ihre Umgebung überprüft wurden.",
+"exam_preparation_msg": "Die Bibliothek muss Ihre Prüfungssitzung für eine mögliche Überprüfung aufzeichnen.\nDiese Informationen sind verschlüsselt und können nur von Personen abgerufen werden, die von Ihrer Institution autorisiert sind. Die Aufzeichnung beginnt nach der Überprüfung Ihres Systems und Ihrer Umgebung.",
 "exam_preparation_tnc": "Ich bestätige, dass ich die Prüfungsregeln verstanden habe, bevor ich mit der Erweiterung mit der Prüfung beginne.",
 "exam_security_level": "Prüfungssicherheitsstufe (basierend auf ausgewählten Optionen):",
 "exam_settings_summary": "Zusammenfassung der Prüfungseinstellungen",
@@ -1032,5 +1032,10 @@
 "recording_stopped_successfully": "Aufnahme erfolgreich gestoppt",
 "screen_sharing_stopped":"Bildschirmfreigabe gestoppt",
 "session_completed": "Die Sitzung ist abgeschlossen",
-"session_completed_successfully": "Die Sitzung wurde erfolgreich abgeschlossen"
+"session_completed_successfully": "Die Sitzung wurde erfolgreich abgeschlossen",
+"no_person_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurde keine Person erkannt",
+"unauthorized_object_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurde ein nicht autorisiertes Objekt erkannt",
+"multiple_people_detected_for_more_than_10_seconds":"Für mehr als 10 Sekunden wurden mehrere Personen erkannt",
+"system_requirements":"Überprüfung der Systemanforderungen",
+"your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality": "Ihr Internet ist sehr langsam. Bitte stellen Sie sicher, dass Sie über eine stabile Internetverbindung verfügen."
 }

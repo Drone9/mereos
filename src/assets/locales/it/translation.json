@@ -317,7 +317,7 @@
 "exam_instructions_text": "Ora prepara il tuo ambiente di lavoro",
 "exam_prep_msg": "Tieni pronto un documento d'identità con foto rilasciato dal governo.\nSe hai bisogno di recuperare il tuo documento d'identità o di fare una breve pausa, fallo ora.",
 "exam_preparation": "Preparazione esame",
-"exam_preparation_msg": "L'estensione dovrà registrare la tua sessione d'esame per una potenziale revisione.\nQueste informazioni sono crittografate e possono accessibile solo a persone autorizzate dal tuo istituto. La registrazione inizierà dopo aver controllato il tuo sistema e l'ambiente.",
+"exam_preparation_msg": "La biblioteca dovrà registrare la tua sessione d'esame per una potenziale revisione.\nQueste informazioni sono crittografate e possono essere accessibili solo da individui autorizzati dal tuo istituto. La registrazione inizierà dopo aver controllato il tuo sistema e l'ambiente.",
 "exam_preparation_tnc": "Accetto di aver compreso le regole dell'esame prima di iniziare l'esame con estensione.",
 "exam_security_level": "Livello di sicurezza dell'esame (in base alle opzioni selezionate):",
 "exam_settings_summary": "Riepilogo delle impostazioni dell'esame",
@@ -1015,5 +1015,10 @@
 "recording_stopped_successfully":"Registrazione interrotta con successo",
 "screen_sharing_stopped": "Condivisione dello schermo interrotta",
 "session_completed": "La sessione è completata",
-"session_completed_successfully": "La sessione è stata completata con successo"
+"session_completed_successfully": "La sessione è stata completata con successo",
+"no_person_detected_for_more_than_10_seconds":"Nessuna persona rilevata per più di 10 secondi",
+"unauthorized_object_detected_for_more_than_10_seconds":"Oggetto non autorizzato rilevato per più di 10 secondi",
+"multiple_people_detected_for_more_than_10_seconds":"Più persone rilevate per più di 10 secondi",
+"system_requirements":"Verifica dei requisiti di sistema",
+"your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality":"La tua connessione Internet è molto lenta. Assicurati di avere una connessione Internet stabile"
 }

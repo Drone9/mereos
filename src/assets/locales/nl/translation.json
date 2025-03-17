@@ -317,7 +317,7 @@
 "exam_instructions_text": "Bereid nu je werkomgeving voor",
 "exam_prep_msg": "Houd een door de overheid uitgegeven identiteitsbewijs met foto bij de hand.\nAls je je identiteitsbewijs moet ophalen of een korte pauze moet nemen, doe dat dan nu.",
 "exam_preparation": "Examenvoorbereiding",
-"exam_preparation_msg": "De extensie moet je examensessie opnemen voor mogelijke herziening.\nDeze informatie is gecodeerd en is alleen toegankelijk voor personen die door je instelling zijn geautoriseerd. De opname begint nadat je je systeem en omgeving hebt gecontroleerd.",
+"exam_preparation_msg": "De bibliotheek moet uw examensessie opnemen voor mogelijke herziening.\nDeze informatie is gecodeerd en kan alleen worden geopend door personen die door uw instelling zijn geautoriseerd. De opname start nadat uw systeem en omgeving zijn gecontroleerd.",
 "exam_preparation_tnc": "Ik ga ermee akkoord dat ik de examenregels begrijp voordat ik met de extensie aan het examen begin.",
 "exam_security_level": "Examenbeveiligingsniveau (op basis van geselecteerde opties):",
 "exam_settings_summary": "Exameninstellingenoverzicht",
@@ -1015,5 +1015,10 @@
 "recording_stopped_successfully":"Opname succesvol gestopt",
 "screen_sharing_stopped":"Schermdeling gestopt",
 "session_completed": "De sessie is voltooid",
-"session_completed_successfully": "De sessie is succesvol voltooid"
+"session_completed_successfully": "De sessie is succesvol voltooid",
+"no_person_detected_for_more_than_10_seconds":"Geen persoon gedetecteerd gedurende meer dan 10 seconden",
+"unauthorized_object_detected_for_more_than_10_seconds":"Ongeautoriseerd object gedetecteerd gedurende meer dan 10 seconden",
+"multiple_people_detected_for_more_than_10_seconds":"Meerdere personen gedetecteerd gedurende meer dan 10 seconden",
+"system_requirements":"Controle van systeemvereisten",
+"your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality":"Uw internetverbinding is erg traag. Zorg ervoor dat u een stabiele internetverbinding hebt"
 }

@@ -317,7 +317,7 @@
 	"exam_instructions_text": "Maintenant, préparez votre environnement de travail",
 	"exam_prep_msg": "Préparez une pièce d'identité avec photo émise par le gouvernement.\nSi vous avez besoin de récupérer votre pièce d'identité ou de faire une pause rapide, veuillez le faire maintenant.",
 	"exam_preparation": "Préparation à l'examen",
-	"exam_preparation_msg": "L'extension enregistrera votre session d'examen afin de (potentiellement) l'analyser.\nVos données sont cryptées et ne sont accessibles qu'aux surveillants accrédités par votre établissement. L'enregistrement démarrera après une vérification de votre matériel informatique et de votre environnement de test.",
+	"exam_preparation_msg": "La bibliothèque devra enregistrer votre session d'examen pour une éventuelle révision.\nCes informations sont cryptées et ne sont accessibles qu'aux personnes autorisées par votre établissement. L'enregistrement commencera après vérification de votre système et de votre environnement.",
 	"exam_preparation_tnc": "Je confirme avoir pris connaissance du règlement de cet examen et les accepte avant d'y accéder avec l'extension Mereos.",
 	"exam_security_level": "Niveau de sécurité de l'examen (en fonction des options sélectionnées) :",
 	"exam_settings_summary": "Résumé des paramètres d'examen",
@@ -1017,5 +1017,10 @@
 	"recording_stopped_successfully": "L'enregistrement a été arrêté avec succès",
 	"screen_sharing_stopped": "Partage d'écran arrêté",
 	"session_completed": "La session est terminée",
-	"session_completed_successfully": "La session s'est terminée avec succès"
+	"session_completed_successfully": "La session s'est terminée avec succès",
+	"no_person_detected_for_more_than_10_seconds": "Aucune personne n'a été détectée pendant plus de 10 secondes",
+"unauthorized_object_detected_for_more_than_10_seconds": "Objet non autorisé détecté pendant plus de 10 secondes",
+"multiple_people_detected_for_more_than_10_seconds": "Plusieurs personnes détectées pendant plus de 10 secondes",
+"system_requirements": "Vérification de la configuration requise",
+"your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality": "Votre connexion Internet est très lente. Veuillez vous assurer d'avoir une connexion Internet stable."
 }

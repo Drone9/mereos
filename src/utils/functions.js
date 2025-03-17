@@ -529,6 +529,14 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
+				case 'Disable downloading': {
+					const disableDownloading = await disablePageDownload();
+					if (disableDownloading) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
 				case 'Disable function keys': {
 					const disableShortcuts = await preventShortCuts();
 					if (disableShortcuts) {
@@ -593,6 +601,16 @@ export const lockBrowserFromContent = (entities) => {
 		resolve(result);
 	});
 };
+
+function disablePageDownload() {
+	document.addEventListener('contextmenu', (event) => event.preventDefault());
+
+	document.addEventListener('keydown', (event) => {
+		if ((event.ctrlKey || event.metaKey) && ['s', 'p', 'u'].includes(event.key.toLowerCase())) {
+			event.preventDefault();
+		}
+	});
+}
 
 export const preventRightClick = () => {
 	return new Promise((resolve, _reject) => {

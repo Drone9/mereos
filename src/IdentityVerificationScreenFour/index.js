@@ -80,6 +80,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 
 	const handleStopRecording = async () => {
+		clearInterval(window.recordingDotInterval);
 		if (mediaRecorder) {
 			mediaRecorder.stop();
 		}
@@ -110,6 +111,12 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	const prevStep = () => {
+		showPlayer = false;
+		loading=false;
+		recordingMode ='startRecording';
+		textMessage = 'scan_your_room';
+		blob=null;
+		updateUI();
 		updatePersistData('preChecksSteps',{ roomScanningVideo:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFour');
@@ -147,7 +154,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		let container = tabContent?.querySelector('.screen-four-container');
 		if (!container) {
 			container = document.createElement('div');
-			container.className = 'screen-four-container'; 
+			container.className = 'screen-four-container';
 			container.id = 'screen-four-main-container';
 			tabContent.appendChild(container);
 		}
@@ -182,11 +189,18 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			if (recordingMode === 'beingRecorded') {
 				const recordingBadge = document.createElement('div');
 				recordingBadge.className = 'ivsf-recording-badge-container';
-				
+
 				const dot = document.createElement('img');
 				dot.className = 'ivsf-recording-dot';
-				dot.src = `${ASSET_URL}/red-dot.svg`; 
-				dot.alt = 'red-dot';
+				dot.src = `${ASSET_URL}/white-dot.svg`; // Start with the white dot
+				dot.alt = 'recording-dot';
+
+				let isRed = false;
+				const toggleDot = setInterval(() => {
+					dot.src = `${ASSET_URL}/${isRed ? 'white-dot.svg' : 'red-dot.svg'}`;
+					isRed = !isRed;
+				}, 1000);
+				window.recordingDotInterval = toggleDot;
 				const webcam = document.createElement('video');
 				webcam.autoplay = true;
 				webcam.muted = true;
@@ -197,7 +211,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				recordingBadge.appendChild(dot);
 				recordingBadge.appendChild(document.createTextNode(`${i18next.t('recording')}`));
 				headerImgContainer.appendChild(recordingBadge);
-				headerImgContainer.appendChild(webcam); 
+				headerImgContainer.appendChild(webcam);
 			}
 		}
 
@@ -225,7 +239,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 			window.userMediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
 			const webcam = document.createElement('video');
-			
+
 			webcam.autoplay = true;
 			webcam.muted = true;
 			webcam.height = 250;
@@ -240,7 +254,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		} else if (recordingMode === 'beingRecorded') {
 			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
 			const stopButton = createButton(`${i18next.t('stop_recording')}`, 'orange-filled-btn', handleStopRecording);
-			stopButton.disabled = stopButtonDisabled; 
+			stopButton.disabled = stopButtonDisabled;
 			const prevStepsEntities = ['verify_candidate','verify_id','record_audio'];
 			if(secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0){
 				btnContainer.appendChild(prevButton);
@@ -263,6 +277,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		wrapper.appendChild(btnContainer);
 		container.appendChild(wrapper);
 	};
+
 
 	const createButton = (text, className, onClick) => {
 		const button = document.createElement('button');

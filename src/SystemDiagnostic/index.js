@@ -114,7 +114,7 @@ const renderUI = (tab1Content) => {
 	continueBtn.classList.add('orange-filled-btn');
 	continueBtn.id = 'diagnosticContinueBtn';
 	continueBtn.disabled = true;
-	continueBtn.textContent = 'Continue';
+	continueBtn.textContent = i18next.t('continue');
 	continueBtn.addEventListener('click', () => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
@@ -306,6 +306,11 @@ const updateDiagnosticText = () => {
 	const description = document.querySelector('.description');
 	if (description) {
 		description.textContent = i18next.t('system_diagnostic_msg');
+	}
+	
+	const btnText = document.querySelector('.orange-filled-btn');
+	if (btnText) {
+		btnText.textContent = i18next.t('continue');
 	}
 };
 

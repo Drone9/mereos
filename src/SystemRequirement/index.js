@@ -27,7 +27,7 @@ const downloadSpeedRed = `${ASSET_URL}/download-speed-red.svg`;
 const createDiagnosticItem = (id, label) => {
   const diagnosticItem = document.createElement('div');
   diagnosticItem.classList.add('diagnostic-item', 'grey-box');
-  diagnosticItem.id = `${id}DiagnosticItem`;
+  diagnosticItem.id = `${id}RequirementItem`;
 
   const greyBoxRight = document.createElement('div');
   greyBoxRight.classList.add('grey-box-right');
@@ -64,7 +64,7 @@ const renderUI = (tab1Content) => {
   container.classList.add('system-requirement-test-screen');
 
   const heading = document.createElement('h1');
-  heading.classList.add('heading');
+  heading.classList.add('system-requirement-heading');
   heading.textContent = i18next.t('system_requirements');
 
   const diagnosticStatus = document.createElement('div');
@@ -77,7 +77,7 @@ const renderUI = (tab1Content) => {
   containerTop.classList.add('container-top');
 
   const description = document.createElement('label');
-  description.classList.add('description');
+  description.classList.add('system-requirement-description');
   description.textContent = i18next.t('system_requirement_checking_msg');
 
   const containerMiddle = document.createElement('div');
@@ -129,7 +129,7 @@ export const SystemRequirement = async (tab1Content) => {
   };
 
   const handleDiagnosticItemClick = (id, checkFunction) => {
-    const element = document.getElementById(`${id}DiagnosticItem`);
+    const element = document.getElementById(`${id}RequirementItem`);
     if (!element) {
       return;
     }
@@ -241,21 +241,25 @@ const updateDiagnosticText = () => {
   const diagnosticItems = ['ram', 'cpu', 'upload_speed', 'download_speed'];
 
   diagnosticItems.forEach(item => {
-    const labelElement = document.querySelector(`#${item}DiagnosticItem label`);
+    const labelElement = document.querySelector(`#${item}RequirementItem label`);
     if (labelElement) {
       labelElement.textContent = i18next.t(item);
     }
   });
 
-  const heading = document.querySelector('.heading');
+  const heading = document.querySelector('.system-requirement-heading');
   if (heading) {
     heading.textContent = i18next.t('system_requirements');
   }
 
-  const description = document.querySelector('.description');
+  const description = document.querySelector('.system-requirement-description');
   if (description) {
     description.textContent = i18next.t('system_requirement_checking_msg');
   }
+  const btnText = document.querySelector('.orange-filled-btn');
+	if (btnText) {
+		btnText.textContent = i18next.t('continue');
+	}
 };
 
 i18next.on('languageChanged', () => {

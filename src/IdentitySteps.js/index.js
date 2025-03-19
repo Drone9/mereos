@@ -1,4 +1,4 @@
-import { t } from 'i18next';
+import i18next, { t } from 'i18next';
 
 import { getSecureFeatures } from '../utils/functions';
 
@@ -8,20 +8,19 @@ const UNVERIFIED = 'UNVERIFIED';
 const VERIFIED = 'VERIFIED';
 const VERIFING = 'VERIFING';
 
-const renderStep = (stepStatus, stepText) => {
+const renderStep = (stepStatus, stepTextKey) => {
 	const container = document.createElement('div');
 	container.className = 'ivs-instruction-step-container';
 
 	let stepClass = 'ivs-instruction-txt';
-	if (stepStatus === VERIFING) {
-		stepClass = 'ivs-instruction-txt-orange'; 
-	} else if (stepStatus === VERIFIED) {
-		stepClass = 'ivs-instruction-txt-orange'; 
+	if (stepStatus === VERIFING || stepStatus === VERIFIED) {
+		stepClass = 'ivs-instruction-txt-orange';
 	}
 
 	const span = document.createElement('span');
 	span.className = stepClass;
-	span.textContent = t(stepText);
+	span.setAttribute('data-i18n-key', stepTextKey); // Store key for dynamic updates
+	span.textContent = t(stepTextKey);
 
 	container.appendChild(span);
 	return container;
@@ -93,3 +92,22 @@ export const renderIdentityVerificationSteps = (identitySteps, currentStep) => {
 
 	container.appendChild(mainContainer);
 };
+
+const updateTranslations = () => {
+	document.querySelectorAll('[data-i18n-key]').forEach(element => {
+		const key = element.getAttribute('data-i18n-key');
+		element.textContent = t(key);
+	});
+
+	// Update button text if applicable
+	const textChange = document.querySelector('.orange-filled-btn');
+	if (textChange) {
+		textChange.textContent = i18next.t('continue');
+	}
+};
+
+
+i18next.on('languageChanged', () => {
+	console.log(`Language changed to: ${i18next.language}`); // Debugging
+	updateTranslations();
+});

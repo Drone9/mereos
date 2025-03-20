@@ -9,7 +9,6 @@ import { ASSET_URL } from '../utils/constant';
 import '../assets/css/step4.css';
 import { uploadFileInS3Folder } from '../services/general.services.js';
 
-
 export const IdentityVerificationScreenFour = async (tabContent) => {
 	if (tabContent.querySelector('.screen-four-container')) return; 
 	window.userMediaStream = null;	
@@ -35,9 +34,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	const handleStartRecording = async (type) => {
 		try {
 			if (type === 'startRecording') {
-				mediaRecorder = new MediaRecorder(window.userMediaStream, {
-					mimeType: 'video/webm; codecs=vp9'
-				});
+				mediaRecorder = new MediaRecorder(window.userMediaStream);
 
 				mediaRecorder.ondataavailable = (event) => {
 					if (event.data.size > 0) {

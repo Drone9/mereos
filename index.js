@@ -127,7 +127,7 @@ async function start_session(callback) {
 					if(window.startRecordingCallBack){
 						window.startRecordingCallBack({
 							type: 'error',
-							message: 'Error in mobile proctoring setup',
+							message: 'error_in_mobile_proctoring_setup',
 							details: err,
 						});
 					}
@@ -150,7 +150,7 @@ async function start_session(callback) {
 				} catch (err) {
 					window.startRecordingCallBack({
 						type: 'error',
-						message: 'Error in room creation',
+						message: 'error_in_room_creation',
 						details: err,
 					});
 					return;
@@ -164,7 +164,7 @@ async function start_session(callback) {
 	} catch (err) {
 		callback({
 			type: 'error',
-			message: 'There was an error in starting the session',
+			message: 'there_was_an_error_in_starting_the_session',
 			details: err,
 		});
 	}
@@ -197,7 +197,7 @@ async function stop_session(callback) {
 		}
 	} catch (err) {
 		logger.error(err);
-		callback({type: 'error', message: 'There is error in stopping the session'});
+		callback({type: 'error', message: 'there_is_error_in_stopping_the_session'});
 	}
 }
 

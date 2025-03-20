@@ -59,7 +59,7 @@ export const startRecording = async () => {
 				resetSessionData();
 			} else {
 				if(window.startRecordingCallBack){
-					window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+					window.startRecordingCallBack({ type:'error', message: 'session_has_been_terminated_send_resume_to_restart_again' });
 				}
 			}
 		} catch (error) {

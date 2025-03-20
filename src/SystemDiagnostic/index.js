@@ -5,7 +5,6 @@ import {
 	checkMicrophone, 
 	detectMultipleScreens, 
 	getLocation, 
-	getNetworkUploadSpeed, 
 	getSecureFeatures, 
 	logger, 
 	registerEvent, 
@@ -21,15 +20,11 @@ let audioStream = null;
 
 const videoGreen = `${ASSET_URL}/video-camera-green.svg`;
 const microPhoneGreen = `${ASSET_URL}/microphone-green.svg`;
-const networkGreen = `${ASSET_URL}/spinner-gap-green.svg`;
 const locationGreen = `${ASSET_URL}/location-pin-green.svg`;
-// const notificationGreen = `${ASSET_URL}/bell-ringing-green.svg`;
 const multipleScreenGreen = `${ASSET_URL}/multiple-screen-green.svg`;
 const videoRed = `${ASSET_URL}/video-camera-red.svg`;
 const microPhoneRed = `${ASSET_URL}/microphone-red.svg`;
-const networkRed = `${ASSET_URL}/spinner-maroon.svg`;
 const locationRed = `${ASSET_URL}/location-pin-red.svg`;
-// const notificationRed = `${ASSET_URL}/bell-ringing-maroon.svg`;
 const multipleScreenRed = `${ASSET_URL}/multiple-screen-red.svg`;
 
 const createDiagnosticItem = (id, label) => {
@@ -42,7 +37,15 @@ const createDiagnosticItem = (id, label) => {
 
 	const statusIcon = document.createElement('img');
 	statusIcon.id = `${id}StatusIcon`;
-	statusIcon.src = `${ASSET_URL}/video-camera-light-gray.svg`;
+
+	const statusIconMap = {
+		webcam: 'video-camera-light-gray.svg',
+		microphone: 'microphone-light-gray.svg',
+		location: 'location-pin-black.svg',
+		screen: 'multiple-screen-gray.svg'
+	};
+	
+	statusIcon.src = `${ASSET_URL}/${statusIconMap[id] || 'video-camera-light-gray.svg'}`;
 	statusIcon.alt = '';
 
 	const labelElement = document.createElement('label');
@@ -53,7 +56,7 @@ const createDiagnosticItem = (id, label) => {
 
 	const loadingIcon = document.createElement('img');
 	loadingIcon.id = `${id}StatusLoading`;
-	loadingIcon.src = `${ASSET_URL}/loading-gray.svg`;
+	loadingIcon.src = `${ASSET_URL}/loading-gray.svg`; 
 	loadingIcon.alt = '';
 
 	greyBoxRight.appendChild(statusIcon);
@@ -64,6 +67,7 @@ const createDiagnosticItem = (id, label) => {
 
 	return diagnosticItem;
 };
+
 
 const renderUI = (tab1Content) => {
 	tab1Content.innerHTML = '';
@@ -99,8 +103,20 @@ const renderUI = (tab1Content) => {
 
 	const containerMiddle = document.createElement('div');
 	containerMiddle.classList.add('container-middle', 'box-section');
+	const candidateAssessment =  getSecureFeatures();
+	const secureFeatures = candidateAssessment?.entities || [];
+	const recordVideo = secureFeatures.some(entity => entity.key === 'record_video');
+	const recordAudio = secureFeatures.some(entity => entity.key === 'record_audio');
+	const trackLocation = secureFeatures.some(entity => entity.key === 'track_location');
+	const multipleScreensCheck = secureFeatures.some(entity => entity.key === 'verify_desktop');
 
-	const diagnosticItems =  ['webcam', 'microphone', 'location', 'screen'];
+	let diagnosticItems = [];
+
+	if (recordVideo) diagnosticItems.push('webcam');
+	if (recordAudio) diagnosticItems.push('microphone');
+	if (trackLocation) diagnosticItems.push('location');
+	if (multipleScreensCheck) diagnosticItems.push('screen');
+
 	diagnosticItems.forEach(item => {
 		const label = i18next.t(item);
 		const diagnosticItem = createDiagnosticItem(item, label);
@@ -123,13 +139,13 @@ const renderUI = (tab1Content) => {
 		updatePersistData('preChecksSteps',{ diagnosticStep:true });
 		showTab('SystemRequirements');
 	});
+
 	buttonSection.appendChild(continueBtn);
 	innerContainer.append(containerTop, description, containerPrompt, promptImage, containerMiddle, buttonSection);
 	diagnosticStatus.appendChild(innerContainer);
 	container.append(heading, diagnosticStatus);
 	tab1Content.appendChild(container);
 };
-
 
 export const SystemDiagnostics = async (tab1Content) => {
 	if (!tab1Content) {
@@ -161,55 +177,49 @@ export const SystemDiagnostics = async (tab1Content) => {
 	};
 
 	const updateContinueButtonState = () => {
-		const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
-				const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
-				if (!currentIconSrc) {
-						return false;
-				}
-	
-				const currentIconPathname = new URL(currentIconSrc).pathname;
-				const expectedIconPathname = new URL(successIconMap[item]).pathname;
-	
-				return currentIconPathname === expectedIconPathname;
+		const renderedItems = document.querySelectorAll('.diagnostic-item');
+
+		const allDiagnosticsPassed = Array.from(renderedItems).every(item => {
+			const itemId = item.id.replace('DiagnosticItem', '');
+			const statusIcon = document.getElementById(`${itemId}StatusIcon`);
+			if (!statusIcon) return false;
+
+			const currentIconPathname = new URL(statusIcon.src).pathname;
+			const expectedIconPathname = new URL(successIconMap[itemId] || '').pathname;
+
+			return currentIconPathname === expectedIconPathname;
 		});
-	
+
 		document.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 	};
+
 	const successIconMap = {
 		webcam: videoGreen,
 		microphone: microPhoneGreen,
-		// connection: networkGreen,
 		location: locationGreen,
-		// notification: notificationGreen,
 		screen: multipleScreenGreen
 	};
 
 	const failureIconMap = {
 		webcam: videoRed,
 		microphone: microPhoneRed,
-		// connection: networkRed,
 		location: locationRed,
-		// notification: notificationRed,
 		screen: multipleScreenRed
 	};
 
 	try {
-		const candidateAssessment = await getSecureFeatures();
+		const candidateAssessment =  getSecureFeatures();
 		const secureFeatures = candidateAssessment?.entities || [];
-		const profileSettings = candidateAssessment?.settings;
-
-		let recordVideo = secureFeatures.find(entity => entity.key === 'record_video');
-		let recordAudio = secureFeatures.find(entity => entity.key === 'record_audio');
-		// let checkNetwork = secureFeatures.find(entity => entity.key === 'verify_connection');
-		let trackLocation = secureFeatures.find(entity => entity.key === 'track_location');
-		// let enableNotifications = secureFeatures.find(entity => entity.key === 'enable_notifications');
-		let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
+		const recordVideo = secureFeatures.some(entity => entity.key === 'record_video');
+		const recordAudio = secureFeatures.some(entity => entity.key === 'record_audio');
+		const trackLocation = secureFeatures.some(entity => entity.key === 'track_location');
+		const multipleScreensCheck = secureFeatures.some(entity => entity.key === 'verify_desktop');
 
 		const promises = [];
 
 		if (recordVideo) {
 			promises.push(checkCamera().then(stream => {
-				cameraStream = stream; // Save the camera stream
+				cameraStream = stream; 
 				setElementStatus('webcam', { success: videoGreen, failure: videoRed }, stream);
 				handleDiagnosticItemClick('webcam', checkCamera);
 				return stream;
@@ -220,7 +230,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 		if (recordAudio) {
 			promises.push(checkMicrophone().then(stream => {
-				audioStream = stream; // Save the audio stream
+				audioStream = stream; 
 				setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, stream);
 				handleDiagnosticItemClick('microphone', checkMicrophone);
 				return stream;
@@ -228,17 +238,6 @@ export const SystemDiagnostics = async (tab1Content) => {
 		} else {
 			setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, true);
 		}
-
-		// if (checkNetwork) {
-		// 	promises.push(getNetworkUploadSpeed().then(network => {
-		// 		const isNetworkGood = network.speedMbps > profileSettings?.upload_speed || 0.168;
-		// 		setElementStatus('connection', { success: networkGreen, failure: networkRed }, isNetworkGood);
-		// 		handleDiagnosticItemClick('connection', getNetworkUploadSpeed);
-		// 		return isNetworkGood;
-		// 	}));
-		// } else {
-		// 	setElementStatus('connection', { success: networkGreen, failure: networkRed }, true);
-		// }
 
 		if (trackLocation) {
 			promises.push(getLocation().then(location => {
@@ -251,16 +250,6 @@ export const SystemDiagnostics = async (tab1Content) => {
 			setElementStatus('location', { success: locationGreen, failure: locationRed }, true);
 		}
 
-		// if (enableNotifications) {
-		// 	promises.push(checkNotification().then(notification => {
-		// 		setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, notification);
-		// 		handleDiagnosticItemClick('notification', checkNotification);
-		// 		return notification;
-		// 	}));
-		// } else {
-		// 	setElementStatus('notification', { success: notificationGreen, failure: notificationRed }, true);
-		// }
-
 		if (multipleScreensCheck) {
 			promises.push(detectMultipleScreens().then(isDetected => {
 				setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected ? true : false);
@@ -272,13 +261,11 @@ export const SystemDiagnostics = async (tab1Content) => {
 		}
 
 		await Promise.all(promises);
-
 		
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 
 		updateContinueButtonState();
-	
 	
 	} catch (error) {
 		logger.error('Error running diagnostics:', error);

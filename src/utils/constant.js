@@ -1,6 +1,6 @@
 export const ASSET_URL = 'https://mereos-corder.s3.eu-west-3.amazonaws.com/library_icons';
 
-export const BASE_URL = 'https://corder-api.mereos-datasafe.com';
+export const BASE_URL = 'https://corder-api.mereos.eu';
 
 export const SOCKET_URL = 'wss://mobile-socket.mereos.eu/websocket/';
 

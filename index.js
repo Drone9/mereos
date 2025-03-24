@@ -51,6 +51,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 				external_id: assessmentData?.id || 1,
 				course_id: assessmentData?.course_id,
 				others: { test: 'value' },
+				branch: assessmentData?.branch || 2
 			};
 				
 			const assessmentResp = await createCandidateAssessment(data);

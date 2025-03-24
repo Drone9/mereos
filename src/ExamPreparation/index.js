@@ -4,16 +4,17 @@ import { getDateTime, logger, registerEvent, updatePersistData } from '../utils/
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import '../assets/css/exam-preparations.css';
-import welsLanguage from '../assets/locales/cy/translation.json';
 
 export const ExamPreparation = async (tabContent) => {
 	if (!tabContent) {
+		logger.error('tabContent is not defined or is not a valid DOM element');
 		return;
 	}
 	logger.error('tabContent',tabContent);
 	tabContent.innerHTML = '';
 	let tncRead = false;
 	let errMsg = false;
+	logger.success('in the ExamPreparation');
 
 	const container = document.createElement('div');
 	container.className = 'exam-preparation-container';
@@ -30,7 +31,6 @@ export const ExamPreparation = async (tabContent) => {
 
 	const headerTitle = document.createElement('div');
 	headerTitle.className = 'exam-preparation-header-title';
-	logger.success('i18next.t',i18next.t('exam_preparation'),'i18next',i18next);
 	headerTitle.textContent = i18next.t('exam_preparation');
 	wrapper.appendChild(headerTitle);
 
@@ -96,17 +96,8 @@ export const ExamPreparation = async (tabContent) => {
 	tabContent.appendChild(container);
 };
 i18next.on('languageChanged', () => {
-	console.log(i18next.options.resources);
-	console.log(i18next.hasResourceBundle('cy', 'translation'));
-	i18next.options.resources={
-		...i18next.options.resources,
-		cy:{
-			translation:welsLanguage
-		}
-	};
 	const activeTab = document.querySelector('.tab-content.active');
 	if (activeTab && activeTab.id === 'ExamPreparation') {
 		ExamPreparation(activeTab);
 	}
 });
-

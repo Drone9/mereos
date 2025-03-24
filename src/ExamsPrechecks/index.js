@@ -47,7 +47,6 @@ const SystemDiagnosticsContainer = document.createElement('div');
 SystemDiagnosticsContainer.className = 'tab-content';
 SystemDiagnosticsContainer.id = 'runSystemDiagnostics';
 
-
 const SystemRequirementContainer = document.createElement('div');
 SystemRequirementContainer.className = 'tab-content';
 SystemRequirementContainer.id = 'SystemRequirements';
@@ -146,7 +145,6 @@ const initializeLiveChat = () => {
 
 			Talk.ready.then(() => {
 				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-				logger.success('candidateInviteAssessmentSection',candidateInviteAssessmentSection);
 
 				const me = new Talk.User({
 					id: candidateInviteAssessmentSection?.candidate?.id,
@@ -263,6 +261,7 @@ const createLanguageDropdown = () => {
 		const optionText = document.createElement('div');
 		optionText.className = 'text';
 		optionText.id='dropdown-text-language';
+
 		optionText.textContent = i18next.t(lang.value);
 		optionDiv.appendChild(optionText);
 
@@ -302,7 +301,6 @@ const openModal = async (callback) => {
 	initializeLiveChat();
 	
 	const activeTab = handlePreChecksRedirection(callback);
-	logger.warn('activeTab',activeTab);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
 
 	if (preChecksStep === null) {

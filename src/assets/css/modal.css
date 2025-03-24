@@ -148,7 +148,7 @@ body {
 .dropdown-content {
   position: absolute;
   top: 42px;
-  right: -22px;
+  right: -70px;
   background-color: white;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 4px;

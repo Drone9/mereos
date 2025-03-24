@@ -1,6 +1,6 @@
 export const ASSET_URL = 'https://mereos-corder.s3.eu-west-3.amazonaws.com/library_icons';
 
-export const BASE_URL = 'https://corder-api.mereos.eu';
+export const BASE_URL = 'https://corder-api.mereos-datasafe.com';
 
 export const SOCKET_URL = 'wss://mobile-socket.mereos.eu/websocket/';
 
@@ -84,7 +84,12 @@ export const systemDiagnosticSteps = [
 	'record_room',
 	'record_audio'
 ];
-export const SYSTEM_REQUIREMENT_STEP = ['verify_cpu', 'verify_ram', 'verify_upload_speed', 'verify_download_speed'];
+export const SYSTEM_REQUIREMENT_STEP = [
+	'verify_cpu', 
+	'verify_ram', 
+	'verify_upload_speed', 
+	'verify_download_speed'
+];
 
 export const examPreparationSteps = [
 	'record_video', 
@@ -107,5 +112,5 @@ export const languages = [
 	{name: 'Portuguese (Brazil)', value: 'portuguese_brazil', src: `${ASSET_URL}/flag-of-brazil.svg`, alt: '', keyword: 'pt' },
 	{name: 'Italian', value: 'italian', src: `${ASSET_URL}/flag-of-italy.svg`, alt: '', keyword: 'it' },
 	{name: 'Dutch', value: 'dutch', src: `${ASSET_URL}/netherlands.svg`, alt: '', keyword: 'nl' },
-	{ name: 'Welsh',src: `${ASSET_URL}/flag-of-whales.png`,value:'welsh',keyword: 'cy'},
+	{name: 'Welsh',value:'welsh', src: `${ASSET_URL}/flag-of-whales.png`,alt: '',keyword: 'cy'}
 ];

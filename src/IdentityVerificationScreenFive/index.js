@@ -1,13 +1,18 @@
 import i18next from 'i18next';
-
-import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, showToast, updatePersistData } from '../utils/functions';
+import { 
+	detectMultipleScreens, 
+	getDateTime, 
+	getSecureFeatures, 
+	logger, 
+	registerEvent, 
+	shareScreenFromContent, 
+	showToast, 
+	updatePersistData
+} from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-
 import '../assets/css/step5.css';
-
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
@@ -98,8 +103,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const prevButton = document.createElement('button');
 		prevButton.className = 'orange-hollow-btn';
 		prevButton.textContent = i18next.t('previous_step');
-		const prevStepsEntities = ['verify_candidate','verify_id','record_audio','record_room'];
-		if(secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0){
+
+		const prevStepsEntities = ['verify_candidate', 'verify_id', 'record_audio', 'record_room'];
+		if (secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0) {
 			prevButton.addEventListener('click', prevStep);
 			btnContainer.appendChild(prevButton);
 		}
@@ -119,6 +125,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		}
 
 		wrapper.appendChild(btnContainer);
+
+		headerImg.src = `${ASSET_URL}/share-screen-${i18next.language || 'en'}.svg`;
 	};
 
 	const shareScreen = async () => {
@@ -211,7 +219,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const reshareButton = document.createElement('button');
 	const headerImg = document.createElement('img');
 	headerImg.classList.add('screen-share-dummy');
-	headerImg.src = `${ASSET_URL}/screen-recorder-mock.svg`;
+	headerImg.src = `${ASSET_URL}/share-screen-${i18next?.language ||'en'}.svg`;
 	headerImg.alt = 'camera-icon';
 	wrapper.appendChild(headerImg);
 

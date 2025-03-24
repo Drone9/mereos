@@ -19,7 +19,7 @@ const renderStep = (stepStatus, stepTextKey) => {
 
 	const span = document.createElement('span');
 	span.className = stepClass;
-	span.setAttribute('data-i18n-key', stepTextKey); // Store key for dynamic updates
+	span.setAttribute('data-i18n-key', stepTextKey);
 	span.textContent = t(stepTextKey);
 
 	container.appendChild(span);
@@ -99,7 +99,6 @@ const updateTranslations = () => {
 		element.textContent = t(key);
 	});
 
-	// Update button text if applicable
 	const textChange = document.querySelector('.orange-filled-btn');
 	if (textChange) {
 		textChange.textContent = i18next.t('continue');
@@ -108,6 +107,5 @@ const updateTranslations = () => {
 
 
 i18next.on('languageChanged', () => {
-	console.log(`Language changed to: ${i18next.language}`); // Debugging
 	updateTranslations();
 });

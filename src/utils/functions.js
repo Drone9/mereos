@@ -1051,6 +1051,9 @@ export const initializeI18next = () => {
 	i18next.init({
 		lng: normalizeLanguage(defaultLanguage),
 		resources: {
+			cy: {
+				translation: require('../assets/locales/cy/translation.json')
+			}, 
 			en: {
 				translation: require('../assets/locales/en/translation.json')
 			}, 

@@ -37,7 +37,12 @@ export const initialSessionData = {
 	twilioToken:null,
 	incident_level:null,
 	converationId:null,
-	candidate_assessment:null
+	candidate_assessment:null,
+	location:null,
+	downloadSpeed:null,
+	uploadSpeed:null,
+	CPUSpeed:null,
+	RAMSpeed:null
 };
 
 export const preChecksSteps = {

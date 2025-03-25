@@ -30,7 +30,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true
 	};
 
-
 	const handleStartRecording = async (type) => {
 		try {
 			if (type === 'startRecording') {
@@ -51,10 +50,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 				mediaRecorder.start();
 				recordingMode = 'beingRecorded';
-				stopButtonDisabled = true; // Disable the stop button initially
+				stopButtonDisabled = true; 
 				updateUI();
 
-				// Enable stop button after 3 seconds
 				setTimeout(() => {
 					stopButtonDisabled = false;
 					updateUI();
@@ -65,8 +63,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		}
 	};
 
-
-
 	const handleRestartRecording = async () => {
 		showPlayer = false;
 		loading=false;
@@ -74,7 +70,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		textMessage = 'scan_your_room';
 		updateUI();
 	};
-
 
 	const handleStopRecording = async () => {
 		clearInterval(window.recordingDotInterval);
@@ -89,6 +84,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		try {
 			showPlayer = false;
 			loading=false;
+			blob=null;
+			recordingMode ='startRecording';
+			textMessage = 'scan_your_room';
+			updateUI();
 			if (window.userMediaStream) {
 				window.userMediaStream.getTracks().forEach(track => track.stop());
 				window.userMediaStream = null;

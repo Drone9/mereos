@@ -230,7 +230,8 @@ export const SystemRequirement = async (tab1Content) => {
 		if (verifyRam) {
 			promises.push(getRAMInfo().then(resp => {
 				updatePersistData('session', { RAMSpeed:resp });
-				const isGoodRam = resp?.capacity > profileSettings?.ram_size || 2;
+				const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
+				const isGoodRam = Number(ram_info) > profileSettings?.ram_size;
 				setElementStatus('ram', { success: ramGreen, failure: ramRed }, isGoodRam);
 				handleDiagnosticItemClick('ram', getRAMInfo);
 				return isGoodRam;
@@ -242,7 +243,7 @@ export const SystemRequirement = async (tab1Content) => {
 		if (verifyCPU) {
 			promises.push(getCPUInfo().then(resp => {
 				updatePersistData('session', { CPUSpeed:resp });
-				const isGoodCpu = resp?.noOfPrcessor > profileSettings?.cpu_size || 1.0;
+				const isGoodCpu = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
 				setElementStatus('cpu', { success: cpuGreen, failure: cpuRed }, isGoodCpu);
 				return isGoodCpu;
 			}));
@@ -253,7 +254,7 @@ export const SystemRequirement = async (tab1Content) => {
 		if (verifyUploadSpeed) {
 			promises.push(getNetworkUploadSpeed().then(network => {
 				updatePersistData('session', { uploadSpeed:network });
-				const isGoodUpload = network.speedMbps > profileSettings?.upload_speed || 0.168;
+				const isGoodUpload = Number(network.speedMbps) > profileSettings?.upload_speed;
 				setElementStatus('upload_speed', { success: uploadSpeedGreen, failure: uploadSpeedRed }, isGoodUpload);
 				handleDiagnosticItemClick('upload_speed', getNetworkUploadSpeed);
 				return isGoodUpload;
@@ -265,7 +266,7 @@ export const SystemRequirement = async (tab1Content) => {
 		if (verifyDownloadSpeed) {
 			promises.push(getNetworkDownloadSpeed().then(network => {
 				updatePersistData('session', { downloadSpeed:network });
-				const isGoodDownload = network.speedMbps > profileSettings?.download_speed || 0.168;
+				const isGoodDownload = Number(network.speedMbps) > profileSettings?.download_speed || 0.168;
 				setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, isGoodDownload);
 				handleDiagnosticItemClick('download_speed', getNetworkDownloadSpeed);
 				return isGoodDownload;

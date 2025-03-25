@@ -422,6 +422,7 @@ export const updatePersistData = (key, updates) => {
 };
 
 export const addSectionSessionRecord = async (session, candidateInviteAssessmentSection) => {
+	logger.success('session_____',session);
 	return new Promise(async (resolve, _reject) => {
 		try{
 			let recordings;
@@ -447,8 +448,12 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 				screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				roomscan_recordings: session?.roomScanRecordings,
 				session_id: session?.sessionId,
+				location: session?.location,
 				collected_details: {
-					location: session?.location,
+					download_speed:session?.downloadSpeed,
+					upload_speed:session?.uploadSpeed,
+					cpu_info:session?.CPUSpeed,
+					ram_info:session?.RAMSpeed
 				},
 				status: session?.sessionStatus,
 				video_codec: null,
@@ -1051,6 +1056,9 @@ export const initializeI18next = () => {
 	i18next.init({
 		lng: normalizeLanguage(defaultLanguage),
 		resources: {
+			cy: {
+				translation: require('../assets/locales/cy/translation.json')
+			}, 
 			en: {
 				translation: require('../assets/locales/en/translation.json')
 			}, 

@@ -105,7 +105,7 @@ const renderUI = (tab1Content) => {
 	containerMiddle.classList.add('container-middle', 'box-section');
 	const candidateAssessment =  getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
-	const recordVideo = secureFeatures.some(entity => entity.key === 'record_video');
+	const recordVideo = secureFeatures.some(entity => entity.key === 'record_video' || entity.key === 'record_room');
 	const recordAudio = secureFeatures.some(entity => entity.key === 'record_audio');
 	const trackLocation = secureFeatures.some(entity => entity.key === 'track_location');
 	const multipleScreensCheck = secureFeatures.some(entity => entity.key === 'verify_desktop');
@@ -152,6 +152,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 		logger.error('Element with id "runSystemDiagnostics" not found.');
 		return;
 	}
+	logger.success('langaueg isse',i18next.language);
 	renderUI(tab1Content);
 
 	const setElementStatus = (id, status, isSuccess) => {
@@ -210,7 +211,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 	try {
 		const candidateAssessment =  getSecureFeatures();
 		const secureFeatures = candidateAssessment?.entities || [];
-		const recordVideo = secureFeatures.some(entity => entity.key === 'record_video');
+		const recordVideo = secureFeatures.some(entity => entity.key === 'record_video' || entity.key === 'record_room');
 		const recordAudio = secureFeatures.some(entity => entity.key === 'record_audio');
 		const trackLocation = secureFeatures.some(entity => entity.key === 'track_location');
 		const multipleScreensCheck = secureFeatures.some(entity => entity.key === 'verify_desktop');

@@ -170,11 +170,13 @@ export const SystemDiagnostics = async (tab1Content) => {
 		if (!element) {
 			return;
 		}
-		element.addEventListener('click', async () => {
-			const result = await checkFunction();
-			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
-			updateContinueButtonState();
-		});
+		if(id !=='screen'){
+			element.addEventListener('click', async () => {
+				const result = await checkFunction();
+				setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
+				updateContinueButtonState();
+			});
+		}
 	};
 
 	const updateContinueButtonState = () => {

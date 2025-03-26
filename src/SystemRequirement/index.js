@@ -24,6 +24,13 @@ const cpuRed = `${ASSET_URL}/cpu-icon-red.svg`;
 const uploadSpeedRed = `${ASSET_URL}/upload-speed-red.svg`;
 const downloadSpeedRed = `${ASSET_URL}/download-speed-red.svg`;
 
+const statusIconMap = {
+	ram: 'ram-icon-gray.svg',
+	cpu: 'cpu-icon-gray.svg',
+	upload_speed: 'upload-speed-gray.svg',
+	download_speed: 'download-speed-gray.svg'
+};
+
 const createDiagnosticItem = (id, label) => {
 	const diagnosticItem = document.createElement('div');
 	diagnosticItem.classList.add('requirement-item', 'grey-box');
@@ -34,13 +41,6 @@ const createDiagnosticItem = (id, label) => {
 
 	const statusIcon = document.createElement('img');
 	statusIcon.id = `${id}StatusIcon`;
-
-	const statusIconMap = {
-		ram: 'ram-icon-gray.svg',
-		cpu: 'cpu-icon-gray.svg',
-		upload_speed: 'upload-speed-gray.svg',
-		download_speed: 'download-speed-gray.svg'
-	};
 	
 	statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
 	statusIcon.alt = '';
@@ -156,9 +156,22 @@ export const SystemRequirement = async (tab1Content) => {
 		if (!element) {
 			return;
 		}
+
 		element.addEventListener('click', async () => {
+			const statusIcon = document.getElementById(`${id}StatusIcon`);
+			const statusLoading = document.getElementById(`${id}StatusLoading`);
+			const continueButton = document.getElementById('requirementContinueBtn');
+
+			if (!statusIcon || !statusLoading) {
+				return;
+			}
+			continueButton.disabled = true;
+			statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
+			statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
 			const result = await checkFunction();
+
 			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
+
 			updateContinueButtonState();
 		});
 	};
@@ -167,7 +180,6 @@ export const SystemRequirement = async (tab1Content) => {
 		const renderedItems = document.querySelectorAll('.requirement-item');
 
 		const allDiagnosticsPassed = Array.from(renderedItems).every(item => {
-			console.log('item____++',item);
 			const itemId = item.id.replace('RequirementItem', '');
 			const statusIcon = document.getElementById(`${itemId}StatusIcon`);
 			if (!statusIcon) return false;
@@ -180,26 +192,6 @@ export const SystemRequirement = async (tab1Content) => {
 
 		document.getElementById('requirementContinueBtn').disabled = !allDiagnosticsPassed;
 	};
-
-
-	// const updateContinueButtonState = () => {
-	//   const continueButton = document.getElementById('requirementContinueBtn');
-  
-	//   const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
-	//     const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
-	//     if (!currentIconSrc) {
-	//       return false;
-	//     }
-  
-	//     const currentIconPathname = new URL(currentIconSrc).pathname;
-	//     const expectedIconPathname = new URL(successIconMap[item]).pathname;
-	//     return currentIconPathname === expectedIconPathname;
-	//   });
-    
-	//   if (continueButton) {
-	//     continueButton.disabled = !allDiagnosticsPassed;
-	//   }
-	// };
 
 	const successIconMap = {
 		ram: ramGreen,

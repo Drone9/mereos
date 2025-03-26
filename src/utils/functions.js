@@ -422,7 +422,6 @@ export const updatePersistData = (key, updates) => {
 };
 
 export const addSectionSessionRecord = async (session, candidateInviteAssessmentSection) => {
-	logger.success('session_____',session);
 	return new Promise(async (resolve, _reject) => {
 		try{
 			let recordings;
@@ -475,9 +474,13 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 			resolve(resp);
 		}catch(err){
 			if (err.response?.status === 403) {
-				window.globalCallback({ message: err.response?.data?.detail });
+				if(window.globalCallback){
+					window?.globalCallback({ message: err.response?.data?.detail });
+				}
 			} else {
-				window.globalCallback({ message: 'error_starting_prechecks'});
+				if(window.globalCallback){
+					window?.globalCallback({ message: 'error_starting_prechecks'});
+				}
 			}
 			_reject(err);
 		}

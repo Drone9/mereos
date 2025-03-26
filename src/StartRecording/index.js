@@ -58,6 +58,8 @@ export const startRecording = async () => {
 				}
 				resetSessionData();
 			} else {
+				roomInstance=null;
+				window.recordingStart=false;
 				if(window.startRecordingCallBack){
 					window.startRecordingCallBack({ type:'error', message: 'session_has_been_terminated_send_resume_to_restart_again' });
 				}
@@ -610,6 +612,8 @@ export const stopAllRecordings = async () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'session_completed', startAt: dateTime });
 		
 		showToast('success', 'session_completed');
+		
+		window.recordingStart=false;
 		
 		return 'stop_recording';
 	} catch (e) {

@@ -156,25 +156,53 @@ export const SystemRequirement = async (tab1Content) => {
 		if (!element) {
 			return;
 		}
-
+		const candidateAssessment = getSecureFeatures();
+		const profileSettings = candidateAssessment?.settings;
+	
 		element.addEventListener('click', async () => {
 			const statusIcon = document.getElementById(`${id}StatusIcon`);
 			const statusLoading = document.getElementById(`${id}StatusLoading`);
 			const continueButton = document.getElementById('requirementContinueBtn');
-
+	
 			if (!statusIcon || !statusLoading) {
 				return;
 			}
 			continueButton.disabled = true;
 			statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
 			statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
-			const result = await checkFunction();
+	
+			const resp = await checkFunction();
 
-			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
-
+			const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
+			const isGoodRam = Number(ram_info) > profileSettings?.ram_size;
+	
+			const isGoodCpu = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
+	
+			const isGoodUpload = Number(resp?.speedMbps) > profileSettings?.upload_speed;
+			const isGoodDownload = Number(resp?.speedMbps) > profileSettings?.download_speed;
+	
+			let finalResult;
+			switch (id) {
+				case 'ram':
+					finalResult = isGoodRam;
+					break;
+				case 'cpu':
+					finalResult = isGoodCpu;
+					break;
+				case 'upload_speed':
+					finalResult = isGoodUpload;
+					break;
+				case 'download_speed':
+					finalResult = isGoodDownload;
+					break;
+				default:
+					finalResult = resp;
+			}
+	
+			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
 			updateContinueButtonState();
 		});
-	};
+	};	
 
 	const updateContinueButtonState = () => {
 		const renderedItems = document.querySelectorAll('.requirement-item');
@@ -258,7 +286,7 @@ export const SystemRequirement = async (tab1Content) => {
 		if (verifyDownloadSpeed) {
 			promises.push(getNetworkDownloadSpeed().then(network => {
 				updatePersistData('session', { downloadSpeed:network });
-				const isGoodDownload = Number(network.speedMbps) > profileSettings?.download_speed || 0.168;
+				const isGoodDownload = Number(network.speedMbps) > profileSettings?.download_speed;
 				setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, isGoodDownload);
 				handleDiagnosticItemClick('download_speed', getNetworkDownloadSpeed);
 				return isGoodDownload;

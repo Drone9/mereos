@@ -98,71 +98,75 @@ async function start_prechecks(callback,setting) {
 }
 
 window.startRecordingCallBack = null;
+window.recordingStart=false;
 async function start_session(callback) {
 	try {
 		window.startRecordingCallBack = callback;
-		const secureFeatures = getSecureFeatures();
-		if (secureFeatures?.entities?.length > 0) {
-			const mobileRoomSessionId = v4();
-			const newRoomSessionId = v4();
-
-			if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
-				try {
-					const resp = await getRoomSid({ session_id: mobileRoomSessionId, auto_record: true });
-					const mobileTwilioToken = await getToken({ room_sid: resp.data.room_sid });
-
-					updatePersistData('session', {
-						mobileRoomId: resp.data.room_sid,
-						mobileRoomSessionId: mobileRoomSessionId,
-					});
-
-					if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-						window.socket.send(
-							JSON.stringify({
-								event: 'twilioToken',
-								message: mobileTwilioToken?.data?.token,
-							})
-						);
+		if(!window.recordingStart){
+			const secureFeatures = getSecureFeatures();
+			if (secureFeatures?.entities?.length > 0) {
+				const mobileRoomSessionId = v4();
+				const newRoomSessionId = v4();
+	
+				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
+					try {
+						const resp = await getRoomSid({ session_id: mobileRoomSessionId, auto_record: true });
+						const mobileTwilioToken = await getToken({ room_sid: resp.data.room_sid });
+	
+						updatePersistData('session', {
+							mobileRoomId: resp.data.room_sid,
+							mobileRoomSessionId: mobileRoomSessionId,
+						});
+	
+						if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+							window.socket.send(
+								JSON.stringify({
+									event: 'twilioToken',
+									message: mobileTwilioToken?.data?.token,
+								})
+							);
+						}
+					} catch (err) {
+						if(window.startRecordingCallBack){
+							window.startRecordingCallBack({
+								type: 'error',
+								message: 'error_in_mobile_proctoring_setup',
+								details: err,
+							});
+						}
+						return;
 					}
-				} catch (err) {
-					if(window.startRecordingCallBack){
+				}
+	
+				const roomCreation = ['record_screen', 'record_audio', 'record_video', 'mobile_proctoring'];
+				if (secureFeatures?.entities.filter((entity) => roomCreation.includes(entity.key)).length > 0) {
+					try {
+						const resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
+						const twilioToken = await getToken({ room_sid: resp.data.room_sid });
+	
+						if (twilioToken) {
+							updatePersistData('session', {
+								twilioToken: twilioToken.data.token,
+								sessionId: newRoomSessionId,
+							});
+						}
+					} catch (err) {
 						window.startRecordingCallBack({
 							type: 'error',
-							message: 'error_in_mobile_proctoring_setup',
+							message: 'error_in_room_creation',
 							details: err,
 						});
+						return;
 					}
-					return;
 				}
+	
+				startRecording();
+			} else {
+				window.startRecordingCallBack({ message: 'recording_started_successfully' });
 			}
-
-			const roomCreation = ['record_screen', 'record_audio', 'record_video', 'mobile_proctoring'];
-			if (secureFeatures?.entities.filter((entity) => roomCreation.includes(entity.key)).length > 0) {
-				try {
-					const resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
-					const twilioToken = await getToken({ room_sid: resp.data.room_sid });
-
-					if (twilioToken) {
-						updatePersistData('session', {
-							twilioToken: twilioToken.data.token,
-							sessionId: newRoomSessionId,
-						});
-					}
-				} catch (err) {
-					window.startRecordingCallBack({
-						type: 'error',
-						message: 'error_in_room_creation',
-						details: err,
-					});
-					return;
-				}
-			}
-
-			startRecording();
-		} else {
-			window.startRecordingCallBack({ message: 'recording_started_successfully' });
 		}
 	} catch (err) {
+		logger.error('there_was_an_error_in_starting_the_session',err);
 		callback({
 			type: 'error',
 			message: 'there_was_an_error_in_starting_the_session',

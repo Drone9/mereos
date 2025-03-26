@@ -24,6 +24,13 @@ const cpuRed = `${ASSET_URL}/cpu-icon-red.svg`;
 const uploadSpeedRed = `${ASSET_URL}/upload-speed-red.svg`;
 const downloadSpeedRed = `${ASSET_URL}/download-speed-red.svg`;
 
+const statusIconMap = {
+	ram: 'ram-icon-gray.svg',
+	cpu: 'cpu-icon-gray.svg',
+	upload_speed: 'upload-speed-gray.svg',
+	download_speed: 'download-speed-gray.svg'
+};
+
 const createDiagnosticItem = (id, label) => {
 	const diagnosticItem = document.createElement('div');
 	diagnosticItem.classList.add('requirement-item', 'grey-box');
@@ -34,13 +41,6 @@ const createDiagnosticItem = (id, label) => {
 
 	const statusIcon = document.createElement('img');
 	statusIcon.id = `${id}StatusIcon`;
-
-	const statusIconMap = {
-		ram: 'ram-icon-gray.svg',
-		cpu: 'cpu-icon-gray.svg',
-		upload_speed: 'upload-speed-gray.svg',
-		download_speed: 'download-speed-gray.svg'
-	};
 	
 	statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
 	statusIcon.alt = '';
@@ -156,18 +156,58 @@ export const SystemRequirement = async (tab1Content) => {
 		if (!element) {
 			return;
 		}
+		const candidateAssessment = getSecureFeatures();
+		const profileSettings = candidateAssessment?.settings;
+	
 		element.addEventListener('click', async () => {
-			const result = await checkFunction();
-			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
+			const statusIcon = document.getElementById(`${id}StatusIcon`);
+			const statusLoading = document.getElementById(`${id}StatusLoading`);
+			const continueButton = document.getElementById('requirementContinueBtn');
+	
+			if (!statusIcon || !statusLoading) {
+				return;
+			}
+			continueButton.disabled = true;
+			statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
+			statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
+	
+			const resp = await checkFunction();
+
+			const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
+			const isGoodRam = Number(ram_info) > profileSettings?.ram_size;
+	
+			const isGoodCpu = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
+	
+			const isGoodUpload = Number(resp?.speedMbps) > profileSettings?.upload_speed;
+			const isGoodDownload = Number(resp?.speedMbps) > profileSettings?.download_speed;
+	
+			let finalResult;
+			switch (id) {
+				case 'ram':
+					finalResult = isGoodRam;
+					break;
+				case 'cpu':
+					finalResult = isGoodCpu;
+					break;
+				case 'upload_speed':
+					finalResult = isGoodUpload;
+					break;
+				case 'download_speed':
+					finalResult = isGoodDownload;
+					break;
+				default:
+					finalResult = resp;
+			}
+	
+			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
 			updateContinueButtonState();
 		});
-	};
+	};	
 
 	const updateContinueButtonState = () => {
 		const renderedItems = document.querySelectorAll('.requirement-item');
 
 		const allDiagnosticsPassed = Array.from(renderedItems).every(item => {
-			console.log('item____++',item);
 			const itemId = item.id.replace('RequirementItem', '');
 			const statusIcon = document.getElementById(`${itemId}StatusIcon`);
 			if (!statusIcon) return false;
@@ -180,26 +220,6 @@ export const SystemRequirement = async (tab1Content) => {
 
 		document.getElementById('requirementContinueBtn').disabled = !allDiagnosticsPassed;
 	};
-
-
-	// const updateContinueButtonState = () => {
-	//   const continueButton = document.getElementById('requirementContinueBtn');
-  
-	//   const allDiagnosticsPassed = Object.keys(successIconMap).every(item => {	
-	//     const currentIconSrc = document.getElementById(`${item}StatusIcon`)?.src;
-	//     if (!currentIconSrc) {
-	//       return false;
-	//     }
-  
-	//     const currentIconPathname = new URL(currentIconSrc).pathname;
-	//     const expectedIconPathname = new URL(successIconMap[item]).pathname;
-	//     return currentIconPathname === expectedIconPathname;
-	//   });
-    
-	//   if (continueButton) {
-	//     continueButton.disabled = !allDiagnosticsPassed;
-	//   }
-	// };
 
 	const successIconMap = {
 		ram: ramGreen,
@@ -266,7 +286,7 @@ export const SystemRequirement = async (tab1Content) => {
 		if (verifyDownloadSpeed) {
 			promises.push(getNetworkDownloadSpeed().then(network => {
 				updatePersistData('session', { downloadSpeed:network });
-				const isGoodDownload = Number(network.speedMbps) > profileSettings?.download_speed || 0.168;
+				const isGoodDownload = Number(network.speedMbps) > profileSettings?.download_speed;
 				setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, isGoodDownload);
 				handleDiagnosticItemClick('download_speed', getNetworkDownloadSpeed);
 				return isGoodDownload;

@@ -869,5 +869,6 @@
   "search_text": "Chwilio testun",
   "scan_your_room": "Sganiwch eich ystafell 360° gan gynnwys eich ardal waith",
   "please_take_picture_or": "Tynnwch lun neu os gwelwch yn dda",
-	"upload_your_identity_document": "uwchlwytho eich dogfen adnabod"
+	"upload_your_identity_document": "uwchlwytho eich dogfen adnabod",
+  "done":"Wedi'i wneud"
 }

@@ -9,7 +9,7 @@
 
 window.openModal = openModal;
 
-import { openModal } from './src/ExamsPrechecks';
+import {  openModal } from './src/ExamsPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
@@ -77,7 +77,9 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			return logonResp.data;
 		}
 	} catch (error) {
-		logger.error('Error in init:', error);
+		if(typeof logger === 'function'){
+			logger?.error('Error in init:', error);
+		}
 	}
 }
 
@@ -91,8 +93,32 @@ async function start_prechecks(callback,setting) {
 		logger.error('Error in start_prechecks:', error);
 		callback({
 			type: 'error',
-			message: 'Error in prechecks setup',
+			message: 'error_in_prechecks_setup',
+			code:40000,
 			details: error,
+		});
+	}
+}
+
+window.stopPrecheckCallBack = null;
+async function stop_prechecks(callback) {
+	try {
+		window.stopPrecheckCallBack=callback;
+		const modal = document.getElementById('precheck-modal');
+
+		modal.style.display = 'none';
+		modal.remove();
+		callback({
+			type: 'success',
+			message: 'stop_precheck_completed',
+			code:50002
+		});
+	} catch (error) {
+		callback({
+			type: 'error',
+			message: 'error_in_stop_prechecks',
+			details: error,
+			code:40001
 		});
 	}
 }
@@ -102,8 +128,19 @@ window.recordingStart=false;
 async function start_session(callback) {
 	try {
 		window.startRecordingCallBack = callback;
+
+		if(!window.precheckCompleted){
+			window.startRecordingCallBack({ 
+				type:'error',
+				message: 'please_complete_your_prechecks' ,
+				code:40019
+			});
+			return;
+		}
+
 		if(!window.recordingStart){
 			const secureFeatures = getSecureFeatures();
+
 			if (secureFeatures?.entities?.length > 0) {
 				const mobileRoomSessionId = v4();
 				const newRoomSessionId = v4();
@@ -132,6 +169,7 @@ async function start_session(callback) {
 								type: 'error',
 								message: 'error_in_mobile_proctoring_setup',
 								details: err,
+								code:40002
 							});
 						}
 						return;
@@ -153,8 +191,9 @@ async function start_session(callback) {
 					} catch (err) {
 						window.startRecordingCallBack({
 							type: 'error',
-							message: 'error_in_room_creation',
+							message: 'error_in_web_room_creation',
 							details: err,
+							code:40003
 						});
 						return;
 					}
@@ -162,15 +201,20 @@ async function start_session(callback) {
 	
 				startRecording();
 			} else {
-				window.startRecordingCallBack({ message: 'recording_started_successfully' });
+				window.startRecordingCallBack({ 
+					type:'success',
+					message: 'recording_started_successfully',
+					code:50000
+				});
 			}
 		}
 	} catch (err) {
 		logger.error('there_was_an_error_in_starting_the_session',err);
 		callback({
 			type: 'error',
-			message: 'there_was_an_error_in_starting_the_session',
+			message: 'error_in_starting_the_session',
 			details: err,
+			code:40004
 		});
 	}
 }
@@ -193,7 +237,11 @@ async function stop_session(callback) {
 				];
 				keysToRemove.forEach((key) => localStorage.removeItem(key));
 
-				callback({ type: 'success', message: 'session_is_finished_successfully' });
+				callback({ 
+					type: 'success', 
+					message: 'session_is_finished_successfully', 
+					code:50003 
+				});
 			} else {
 				throw new Error('Session can\'t be added');
 			}
@@ -202,10 +250,14 @@ async function stop_session(callback) {
 		}
 	} catch (err) {
 		logger.error(err);
-		callback({type: 'error', message: 'there_is_error_in_stopping_the_session'});
+		callback({
+			type: 'error', 
+			message: 'error_in_stopping_the_session' , 
+			code:40016 
+		});
 	}
 }
 
 
 // window.mereos = {init, start_prechecks, start_session, stop_session};
-export {init, start_prechecks, start_session, stop_session };
+export {init, start_prechecks,stop_prechecks, start_session, stop_session };

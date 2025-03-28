@@ -1,5 +1,6 @@
 import i18next from 'i18next';
 import { 
+	convertDataIntoParse,
 	detectMultipleScreens, 
 	getDateTime, 
 	getSecureFeatures, 
@@ -13,6 +14,7 @@ import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import '../assets/css/step5.css';
+import * as TwilioVideo from 'twilio-video';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
@@ -48,7 +50,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				mobileConnection: false,
 				screenSharing: false
 			});
-			window.globalCallback({ message: 'mobile_phone_disconneted' });
+			window.globalCallback({ type:'error', message: 'mobile_phone_disconneted', code:40017 });
 			showToast('error','mobile_phone_disconneted');
 			logger.error('Socket not initialized');
 			return;
@@ -132,6 +134,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const shareScreen = async () => {
 		try {
 			window.newStream = await shareScreenFromContent();
+			const session = convertDataIntoParse('session');
 
 			updatePersistData('session', { screenRecordingStream: location });
 
@@ -150,6 +153,14 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					type: 'successful',
 					text: i18next.t('screen_shared_successfully')
 				};
+
+				if(window.roomInstance){
+					let screenTrack = new TwilioVideo.LocalVideoTrack(window?.newStream?.getTracks()[0]);
+					let screenTrackPublished = await window.roomInstance.localParticipant.publishTrack(screenTrack);
+					let screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
+					logger.success('screenRecordings',screenRecordings);
+					updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+				}
 
 				videoTrack.addEventListener('ended', () => {
 					msg = {

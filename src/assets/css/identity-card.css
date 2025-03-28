@@ -7,6 +7,7 @@
 
 .exam-preparation h1 {
   text-align: center;
+  font-style: var(--font-style);
 }
 
 @media (min-width: 401px) {
@@ -155,9 +156,11 @@
 .exam-preparation .exam-preparation-container > h1 {
   font-weight: 500;
   margin-top: 5px;
+  font-style: var(--font-style);
 }
 
 .exam-preparation .exam-preparation-container label {
   font-weight: 400;
   color: #92959A;
+  font-style: var(--font-style);
 }

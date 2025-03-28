@@ -21,6 +21,7 @@ import { SystemRequirement } from '../SystemRequirement';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
+modal.id = 'precheck-modal';
 
 const modalContent = document.createElement('div');
 modalContent.className = 'modal-content';
@@ -298,6 +299,11 @@ const createLanguageDropdown = () => {
 const openModal = async (callback) => {
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
+	const existingHeader = document.querySelector('.header');
+	if (existingHeader) {
+		existingHeader.remove();
+	}
+	
 	initializeLiveChat();
 	
 	const activeTab = handlePreChecksRedirection(callback);
@@ -315,7 +321,8 @@ const openModal = async (callback) => {
 
 function closeModal() {
 	if (typeof window.globalCallback === 'function') {
-		window.globalCallback({ type:'success',message: 'precheck_completed' });
+		window.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
+		window.precheckCompleted = true;
 	}
 
 	modal.style.display = 'none';

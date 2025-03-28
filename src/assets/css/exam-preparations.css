@@ -27,6 +27,7 @@
 	text-align: center;
 	color: #222222;
 	margin: 26px auto 0px;
+	font-style: var(--font-style);
 }
 
 .exam-preparation-msg {
@@ -41,6 +42,7 @@
 	color: #8D979F;
 	width: 650px;
 	margin: auto;
+	font-style: var(--font-style);
 }
 
 .exam-preparation-tnc-block {
@@ -66,6 +68,8 @@
 	line-height: 21px;
 	display: flex;
 	align-items: center;
+	cursor: pointer;
+	font-style: var(--font-style);
 }
 
 .exam-preparation-sd-container {
@@ -77,6 +81,7 @@
 	align-items: center;
 	color: #9DAAB5;
 	margin: 25px auto 0px;
+	font-style: var(--font-style);
 }
 
 .exam-preparation-sd-link {

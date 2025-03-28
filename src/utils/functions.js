@@ -457,7 +457,7 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 				status: session?.sessionStatus,
 				video_codec: null,
 				video_extension: null,
-				archive_id:null,
+				archive_id:session?.room_id,
 				attempt_id:null,
 				incident_level: session?.incident_level,
 				mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
@@ -475,12 +475,11 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 		}catch(err){
 			if (err.response?.status === 403) {
 				if(window.globalCallback){
-					window?.globalCallback({ message: err.response?.data?.detail });
+					window?.globalCallback({type:'error', message: 'error_saving_session_info',code:40018 });
 				}
-			} else {
-				if(window.globalCallback){
-					window?.globalCallback({ message: 'error_starting_prechecks'});
-				}
+			} 
+			if(window.startRecordingCallBack){
+				window?.startRecordingCallBack({type:'error', message: 'error_saving_session_info',code:40018 });
 			}
 			_reject(err);
 		}

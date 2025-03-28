@@ -9,8 +9,8 @@ import { getCreateRoom } from '../services/twilio.services';
 import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+import { openModal } from '../ExamsPrechecks';
 
-let roomInstance = null;
 let aiProcessingInterval = null;
 let aiEvents = [];
 let mediaStream = null;
@@ -20,8 +20,7 @@ export const startRecording = async () => {
 	if(window.recordingStart) {
 		return;
 	}
-
-	let cameraTrack = null;
+	
 	let screenTrack = null;
 	let cameraRecordings = [];
 	let audioRecordings = [];
@@ -30,11 +29,14 @@ export const startRecording = async () => {
 	const session = convertDataIntoParse('session');
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 
-	if(roomInstance !== null) return;
-
 	window.addEventListener('popstate', () => {
 		if(window.startRecordingCallBack){
-			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+			window.startRecordingCallBack({ 
+				type:'error',
+				message: 'user_click_on_browser_back_button' ,
+				code:40005
+			});
+			window.recordingStart = false;
 			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
 			}
@@ -58,10 +60,14 @@ export const startRecording = async () => {
 				}
 				resetSessionData();
 			} else {
-				roomInstance=null;
+				window.roomInstance=null;
 				window.recordingStart=false;
 				if(window.startRecordingCallBack){
-					window.startRecordingCallBack({ type:'error', message: 'session_has_been_terminated_send_resume_to_restart_again' });
+					window.startRecordingCallBack({ 
+						type:'error', 
+						message: 'internet_connection_lost_session_cant_resume',
+						code:40006
+					});
 				}
 			}
 		} catch (error) {
@@ -71,7 +77,11 @@ export const startRecording = async () => {
 
 	const resetSessionData = () => {
 		if(window.startRecordingCallBack){
-			window.startRecordingCallBack({ message: 'session_has_been_terminated_force_close_the_assessment' });
+			window.startRecordingCallBack({ 
+				type:'error',
+				message: 'internet_connection_lost_force_close_your_session',
+				code:40007
+			});
 		}
 		localStorage.clear();
 	};
@@ -83,7 +93,11 @@ export const startRecording = async () => {
 				screenSharing: false
 			});
 			if(window.startRecordingCallBack){
-				window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+				window.startRecordingCallBack({ 
+					type:'error',
+					message: 'mobile_connection_disconnected' ,
+					code:40008
+				});
 			}
 			logger.error('Socket not initialized');
 			return;
@@ -101,7 +115,7 @@ export const startRecording = async () => {
 							audio: false,
 							video: false
 						});
-				
+						
 						mobileRoomInstance = twilioRoom;
 						if(mobileRoomInstance){
 							VideoChat(twilioRoom);
@@ -112,7 +126,11 @@ export const startRecording = async () => {
 							screenSharing: false
 						});
 						if(window.startRecordingCallBack){
-							window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+							window.startRecordingCallBack({ 
+								type:'error',
+								message: 'error_on_start_mobile_recording' ,
+								code:40009
+							});
 						}
 						window.recordingStart = false;
 						logger.error('error',error);
@@ -129,7 +147,11 @@ export const startRecording = async () => {
 						});
 						showToast('error','mobile_phone_disconneted');
 						if(window.startRecordingCallBack){
-							window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+							window.startRecordingCallBack({ 
+								type:'error',
+								message: 'mobile_phone_disconnected',
+								code:40010
+							});
 						}
 					}
 					registerEvent({ eventType: 'error', notify: false, eventName:eventData?.message?.message , eventValue: getDateTime() });
@@ -150,24 +172,42 @@ export const startRecording = async () => {
 		initSocketConnection();
 	}
 
-	if( findConfigs(['record_screen'],secureFeatures?.entities)?.length){
-		window?.newStream?.getVideoTracks()[0]?.addEventListener('ended', () => {
-			if(window.startRecordingCallBack){
-				window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
-			}
-			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
-			}
-			window.recordingStart = false;
-		});
-	}
-
-	if(!(window?.newStream?.getTracks()?.length) && findConfigs(['record_screen'],secureFeatures?.entities)?.length){
-		if(window.startRecordingCallBack){
-			window.startRecordingCallBack({ message: 'session_has_been_terminated_send_resume_to_restart_again' });
+	if (
+		(!window?.newStream || window?.newStream?.getTracks()?.length === 0) &&
+		findConfigs(['record_screen'], secureFeatures?.entities)?.length > 0
+	) {		
+		if (window.startRecordingCallBack) {
+			window.startRecordingCallBack({ 
+				type:'error',
+				message: 'please_share_your_screen' ,
+				code:40011
+			});
 		}
 		window.recordingStart = false;
 		return;
+	}
+
+	if( findConfigs(['record_screen'],secureFeatures?.entities)?.length){
+		window?.newStream?.getVideoTracks()[0]?.addEventListener('ended', () => {
+			window.recordingStart = false;
+			if(window.startRecordingCallBack){
+				window.startRecordingCallBack({ 
+					type:'error',
+					message: 'screen_share_stopped',
+					code:40012
+				});
+			}
+			if (window?.newStream) {
+				window?.newStream.getTracks().forEach(track => {
+					track.stop();
+				});
+				window.newStream = null; 
+			}
+			openModal();
+			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+			}
+		});
 	}
 
 	if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
@@ -216,8 +256,11 @@ export const startRecording = async () => {
 			});
 
 			let room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
-			roomInstance = room;
-			logger.success('room',room);
+			window.roomInstance = room;
+
+			updatePersistData('session', { 
+				room_id: room?.sid 
+			});
 
 			if(secureFeatures?.entities?.find(entity => entity.key === 'record_video')){
 				mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
@@ -229,9 +272,9 @@ export const startRecording = async () => {
 					...session.user_video_name,
 					...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
 				];
+
 				updatePersistData('session', { 
 					user_video_name: cameraRecordings || [], 
-					room_id: room?.sid 
 				});
 			}
 
@@ -244,10 +287,22 @@ export const startRecording = async () => {
 			}
 
 			if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
-				screenTrack = new TwilioVideo.LocalVideoTrack(window?.newStream?.getTracks()[0]);
-				let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
-				screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
-				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+				if(window?.newStream?.getTracks()[0]){
+					screenTrack = new TwilioVideo.LocalVideoTrack(window?.newStream?.getTracks()[0]);
+					let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
+					screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
+					updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+				}else{
+					if(window.startRecordingCallBack){
+						window.startRecordingCallBack({ 
+							type:'error',
+							message: 'please_share_your_screen',
+							code:40011 
+						});
+					}
+					window.recordingStart = false;
+					return;
+				}
 			}
 			
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
@@ -257,7 +312,11 @@ export const startRecording = async () => {
 			}
 
 			if(window.startRecordingCallBack){
-				window.startRecordingCallBack({ message: 'recording_started_successfully' });
+				window.startRecordingCallBack({ 
+					type:'success',
+					message: 'recording_started_successfully',
+					code:50000
+				});
 			}
 
 			window.recordingStart = true;
@@ -266,12 +325,17 @@ export const startRecording = async () => {
 
 			localParticipant.on('networkQualityLevelChanged', (level) => {
 				if (level <= 2) {
+					window.startRecordingCallBack({ 
+						type:'error',
+						message: 'session_is_terminated_due_to_slow_internet_connection',
+						code:40013
+					});
 					showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
 				}
 			});
 
 			room.on('reconnecting', () => {
-				cleanupLocalVideo(cameraTrack);
+				cleanupLocalVideo();
 				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
 					updatePersistData('preChecksSteps', { 
 						mobileConnection: false,
@@ -285,7 +349,11 @@ export const startRecording = async () => {
 					showToast('error','internet_connection_not_working');		
 				}
 				if(window.startRecordingCallBack){
-					window.startRecordingCallBack({ message: 'web_internet_connection_disconnected' });
+					window.startRecordingCallBack({ 
+						type:'error',
+						message: 'web_internet_connection_disconnected',
+						code:40014
+					});
 					window.recordingStart = false;
 				}
 				setTimeout(async () => {
@@ -309,7 +377,11 @@ export const startRecording = async () => {
 			sessionStatus:'Attending'
 		});
 		if(window.startRecordingCallBack){
-			window.startRecordingCallBack({ message: 'recording_started_successfully' });
+			window.startRecordingCallBack({ 
+				type:'success',
+				code:50000,
+				message: 'recording_started_successfully' 
+			});
 		}
 		window.recordingStart = true;
 	}
@@ -531,96 +603,6 @@ export const cleanupLocalVideo = () => {
 	}
 };
 
-export const stopAllRecordings = async () => {
-	try {
-		const secureFeatures = getSecureFeatures();
-		const session = convertDataIntoParse('session');
-
-		if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-			window.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
-		}
-
-		const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
-		updatePersistData('session', {
-			recordingEnded: true,
-			sessionStatus: 'Completed',
-			incident_level:findIncident
-		});
-
-		cleanupZendeskWidget();
-		cleanupLocalVideo();
-
-		if(mediaStream){
-			mediaStream.getTracks().forEach(track => track.stop());
-			mediaStream=null;
-		}
-
-		if (window?.newStream) {
-			window?.newStream.getTracks().forEach(track => {
-				track.stop();
-				track.enabled = false;
-			});
-		}
-
-		if (mobileRoomInstance) {
-			mobileRoomInstance.localParticipant.tracks.forEach(publication => {
-				const track = publication.track;
-				if (track) {
-					track.stop();
-					track.detach().forEach(element => element.remove());
-					track.disable();
-					mobileRoomInstance.localParticipant.unpublishTrack(track);
-				}
-			});
-			mobileRoomInstance.disconnect();
-			mobileRoomInstance = null;
-		}
-
-		if (roomInstance) {
-			roomInstance.localParticipant.tracks.forEach(publication => {
-				const track = publication.track;
-				if (track) {
-					track.stop();
-					track.detach().forEach(element => element.remove());
-					track.disable();
-					roomInstance.localParticipant.unpublishTrack(track);
-				}
-			});
-			roomInstance.disconnect();
-			roomInstance = null;
-		}
-
-		if (aiProcessingInterval) {
-			clearInterval(aiProcessingInterval);
-			aiProcessingInterval = null;
-		}
-
-		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
-			unlockBrowserFromContent();
-		}
-		
-		const dateTime = new Date();
-		await changeCandidateAssessmentStatus({
-			status: 'Completed',
-			id:session?.candidate_assessment
-		});
-
-		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
-			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
-		}
-
-		registerEvent({ eventType: 'success', notify: false, eventName: 'session_completed', startAt: dateTime });
-		
-		showToast('success', 'session_completed');
-		
-		window.recordingStart=false;
-		
-		return 'stop_recording';
-	} catch (e) {
-		logger.error('Error in stop recording:', e);
-	}
-};
-
 function VideoChat(room) {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
@@ -762,7 +744,11 @@ function VideoChat(room) {
 				}
 				setTimeout(() => {
 					if(window.startRecordingCallBack){
-						window.startRecordingCallBack({ message: 'mobile_internet_connection_disconnected' });
+						window.startRecordingCallBack({ 
+							type:'error',
+							code:40015,
+							message: 'mobile_internet_connection_disconnected' 
+						});
 					}
 				}, 4000);
 			});
@@ -785,3 +771,99 @@ function VideoChat(room) {
 
 	connectToRoom();
 }
+
+export const stopAllRecordings = async () => {
+	try {
+		const secureFeatures = getSecureFeatures();
+		const session = convertDataIntoParse('session');
+
+		if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+			window.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
+		}
+
+		const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
+
+		updatePersistData('session', {
+			recordingEnded: true,
+			sessionStatus: 'Completed',
+			incident_level:findIncident
+		});
+
+		cleanupZendeskWidget();
+		cleanupLocalVideo();
+
+		if(mediaStream){
+			mediaStream.getTracks().forEach(track => track.stop());
+			mediaStream=null;
+		}
+
+		if (window?.newStream) {
+			window?.newStream.getTracks().forEach(track => {
+				track.stop();
+				track.enabled = false;
+			});
+		}
+
+		window.recordingStart=false;
+
+		if (window?.roomInstance) {
+			window?.roomInstance.localParticipant.tracks.forEach(publication => {
+				const track = publication.track;
+				if (track) {
+					track.stop();
+					track.detach().forEach(element => element.remove());
+					track.disable();
+					window?.roomInstance.localParticipant.unpublishTrack(track);
+				}
+			});
+			window.roomInstance.participants.forEach(participant => {
+				participant.removeAllListeners();
+			});
+
+			window.roomInstance.removeAllListeners();
+			window.roomInstance.disconnect();
+			window.roomInstance = null;
+		}
+
+		if (mobileRoomInstance) {
+			mobileRoomInstance.localParticipant.tracks.forEach(publication => {
+				const track = publication.track;
+				if (track) {
+					track.stop();
+					track.detach().forEach(element => element.remove());
+					track.disable();
+					mobileRoomInstance.localParticipant.unpublishTrack(track);
+				}
+			});
+			mobileRoomInstance.disconnect();
+			mobileRoomInstance = null;
+		}
+
+		if (aiProcessingInterval) {
+			clearInterval(aiProcessingInterval);
+			aiProcessingInterval = null;
+		}
+
+		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
+			unlockBrowserFromContent();
+		}
+		
+		const dateTime = new Date();
+		await changeCandidateAssessmentStatus({
+			status: 'Completed',
+			id:session?.candidate_assessment
+		});
+
+		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
+			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
+		}
+
+		registerEvent({ eventType: 'success', notify: false, eventName: 'session_completed', startAt: dateTime });
+		
+		showToast('success', 'session_completed');
+		
+		return 'stop_recording';
+	} catch (e) {
+		logger.error('Error in stop recording:', e);
+	}
+};

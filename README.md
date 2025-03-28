@@ -62,6 +62,12 @@ var {start_prechecks} = require('mereos');
 var resp = start_prechecks(callback,'session_resume');
 ```
 
+3. `stop_prechecks` function is used to closing the pre-checks modal.
+```js
+var {stop_prechecks} = require('mereos');
+var resp = stop_prechecks(callback);
+```
+
 3. `start_session` function is used to start the session of proctoring through library. This function takes a callback function which runs once the whole process is executed.
 
 ```js

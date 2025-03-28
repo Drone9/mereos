@@ -61,6 +61,16 @@ export const ExamPreparation = async (tabContent) => {
 	tncText.textContent = i18next.t('exam_preparation_tnc');
 	tncBlock.appendChild(tncText);
 
+	tncText.addEventListener('click', () => {
+		tncCheckbox.checked = !tncCheckbox.checked;
+		tncRead = tncCheckbox.checked;
+		if (errMsg) {
+			tncBlock.style.color = '';
+			tncBlock.style.fontWeight = '';
+			errMsg = false;
+		}
+	});
+	
 	const sdContainer = document.createElement('div');
 	sdContainer.className = 'exam-preparation-sd-container';
 	sdContainer.innerHTML = `

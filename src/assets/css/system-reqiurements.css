@@ -17,6 +17,7 @@
   margin-top: 31px;
   text-align: center;
   margin-top: 25px;
+  font-style: var(--font-style);
 }
 
 .system-requirement-test-screen .container-prompt {
@@ -33,6 +34,7 @@
   color: #8D979F;
   width: 650px;
   margin: 30px auto 0;
+  font-style: var(--font-style);
 }
 
 @media (max-width: 720px) {

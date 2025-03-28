@@ -25,6 +25,7 @@
 
 .exam-preparation h1 {
   text-align: center;
+  font-style: var(--font-style);
 }
 
 @media (min-width: 401px) {
@@ -173,11 +174,13 @@
 .exam-preparation .exam-preparation-container > h1 {
   font-weight: 500;
   margin-top: 5px;
+  font-style: var(--font-style);
 }
 
 .exam-preparation .exam-preparation-container label {
   font-weight: 400;
   color: #92959A;
+  font-style: var(--font-style);
 }
 
 /*!***********************************************************************************************!*\
@@ -474,6 +477,7 @@
 	border-radius: 5px;
 	padding: 10px 20px;
   background-color: #ffffff; 
+  font-style: var(--font-style);
   border: 1px solid var(--theme-color);
   cursor: pointer;
 	&:disabled {
@@ -1917,6 +1921,7 @@
 	text-align: center;
 	color: #222222;
 	margin: 26px auto 0px;
+	font-style: var(--font-style);
 }
 
 .exam-preparation-msg {
@@ -1931,6 +1936,7 @@
 	color: #8D979F;
 	width: 650px;
 	margin: auto;
+	font-style: var(--font-style);
 }
 
 .exam-preparation-tnc-block {
@@ -1956,6 +1962,8 @@
 	line-height: 21px;
 	display: flex;
 	align-items: center;
+	cursor: pointer;
+	font-style: var(--font-style);
 }
 
 .exam-preparation-sd-container {
@@ -1967,6 +1975,7 @@
 	align-items: center;
 	color: #9DAAB5;
 	margin: 25px auto 0px;
+	font-style: var(--font-style);
 }
 
 .exam-preparation-sd-link {
@@ -2220,6 +2229,7 @@ body {
   margin-top: 31px;
   text-align: center;
   margin-top: 25px;
+  font-style: var(--font-style);
 }
 
 .system-requirement-test-screen .container-prompt {
@@ -2236,6 +2246,7 @@ body {
   color: #8D979F;
   width: 650px;
   margin: 30px auto 0;
+  font-style: var(--font-style);
 }
 
 @media (max-width: 720px) {

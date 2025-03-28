@@ -42,7 +42,8 @@ export const initialSessionData = {
 	downloadSpeed:null,
 	uploadSpeed:null,
 	CPUSpeed:null,
-	RAMSpeed:null
+	RAMSpeed:null,
+	room_id:null
 };
 
 export const preChecksSteps = {

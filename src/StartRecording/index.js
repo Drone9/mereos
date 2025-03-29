@@ -301,7 +301,20 @@ export const startRecording = async () => {
 					showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
 				}
 			});
-
+			
+			room.localParticipant.videoTracks.forEach((publication) => {
+				const track = publication.track;
+				if (track) {
+					track.on('stopped', () => {
+						window.startRecordingCallBack({ 
+							type:'error',
+							message: 'camera_is_stopped',
+							code:40019
+						});
+					});
+				}
+			});
+		
 			room.on('reconnecting', () => {
 				cleanupLocalVideo();
 				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){

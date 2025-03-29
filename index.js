@@ -86,6 +86,8 @@ async function start_prechecks(callback,setting) {
 	try {
 		window.globalCallback = callback;
 		localStorage.setItem('precheckSetting', setting);
+		window.precheckCompleted=false;
+
 		openModal(callback);
 	} catch (error) {
 		logger.error('Error in start_prechecks:', error);

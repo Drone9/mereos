@@ -6,7 +6,7 @@ import { createAiEvent } from '../services/ai-event.services';
 import { createEvent } from '../services/event.service';
 import { testUploadSpeed } from '../services/general.services';
 import i18next from 'i18next';
-import { closeModal } from '../ExamsPrechecks';
+import { closeModal, openModal } from '../ExamsPrechecks';
 import { Notyf } from 'notyf';
 
 export const dataURIToBlob = (dataURI) => {
@@ -355,7 +355,29 @@ export const shareScreenFromContent = () => {
 			: { video: { displaySurface: 'monitor' } }; 
 
 		navigator.mediaDevices.getDisplayMedia(constraints)
-			.then(stream => resolve(stream))
+			.then(stream => {
+				const track = stream.getVideoTracks()[0];
+
+				track.addEventListener('ended', () => {
+					window.recordingStart = false;
+					window.precheckCompleted=false;
+					if(window.startRecordingCallBack){
+						window.startRecordingCallBack({ 
+							type:'error',
+							message: 'screen_share_stopped',
+							code:40012
+						});
+					}
+					openModal();
+					if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+						window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+					}
+				});
+
+				window.isScreenSharing = true;
+
+				resolve(stream);
+			})
 			.catch(err => reject(err));
 	});
 };

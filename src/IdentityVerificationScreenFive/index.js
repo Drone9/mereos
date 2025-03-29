@@ -15,7 +15,6 @@ import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import '../assets/css/step5.css';
 import * as TwilioVideo from 'twilio-video';
-
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
 	window.newStream = null;
@@ -84,7 +83,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			logger.error('WebSocket connection closed');
 		};
 	};
-
+	
 	let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
 
 	multipleScreensCheck && checkMultipleScreens();
@@ -134,7 +133,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const shareScreen = async () => {
 		try {
 			window.newStream = await shareScreenFromContent();
-			const session = convertDataIntoParse('session');
 
 			updatePersistData('session', { screenRecordingStream: location });
 
@@ -154,22 +152,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					text: i18next.t('screen_shared_successfully')
 				};
 
-				if(window.roomInstance){
-					let screenTrack = new TwilioVideo.LocalVideoTrack(window?.newStream?.getTracks()[0]);
-					let screenTrackPublished = await window.roomInstance.localParticipant.publishTrack(screenTrack);
-					let screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
-					logger.success('screenRecordings',screenRecordings);
-					updatePersistData('session', { screen_sharing_video_name: screenRecordings });
-				}
-
-				videoTrack.addEventListener('ended', () => {
-					msg = {
-						type: 'unsuccessful',
-						text: i18next.t('screen_sharing_stopped')
-					};
-					mode = 'rerecordScreen';
-					updateUI();
-				});
 			} else {
 				mode = 'rerecordScreen';
 				videoTrack.stop();
@@ -186,10 +168,19 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		updateUI();
 	};
 
-	const nextStep = () => {
+	const nextStep = async () => {
 		updatePersistData('preChecksSteps', { screenSharing: true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'screen_recording_window_shared', eventValue: getDateTime() });
 		showTab('IdentityVerificationScreenSix');
+
+		const session = convertDataIntoParse('session');
+
+		if(window.roomInstance){
+			let screenTrack = new TwilioVideo.LocalVideoTrack(window?.newStream?.getTracks()[0]);
+			let screenTrackPublished = await window.roomInstance.localParticipant.publishTrack(screenTrack);
+			let screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
+			updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+		}
 	};
 
 	const prevStep = () => {
@@ -247,46 +238,17 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const btnContainer = document.createElement('div');
 	btnContainer.classList.add('ivsf-btn-container');
 	let doneButton = document.createElement('button'); 
-
-	// const prevButton = document.createElement('button');
-	// prevButton.className = 'orange-hollow-btn';
-	// prevButton.textContent = i18next.t('previous_step');
-	// prevButton.addEventListener('click', prevStep);
-	// btnContainer.appendChild(prevButton);
-
-	// if (mode === 'startScreenRecording') {
-	// 	doneButton.className = 'orange-filled-btn';
-	// 	doneButton.textContent = i18next.t('done');
-	// 	doneButton.disabled = multipleScreens;
-	// 	doneButton.addEventListener('click', nextStep);
-	// 	btnContainer.appendChild(doneButton);
-	// } else if (mode === 'rerecordScreen') {
-		
-	// 	reshareButton.className = 'orange-filled-btn';
-	// 	reshareButton.textContent = i18next.t('reshare_screen');
-	// 	reshareButton.addEventListener('click', shareScreen);
-	// 	btnContainer.appendChild(reshareButton);
-	// }
-
-	// wrapper.appendChild(btnContainer);
 	container.appendChild(wrapper);
 
 	const styleElement = document.createElement('style');
-	styleElement.textContent = `
-        .screen-share-container {
-            /* Define your CSS styles here */
-        }
-        .screen-wrapper {
-            /* Define your CSS styles here */
-        }
-        /* Define other classes as needed */
-    `;
 	container.appendChild(styleElement);
 
 	tabContent.innerHTML = '';
 	tabContent.appendChild(container);
 
-	shareScreen();
+	if (!window.newStream) {
+		shareScreen();
+	}
 	if(secureFeatures.find(entity => entity.key === 'mobile_proctoring')){
 		initSocketConnection();
 	}	

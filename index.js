@@ -77,9 +77,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			return logonResp.data;
 		}
 	} catch (error) {
-		if(typeof logger === 'function'){
-			logger?.error('Error in init:', error);
-		}
+		
 	}
 }
 
@@ -128,6 +126,7 @@ window.recordingStart=false;
 async function start_session(callback) {
 	try {
 		window.startRecordingCallBack = callback;
+		logger.success('window.precheckCompleted',window.precheckCompleted);
 
 		if(!window.precheckCompleted){
 			window.startRecordingCallBack({ 
@@ -257,7 +256,6 @@ async function stop_session(callback) {
 		});
 	}
 }
-
 
 // window.mereos = {init, start_prechecks, start_session, stop_session};
 export {init, start_prechecks,stop_prechecks, start_session, stop_session };

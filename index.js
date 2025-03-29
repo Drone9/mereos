@@ -108,7 +108,7 @@ async function stop_prechecks(callback) {
 		modal.remove();
 		callback({
 			type: 'success',
-			message: 'stop_precheck_completed',
+			message: 'prechecks_stopped',
 			code:50002
 		});
 	} catch (error) {

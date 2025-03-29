@@ -359,7 +359,6 @@ export const shareScreenFromContent = () => {
 				const track = stream.getVideoTracks()[0];
 
 				track.addEventListener('ended', () => {
-					window.recordingStart = false;
 					window.precheckCompleted=false;
 					if(window.startRecordingCallBack){
 						window.startRecordingCallBack({ 
@@ -373,9 +372,6 @@ export const shareScreenFromContent = () => {
 						window.socket?.send(JSON.stringify({ event: 'resetSession' }));
 					}
 				});
-
-				window.isScreenSharing = true;
-
 				resolve(stream);
 			})
 			.catch(err => reject(err));

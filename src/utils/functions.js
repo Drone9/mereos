@@ -75,36 +75,6 @@ export const getLocation = () => {
 	});
 };
 
-// export const checkNotification = () => {
-// 	return new Promise((resolve, _reject) => {
-// 		if (!('Notification' in window)) {
-// 			resolve(false);
-// 		} else if (Notification.permission === 'granted') {
-// 			showNotification({
-// 				title: 'New notification message from mereos!',
-// 				body: 'Hey mate, Ready for the test ? It will be starting soon.',
-// 			});
-// 			resolve(true);
-// 		} else if (Notification.permission === 'denied' || Notification.permission === 'default') {
-// 			Notification.requestPermission()
-// 				.then((permission) => {
-// 					if (permission === 'granted') {
-// 						showNotification({
-// 							title: 'New notification message from mereos!',
-// 							body: 'Hey mate, Ready for the test ? It will be starting soon.',
-// 						});
-// 						resolve(true);
-// 					} else {
-// 						resolve(false);
-// 					}
-// 				})
-// 				.catch(err => {
-// 					logger.error('err', err);
-// 				});
-// 		}
-// 	});
-// };
-
 export const getMultipleCameraDevices = () => {
 	return new Promise((resolve, reject) => {
 		navigator.mediaDevices.enumerateDevices()
@@ -137,17 +107,6 @@ export const getMultipleCameraDevices = () => {
 			});
 	});
 };
-
-// export const showNotification = ({ title, body }) => {
-// 	try{
-// 		const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
-// 		let icons  = schoolTheme?.schoolLogo || `${ASSET_URL}/mereos.png`;
-// 		const notification = new Notification(title, { body: body, icon: icons });
-// 		logger.success(notification);
-// 	}catch(error) {
-// 		logger.error('Error in notification',error);
-// 	}
-// };
 
 export const detectMultipleScreens = async () => {
 	if (window.screen.isExtended) {
@@ -301,7 +260,6 @@ export const srcToData = async (src) => {
 				const reader = new FileReader();
 				reader.onloadend = () => {
 					resolve(reader.result);
-					// getBase64StringFromDataURL
 					reader.result.replace('data:', '').replace(/^.+,/, '');
 				};
 				reader.readAsDataURL(blob);
@@ -359,7 +317,6 @@ export const shareScreenFromContent = () => {
 				const track = stream.getVideoTracks()[0];
 
 				track.addEventListener('ended', () => {
-					window.precheckCompleted=false;
 					if(window.startRecordingCallBack){
 						window.startRecordingCallBack({ 
 							type:'error',
@@ -937,15 +894,11 @@ export const unlockBrowserFromContent = () => {
 };
 
 export const getPreviousRoute = (currentRoute, navHistory, hasFeature) => {
-	// Find the index of the current route in the navigation history
 	const currentIndex = navHistory.indexOf(currentRoute);
 
-	// Ensure the current route is valid and there's a previous route
 	if (currentIndex > 0) {
-		// Get the previous route
 		const previousRoute = navHistory[currentIndex - 1];
 
-		// Map of features required for each route
 		const featureMap = {
 			'ExamPreparation': 'record_video',
 			'runSystemDiagnostics': 'systemDiagnosticSteps',
@@ -958,29 +911,25 @@ export const getPreviousRoute = (currentRoute, navHistory, hasFeature) => {
 			'IdentityVerificationScreenFive': 'record_screen',
 		};
 
-		// Get the feature required for the previous route
 		const requiredFeature = featureMap[previousRoute];
 
-		// Check if the feature is allowed
 		if (!requiredFeature || hasFeature(requiredFeature)) {
 			return previousRoute;
 		}
 	}
 
-	// Return null if no valid previous route is found
 	return null;
 };
 
-
 export const handlePreChecksRedirection = () => {
 	const sessionSetting = localStorage.getItem('precheckSetting');
+	const preChecksSteps = convertDataIntoParse('preChecksSteps');
+	const getSecureFeature = getSecureFeatures();
+	const secureFeatures = getSecureFeature?.entities || [];
+	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
 	if(sessionSetting === 'session_resume'){
-		const preChecksSteps = convertDataIntoParse('preChecksSteps');
-		const getSecureFeature = getSecureFeatures();
-		const secureFeatures = getSecureFeature?.entities || [];
-		const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
-
+		
 		if (!preChecksSteps?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
 			return 'ExamPreparation';
 		}if (!preChecksSteps?.identityConfirmation && hasFeature('verify_id')) {
@@ -1008,7 +957,11 @@ export const handlePreChecksRedirection = () => {
 			closeModal();
 		}
 	}else{
-		return 'ExamPreparation';
+		if (window.precheckCompleted && hasFeature('record_screen')) {
+			return 'IdentityVerificationScreenFive';
+		}else{
+			return 'ExamPreparation';
+		}
 	}
 };
 

@@ -303,7 +303,6 @@ const openModal = async (callback) => {
 	if (existingHeader) {
 		existingHeader.remove();
 	}
-	
 	initializeLiveChat();
 	
 	const activeTab = handlePreChecksRedirection(callback);
@@ -313,10 +312,11 @@ const openModal = async (callback) => {
 		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 	}
 	showTab(activeTab, callback);
+	createLanguageDropdown();
+
 	const session = convertDataIntoParse('session');
 	await startSession(session);
 
-	createLanguageDropdown();
 };
 
 function closeModal() {

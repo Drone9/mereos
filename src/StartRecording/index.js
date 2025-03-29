@@ -9,7 +9,6 @@ import { getCreateRoom } from '../services/twilio.services';
 import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
-import { openModal } from '../ExamsPrechecks';
 
 let aiProcessingInterval = null;
 let aiEvents = [];
@@ -184,30 +183,8 @@ export const startRecording = async () => {
 			});
 		}
 		window.recordingStart = false;
+		window.precheckCompleted=false;
 		return;
-	}
-
-	if( findConfigs(['record_screen'],secureFeatures?.entities)?.length){
-		window?.newStream?.getVideoTracks()[0]?.addEventListener('ended', () => {
-			window.recordingStart = false;
-			if(window.startRecordingCallBack){
-				window.startRecordingCallBack({ 
-					type:'error',
-					message: 'screen_share_stopped',
-					code:40012
-				});
-			}
-			if (window?.newStream) {
-				window?.newStream.getTracks().forEach(track => {
-					track.stop();
-				});
-				window.newStream = null; 
-			}
-			openModal();
-			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
-			}
-		});
 	}
 
 	if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
@@ -300,23 +277,14 @@ export const startRecording = async () => {
 							code:40011 
 						});
 					}
+					window.precheckCompleted=false;
 					window.recordingStart = false;
 					return;
 				}
 			}
 			
-			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
-			
 			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 				window.socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
-			}
-
-			if(window.startRecordingCallBack){
-				window.startRecordingCallBack({ 
-					type:'success',
-					message: 'recording_started_successfully',
-					code:50000
-				});
 			}
 
 			window.recordingStart = true;
@@ -361,8 +329,19 @@ export const startRecording = async () => {
 				},3000);
 			});
 
+			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
+
 			const updatedSession = convertDataIntoParse('session');
 			await addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
+
+			if(window.startRecordingCallBack){
+				window.startRecordingCallBack({ 
+					type:'success',
+					message: 'recording_started_successfully',
+					code:50000
+				});
+			}
+
 		} catch (error) {
 			logger.error('error in startRecording',error);
 			updatePersistData('session', {

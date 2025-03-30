@@ -844,7 +844,7 @@
 "multiple_people_detected": "Canfuwyd mwy nag un person.",
 "unauthorized_object_detected_please_put_it_away": "Canfuwyd gwrthrych heb awdurdod. Rhowch ef i ffwrdd os gwelwch yn dda.",
 "ai_recorder_unknown_violation": "Mae toriad anhysbys wedi’i gofnodi gan AI",
-"mobile_phone_disconneted": "Mae’r ffôn symudol wedi datgysylltu",
+"mobile_phone_disconnected": "Mae’r ffôn symudol wedi datgysylltu",
 "user_interrupted_the_stream": "Mae'r defnyddiwr wedi torri'r ffrwd!",
 "screen_sharing_stopped": "Mae rhannu sgrin wedi dod i ben",
 "recording_stopped_successfully": "Mae recordio wedi stopio’n llwyddiannus",

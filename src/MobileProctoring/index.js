@@ -111,7 +111,7 @@ export const MobileProctoring = async (tabContent) => {
 					if (eventData?.message?.message === 'Violation') {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
-						showToast('error','mobile_phone_disconneted');
+						showToast('error','mobile_phone_disconnected');
 						if(window.mobileStream){
 							window.mobileStream.getTracks().forEach(track => track.stop());
 						}

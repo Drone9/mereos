@@ -144,7 +144,7 @@ export const startRecording = async () => {
 							mobileConnection: false,
 							screenSharing: false
 						});
-						showToast('error','mobile_phone_disconneted');
+						showToast('error','mobile_phone_disconnected');
 						if(window.startRecordingCallBack){
 							window.startRecordingCallBack({ 
 								type:'error',
@@ -322,7 +322,7 @@ export const startRecording = async () => {
 						mobileConnection: false,
 						screenSharing: false
 					});
-					showToast('error','mobile_phone_disconneted');		
+					showToast('error','mobile_phone_disconnected');		
 				}else{
 					updatePersistData('preChecksSteps', { 
 						screenSharing: false,
@@ -727,7 +727,7 @@ function VideoChat(room) {
 						mobileConnection: false,
 						screenSharing: false
 					});
-					showToast('error',i18next.t('mobile_phone_disconneted'));
+					showToast('error',i18next.t('mobile_phone_disconnected'));
 				} else {
 					updatePersistData('preChecksSteps', { 
 						screenSharing: false

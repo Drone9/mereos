@@ -49,8 +49,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				mobileConnection: false,
 				screenSharing: false
 			});
-			window.globalCallback({ type:'error', message: 'mobile_phone_disconneted', code:40017 });
-			showToast('error','mobile_phone_disconneted');
+			window.globalCallback({ type:'error', message: 'mobile_phone_disconnected', code:40017 });
+			showToast('error','mobile_phone_disconnected');
 			logger.error('Socket not initialized');
 			return;
 		}

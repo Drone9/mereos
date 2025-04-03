@@ -775,6 +775,13 @@ export const stopAllRecordings = async () => {
 
 		const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
 
+		const liveChat = document.getElementById('chat-icon');
+
+		if(liveChat){
+			liveChat.remove();
+			liveChat.style.display ='none';
+		}
+
 		updatePersistData('session', {
 			recordingEnded: true,
 			sessionStatus: 'Completed',

@@ -209,6 +209,20 @@ export const loadZendeskWidget = () => {
 		script.async = true;
 		script.id = 'ze-snippet';
 		document.body.appendChild(script);
+		if (window.zE && typeof window.zE === 'function') {
+			window.zE('messenger', 'show');
+		}
+	}
+};
+
+export const hideZendeskWidget =() => {
+	if (window.zE && typeof window.zE === 'function') {
+		try {
+			window.zE('messenger', 'hide');
+			window.zE('messenger', 'close');
+		} catch (e) {
+			logger.error('Error resetting the Zendesk widget:', e);
+		}
 	}
 };
 
@@ -221,6 +235,10 @@ export const cleanupZendeskWidget = () => {
 	if (window.zE && typeof window.zE === 'function') {
 		try {
 			window.zE('messenger', 'hide');
+			window.zE('messenger', 'close');
+
+			delete window.zE;
+			delete window.zESettings;
 		} catch (e) {
 			logger.error('Error resetting the Zendesk widget:', e);
 		}
@@ -325,9 +343,6 @@ export const shareScreenFromContent = () => {
 						});
 					}
 					openModal();
-					if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-						window.socket?.send(JSON.stringify({ event: 'resetSession' }));
-					}
 				});
 				resolve(stream);
 			})

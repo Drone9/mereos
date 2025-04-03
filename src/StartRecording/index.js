@@ -775,6 +775,12 @@ export const stopAllRecordings = async () => {
 
 		const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
 
+		const liveChat = document.getElementById('talkjs-container');
+
+		if(liveChat){
+			liveChat.remove();
+		}
+		
 		updatePersistData('session', {
 			recordingEnded: true,
 			sessionStatus: 'Completed',

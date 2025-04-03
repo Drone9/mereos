@@ -68,7 +68,6 @@ const createDiagnosticItem = (id, label) => {
 	return diagnosticItem;
 };
 
-
 const renderUI = (tab1Content) => {
 	tab1Content.innerHTML = '';
 
@@ -96,8 +95,9 @@ const renderUI = (tab1Content) => {
 	containerPrompt.classList.add('container-prompt');
 
 	const promptImage = document.createElement('img');
-	promptImage.src = `${ASSET_URL}/user-permission-english.svg`;
+	promptImage.src = `${ASSET_URL}/microphone-${i18next.language || 'en'}.svg`;
 	promptImage.alt = '';
+	promptImage.id = 'microphone-img';
 	promptImage.width = 350;
 	promptImage.classList.add('prompt-image');
 
@@ -280,6 +280,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 const updateDiagnosticText = () => {
 	const diagnosticItems = ['webcam', 'microphone', 'location', 'screen'];
+	let microphoneImg = document.getElementById('microphone-img');
 
 	diagnosticItems.forEach(item => {
 		const labelElement = document.querySelector(`#${item}DiagnosticItem label`);
@@ -287,6 +288,10 @@ const updateDiagnosticText = () => {
 			labelElement.textContent = i18next.t(item);
 		}
 	});
+
+	if(microphoneImg){
+		microphoneImg.src = `${ASSET_URL}/microphone-${i18next.language || 'en'}.svg`;
+	}
 
 	const heading = document.querySelector('.heading');
 	if (heading) {

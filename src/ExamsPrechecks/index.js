@@ -316,7 +316,6 @@ const openModal = async (callback) => {
 
 	const session = convertDataIntoParse('session');
 	await startSession(session);
-
 };
 
 function closeModal() {

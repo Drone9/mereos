@@ -15,7 +15,7 @@ import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, logger, updatePersistData } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, hideZendeskWidget, logger, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
@@ -48,7 +48,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			const data = {
 				name: assessmentData?.name,
 				description: assessmentData?.description,
-				external_id: assessmentData?.id || 1,
+				external_id: assessmentData?.external_id,
 				course_id: assessmentData?.course_id,
 				others: { test: 'value' },
 				branch: assessmentData?.branch
@@ -105,9 +105,15 @@ async function stop_prechecks(callback) {
 	try {
 		window.stopPrecheckCallBack=callback;
 		const modal = document.getElementById('precheck-modal');
+		const liveChat = document.getElementById('talkjs-container');
 
+		if(liveChat){
+			liveChat.remove();
+		}
 		modal.style.display = 'none';
 		modal.remove();
+		hideZendeskWidget();
+
 		callback({
 			type: 'success',
 			message: 'prechecks_stopped',

@@ -302,9 +302,7 @@ const openModal = async (callback) => {
 	const existingHeader = document.querySelector('.header');
 	if (existingHeader) {
 		existingHeader.remove();
-	}
-	initializeLiveChat();
-	
+	}	
 	const activeTab = handlePreChecksRedirection(callback);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
 
@@ -368,6 +366,7 @@ const showTab = async (tabId, callback) => {
 			localStorage.setItem('navHistory', JSON.stringify(filterNav));
 		}
 
+		initializeLiveChat();
 		loadZendeskWidget();
 		initializeI18next();
 		updateThemeColor();
@@ -496,10 +495,6 @@ window.addEventListener('storage', (event) => {
 		closeModalOnce();
 	}
 });
-
-if(getAuthenticationToken()){
-	initializeLiveChat();
-}
 
 function checkToken() {
 	if (!getAuthenticationToken() && !isModalClosed) {

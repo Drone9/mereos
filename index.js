@@ -105,12 +105,14 @@ async function stop_prechecks(callback) {
 	try {
 		window.stopPrecheckCallBack=callback;
 		const modal = document.getElementById('precheck-modal');
-		const liveChat = document.getElementById('talkjs-container');
+		const liveChat = document.getElementById('chat-icon');
 
 		if(liveChat){
 			liveChat.remove();
+			liveChat.style.display ='none';
 		}
 		modal.style.display = 'none';
+		
 		modal.remove();
 		hideZendeskWidget();
 

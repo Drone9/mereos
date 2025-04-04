@@ -190,7 +190,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 			window.socket?.send(JSON.stringify({ event: 'resetSession' }));
 		}
-		updatePersistData('preChecksSteps',{  mobileConnection: false,screenSharing:false });
+		updatePersistData('preChecksSteps',{ mobileConnection: false, screenSharing:false, roomScanningVideo:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFive');
 		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;

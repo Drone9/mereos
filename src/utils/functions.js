@@ -1009,7 +1009,8 @@ export const normalizeLanguage = (input) => {
 		german:'de',
 		italian:'it',
 		dutch:'nl',
-		portugese:'pt'
+		portugese:'pt',
+		welsh:'cy'
 	};
 	return languageMap[input] || input;
 };
@@ -1036,8 +1037,6 @@ export const logger = {
 };
 
 export const initializeI18next = () => {
-	if (i18next.isInitialized) return;
-
 	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolLanguage?.language || 'en';
 

@@ -144,11 +144,22 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	const prevStep = () => {
 		cleanup();
 		updatePersistData('preChecksSteps', { audioDetection: false });
+	
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenThree');
 		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+	
+		if (previousPage === 'Prevalidationinstruction') {
+			updatePersistData('preChecksSteps', { preValidation: false });
+		} else if (previousPage === 'IdentityVerificationScreenTwo') {
+			updatePersistData('preChecksSteps', { identityCardPhoto: false });
+		} else if (previousPage === 'IdentityVerificationScreenOne') {
+			updatePersistData('preChecksSteps', { userPhoto: false });
+		}
+	
 		showTab(previousPage);
 	};
+	
 
 	const updateUI = () => {
 		let container = tabContent.querySelector('.ivst-container');

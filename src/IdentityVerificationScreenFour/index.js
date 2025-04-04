@@ -113,7 +113,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		textMessage = 'scan_your_room';
 		blob=null;
 		updateUI();
-		updatePersistData('preChecksSteps',{ roomScanningVideo:false });
+		updatePersistData('preChecksSteps',{ audioDetection:false,roomScanningVideo:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFour');
 		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;

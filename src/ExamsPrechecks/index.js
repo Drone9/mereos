@@ -332,6 +332,7 @@ function closeModal() {
 
 const showTab = async (tabId, callback) => {
 	try {
+		initializeI18next();
 		const getSecureFeature = getSecureFeatures();
 		const secureFeatures = getSecureFeature?.entities || [];
 
@@ -368,7 +369,6 @@ const showTab = async (tabId, callback) => {
 
 		initializeLiveChat();
 		loadZendeskWidget();
-		initializeI18next();
 		updateThemeColor();
 
 		const tabs = document.querySelectorAll('.tab');

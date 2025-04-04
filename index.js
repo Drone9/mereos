@@ -136,7 +136,6 @@ window.recordingStart=false;
 async function start_session(callback) {
 	try {
 		window.startRecordingCallBack = callback;
-		logger.success('window.precheckCompleted',window.precheckCompleted);
 
 		if(!window.precheckCompleted){
 			window.startRecordingCallBack({ 

@@ -182,7 +182,7 @@ export const startRecording = async () => {
 				code:40011
 			});
 		}
-		window.recordingStart = false;
+		window.recordingStart=false;
 		window.precheckCompleted=false;
 		return;
 	}

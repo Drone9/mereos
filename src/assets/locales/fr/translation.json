@@ -906,7 +906,7 @@
 	"system_diagnostic_msg": "Le diagnostic du système ne prendra que quelques secondes.",
 	"system_diagnostic_passed": "Test de diagnostic du système réussi",
 	"system_requirement_checking": "Vérification des prérequis techniques",
-	"system_requirement_checking_msg": "Nous allons contrôler votre système informatique afin de vérifier sa compatibilité avec l'extension Mereos.\nVous pouvez consulter la liste complète des prérequis en ",
+	"system_requirement_checking_msg": "Nous vérifierons votre système pour connaître la configuration minimale requise pour utiliser la bibliothèque. Vous pouvez lire la liste complète des exigences en ",
 	"system_requirements": "Vérification de la configuration requise",
 	"system_requirements_for_testing": "Vérification des prérequis techniques",
 	"t2": "T2",

@@ -776,7 +776,12 @@ export const stopAllRecordings = async () => {
 		const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
 
 		const liveChat = document.getElementById('chat-icon');
+		const chatContainer = document.getElementById('talkjs-container');
 
+		if(chatContainer){
+			chatContainer.style.display ='none';
+			chatContainer.remove();
+		}
 		if(liveChat){
 			liveChat.remove();
 			liveChat.style.display ='none';

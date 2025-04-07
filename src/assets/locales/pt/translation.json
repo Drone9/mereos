@@ -906,7 +906,7 @@
 	"system_diagnostic_msg": "O diagnóstico do sistema levará apenas um momento.",
 	"system_diagnostic_passed": "Diagnóstico do sistema aprovado",
 	"system_requirement_checking": "Verificação de requisitos do sistema",
-	"system_requirement_checking_msg": "Verificaremos seu sistema quanto aos requisitos mínimos para usar a extensão.\nVocê pode ler a lista completa de requisitos em ",
+	"system_requirement_checking_msg": "Verificaremos seu sistema quanto aos requisitos mínimos para usar a biblioteca.\n Você pode ler a lista completa de requisitos em ",
 	"system_requirements": "Verificação de requisitos do sistema",
 	"system_requirements_for_testing": "Requisitos do sistema para teste",
 	"t2": "T2",

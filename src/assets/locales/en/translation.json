@@ -906,7 +906,7 @@
 	"system_diagnostic_msg": "The System Diagnostic will only take a moment.",
 	"system_diagnostic_passed": "System Diagnostic Passed",
 	"system_requirement_checking": "System requirement checking",
-	"system_requirement_checking_msg": "We will check your system for minimum requirements to use the extension.\nYou can read the full list of requirements by ",
+	"system_requirement_checking_msg": "We will check your system for minimum requirements to use the library.\nYou can read the full list of requirements by ",
 	"system_requirements": "System requirements checking",
 	"system_requirements_for_testing": "System Requirements for Testing",
 	"t2": "T2",

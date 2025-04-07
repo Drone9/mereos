@@ -106,10 +106,15 @@ async function stop_prechecks(callback) {
 		window.stopPrecheckCallBack=callback;
 		const modal = document.getElementById('precheck-modal');
 		const liveChat = document.getElementById('chat-icon');
+		const chatContainer = document.getElementById('talkjs-container');
 
 		if(liveChat){
 			liveChat.remove();
 			liveChat.style.display ='none';
+		}
+		if(chatContainer){
+			chatContainer.style.display ='none';
+			chatContainer.remove();
 		}
 		modal.style.display = 'none';
 		

@@ -906,7 +906,7 @@
 	"system_diagnostic_msg": "Die Systemdiagnose dauert nur einen Moment.",
 	"system_diagnostic_passed": "Systemdiagnose bestanden",
 	"system_requirement_checking": "Überprüfung der Systemanforderungen",
-	"system_requirement_checking_msg": "Wir überprüfen Ihr System auf Mindestanforderungen zur Verwendung der Erweiterung.\nSie können die vollständige Liste der Anforderungen lesen unter ",
+	"system_requirement_checking_msg": "Wir überprüfen Ihr System auf Mindestanforderungen zur Verwendung der Bibliothek.\nSie können die vollständige Liste der Anforderungen lesen unter ",
 	"system_requirements": "Überprüfung der Systemanforderungen",
 	"system_requirements_for_testing": "Systemanforderungen zum Testen",
 	"t2": "T2",

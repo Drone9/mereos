@@ -773,8 +773,9 @@ export const stopAllRecordings = async () => {
 			window.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
 
-		const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
-
+		// const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
+		console.log('findIncident',secureFeatures);
+		
 		const liveChat = document.getElementById('chat-icon');
 		const chatContainer = document.getElementById('talkjs-container');
 
@@ -790,7 +791,7 @@ export const stopAllRecordings = async () => {
 		updatePersistData('session', {
 			recordingEnded: true,
 			sessionStatus: 'Completed',
-			incident_level:findIncident
+			incident_level: findIncidentLevel(aiEvents, session?.browserEvents, secureFeatures)
 		});
 
 		cleanupZendeskWidget();

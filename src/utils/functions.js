@@ -139,9 +139,10 @@ export const checkMicrophone = () => {
 	});
 };
 
-export const registerEvent = ({ eventName }) => {
+export const registerEvent = async ({ eventName }) => {
 	try{
 		const session = convertDataIntoParse('session');
+		const { browserEvents } = session;
 
 		if(session?.id){
 			const event = {
@@ -150,7 +151,8 @@ export const registerEvent = ({ eventName }) => {
 				session_id: session?.id,
 				start_at: session?.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.sessionStartTime) / 1000) : 0
 			};
-				
+
+			updatePersistData('session', { browserEvents:[...browserEvents, event] });
 			return createEvent(event);
 		}
 	}catch(error){
@@ -421,7 +423,7 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 					? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
 					: [];
 			}
-		
+			logger.success('session?.incident_level',session?.incident_level);
 			let sectionSessionDetails = {
 				start_time: session?.sessionStartTime,
 				submission_time: session?.submissionTime,
@@ -509,8 +511,8 @@ export const lockBrowserFromContent = (entities) => {
 	return new Promise(async (resolve, _reject) => {
 		let result = {};
 		for (const entity of entities) {
-			switch (entity.name) {
-				case 'Disable Right Click': {
+			switch (entity.key) {
+				case 'disable_right_click': {
 					const disableRightClick = await preventRightClick();
 					if (disableRightClick) {
 						result = {...result, [entity.name]: true};
@@ -518,7 +520,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'Disable Clipboard': {
+				case 'disable_clipboard': {
 					const copyPasteCutDisabled = await disableCopyPasteCut();
 					if (copyPasteCutDisabled) {
 						result = {...result, [entity.name]: true};
@@ -526,7 +528,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'Disable downloading': {
+				case 'disable_downloading': {
 					const disableDownloading = await disablePageDownload();
 					if (disableDownloading) {
 						result = {...result, [entity.name]: true};
@@ -534,7 +536,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'Disable function keys': {
+				case 'disable_function_keys': {
 					const disableShortcuts = await preventShortCuts();
 					if (disableShortcuts) {
 						result = {...result, [entity.name]: true};
@@ -542,7 +544,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'Disable Printing': {
+				case 'disable_printing': {
 					const disablePrinting = await stopPrinting();
 					if (disablePrinting) {
 						result = {...result, [entity.name]: true};
@@ -550,7 +552,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'Detect unfocus': {
+				case 'detect_unfocus': {
 					const defocusDisabled = await detectUnfocusOfTab();
 					if (defocusDisabled) {
 						result = {...result, [entity.name]: true};
@@ -558,15 +560,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'Disable switch to other Apps': {
-					const detectPageLeaving = await preventPreClosure();
-					if (detectPageLeaving) {
-						result = {...result, [entity.name]: true};
-					}
-					break;
-				}
-
-				case 'Detect resizing of window': {
+				case 'detect_resizing_of_window': {
 					const disableWindowResize = await detectWindowResize(null);
 					if (disableWindowResize) {
 						result = {...result, [entity.name]: true};
@@ -574,7 +568,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'Verify Desktop': {
+				case 'verify_desktop': {
 					const dualDisplay = await detectDualDisplay();
 					if (dualDisplay) {
 						result = {...result, [entity.name]: true};
@@ -582,7 +576,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'Force Full Screen': {
+				case 'force_full_screen': {
 					const fullScreen = await forceFullScreen();
 					if (fullScreen) {
 						result = {...result, [entity.name]: true};
@@ -619,7 +613,11 @@ export const preventRightClick = () => {
 export const disableCopyPasteCut = () => {
 	return new Promise((resolve, _reject) => {
 		'cut copy paste'.split(' ').forEach((eventName) => {
-			window.addEventListener(eventName, handleDefaultEvent);
+			window.addEventListener(eventName, e => {
+				e.preventDefault();
+				e.stopPropagation();
+				registerEvent({notify: false, eventName: 'copy_paste_cut', eventType: 'error'});
+			});
 		});
 		resolve(true);
 	});
@@ -980,22 +978,6 @@ export const handlePreChecksRedirection = () => {
 	}
 };
 
-export const findIncidentLevel = (ai_events) => {
-	let result = 'low';
-
-	for (const item of ai_events || []) {
-		const { endTime, startTime } = item;
-		const difference = endTime - startTime;
-
-		if (difference > 10) {
-			return 'high';
-		} else if (difference > 5) {
-			result = 'medium';
-		}
-	}
-	return result;
-};
-
 export const normalizeLanguage = (input) => {
 	if (!input) return 'en'; 
 	input = input.toLowerCase();
@@ -1203,13 +1185,77 @@ export const getNetworkUploadSpeed = async () => {
 			const endTime = new Date().getTime();
 			const duration = (endTime - startTime) / 1000;
 			const bitsLoaded = myData.test.length * 8;
-			const speedMbps = ((bitsLoaded / duration) / 1024 / 1024).toFixed(2);
-	
-			return { speedMbps: speedMbps };
+			const speedBps = (bitsLoaded / duration).toFixed(2);
+			const speedKbps = (speedBps / 1024).toFixed(2);
+			const speedMbps = (speedKbps / 1024).toFixed(2);
+
+			return { 	
+				speedBps,
+				speedKbps,
+				speedMbps 
+			};
 		}
         
 	} catch (err) {
 		console.error(err);
 		return false;
 	}
+};
+
+export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) => {
+	logger.info('browserEvents',browserEvents);
+	const aiIncidentlevel = findAIIncidentLevel(aiEvents, profile);
+	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
+	logger.error('aiIncidentlevel',aiIncidentlevel,'browserIncidentlevel',browserIncidentlevel);
+
+	if (aiIncidentlevel === 'high' || browserIncidentlevel === 'high') {
+		return 'high';
+	} else if (aiIncidentlevel === 'medium' || browserIncidentlevel === 'medium') {
+		return 'medium';
+	} else {
+		return 'low';
+	}
+};
+
+export const findAIIncidentLevel = (aiEvents = [], profile) => {	
+	let result = 'low';
+	for (const item of aiEvents) {
+		const difference = item.endTime - item.startTime;
+		if (difference >= profile?.settings?.proctoring_behavior?.metrics[item.name]) {
+			result = 'high';
+			break;
+		} else if (difference >= profile?.settings?.proctoring_behavior?.metrics[item.name] / 2) {
+			result = 'medium';
+		}
+	}
+	return result;
+};
+
+export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
+	let result = 'low';
+
+	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
+	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
+
+	let copyPasteCutEvents = browserEvents.filter(item => item.name === 'copy_paste_cut');
+	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
+	let navigatingAwayEvents = browserEvents.filter(item =>
+		['moved_away_from_page', 'moved_to_another_app', 'moved_to_another_window'].includes(item.name)
+	);
+
+	if (
+		copyPasteCutEvents.length >= metrics['copy_paste_cut'] ||
+		browserResizedEvents.length >= metrics['browser_resized'] ||
+		navigatingAwayEvents.length >= metrics['navigating_away']
+	) {
+		result = 'high';
+	} else if (
+		copyPasteCutEvents.length >= (metrics['copy_paste_cut'] || 0) / 2 ||
+		browserResizedEvents.length >= (metrics['browser_resized'] || 0) / 2 ||
+		navigatingAwayEvents.length >= (metrics['navigating_away'] || 0) / 2
+	) {
+		result = 'medium';
+	}
+
+	return result;
 };

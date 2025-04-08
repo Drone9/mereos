@@ -11,6 +11,7 @@ export const CONTENT_TYPE = Object.freeze({
 
 export const initialSessionData = {
 	aiEvents:[],
+	browserEvents:[],
 	start_time: null,
 	submission_time: null,
 	duration_taken: 0,

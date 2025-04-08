@@ -218,20 +218,26 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const renderUI = async () => {
-		let container = tabContent.querySelector('.ivso-container');
+		let container = tabContent.querySelector('.id-card-container');
 		if (!container) {
 			container = document.createElement('div');
-			container.className = 'ivso-container';
+			container.className = 'id-card-container';
 			tabContent.appendChild(container);
 		}
 		container.innerHTML = '';
 
+		// Check if wrapper exists before creating a new one
+		let wrapper = container.querySelector('.ivst-wrapper');
+		if (!wrapper) {
+			wrapper = document.createElement('div');
+			wrapper.className = 'ivst-wrapper';
+			container.appendChild(wrapper);
+		}
+		wrapper.innerHTML = ''; // Clear existing content
+
+		// Create steps container
 		let stepsContainer = document.createElement('div');
-
 		renderIdentityVerificationSteps(stepsContainer, 2);
-
-		const wrapper = document.createElement('div');
-		wrapper.className = 'ivst-wrapper';
 
 		const headerTitle = document.createElement('div');
 		headerTitle.className = 'ivst-header-title';
@@ -252,10 +258,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			headerImgContainer.appendChild(img);
 
 			const resultImg = document.createElement('img');
-			resultImg.src = currentState.msg.type === 'unsuccessful' ? `${ASSET_URL}/close-red.svg` :`${ASSET_URL}/checkmark-green.svg`;
+			resultImg.src = currentState.msg.type === 'unsuccessful' ? `${ASSET_URL}/close-red.svg` : `${ASSET_URL}/checkmark-green.svg`;
 			resultImg.className = 'ivst-header-img-result';
 			resultImg.alt = 'tick-mark-green-bg';
-			if(currentState.msg.type !== 'checking'){
+			if (currentState.msg.type !== 'checking') {
 				headerImgContainer.appendChild(resultImg);
 			}
 		} else {
@@ -266,7 +272,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			headerImgContainer.appendChild(photo);
 
 			stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-			if(stream !== null) {
+			if (stream !== null) {
 				photo.srcObject = stream;
 			}
 			const gridImg = document.createElement('img');
@@ -284,6 +290,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (currentState.msg.text) {
 			const queryMsg = document.createElement('div');
 			queryMsg.className = 'ivst-query-msg';
+			queryMsg.id = 'queryMsg-msg';
 			queryMsg.textContent = i18next.t(currentState.msg.text);
 			if (currentState.msg.type === 'unsuccessful') {
 				queryMsg.style.color = '#E95E5E';
@@ -306,7 +313,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			const prevBtn = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
 			const takePhotoBtn = createButton(`${i18next.t('take_id_photo')}`, 'orange-filled-btn', capturePhoto);
 			takePhotoBtn.disabled = disabledBtn || !!currentState.imageSrc;
-			if(secureFeatures.find(entity => entity.key === 'verify_candidate')){
+			if (secureFeatures.find(entity => entity.key === 'verify_candidate')) {
 				btnContainer.appendChild(prevBtn);
 			}
 			btnContainer.appendChild(takePhotoBtn);
@@ -325,15 +332,15 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 
 		wrapper.appendChild(btnContainer);
 
-		container.appendChild(wrapper);
-
-		inputFile = document.createElement('input');
-		inputFile.type = 'file';
-		inputFile.name = 'idCard';
-		inputFile.accept = 'image/*';
-		inputFile.hidden = true;
-		inputFile.addEventListener('change', uploadImage);
-		container.appendChild(inputFile);
+		if (!container.querySelector('input[name="idCard"]')) {
+			inputFile = document.createElement('input');
+			inputFile.type = 'file';
+			inputFile.name = 'idCard';
+			inputFile.accept = 'image/*';
+			inputFile.hidden = true;
+			inputFile.addEventListener('change', uploadImage);
+			container.appendChild(inputFile);
+		}
 	};
 
 	const createButton = (text, className, onClick) => {
@@ -347,7 +354,11 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	renderUI();
 
 	i18next.on('languageChanged', () => {
-		currentState.msg.text = i18next.t(currentState.msg.text);
 		renderUI();
+		
+		const msg = document.getElementById('queryMsg-msg');
+		if (msg && currentState.msg.text) {
+			msg.textContent = i18next.t(currentState.msg.text);
+		}
 	});
 };

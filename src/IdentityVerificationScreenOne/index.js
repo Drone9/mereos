@@ -236,7 +236,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		}
 	
 		const ivsoWrapper = document.createElement('div');
-		ivsoWrapper.className = 'ivso-wrapper';
+		ivsoWrapper.className = 'ivso-first-wrapper';
 	
 		const ivsHeaderTitle = document.createElement('div');
 		ivsHeaderTitle.className = 'ivso-header-title';
@@ -252,6 +252,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	
 		if (state.msg.text) {
 			ivsMsg.className = 'ivso-msg';
+			ivsMsg.id = 'success-msg';
 
 			if (state.msg.type === 'unsuccessful' || state.msg.type === 'something_went_wrong_please_upload_again') {
 				ivsMsg.style.color = '#E95E5E';
@@ -358,7 +359,12 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	renderUI();
 
 	i18next.on('languageChanged', () => {
-		state.msg.text = i18next.t(state.msg.text);
 		renderUI();
+		
+		const msg = document.getElementById('success-msg');
+		if (msg && state.msg.text) {
+			msg.textContent = i18next.t(state.msg.text);
+		}
 	});
+	
 };

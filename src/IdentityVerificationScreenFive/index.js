@@ -84,7 +84,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		};
 	};
 	
-	let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
+	let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
 
 	multipleScreensCheck && checkMultipleScreens();
 

@@ -99,6 +99,12 @@ const initializeLiveChat = () => {
 	const hasChatBot = secureFeatures?.some(entity => entity.key === 'live_chat');
 
 	if (!isLoggedIn || !hasChatBot) return;
+	
+	const existingChatIcon = document.getElementById('chat-icon');
+	if (existingChatIcon) {
+		existingChatIcon.style.display = 'block';
+		return;
+	}
 
 	const chatIcon = document.createElement('img');
 	chatIcon.className = 'chat-icon';

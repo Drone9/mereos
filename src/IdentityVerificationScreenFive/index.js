@@ -91,13 +91,26 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const updateUI = () => {
 		headerTitle.textContent = i18next.t('verification_completed');
 		msgElement.textContent = i18next.t('verification_completed_msg');
-		queryMsg.textContent = i18next.t(msg.text);
-
-		if (msg.type === 'unsuccessful') {
-			queryMsg.style.color = '#E95E5E';
+    
+		if (mode === 'startScreenRecording') {
+			msg = {
+				type: 'successful',
+				text: i18next.t('screen_shared_successfully')
+			};
+		} else if (mode === 'rerecordScreen') {
+			msg = {
+				type: 'unsuccessful',
+				text: i18next.t('screen_sharing_stopped')
+			};
 		} else {
-			queryMsg.style.color = ''; 
+			msg = {
+				type: 'successful',
+				text: i18next.t('please_share_entire_screen')
+			};
 		}
+
+		queryMsg.textContent = i18next.t(msg.text);
+		queryMsg.style.color = msg.type === 'unsuccessful' ? '#E95E5E' : '';
 
 		btnContainer.innerHTML = '';
 
@@ -227,6 +240,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	let queryMsg = document.createElement('div');
 	queryMsg.classList.add('ivsf-query-msg');
+	queryMsg.id = 'query-message-screen';
 	if (msg.text) {
 		queryMsg.textContent = i18next.t(msg.text);
 		if (msg.type === 'unsuccessful') {

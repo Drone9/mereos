@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BASE_URL, examPreparationSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from './constant';
+import { BASE_URL, examPreparationSteps, preChecksSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.services';
@@ -939,35 +939,34 @@ export const getPreviousRoute = (currentRoute, navHistory, hasFeature) => {
 
 export const handlePreChecksRedirection = () => {
 	const sessionSetting = localStorage.getItem('precheckSetting');
-	const preChecksSteps = convertDataIntoParse('preChecksSteps');
+	const preChecksStep = convertDataIntoParse('preChecksSteps');
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
 	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
 	if(sessionSetting === 'session_resume'){
-		
-		if (!preChecksSteps?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
+		if (!preChecksStep?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
 			return 'ExamPreparation';
-		}if (!preChecksSteps?.identityConfirmation && hasFeature('verify_id')) {
+		}if (!preChecksStep?.identityConfirmation && hasFeature('verify_id')) {
 			return 'IdentityCardRequirement';
-		} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
+		} else if(!preChecksStep?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
 			return 'runSystemDiagnostics';
-		} else if(!preChecksSteps?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
+		} else if(!preChecksStep?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
 			return 'SystemRequirements';
-		} else if(!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
+		} else if(!preChecksStep?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
 			return 'Prevalidationinstruction';
 		}
-		else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
+		else if(!preChecksStep?.userPhoto && hasFeature('verify_candidate')){
 			return 'IdentityVerificationScreenOne';
-		}else if(!preChecksSteps?.identityCardPhoto && hasFeature('verify_id')){
+		}else if(!preChecksStep?.identityCardPhoto && hasFeature('verify_id')){
 			return 'IdentityVerificationScreenTwo';
-		}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
+		}else if(!preChecksStep?.audioDetection && hasFeature('record_audio')){
 			return 'IdentityVerificationScreenThree';
-		}else if(!preChecksSteps?.roomScanningVideo && hasFeature('record_room')){
+		}else if(!preChecksStep?.roomScanningVideo && hasFeature('record_room')){
 			return 'IdentityVerificationScreenFour';
-		}else if(!preChecksSteps?.mobileConnection && hasFeature('mobile_proctoring')){
+		}else if(!preChecksStep?.mobileConnection && hasFeature('mobile_proctoring')){
 			return 'MobileProctoring';
-		}else if(!preChecksSteps?.screenSharing || hasFeature('record_screen')){
+		}else if(!preChecksStep?.screenSharing || hasFeature('record_screen')){
 			return 'IdentityVerificationScreenFive';
 		} else{
 			closeModal();
@@ -976,6 +975,7 @@ export const handlePreChecksRedirection = () => {
 		if (window.precheckCompleted && hasFeature('record_screen')) {
 			return 'IdentityVerificationScreenFive';
 		}else{
+			localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 			return 'ExamPreparation';
 		}
 	}

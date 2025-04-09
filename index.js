@@ -106,7 +106,7 @@ async function stop_prechecks(callback) {
 	try {
 		window.stopPrecheckCallBack = callback;
 		const modal = document.getElementById('precheck-modal');
-		const chatIcons = document.querySelectorAll('[id="chat-icon"]'); // Get all elements with ID 'chat-icon'
+		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');
 
 		if (chatIcons.length > 0) {

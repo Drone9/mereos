@@ -535,7 +535,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'disable_function_keys': {
+				case 'disable_keyboard_shortcuts': {
 					const disableShortcuts = await preventShortCuts();
 					if (disableShortcuts) {
 						result = {...result, [entity.name]: true};

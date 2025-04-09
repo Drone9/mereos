@@ -6,7 +6,7 @@ import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import { getCreateRoom } from '../services/twilio.services';
-import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
+import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 
@@ -244,7 +244,12 @@ export const startRecording = async () => {
 					deviceId: { exact: localStorage.getItem('microphoneID') },
 				} : true) });
 
-				startAIWebcam(mediaStream);
+				if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
+					startAIWebcam(mediaStream);
+				}else{
+					setupWebcam(mediaStream);
+				}
+
 				cameraRecordings = [
 					...session.user_video_name,
 					...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
@@ -448,7 +453,9 @@ const setupWebcam = async (mediaStream) => {
 
 	webcamContainer.appendChild(videoHeaderContainer);
 	mediaWrapper.appendChild(videoElement);
-	mediaWrapper.appendChild(canvas);
+	if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
+		mediaWrapper.appendChild(canvas);
+	}
 	webcamContainer.appendChild(mediaWrapper); 
 
 	videoElement.addEventListener('loadedmetadata', () => {
@@ -491,6 +498,11 @@ const handleVideoResize = (predictions, context) => {
 };
 
 const startAIWebcam = async (mediaStream) => {
+	const secureFeatures = getSecureFeatures();
+	const multiplePeopleFeature = findConfigs(['multiple_people_detection'], secureFeatures?.entities).length > 0;
+	const personMissingFeature = findConfigs(['person_missing'], secureFeatures?.entities).length > 0;
+	const objectDetectionFeature = findConfigs(['object_detection'], secureFeatures?.entities).length > 0;
+
 	await tf.setBackend('webgl');
 	await tf.ready();
 	const net = await cocoSsd.load();
@@ -498,7 +510,6 @@ const startAIWebcam = async (mediaStream) => {
 	const context = canvas.getContext('2d');
 
 	const session = convertDataIntoParse('session');
-
 	let seconds = session?.quizStartTime ? parseInt((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) : 0;
 
 	aiProcessingInterval = setInterval(async () => {
@@ -509,33 +520,46 @@ const startAIWebcam = async (mediaStream) => {
 
 				context.clearRect(0, 0, canvas.width, canvas.height);
 
-				handleVideoResize(predictions, context, canvas);
+				if (multiplePeopleFeature || personMissingFeature || objectDetectionFeature) {
+					handleVideoResize(predictions, context, canvas);
+				}
 
 				let log = {}, person = {}, multiplePersonFound = false;
+							
 				predictions.forEach(prediction => {
-					if (prediction.class === 'person' && person?.class) {
-						if (!multiplePersonFound) {
-							log = { ...log, 'multiple_people': (log['multiple_people'] || 0) + 1 };
-							multiplePersonFound = true;
+					if (prediction.class === 'person' && (personMissingFeature || multiplePeopleFeature)) {
+						if (person?.class && multiplePeopleFeature) {
+							if (!multiplePersonFound) {
+								log = { ...log, 'multiple_people': (log['multiple_people'] || 0) + 1 };
+								multiplePersonFound = true;
+							}
+						} else {
+							person = prediction;
 						}
-					} else if (prediction.class === 'person') {
-						person = prediction;
-					} else if (PREDICTION.includes(prediction.class)) {
+					}
+					else if (objectDetectionFeature && PREDICTION.includes(prediction.class)) {
 						log = { ...log, ['object_detected']: (log[prediction.class] || 0) + 1 };
 					}
 				});
 
-				if (!person.class) {
+				if (personMissingFeature && !person.class) {
 					log = { ...log, 'person_missing': (log['person_missing'] || 0) + 1 };
 				}
 
-				['person_missing', 'object_detected', 'multiple_people'].forEach(key => {
+				const featuresToCheck = [];
+				if (personMissingFeature) featuresToCheck.push('person_missing');
+				if (objectDetectionFeature) featuresToCheck.push('object_detected');
+				if (multiplePeopleFeature) featuresToCheck.push('multiple_people');
+
+				featuresToCheck.forEach(key => {
 					let lastLogIndex = aiEvents.findIndex(lg => lg[key]);
 					let lastLog = lastLogIndex > -1 ? aiEvents.splice(lastLogIndex, 1)[0] : undefined;
+									
 					if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
 						const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
 						aiEvents.push(newLog);
-					} else if (log[key] && lastLog?.[key]) {
+					} 
+					else if (log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
 						aiEvents.push(lastLog);
 						if (lastLog.time_span === 10) {
@@ -549,12 +573,19 @@ const startAIWebcam = async (mediaStream) => {
 							}
 							showToast('error', message);
 						}
-					} else if (!log[key] && lastLog?.[key]) {
+					} 
+					else if (!log[key] && lastLog?.[key]) {
 						lastLog = { ...lastLog, end_time: Number(lastLog.start_time) + Number(lastLog.time_span) };
-						const data = { eventType: 'success', notify: true, eventName: key, startTime: lastLog.start_time, endTime: Number(lastLog.start_time) + Number(lastLog.time_span) };
+						const data = { 
+							eventType: 'success', 
+							notify: true, 
+							eventName: key, 
+							startTime: lastLog.start_time, 
+							endTime: Number(lastLog.start_time) + Number(lastLog.time_span) 
+						};
 						registerAIEvent(data);
-						updatePersistData('session',{
-							aiEvents: [data,...session.aiEvents]
+						updatePersistData('session', {
+							aiEvents: [data, ...session.aiEvents]
 						});
 					}
 				});
@@ -773,22 +804,24 @@ export const stopAllRecordings = async () => {
 			window.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
 		
-		const liveChat = document.getElementById('chat-icon');
+		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');
 
-		if(chatContainer){
-			chatContainer.style.display ='none';
-			chatContainer.remove();
+		if (chatIcons.length > 0) {
+			chatIcons.forEach(icon => {
+				icon.style.display = 'none';
+				icon.remove();
+			});
 		}
-		if(liveChat){
-			liveChat.remove();
-			liveChat.style.display ='none';
+
+		if (chatContainer) {
+			chatContainer.style.display = 'none';
+			chatContainer.remove();
 		}
 
 		updatePersistData('session', {
 			recordingEnded: true,
 			sessionStatus: 'Completed',
-			// incident_level: findIncidentLevel(aiEvents, session?.browserEvents, secureFeatures)
 		});
 
 		cleanupZendeskWidget();

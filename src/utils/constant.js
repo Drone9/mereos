@@ -111,6 +111,12 @@ export const prevalidationSteps = [
 	'record_room'
 ];
 
+export const aiEventsFeatures = [
+	'object_detection', 
+	'multiple_people_detection',
+	'person_missing',
+];
+
 export const languages = [
 	{name: 'English', value: 'english', src: `${ASSET_URL}/flag-of-uk.svg`, alt: '', keyword: 'en' },
 	{name: 'Spanish', value: 'spanish', src: `${ASSET_URL}/flag-of-spain.svg`, alt: '', keyword: 'es' },

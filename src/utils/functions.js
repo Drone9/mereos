@@ -450,8 +450,8 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 					ram_info:session?.RAMSpeed
 				},
 				status: session?.sessionStatus,
-				video_codec: null,
-				video_extension: null,
+				video_codec: recordings?.data?.filter(recording => session.user_video_name?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.codec)[0],
+				video_extension: recordings?.data?.filter(recording => session.user_video_name?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.container_format)[0],
 				archive_id:session?.room_id,
 				attempt_id:null,
 				incident_level: findIncidentLevel(aiEvents, browserEvents, secureFeatures),

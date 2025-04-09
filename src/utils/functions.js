@@ -416,6 +416,9 @@ export const updatePersistData = (key, updates) => {
 export const addSectionSessionRecord = async (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {
 		try{
+			const { aiEvents, browserEvents } = session;
+			const secureFeatures = getSecureFeatures();
+			
 			let recordings;
 			if(session?.user_video_name?.length || session?.user_audio_name?.length || session?.screen_sharing_video_name?.length || session?.mobileRecordings?.length || session?.mobileAudios?.length){
 				const sourceIds = [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
@@ -451,7 +454,7 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 				video_extension: null,
 				archive_id:session?.room_id,
 				attempt_id:null,
-				incident_level: session?.incident_level,
+				incident_level: findIncidentLevel(aiEvents, browserEvents, secureFeatures),
 				mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				conversation_id:localStorage.getItem('conversationId') || '',

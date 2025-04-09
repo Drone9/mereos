@@ -4,7 +4,7 @@ import i18next from 'i18next';
 import { v4 } from 'uuid';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, findIncidentLevel, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import { getCreateRoom } from '../services/twilio.services';
 import { ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
@@ -772,9 +772,6 @@ export const stopAllRecordings = async () => {
 		if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 			window.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
-
-		// const findIncident = session?.aiEvents?.length > 0 ? findIncidentLevel(session?.aiEvents) : 'low';
-		console.log('findIncident',secureFeatures);
 		
 		const liveChat = document.getElementById('chat-icon');
 		const chatContainer = document.getElementById('talkjs-container');
@@ -791,7 +788,7 @@ export const stopAllRecordings = async () => {
 		updatePersistData('session', {
 			recordingEnded: true,
 			sessionStatus: 'Completed',
-			incident_level: findIncidentLevel(aiEvents, session?.browserEvents, secureFeatures)
+			// incident_level: findIncidentLevel(aiEvents, session?.browserEvents, secureFeatures)
 		});
 
 		cleanupZendeskWidget();

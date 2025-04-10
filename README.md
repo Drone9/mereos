@@ -16,7 +16,7 @@ The `mereos` package contains only the functionality necessary to conduct an onl
 var mereos = require('mereos');
 ```
 
-1. `init` function is used to initiate a session of proctoring. It takes `candidate_object`, `profile_id` and `assessment_object`.
+1. `init` function is used to initiate a session of proctoring. It takes `candidate_object`, `profile_id` , `assessment_object`, theme_object and callback function.
 
 **Note:** 
 `profile_id` is related to proctoring profile which is created at Admin panel.
@@ -52,7 +52,7 @@ var theme_object ={
     ...
 }
 
-var resp = init(credentials, candidate_object, profile_id, assessment_object, theme_object);
+var resp = init(credentials, candidate_object, profile_id, assessment_object, theme_object,callback);
 ```
 
 2. `start_prechecks` function is used to start prechecks. All the prechecks are based on profile used in `init` function. This function takes a callback function which runs once the whole process of prechecks is executed.The session_resume key is an optional parameter for the start_prechecks function. When provided, it ensures that prechecks resume from the step where they were last left off in case of a page reload or any interruption. If this key is not passed, the prechecks process will start from the beginning. This feature helps maintain the continuity of the precheck process, providing a seamless experience for the user.

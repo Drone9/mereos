@@ -119,7 +119,7 @@ const renderUI = (tab1Content) => {
 	continueBtn.classList.add('orange-filled-btn');
 	continueBtn.id = 'requirementContinueBtn';
 	continueBtn.disabled = true;
-	continueBtn.textContent = 'Continue';
+	continueBtn.textContent = i18next.t('continue');
 	continueBtn.addEventListener('click', () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_requirement_passed' });
 		updatePersistData('preChecksSteps',{ requirementStep:true });
@@ -323,7 +323,7 @@ const updateDiagnosticText = () => {
 	if (description) {
 		description.textContent = i18next.t('system_requirement_checking_msg');
 	}
-	const btnText = document.querySelector('.orange-filled-btn');
+	const btnText = document.getElementById('requirementContinueBtn');
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
 	}

@@ -21,18 +21,40 @@ import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 
-async function init(credentials, candidateData, profileId, assessmentData, schoolTheme) {
+async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
-		const logonResp = await logonSchool(credentials);
+		let logonResp;
+		try {
+			logonResp = await logonSchool(credentials);
+		} catch (error) {
+			return callback({
+				type: 'error',
+				message: 'error_in_logon_school',
+				code: 40020,
+				details: error,
+			});
+		}
 
 		if (logonResp.data) {
 			const token = logonResp.data.token;
 			const expiresInDays = 7;
 			const expiresAt = Date.now() + expiresInDays * 24 * 60 * 60 * 1000;
-				
+
 			localStorage.setItem('mereosToken', JSON.stringify({ token, expiresAt }));
 
-			const resp = await createCandidate(candidateData);
+			let resp;
+			try {
+				resp = await createCandidate(candidateData);
+			} catch (error) {
+				localStorage.removeItem('mereosToken');
+				return callback({
+					type: 'error',
+					message: 'error_in_create_candidate',
+					code: 40021,
+					details: error,
+				});
+			}
+
 			const updateData = {
 				school: logonResp?.data?.school,
 				candidate: resp?.data,
@@ -53,8 +75,19 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 				others: { test: 'value' },
 				branch: assessmentData?.branch
 			};
-				
-			const assessmentResp = await createCandidateAssessment(data);
+
+			let assessmentResp;
+			try {
+				assessmentResp = await createCandidateAssessment(data);
+			} catch (error) {
+				localStorage.removeItem('mereosToken');
+				return callback({
+					type: 'error',
+					message: 'error_in_create_candidate_assessment',
+					code: 40022,
+					details: error,
+				});
+			}
 
 			if (assessmentResp?.data) {
 				const candidateAssessmentData = {
@@ -64,7 +97,19 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 					profile: profileId,
 				};
 
-				const candidateAssessmentResp = await customCandidateAssessmentStatus(candidateAssessmentData);
+				let candidateAssessmentResp;
+				try {
+					candidateAssessmentResp = await customCandidateAssessmentStatus(candidateAssessmentData);
+				} catch (error) {
+					localStorage.removeItem('mereosToken');
+					return callback({
+						type: 'error',
+						message: 'error_in_custom_candidate_assessment_status',
+						code: 40023,
+						details: error,
+					});
+				}
+
 				updatePersistData('session', {
 					candidate_assessment: candidateAssessmentResp?.data?.id,
 					assessment: assessmentResp?.data,
@@ -77,7 +122,12 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			return logonResp.data;
 		}
 	} catch (error) {
-		
+		return callback({
+			type: 'error',
+			message: 'error_in_init_function',
+			code: 40024,
+			details: error,
+		});
 	}
 }
 

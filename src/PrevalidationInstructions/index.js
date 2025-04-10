@@ -226,7 +226,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 			}
 	
 			if (continueButton) {
-				continueButton.textContent = i18next.t('continue'); // Update Continue button text
+				continueButton.textContent = i18next.t('continue');
 			}
 		};
 	

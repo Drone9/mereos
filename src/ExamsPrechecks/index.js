@@ -99,10 +99,15 @@ const initializeLiveChat = () => {
 	const hasChatBot = secureFeatures?.some(entity => entity.key === 'live_chat');
 
 	if (!isLoggedIn || !hasChatBot) return;
-	
+
 	const existingChatIcon = document.getElementById('chat-icon');
+	const existingChatContainer = document.getElementById('talkjs-container');
+	
 	if (existingChatIcon) {
 		existingChatIcon.style.display = 'block';
+		if (existingChatContainer) {
+			existingChatContainer.style.display = 'block';
+		}
 		return;
 	}
 
@@ -113,101 +118,122 @@ const initializeLiveChat = () => {
 	chatIcon.style.bottom = '20px';
 	chatIcon.style.right = '20px';
 	chatIcon.style.zIndex = '99999999';
-	chatIcon.style.cursor = 'pointer';
+	chatIcon.style.cursor = 'grab';
 	chatIcon.src = `${ASSET_URL}/mereos.svg`;
 	chatIcon.alt = 'Chat Icon';
 	chatIcon.style.width = '50px';
 	chatIcon.style.height = '50px';
+	chatIcon.style.userSelect = 'none';
 
-	chatIcon.addEventListener('click', toggleChat);
+	const chatContainer = document.createElement('div');
+	chatContainer.id = 'talkjs-container';
+	chatContainer.className = 'live-chat-container';
+	chatContainer.style.width = '400px';
+	chatContainer.style.height = '500px';
+	chatContainer.style.position = 'fixed';
+	chatContainer.style.bottom = '100px';
+	chatContainer.style.right = '20px';
+	chatContainer.style.zIndex = '9999';
+	chatContainer.style.backgroundColor = 'white';
+	chatContainer.style.border = '1px solid #ccc';
+	chatContainer.style.borderRadius = '8px';
+	chatContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+	chatContainer.style.display = 'none';
 
 	document.body.appendChild(chatIcon);
+	document.body.appendChild(chatContainer);
 
-	function toggleChat() {
-		const container = document.getElementById('talkjs-container');
+	const positions = {
+		icon: { x: 0, y: 0 },
+		container: { x: 0, y: 0 }
+	};
 
-		if (container) {
-			if (container.style.display === 'none') {
-				container.style.display = 'block';
-			} else {
-				container.style.display = 'none';
-			}
-		} else {
-			const chatContainer = document.createElement('div');
-			chatContainer.id = 'talkjs-container';
-			chatContainer.className = 'live-chat-container';
-			chatContainer.style.width = '400px';
-			chatContainer.style.height = '500px';
-			chatContainer.style.position = 'fixed';
-			chatContainer.style.bottom = '100px';
-			chatContainer.style.right = '20px';
-			chatContainer.style.zIndex = '9999';
-			chatContainer.style.backgroundColor = 'white';
-			chatContainer.style.border = '1px solid #ccc';
-			chatContainer.style.borderRadius = '8px';
-			chatContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
-
-			const loadingText = document.createElement('i');
-			chatContainer.appendChild(loadingText);
-
-			Talk.ready.then(() => {
-				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-
-				const me = new Talk.User({
-					id: candidateInviteAssessmentSection?.candidate?.id,
-					name: candidateInviteAssessmentSection?.candidate?.name,
-					email: candidateInviteAssessmentSection?.candidate?.email,
-					photoUrl: candidateInviteAssessmentSection?.candidate?.photo || `${ASSET_URL}/profile-draft-circled-orange.svg`,
-				});
-
-				const session = new Talk.Session({
-					appId: 'tl1lE0Vo',
-					me: me,
-				});
-
-				const other = new Talk.User({
-					id: candidateInviteAssessmentSection?.school?.id,
-					name: candidateInviteAssessmentSection?.school?.name,
-					email: candidateInviteAssessmentSection?.school?.email,
-					photoUrl: `${ASSET_URL}/profile-draft-circled-orange.svg`,
-				});
-
-				const conversationId = localStorage.getItem('conversationId');
-				const conversation = session.getOrCreateConversation(conversationId);
-				conversation.setParticipant(me);
-				conversation.setParticipant(other);
-
-				const chatbox = session.createChatbox();
-				chatbox.select(conversation);
-				chatbox.mount(chatContainer);
-			});
-
-			document.body.appendChild(chatContainer);
-
-			makeDraggable(chatContainer);
-		}
-	}
-
-	function makeDraggable(element) {
-		interact(element).draggable({
-			inertia: true,
-			listeners: {
-			
-				move(event) {
-					const { target } = event;
-
-					const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-					const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-
-					target.style.transform = `translate(${x}px, ${y}px)`;
-
-					target.setAttribute('data-x', x);
-					target.setAttribute('data-y', y);
-				},
-
+	interact(chatIcon).draggable({
+		cursorChecker: () => 'grabbing',
+		modifiers: [
+			interact.modifiers.restrict({
+				restriction: 'parent',
+				endOnly: false,
+				elementRect: { top: 0, left: 0, bottom: 1, right: 1 }
+			})
+		],
+		listeners: {
+			start() {
+				chatIcon.style.cursor = 'grabbing';
 			},
+			move(event) {
+				positions.icon.x += event.dx;
+				positions.icon.y += event.dy;
+				positions.container.x += event.dx;
+				positions.container.y += event.dy;
+
+				chatIcon.style.transform = `translate(${positions.icon.x}px, ${positions.icon.y}px)`;
+				chatContainer.style.transform = `translate(${positions.container.x}px, ${positions.container.y}px)`;
+			},
+			end() {
+				chatIcon.style.cursor = 'grab';
+			}
+		}
+	});
+
+	interact(chatContainer).draggable({
+		enabled: false
+	});
+
+	let clickStartTime = 0;
+	chatIcon.addEventListener('mousedown', (e) => {
+		e.stopPropagation();
+		clickStartTime = Date.now();
+	});
+
+	chatIcon.addEventListener('click', (e) => {
+		e.stopPropagation();
+		if (Date.now() - clickStartTime < 200) {
+			chatContainer.style.display = chatContainer.style.display === 'none' ? 'block' : 'none';
+		}
+	});
+
+	chatContainer.addEventListener('click', (e) => {
+		e.stopPropagation();
+	});
+
+	document.addEventListener('click', (e) => {
+		if (!chatIcon.contains(e.target) && !chatContainer.contains(e.target)) {
+			chatContainer.style.display = 'none';
+		}
+	});
+
+	Talk.ready.then(() => {
+		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+
+		const me = new Talk.User({
+			id: candidateInviteAssessmentSection?.candidate?.id,
+			name: candidateInviteAssessmentSection?.candidate?.name,
+			email: candidateInviteAssessmentSection?.candidate?.email,
+			photoUrl: candidateInviteAssessmentSection?.candidate?.photo || `${ASSET_URL}/profile-draft-circled-orange.svg`,
 		});
-	}
+
+		const session = new Talk.Session({
+			appId: 'tl1lE0Vo',
+			me: me,
+		});
+
+		const other = new Talk.User({
+			id: candidateInviteAssessmentSection?.school?.id,
+			name: candidateInviteAssessmentSection?.school?.name,
+			email: candidateInviteAssessmentSection?.school?.email,
+			photoUrl: `${ASSET_URL}/profile-draft-circled-orange.svg`,
+		});
+
+		const conversationId = localStorage.getItem('conversationId');
+		const conversation = session.getOrCreateConversation(conversationId);
+		conversation.setParticipant(me);
+		conversation.setParticipant(other);
+
+		const chatbox = session.createChatbox();
+		chatbox.select(conversation);
+		chatbox.mount(chatContainer);
+	});
 };
 
 modalContent.appendChild(tabContentsWrapper);
@@ -475,7 +501,9 @@ const startSession = async (session) => {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp?.data) {
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
-			registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
+			if(!session?.browserEvents.filter(item => item.name === 'session_initiated')?.length){
+				registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
+			}
 		}
 		updatePersistData('session',
 			{

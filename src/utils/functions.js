@@ -337,6 +337,7 @@ export const shareScreenFromContent = () => {
 				const track = stream.getVideoTracks()[0];
 
 				track.addEventListener('ended', () => {
+					registerEvent({notify: false, eventName: 'screen_shared_stopped', eventType: 'error'});
 					if(window.startRecordingCallBack){
 						window.startRecordingCallBack({ 
 							type:'error',
@@ -1202,11 +1203,9 @@ export const getNetworkUploadSpeed = async () => {
 };
 
 export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) => {
-	logger.info('browserEvents',browserEvents);
 	const aiIncidentlevel = findAIIncidentLevel(aiEvents, profile);
 	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
-	logger.error('aiIncidentlevel',aiIncidentlevel,'browserIncidentlevel',browserIncidentlevel);
-
+	
 	if (aiIncidentlevel === 'high' || browserIncidentlevel === 'high') {
 		return 'high';
 	} else if (aiIncidentlevel === 'medium' || browserIncidentlevel === 'medium') {
@@ -1218,9 +1217,12 @@ export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) =>
 
 export const findAIIncidentLevel = (aiEvents = [], profile) => {	
 	let result = 'low';
+	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
+	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
+
 	for (const item of aiEvents) {
 		const difference = item.endTime - item.startTime;
-		if (difference >= profile?.settings?.proctoring_behavior?.metrics[item.name]) {
+		if (difference >= metrics[item.name]) {
 			result = 'high';
 			break;
 		} else if (difference >= profile?.settings?.proctoring_behavior?.metrics[item.name] / 2) {
@@ -1243,18 +1245,19 @@ export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
 	);
 
 	if (
-		copyPasteCutEvents.length >= metrics['copy_paste_cut'] ||
-		browserResizedEvents.length >= metrics['browser_resized'] ||
-		navigatingAwayEvents.length >= metrics['navigating_away']
+		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] ||
+		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] ||
+		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away']
 	) {
 		result = 'high';
 	} else if (
-		copyPasteCutEvents.length >= (metrics['copy_paste_cut'] || 0) / 2 ||
-		browserResizedEvents.length >= (metrics['browser_resized'] || 0) / 2 ||
-		navigatingAwayEvents.length >= (metrics['navigating_away'] || 0) / 2
+		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] / 2 ||
+		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] / 2 ||
+		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away'] / 2
 	) {
 		result = 'medium';
 	}
+
 
 	return result;
 };

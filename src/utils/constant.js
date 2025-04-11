@@ -73,7 +73,7 @@ export const LockDownOptions = [
 	'force_full_screen',
 	'detect_resizing_of_window',
 	'disable_right_click',
-	'disable_function_keys',
+	'disable_keyboard_shortcuts',
 	'block_browser_screenshot',
 	'disable_clipboard'
 ];

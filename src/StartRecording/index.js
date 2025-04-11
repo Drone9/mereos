@@ -930,11 +930,11 @@ export const stopAllRecordings = async () => {
 		const dateTime = new Date();
 		await changeCandidateAssessmentStatus({
 			status: 'Completed',
-			id:session?.candidate_assessment
+			id: session?.candidate_assessment
 		});
 
 		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
-			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
+			await registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 		}
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'session_completed', startAt: dateTime });

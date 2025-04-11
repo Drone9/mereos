@@ -144,7 +144,7 @@ export const registerEvent = async ({ eventName,eventValue }) => {
 		const session = convertDataIntoParse('session');
 		const { browserEvents } = session;
 
-		if(session?.id){
+		if (session?.id) {
 			const event = {
 				name: eventName,
 				value: eventValue,
@@ -155,7 +155,7 @@ export const registerEvent = async ({ eventName,eventValue }) => {
 			updatePersistData('session', { browserEvents:[...browserEvents, event] });
 			return createEvent(event);
 		}
-	}catch(error){
+	} catch (error) {
 		logger.error('Error in register event', error);
 	}
 };
@@ -421,7 +421,7 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 			const secureFeatures = getSecureFeatures();
 			
 			let recordings;
-			if(session?.user_video_name?.length || session?.user_audio_name?.length || session?.screen_sharing_video_name?.length || session?.mobileRecordings?.length || session?.mobileAudios?.length){
+			if([...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios].length){
 				const sourceIds = [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
 				recordings = sourceIds?.length
 					? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
@@ -433,33 +433,29 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 				submission_time: session?.submissionTime,
 				duration_taken: session?.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
 				identity_card: session?.identityCard,
-				room_scan_video:session?.room_scan_video,
+				room_scan_video: session?.room_scan_video,
 				identity_photo: session?.candidatePhoto,
-				school: candidateInviteAssessmentSection?.school?.id || '',
-				assessment: session?.assessment?.id || 1,
-				candidate: candidateInviteAssessmentSection?.candidate?.id,
 				user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				user_audio_name: recordings?.data?.filter(recording => session.user_audio_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				roomscan_recordings: session?.roomScanRecordings,
 				session_id: session?.sessionId,
+				archive_id:session?.room_id,
 				location: session?.location,
 				collected_details: {
-					download_speed:session?.downloadSpeed,
-					upload_speed:session?.uploadSpeed,
-					cpu_info:session?.CPUSpeed,
-					ram_info:session?.RAMSpeed
+					download_speed: session?.downloadSpeed,
+					upload_speed: session?.uploadSpeed,
+					cpu_info: session?.CPUSpeed,
+					ram_info: session?.RAMSpeed
 				},
 				status: session?.sessionStatus,
 				video_codec: recordings?.data?.filter(recording => session.user_video_name?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.codec)[0],
 				video_extension: recordings?.data?.filter(recording => session.user_video_name?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.container_format)[0],
-				archive_id:session?.room_id,
-				attempt_id:null,
 				incident_level: findIncidentLevel(aiEvents, browserEvents, secureFeatures),
 				mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-				conversation_id:localStorage.getItem('conversationId') || '',
-				candidate_assessment:session?.candidate_assessment
+				conversation_id: localStorage.getItem('conversationId') || '',
+				candidate_assessment: session?.candidate_assessment
 			};
 	
 			if (session?.id) {
@@ -540,7 +536,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'disable_function_keys': {
+				case 'disable_keyboard_shortcuts': {
 					const disableShortcuts = await preventShortCuts();
 					if (disableShortcuts) {
 						result = {...result, [entity.name]: true};

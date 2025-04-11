@@ -42,7 +42,7 @@ const createDiagnosticItem = (id, label) => {
 		webcam: 'video-camera-light-gray.svg',
 		microphone: 'microphone-light-gray.svg',
 		location: 'location-pin-black.svg',
-		screen: 'multiple-screen-gray.svg'
+		desktop: 'multiple-screen-gray.svg'
 	};
 	
 	statusIcon.src = `${ASSET_URL}/${statusIconMap[id] || 'video-camera-light-gray.svg'}`;
@@ -115,7 +115,7 @@ const renderUI = (tab1Content) => {
 	if (recordVideo) diagnosticItems.push('webcam');
 	if (recordAudio) diagnosticItems.push('microphone');
 	if (trackLocation) diagnosticItems.push('location');
-	if (multipleScreensCheck) diagnosticItems.push('screen');
+	if (multipleScreensCheck) diagnosticItems.push('desktop');
 
 	diagnosticItems.forEach(item => {
 		const label = i18next.t(item);
@@ -170,7 +170,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 		if (!element) {
 			return;
 		}
-		if(id !=='screen'){
+		if(id !=='desktop'){
 			element.addEventListener('click', async () => {
 				const result = await checkFunction();
 				setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
@@ -200,14 +200,14 @@ export const SystemDiagnostics = async (tab1Content) => {
 		webcam: videoGreen,
 		microphone: microPhoneGreen,
 		location: locationGreen,
-		screen: multipleScreenGreen
+		desktop: multipleScreenGreen
 	};
 
 	const failureIconMap = {
 		webcam: videoRed,
 		microphone: microPhoneRed,
 		location: locationRed,
-		screen: multipleScreenRed
+		desktop: multipleScreenRed
 	};
 
 	try {
@@ -255,12 +255,12 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 		if (multipleScreensCheck) {
 			promises.push(detectMultipleScreens().then(isDetected => {
-				setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected ? true : false);
-				handleDiagnosticItemClick('screen', detectMultipleScreens);
+				setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected ? true : false);
+				handleDiagnosticItemClick('desktop', detectMultipleScreens);
 				return isDetected;
 			}));
 		} else {
-			setElementStatus('screen', { success: multipleScreenGreen, failure: multipleScreenRed }, true);
+			setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, true);
 		}
 
 		await Promise.all(promises);
@@ -279,7 +279,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 };
 
 const updateDiagnosticText = () => {
-	const diagnosticItems = ['webcam', 'microphone', 'location', 'screen'];
+	const diagnosticItems = ['webcam', 'microphone', 'location', 'desktop'];
 	let microphoneImg = document.getElementById('microphone-img');
 
 	diagnosticItems.forEach(item => {

@@ -16,10 +16,6 @@ let mediaStream = null;
 let mobileRoomInstance = null;
 
 export const startRecording = async () => {	
-	if(window.recordingStart) {
-		return;
-	}
-	
 	let screenTrack = null;
 	let cameraRecordings = [];
 	let audioRecordings = [];
@@ -228,7 +224,6 @@ export const startRecording = async () => {
 			updatePersistData('session', {
 				roomSessionId: newRoomSessionId,
 				sessionId: newSessionId,
-				sessionStartTime: getTimeInSeconds({ isUTC: true, inputDate: dateTime }),
 				sessionStatus:'Attending'
 			});
 
@@ -245,9 +240,9 @@ export const startRecording = async () => {
 				} : true) });
 
 				if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
-					startAIWebcam(mediaStream);
+					await startAIWebcam(mediaStream);
 				}else{
-					setupWebcam(mediaStream);
+					await setupWebcam(mediaStream);
 				}
 
 				cameraRecordings = [
@@ -291,8 +286,6 @@ export const startRecording = async () => {
 			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 				window.socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
 			}
-
-			window.recordingStart = true;
 
 			const localParticipant = room.localParticipant;
 
@@ -348,10 +341,7 @@ export const startRecording = async () => {
 			});
 
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
-
-			const updatedSession = convertDataIntoParse('session');
-			await addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
-
+			
 			if(window.startRecordingCallBack){
 				window.startRecordingCallBack({ 
 					type:'success',
@@ -360,6 +350,12 @@ export const startRecording = async () => {
 				});
 			}
 
+			const updatedSession = convertDataIntoParse('session');
+			let resp = await addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
+			if(resp){
+				registerEvent({ eventType: 'success', notify: false, eventName: 'session_started', startAt: dateTime });
+			}
+			
 		} catch (error) {
 			logger.error('error in startRecording',error);
 			updatePersistData('session', {
@@ -368,9 +364,7 @@ export const startRecording = async () => {
 			window.recordingStart = false;
 		}
 	}else{
-		const dateTime = new Date();
 		updatePersistData('session', {
-			sessionStartTime: getTimeInSeconds({ isUTC: true, inputDate: dateTime }),
 			sessionStatus:'Attending'
 		});
 		if(window.startRecordingCallBack){
@@ -387,98 +381,104 @@ export const startRecording = async () => {
 const PREDICTION = ['cell phone', 'book'];
 
 const setupWebcam = async (mediaStream) => {
-	const secureFeatures = getSecureFeatures();
-	if (!i18next.isInitialized) {
-		initializeI18next();
-	}
-	let webcamContainer = document.getElementById('webcam-container');
-	if (!webcamContainer) {
-		webcamContainer = document.createElement('div');
-		webcamContainer.id = 'webcam-container';
-		webcamContainer.className='user-videos-remote';
-		if(findConfigs(['camera_view'],secureFeatures?.entities)?.length){
-			document.body.appendChild(webcamContainer);
-		}
-	}
-
-	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-	
-	let videoHeaderContainer = document.createElement('div');
-	videoHeaderContainer.className = 'user-video-header';
-	videoHeaderContainer.id='user-video-header';
-
-	const videoHeading = document.createElement('p');
-	videoHeading.className='recording-heading';
-	videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
-	const recordingIcon = document.createElement('div');
-	recordingIcon.className = 'recording-badge-container-header';
-	recordingIcon.innerHTML = `
-		<img
-				class='ivsf-recording-dot'
-				src="${ASSET_URL}/white-dot.svg"
-				alt='white-dot'
-		></img>
-		<p class='recording-text'>${i18next.t('recording')}</p>
-	`;
-
-	videoHeaderContainer.appendChild(videoHeading);
-	videoHeaderContainer.appendChild(recordingIcon);
-
-	const remoteVideoRef = document.createElement('div');
-	remoteVideoRef.classList.add('remote-video');
-
-	const mediaWrapper = document.createElement('div');
-	mediaWrapper.style.position = 'relative';
-	mediaWrapper.style.marginLeft = 'auto';
-	mediaWrapper.style.marginRight = 'auto';
-	mediaWrapper.style.width = '180px'; 
-	mediaWrapper.style.height = '142px'; 
-	mediaWrapper.style.objectFit = 'cover'; 
-
-	const videoElement = document.createElement('video');
-	videoElement.autoplay = true;
-	videoElement.muted = true;
-	videoElement.srcObject = mediaStream;
-	videoElement.style.position = 'absolute';
-	videoElement.style.width = '100%';
-	videoElement.style.objectFit = 'cover';
-	videoElement.style.height = '100%'; 
-
-	const canvas = document.createElement('canvas');
-	canvas.id = 'canvas';
-	canvas.style.position = 'absolute'; 
-	canvas.style.left = '0';
-	canvas.style.width = '100%'; 
-	canvas.style.height = '100%'; 
-
-	webcamContainer.appendChild(videoHeaderContainer);
-	mediaWrapper.appendChild(videoElement);
-	if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
-		mediaWrapper.appendChild(canvas);
-	}
-	webcamContainer.appendChild(mediaWrapper); 
-
-	videoElement.addEventListener('loadedmetadata', () => {
-		canvas.width = videoElement.videoWidth;
-		canvas.height = videoElement.videoHeight;
-	});
-
-	interact(webcamContainer).draggable({
-		listeners: {
-			move(event) {
-				const target = event.target;
-				const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-				const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-
-				target.style.transform = `translate(${x}px, ${y}px)`;
-
-				target.setAttribute('data-x', x);
-				target.setAttribute('data-y', y);
+	return new Promise((resolve, reject) => {
+		try{
+			const secureFeatures = getSecureFeatures();
+			if (!i18next.isInitialized) {
+				initializeI18next();
 			}
+			let webcamContainer = document.getElementById('webcam-container');
+			if (!webcamContainer) {
+				webcamContainer = document.createElement('div');
+				webcamContainer.id = 'webcam-container';
+				webcamContainer.className='user-videos-remote';
+				if(findConfigs(['camera_view'],secureFeatures?.entities)?.length){
+					document.body.appendChild(webcamContainer);
+				}
+			}
+		
+			const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+			
+			let videoHeaderContainer = document.createElement('div');
+			videoHeaderContainer.className = 'user-video-header';
+			videoHeaderContainer.id='user-video-header';
+		
+			const videoHeading = document.createElement('p');
+			videoHeading.className='recording-heading';
+			videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
+			const recordingIcon = document.createElement('div');
+			recordingIcon.className = 'recording-badge-container-header';
+			recordingIcon.innerHTML = `
+				<img
+						class='ivsf-recording-dot'
+						src="${ASSET_URL}/white-dot.svg"
+						alt='white-dot'
+				></img>
+				<p class='recording-text'>${i18next.t('recording')}</p>
+			`;
+		
+			videoHeaderContainer.appendChild(videoHeading);
+			videoHeaderContainer.appendChild(recordingIcon);
+		
+			const remoteVideoRef = document.createElement('div');
+			remoteVideoRef.classList.add('remote-video');
+		
+			const mediaWrapper = document.createElement('div');
+			mediaWrapper.style.position = 'relative';
+			mediaWrapper.style.marginLeft = 'auto';
+			mediaWrapper.style.marginRight = 'auto';
+			mediaWrapper.style.width = '180px'; 
+			mediaWrapper.style.height = '142px'; 
+			mediaWrapper.style.objectFit = 'cover'; 
+		
+			const videoElement = document.createElement('video');
+			videoElement.autoplay = true;
+			videoElement.muted = true;
+			videoElement.srcObject = mediaStream;
+			videoElement.style.position = 'absolute';
+			videoElement.style.width = '100%';
+			videoElement.style.objectFit = 'cover';
+			videoElement.style.height = '100%'; 
+		
+			const canvas = document.createElement('canvas');
+			canvas.id = 'canvas';
+			canvas.style.position = 'absolute'; 
+			canvas.style.left = '0';
+			canvas.style.width = '100%'; 
+			canvas.style.height = '100%'; 
+		
+			webcamContainer.appendChild(videoHeaderContainer);
+			mediaWrapper.appendChild(videoElement);
+			if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
+				mediaWrapper.appendChild(canvas);
+			}
+			webcamContainer.appendChild(mediaWrapper); 
+		
+			videoElement.addEventListener('loadedmetadata', () => {
+				canvas.width = videoElement.videoWidth;
+				canvas.height = videoElement.videoHeight;
+			});
+		
+			interact(webcamContainer).draggable({
+				listeners: {
+					move(event) {
+						const target = event.target;
+						const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+						const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+		
+						target.style.transform = `translate(${x}px, ${y}px)`;
+		
+						target.setAttribute('data-x', x);
+						target.setAttribute('data-y', y);
+					}
+				}
+			});
+		
+			resolve ({ videoElement, canvas });
+		}catch(e){
+			reject(e);
 		}
 	});
-
-	return { videoElement, canvas };
 };
 
 const handleVideoResize = (predictions, context) => {
@@ -498,25 +498,37 @@ const handleVideoResize = (predictions, context) => {
 };
 
 const startAIWebcam = async (mediaStream) => {
-	const secureFeatures = getSecureFeatures();
-	const multiplePeopleFeature = findConfigs(['multiple_people_detection'], secureFeatures?.entities).length > 0;
-	const personMissingFeature = findConfigs(['person_missing'], secureFeatures?.entities).length > 0;
-	const objectDetectionFeature = findConfigs(['object_detection'], secureFeatures?.entities).length > 0;
+	try {
+		const secureFeatures = getSecureFeatures();
+		const multiplePeopleFeature = findConfigs(['multiple_people_detection'], secureFeatures?.entities).length > 0;
+		const personMissingFeature = findConfigs(['person_missing'], secureFeatures?.entities).length > 0;
+		const objectDetectionFeature = findConfigs(['object_detection'], secureFeatures?.entities).length > 0;
 
-	await tf.setBackend('webgl');
-	await tf.ready();
-	const net = await cocoSsd.load();
-	const { videoElement, canvas } = await setupWebcam(mediaStream);
-	const context = canvas.getContext('2d');
+		await tf.setBackend('webgl');
+		await tf.ready();
+    
+		const net = await cocoSsd.load();
+    
+		const { videoElement, canvas } = await setupWebcam(mediaStream);
+		const context = canvas.getContext('2d');
 
-	const session = convertDataIntoParse('session');
-	let seconds = session?.quizStartTime ? parseInt((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) : 0;
+		const session = convertDataIntoParse('session');
+		let seconds = session?.quizStartTime ? parseInt((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) : 0;
 
-	aiProcessingInterval = setInterval(async () => {
-		try {
-			if (videoElement.readyState === 4) {
+		const activeViolations = {
+			multiple_people: null,
+			person_missing: null,
+			object_detected: null
+		};
+
+		aiProcessingInterval = setInterval(async () => {
+			try {
+				seconds = seconds + 1;
+				if (videoElement.readyState !== 4) return;
+
 				const image = tf.browser.fromPixels(videoElement);
 				const predictions = await net.detect(image);
+				tf.dispose(image);
 
 				context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -525,7 +537,7 @@ const startAIWebcam = async (mediaStream) => {
 				}
 
 				let log = {}, person = {}, multiplePersonFound = false;
-							
+                    
 				predictions.forEach(prediction => {
 					if (prediction.class === 'person' && (personMissingFeature || multiplePeopleFeature)) {
 						if (person?.class && multiplePeopleFeature) {
@@ -552,17 +564,19 @@ const startAIWebcam = async (mediaStream) => {
 				if (multiplePeopleFeature) featuresToCheck.push('multiple_people');
 
 				featuresToCheck.forEach(key => {
-					let lastLogIndex = aiEvents.findIndex(lg => lg[key]);
-					let lastLog = lastLogIndex > -1 ? aiEvents.splice(lastLogIndex, 1)[0] : undefined;
-									
-					if (log[key] && (!lastLog?.[key] || lastLog?.['end_time'])) {
-						const newLog = { start_time: seconds, time_span: 1, [key]: log[key] };
-						aiEvents.push(newLog);
-					} 
-					else if (log[key] && lastLog?.[key]) {
-						lastLog = { ...lastLog, time_span: (Number(lastLog['time_span']) || 0) + 1 };
-						aiEvents.push(lastLog);
-						if (lastLog.time_span === 10) {
+					if (log[key]) {
+						if (!activeViolations[key]) {
+							activeViolations[key] = {
+								start_time: seconds,
+								time_span: 1
+							};
+							aiEvents.push({ ...activeViolations[key], [key]: log[key] });
+						} 
+						else {
+							activeViolations[key].time_span += 1;
+						}
+
+						if (activeViolations[key].time_span === 10) {
 							let message = '';
 							if (key === 'person_missing') {
 								message = 'no_person_detected_for_more_than_10_seconds';
@@ -573,27 +587,44 @@ const startAIWebcam = async (mediaStream) => {
 							}
 							showToast('error', message);
 						}
-					} 
-					else if (!log[key] && lastLog?.[key]) {
-						lastLog = { ...lastLog, end_time: Number(lastLog.start_time) + Number(lastLog.time_span) };
+					}
+					else if (activeViolations[key]) {
+						const violation = activeViolations[key];
 						const data = { 
 							eventType: 'success', 
 							notify: true, 
 							eventName: key, 
-							startTime: lastLog.start_time, 
-							endTime: Number(lastLog.start_time) + Number(lastLog.time_span) 
+							startTime: violation.start_time, 
+							endTime: violation.start_time + violation.time_span
 						};
+            
 						registerAIEvent(data);
 						updatePersistData('session', {
 							aiEvents: [data, ...session.aiEvents]
 						});
+            
+						activeViolations[key] = null;
 					}
 				});
+			} catch (error) {
+				logger.error('Error in AI processing:', error);
 			}
-		} catch (error) {
-			logger.error('Error in AI processing:', error);
+		}, 1000);
+
+		return { success: true, message: 'AI webcam started successfully' };
+	} catch (error) {
+		logger.error('Failed to start AI webcam:', error);
+    
+		if (aiProcessingInterval) {
+			clearInterval(aiProcessingInterval);
 		}
-	}, 1000);
+    
+		return { 
+			success: false, 
+			message: 'Failed to start AI webcam',
+			error: error.message 
+		};
+	}
 };
 
 export const cleanupLocalVideo = () => {
@@ -886,11 +917,11 @@ export const stopAllRecordings = async () => {
 		const dateTime = new Date();
 		await changeCandidateAssessmentStatus({
 			status: 'Completed',
-			id:session?.candidate_assessment
+			id: session?.candidate_assessment
 		});
 
 		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
-			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
+			await registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 		}
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'session_completed', startAt: dateTime });

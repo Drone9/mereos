@@ -352,7 +352,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			ivsoWrapper.appendChild(ivsoQueryMsg);
 		}
 	
-		// Append the wrapper to the container
 		ivsoContainer.appendChild(ivsoWrapper);
 	};
 

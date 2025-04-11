@@ -160,7 +160,6 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		showTab(previousPage);
 	};
 	
-
 	const updateUI = () => {
 		let container = tabContent.querySelector('.ivst-container');
 		if (!container) {
@@ -184,7 +183,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			wrapper.appendChild(stepsContainer);
 
 			const message = document.createElement('div');
-			message.className = 'ivst-msg';
+			message.className = 'audio-test-msg';
+			message.id='audio-test-msg';
         
 			const audioText = document.createElement('div');
 			audioText.className = 'ivst-audio-text';
@@ -211,7 +211,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			audioText.textContent = i18next.t('no_point_in_running_leave_in_time');
 		}
 
-		const messageElement = wrapper.querySelector('.ivst-msg');
+		const messageElement = wrapper.querySelector('.audio-test-msg');
 		if (messageElement) {
 			messageElement.textContent = i18next.t(msg.text);
 			if (msg.type === 'unsuccessful') {
@@ -269,7 +269,10 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	drawAudioSpikes();
 
 	i18next.on('languageChanged', () => {
-		msg.text = i18next.t(msg.text);
+		const msg = document.getElementById('audio-test-msg');
+		if (msg && msg.text) {
+			msg.text = i18next.t(msg.text);
+		}
 		updateUI();
 	});
 

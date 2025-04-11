@@ -30,6 +30,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true
 	};
 
+	let autoStopRecordingTimeout = null;
+
 	const handleStartRecording = async (type) => {
 		try {
 			if (type === 'startRecording') {
@@ -42,6 +44,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				};
 
 				mediaRecorder.onstop = () => {
+					clearTimeout(autoStopRecordingTimeout); 
 					blob = new Blob(recordedChunks, { type: 'video/webm' });
 					showPlayer = true;
 					recordedChunks = [];
@@ -50,18 +53,27 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 				mediaRecorder.start();
 				recordingMode = 'beingRecorded';
-				stopButtonDisabled = true; 
+				stopButtonDisabled = true;
 				updateUI();
 
 				setTimeout(() => {
 					stopButtonDisabled = false;
 					updateUI();
 				}, 3000);
+
+				autoStopRecordingTimeout = setTimeout(() => {
+					if (mediaRecorder && mediaRecorder.state === 'recording') {
+						mediaRecorder.stop();
+						recordingMode = 'stopRecording';
+						updateUI();
+					}
+				}, 60000);
 			}
 		} catch (error) {
 			logger.error('Error accessing media devices:', error);
 		}
 	};
+
 
 	const handleRestartRecording = async () => {
 		showPlayer = false;
@@ -73,12 +85,14 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 	const handleStopRecording = async () => {
 		clearInterval(window.recordingDotInterval);
+		clearTimeout(autoStopRecordingTimeout);
 		if (mediaRecorder) {
 			mediaRecorder.stop();
 		}
 		recordingMode = 'stopRecording';
 		updateUI();
-	};
+	};	
+	
 
 	const nextStep = async () => {
 		try {

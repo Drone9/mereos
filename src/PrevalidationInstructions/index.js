@@ -98,7 +98,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 				};
 				localStorage.setItem('microphoneID',id);
 			}
-			startWebcam();
+			// startWebcam();
 		};
 	
 		const nextStep = () => {

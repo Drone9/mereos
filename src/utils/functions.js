@@ -414,7 +414,7 @@ export const updatePersistData = (key, updates) => {
 	}
 };
 
-export const addSectionSessionRecord = async (session, candidateInviteAssessmentSection) => {
+export const addSectionSessionRecord = async (session) => {
 	return new Promise(async (resolve, _reject) => {
 		try{
 			const { aiEvents, browserEvents } = session;
@@ -427,11 +427,10 @@ export const addSectionSessionRecord = async (session, candidateInviteAssessment
 					? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
 					: [];
 			}
-			logger.success('session?.incident_level',session?.incident_level);
 			let sectionSessionDetails = {
-				start_time: session?.sessionStartTime,
+				start_time: session?.quizStartTime,
 				submission_time: session?.submissionTime,
-				duration_taken: session?.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
+				duration_taken: session?.quizStartTime ? getTimeInSeconds({isUTC: true}) - session.quizStartTime : 0,
 				identity_card: session?.identityCard,
 				room_scan_video: session?.room_scan_video,
 				identity_photo: session?.candidatePhoto,

@@ -102,9 +102,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				type: 'unsuccessful',
 				text: i18next.t('screen_sharing_stopped')
 			};
-		} else {
+		} else if(mode === 'share-screen-again') {
 			msg = {
-				type: 'successful',
+				type: 'unsuccessful',
 				text: i18next.t('please_share_entire_screen')
 			};
 		}
@@ -131,7 +131,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			doneButton.disabled = multipleScreens;
 			doneButton.addEventListener('click', nextStep);
 			btnContainer.appendChild(doneButton);
-		} else if (mode === 'rerecordScreen') {
+		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again') {
 			reshareButton.className = 'orange-filled-btn';
 			reshareButton.textContent = i18next.t('reshare_screen');
 			reshareButton.addEventListener('click', shareScreen);
@@ -171,11 +171,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				throw new Error(i18next.t('please_share_entire_screen'));
 			}
 		} catch (err) {
-			logger.error('Error during screen sharing:', err);
-			mode = 'rerecordScreen';
+			logger.error('Error during screen sharing:', err.message);
+			mode = 'share-screen-again';
 			msg = {
-				type: 'unsuccessful',
-				text: 'screen_sharing_stopped'
+				type: err?.message === i18next.t('please_share_entire_screen') ? 'share-screen-again' : 'unsuccessful',
+				text: err?.message || 'screen_sharing_stopped'
 			};
 		}
 		updateUI();

@@ -23,6 +23,19 @@ export const startRecording = async () => {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+	
+	window.addEventListener('beforeunload', function (e) {
+		e.preventDefault();
+		e.returnValue = '';
+	
+		registerEvent({ 
+			eventType: 'error', 
+			notify: false, 
+			eventName: 'candidate_refreshed_the_page', 
+			eventValue: getDateTime() 
+		});
+	});
+	
 
 	window.addEventListener('popstate', () => {
 		if(window.startRecordingCallBack){

@@ -139,15 +139,15 @@ export const checkMicrophone = () => {
 	});
 };
 
-export const registerEvent = async ({ eventName }) => {
+export const registerEvent = async ({ eventName,eventValue }) => {
 	try{
 		const session = convertDataIntoParse('session');
 		const { browserEvents } = session;
 
 		if(session?.id){
 			const event = {
-				name: '',
-				value: eventName,
+				name: eventName,
+				value: eventValue,
 				session_id: session?.id,
 				start_at: session?.quizStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.quizStartTime) / 1000) : 0
 			};

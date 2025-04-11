@@ -23,12 +23,6 @@ export const ExamPreparation = async (tabContent) => {
 	wrapper.className = 'exam-preparation-wrapper';
 	container.appendChild(wrapper);
 
-	const headerImg = document.createElement('img');
-	headerImg.className = 'exam-preparation-header-img';
-	headerImg.src = `${ASSET_URL}/camera-icon.svg`;
-	headerImg.alt = 'camera-icon';
-	wrapper.appendChild(headerImg);
-
 	const headerTitle = document.createElement('div');
 	headerTitle.className = 'exam-preparation-header-title';
 	headerTitle.textContent = i18next.t('exam_preparation');
@@ -38,6 +32,12 @@ export const ExamPreparation = async (tabContent) => {
 	preparationMsg.className = 'exam-preparation-msg';
 	preparationMsg.textContent = i18next.t('exam_preparation_msg');
 	wrapper.appendChild(preparationMsg);
+
+	const headerImg = document.createElement('img');
+	headerImg.className = 'exam-preparation-header-img';
+	headerImg.src = `${ASSET_URL}/camera-icon.svg`;
+	headerImg.alt = 'camera-icon';
+	wrapper.appendChild(headerImg);
 
 	const tncBlock = document.createElement('div');
 	tncBlock.className = 'exam-preparation-tnc-block';
@@ -78,7 +78,7 @@ export const ExamPreparation = async (tabContent) => {
       class="exam-preparation-sd-link"
       href="https://mereos.eu/conditions-générales"
       target="_blank"
-    >${i18next.t('security_document')}</a> ${i18next.t('for_more_information')}.
+    >${i18next.t('security_document')}</a> ${i18next.t('for_more_information')}
   `;
 	wrapper.appendChild(sdContainer);
 

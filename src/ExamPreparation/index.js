@@ -94,7 +94,7 @@ export const ExamPreparation = async (tabContent) => {
 		if (tncRead) {
 			registerEvent({ eventType: 'success', notify: false, eventName: 'terms_and_conditions_read', eventValue: getDateTime() });
 			showTab('IdentityCardRequirement');
-			updatePersistData('preChecksSteps',{ examPreparation:true });
+			updatePersistData('preChecksSteps',{ examPreparation: true });
 		} else {
 			errMsg = true;
 			tncBlock.style.color = '#E95E5E';

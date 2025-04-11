@@ -140,11 +140,11 @@ export const checkMicrophone = () => {
 };
 
 export const registerEvent = async ({ eventName }) => {
-	try{
+	try {
 		const session = convertDataIntoParse('session');
 		const { browserEvents } = session;
 
-		if(session?.id){
+		if (session?.id) {
 			const event = {
 				name: '',
 				value: eventName,
@@ -155,7 +155,7 @@ export const registerEvent = async ({ eventName }) => {
 			updatePersistData('session', { browserEvents:[...browserEvents, event] });
 			return createEvent(event);
 		}
-	}catch(error){
+	} catch (error) {
 		logger.error('Error in register event', error);
 	}
 };

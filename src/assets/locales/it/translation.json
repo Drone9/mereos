@@ -975,7 +975,7 @@
 	"useful_tips": "Suggerimenti utili:",
 	"user": "Utente",
 	"user_idle": "Utente inattivo",
-	"user_interrupted_the_stream": "L'utente ha interrotto lo streaming!",
+	"candidate_interrupted_the_stream": "L'utente ha interrotto lo streaming!",
 	"username": "Nome utente",
 	"users": "Utenti",
 	"verification_code": "Inserisci il codice di verifica",

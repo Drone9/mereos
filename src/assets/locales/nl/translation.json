@@ -975,7 +975,7 @@
 	"useful_tips": "Nuttige tips:",
 	"user": "Gebruiker",
 	"user_idle": "Gebruiker inactief",
-	"user_interrupted_the_stream": "De gebruiker heeft de stream onderbroken.",
+	"candidate_interrupted_the_stream": "De gebruiker heeft de stream onderbroken.",
 	"username": "Gebruikersnaam",
 	"users": "Gebruikers",
 	"verification_code": "Vul verificatiecode in",

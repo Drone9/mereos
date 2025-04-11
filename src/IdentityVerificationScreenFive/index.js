@@ -90,7 +90,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const updateUI = () => {
 		headerTitle.textContent = i18next.t('verification_completed');
-		msgElement.textContent = i18next.t('verification_completed_msg');
+		// msgElement.textContent = i18next.t('verification_completed_msg');
     
 		if (mode === 'startScreenRecording') {
 			msg = {

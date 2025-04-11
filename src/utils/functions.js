@@ -149,7 +149,7 @@ export const registerEvent = async ({ eventName }) => {
 				name: '',
 				value: eventName,
 				session_id: session?.id,
-				start_at: session?.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.sessionStartTime) / 1000) : 0
+				start_at: session?.quizStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.quizStartTime) / 1000) : 0
 			};
 
 			updatePersistData('session', { browserEvents:[...browserEvents, event] });

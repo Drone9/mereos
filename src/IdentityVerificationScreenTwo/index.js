@@ -165,7 +165,12 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const uploadCandidateIdentityCard = async () => {
+		if (currentState.isUploading) return; 
+    
 		try {
+			currentState.isUploading = true;
+			renderUI();
+
 			currentState = {
 				...currentState,
 				msg: {
@@ -181,10 +186,11 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			});
 
 			if (resp?.data?.file_url) {
-				updatePersistData('session',{ identityCard: resp.data.file_url });
+				updatePersistData('session', { identityCard: resp.data.file_url });
 				currentState = {
 					...currentState,
 					captureMode: 'uploaded_photo',
+					isUploading: false, // Reset flag
 					msg: {
 						type: 'waiting',
 						text: 'candidate_id_is_uploaded_successfully'
@@ -197,8 +203,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		} catch (error) {
 			currentState = {
 				...currentState,
-				captureMode: 'take',
-				imageSrc: null,
+				isUploading: false,
 				msg: {
 					type: 'error',
 					text: 'something_went_wrong_please_upload_again'
@@ -226,16 +231,14 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		}
 		container.innerHTML = '';
 
-		// Check if wrapper exists before creating a new one
 		let wrapper = container.querySelector('.ivst-wrapper');
 		if (!wrapper) {
 			wrapper = document.createElement('div');
 			wrapper.className = 'ivst-wrapper';
 			container.appendChild(wrapper);
 		}
-		wrapper.innerHTML = ''; // Clear existing content
+		wrapper.innerHTML = ''; 
 
-		// Create steps container
 		let stepsContainer = document.createElement('div');
 		renderIdentityVerificationSteps(stepsContainer, 2);
 
@@ -322,7 +325,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			btnContainer.appendChild(retakeBtn);
 			if (currentState.captureMode !== 'uploaded_photo') {
 				const uploadBtn = createButton(`${i18next.t('upload')}`, 'orange-filled-btn', uploadCandidateIdentityCard);
-				uploadBtn.disabled = currentState.msg.type === 'unsuccessful';
+				uploadBtn.disabled = currentState.msg.type === 'unsuccessful' || currentState.isUploading;			
 				btnContainer.appendChild(uploadBtn);
 			} else {
 				const nextBtn = createButton(`${i18next.t('next_step')}`, 'orange-filled-btn', nextStep);

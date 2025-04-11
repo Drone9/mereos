@@ -9,13 +9,13 @@
 
 window.openModal = openModal;
 
-import {  openModal } from './src/ExamsPrechecks';
+import {  openModal, startSession } from './src/ExamsPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { initialSessionData, preChecksSteps } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, hideZendeskWidget, logger, updatePersistData } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, getTimeInSeconds, hideZendeskWidget, logger, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
@@ -137,7 +137,7 @@ async function start_prechecks(callback,setting) {
 		window.globalCallback = callback;
 		localStorage.setItem('precheckSetting', setting);
 		window.precheckCompleted=false;
-
+		startSession();
 		openModal(callback);
 	} catch (error) {
 		logger.error('Error in start_prechecks:', error);
@@ -195,10 +195,11 @@ async function stop_prechecks(callback) {
 
 window.startRecordingCallBack = null;
 window.recordingStart=false;
+window.roomInstance=null;
 async function start_session(callback) {
 	try {
 		window.startRecordingCallBack = callback;
-
+		
 		if(!window.precheckCompleted){
 			window.startRecordingCallBack({ 
 				type:'error',
@@ -208,13 +209,20 @@ async function start_session(callback) {
 			return;
 		}
 
-		if(!window.recordingStart){
+		if(window.roomInstance === null && !window.recordingStart){
+			window.recordingStart=true;
 			const secureFeatures = getSecureFeatures();
+			const dateTime = new Date();
+			
+			updatePersistData('session', {
+				quizStartTime: getTimeInSeconds({  isUTC: true,inputDate: dateTime }),
+			});
 
 			if (secureFeatures?.entities?.length > 0) {
 				const mobileRoomSessionId = v4();
 				const newRoomSessionId = v4();
-	
+				
+
 				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
 					try {
 						const resp = await getRoomSid({ session_id: mobileRoomSessionId, auto_record: true });

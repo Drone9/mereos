@@ -44,7 +44,8 @@ export const initialSessionData = {
 	uploadSpeed:null,
 	CPUSpeed:null,
 	RAMSpeed:null,
-	room_id:null
+	room_id:null,
+	quizStartTime:0
 };
 
 export const preChecksSteps = {

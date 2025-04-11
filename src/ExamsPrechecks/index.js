@@ -343,9 +343,6 @@ const openModal = async (callback) => {
 	}
 	showTab(activeTab, callback);
 	createLanguageDropdown();
-
-	const session = convertDataIntoParse('session');
-	await startSession(session);
 };
 
 function closeModal() {
@@ -495,7 +492,8 @@ const showTab = async (tabId, callback) => {
 	}
 };
 
-const startSession = async (session) => {
+export const startSession = async () => {
+	const session = convertDataIntoParse('session');
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
@@ -508,7 +506,7 @@ const startSession = async (session) => {
 		updatePersistData('session',
 			{
 				id: resp.data.id,
-				sessionStatus: 'Initiated'
+				sessionStatus: 'Attending'
 			});
 			
 		await changeCandidateAssessmentStatus({

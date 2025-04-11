@@ -146,7 +146,7 @@ export const registerEvent = async ({ eventName }) => {
 
 		if(session?.id){
 			const event = {
-				name: eventName,
+				name: '',
 				value: eventName,
 				session_id: session?.id,
 				start_at: session?.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.sessionStartTime) / 1000) : 0

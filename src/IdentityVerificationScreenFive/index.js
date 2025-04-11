@@ -37,9 +37,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const resp = await detectMultipleScreens();
 		if (resp) {
 			multipleScreens = true;
+			registerEvent({ eventType: 'error', notify: false, eventName: 'multiple_screens_detected' });
 		} else {
 			multipleScreens = false;
-			registerEvent({ eventType: 'error', notify: false, eventName: 'multiple_screens_detected' });
 		}
 	};
 

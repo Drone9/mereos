@@ -797,7 +797,6 @@ const handleResize = () => {
 	clearTimeout(resizeTimeout);
 
 	resizeTimeout = setTimeout(() => {
-		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
 		isResizing = false;
 	}, 500);
 };

@@ -328,7 +328,7 @@ export const startRecording = async () => {
 							});
 						}
 						
-						registerEvent({ eventType: 'error', notify: false, eventName: 'camera_is_stopped', eventValue: dateTime });
+						registerEvent({ eventType: 'error', notify: false, eventName: 'camera_permission_disabled', eventValue: dateTime });
 					});
 				}
 			});
@@ -892,13 +892,7 @@ export const stopAllRecordings = async () => {
 		}
 
 		window.recordingStart=false;
-		window?.roomInstance.localParticipant.videoTracks.forEach((publication) => {
-			const track = publication.track;
-			if (track) {
-				track.removeAllListeners('stopped');
-			}
-		});
-		
+
 		if (window?.roomInstance) {
 			window?.roomInstance.localParticipant.tracks.forEach(publication => {
 				const track = publication.track;

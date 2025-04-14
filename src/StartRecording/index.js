@@ -4,7 +4,7 @@ import i18next from 'i18next';
 import { v4 } from 'uuid';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, detectBackButton, detectPageRefresh, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
@@ -24,32 +24,8 @@ export const startRecording = async () => {
 	const session = convertDataIntoParse('session');
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 	
-	window.addEventListener('beforeunload', function (e) {
-		e.preventDefault();
-		e.returnValue = '';
-	
-		registerEvent({ 
-			eventType: 'error', 
-			notify: false, 
-			eventName: 'candidate_refreshed_the_page', 
-			eventValue: getDateTime() 
-		});
-	});
-	
-
-	window.addEventListener('popstate', () => {
-		if(window.startRecordingCallBack){
-			window.startRecordingCallBack({ 
-				type:'error',
-				message: 'user_click_on_browser_back_button' ,
-				code:40005
-			});
-			window.recordingStart = false;
-			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
-			}
-		}
-	});
+	detectPageRefresh();
+	detectBackButton();
 
 	const forceClosure = async () => {
 		try {

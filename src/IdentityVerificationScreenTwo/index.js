@@ -304,8 +304,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (!currentState.imageSrc) {
 			const uploadMsg = document.createElement('div');
 			uploadMsg.className = 'ivst-query-msg';
-			uploadMsg.innerHTML = `${i18next.t('please_take_picture_or')} <span class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.`;
-			uploadMsg.querySelector('.ivst-file').addEventListener('click', () => inputFile.click());
+			uploadMsg.innerHTML = `${i18next.t('please_take_picture_or')} <span id='upload-identity-card' class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.`;
+			uploadMsg.querySelector('.ivst-file')?.addEventListener('click', () => inputFile.click());
 			wrapper.appendChild(uploadMsg);
 		}
 
@@ -335,15 +335,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 
 		wrapper.appendChild(btnContainer);
 
-		if (!container.querySelector('input[name="idCard"]')) {
-			inputFile = document.createElement('input');
-			inputFile.type = 'file';
-			inputFile.name = 'idCard';
-			inputFile.accept = 'image/*';
-			inputFile.hidden = true;
-			inputFile.addEventListener('change', uploadImage);
-			container.appendChild(inputFile);
-		}
+		inputFile = document.createElement('input');
+		inputFile.type = 'file';
+		inputFile.name = 'idCard';
+		inputFile.accept = 'image/*';
+		inputFile.hidden = true;
+		inputFile.addEventListener('change', uploadImage);
+		container.appendChild(inputFile);
 	};
 
 	const createButton = (text, className, onClick) => {

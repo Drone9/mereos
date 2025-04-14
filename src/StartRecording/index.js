@@ -304,11 +304,14 @@ export const startRecording = async () => {
 
 			localParticipant.on('networkQualityLevelChanged', (level) => {
 				if (level <= 2) {
-					window.startRecordingCallBack({ 
-						type:'error',
-						message: 'session_is_terminated_due_to_slow_internet_connection',
-						code:40013
-					});
+					if(window.startRecordingCallBack){
+						window.startRecordingCallBack({ 
+							type:'error',
+							message: 'session_is_terminated_due_to_slow_internet_connection',
+							code:40013
+						});
+					}
+				
 					showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
 				}
 			});
@@ -317,11 +320,15 @@ export const startRecording = async () => {
 				const track = publication.track;
 				if (track) {
 					track.on('stopped', () => {
-						window.startRecordingCallBack({ 
-							type:'error',
-							message: 'camera_is_stopped',
-							code:40019
-						});
+						if(window.startRecordingCallBack){
+							window.startRecordingCallBack({ 
+								type:'error',
+								message: 'camera_is_stopped',
+								code:40019
+							});
+						}
+						
+						registerEvent({ eventType: 'error', notify: false, eventName: 'camera_permission_disabled', eventValue: dateTime });
 					});
 				}
 			});
@@ -351,6 +358,7 @@ export const startRecording = async () => {
 				setTimeout(async () => {
 					forceClosure();
 				},3000);
+			
 			});
 
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });

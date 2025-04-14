@@ -205,7 +205,7 @@ export const loadZendeskWidget = () => {
 	const hasChatBot = secureFeatures?.some(entity => entity.key === 'chat_bot');
 	let script;
 
-	if (hasChatBot) {
+	if (hasChatBot && !document.querySelector('ze-snippet')) {
 		script = document.createElement('script');
 		script.src = 'https://static.zdassets.com/ekr/snippet.js?key=6542e7ef-41de-43ed-bc22-3d429a78ead3';
 		script.async = true;

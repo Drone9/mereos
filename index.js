@@ -317,8 +317,8 @@ async function stop_session(callback) {
 
 				callback({ 
 					type: 'success', 
-					message: 'session_is_finished_successfully', 
-					code:50003 
+					message: 'session_finished_successfully', 
+					code: 50003 
 				});
 			} else {
 				throw new Error('Session can\'t be added');

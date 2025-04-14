@@ -205,12 +205,15 @@ export const loadZendeskWidget = () => {
 	const hasChatBot = secureFeatures?.some(entity => entity.key === 'chat_bot');
 	let script;
 
-	if (hasChatBot && !document.querySelector('#ze-snippet')) {
-		script = document.createElement('script');
-		script.src = 'https://static.zdassets.com/ekr/snippet.js?key=6542e7ef-41de-43ed-bc22-3d429a78ead3';
-		script.async = true;
-		script.id = 'ze-snippet';
-		document.body.appendChild(script);
+	if (hasChatBot) {
+		if (!document.querySelector('#ze-snippet')) {
+			script = document.createElement('script');
+			script.src = 'https://static.zdassets.com/ekr/snippet.js?key=6542e7ef-41de-43ed-bc22-3d429a78ead3';
+			script.async = true;
+			script.id = 'ze-snippet';
+			document.body.appendChild(script);
+		}
+		
 		if (window.zE && typeof window.zE === 'function') {
 			window.zE('messenger', 'show');
 		}
@@ -867,13 +870,53 @@ export const forceFullScreen = (element = document.documentElement) => {
 	}
 };
 
+// ************* Detect Page Refresh ***************** //
+const detectPageRefreshCallback = (e) => {
+	e.preventDefault();
+	e.returnValue = '';
+
+	registerEvent({ 
+		eventType: 'error', 
+		notify: false, 
+		eventName: 'candidate_clicked_on_refresh_button',
+		eventValue: getDateTime() 
+	});
+};
+
+export const detectPageRefresh = () => {
+	window.addEventListener('beforeunload', detectPageRefreshCallback);
+}
+
+// ************* Detect Back Button ***************** //
+const detectBackButtonCallback = (e) => {
+	if (window.startRecordingCallBack) {
+		window.startRecordingCallBack({
+			type: 'error',
+			message: 'candidate_clicked_on_browser_back_button' ,
+			code: 40005
+		});
+		window.recordingStart = false;
+		if (window?.socket?.readyState === WebSocket.OPEN) {
+			window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+		}
+	}
+};
+
+export const detectBackButton = () => {
+	window.addEventListener('popstate', detectBackButtonCallback);
+}
+
+//****************** DefaultEvent Callback *********************/
 const handleDefaultEvent = e => {
 	e.preventDefault();
 	e.stopPropagation();
 };
 
+//****************** Unlock browser from Events */
 export const unlockBrowserFromContent = () => {
-	document.removeEventListener('contextmenu', handleDefaultEvent);
+	window.removeEventListener('contextmenu', handleDefaultEvent);
+	window.removeEventListener('beforeunload', detectPageRefreshCallback);
+	window.removeEventListener('popstate', detectBackButtonCallback);
 
 	'cut copy paste'.split(' ').forEach((eventName) => {
 		window.removeEventListener(eventName, handleDefaultEvent);

@@ -996,7 +996,7 @@
 	"webcam_diagnostics": "Webcam-Diagnose",
 	"webcam_error": "Auf die Webcam kann nicht zugegriffen werden. Um diese Erweiterung zu verwenden, stellen Sie sicher, dass auf Ihre Webcam zugegriffen werden kann.",
 	"webcam_not_working": "Webcam funktioniert nicht",
-	"webpages_users_access_during_exam": "Webseiten, auf die Benutzer während der Prüfung zugreifen können",
+	"webpages_user_access_during_exam": "Webseiten, auf die der Benutzer während der Prüfung zugreifen kann",
 	"welcome": "WILLKOMMEN!",
 	"welsh": "Walisisch",
 	"whats_new": "Was ist neu?",

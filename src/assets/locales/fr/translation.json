@@ -996,7 +996,7 @@
 	"webcam_diagnostics": "Diagnostic de la Webcam",
 	"webcam_error": "La webcam est inaccessible. Pour utiliser cette extension, assurez-vous de bien activer votre webcam.",
 	"webcam_not_working": "La webcam ne fonctionne pas",
-	"webpages_users_access_during_exam": "Liste des sites internet auxquels les utilisateurs ont le droit d'accéder pendant l'examen",
+	"webpages_user_access_during_exam": "Liste des sites internet auxquels les utilisateurs ont le droit d'accéder pendant l'examen",
 	"welcome": "BIENVENUE !",
 	"welsh": "Gallois",
 	"whats_new": "Quelles sont les nouveautés ?",

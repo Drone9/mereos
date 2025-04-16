@@ -178,16 +178,16 @@ export const MobileProctoring = async (tabContent) => {
 	const nextStep = (newStep) => {
 		mobileSteps = newStep;
 		renderUI(); 
-		if(newStep === 'step4'){
+		if (newStep === 'step4') {
 			window.mobileStream?.getTracks()?.forEach((track) => track.stop());
-			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successfull', eventValue: getDateTime() });
+			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
 			updatePersistData('preChecksSteps', { mobileConnection: true });
 			showTab('IdentityVerificationScreenFive');
 			let container = document.getElementById('mobile-proctoring');
-			if(container){
+			if (container) {
 				container.innerHTML = '';
 			}
-			if(remoteVideoRef){
+			if (remoteVideoRef) {
 				remoteVideoRef.srcObject = null;
 			}
 		}

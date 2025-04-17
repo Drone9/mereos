@@ -90,7 +90,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const updateUI = () => {
 		headerTitle.textContent = i18next.t('verification_completed');
-		// msgElement.textContent = i18next.t('verification_completed_msg');
+		msgElement.textContent = i18next.t('screen_share_description');
     
 		if (mode === 'startScreenRecording') {
 			msg = {
@@ -225,7 +225,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const msgElement = document.createElement('div');
 	msgElement.classList.add('screen-desc');
-	msgElement.textContent = i18next.t('verification_completed_msg');
+	msgElement.textContent = i18next.t('screen_share_description');
 
 	wrapper.appendChild(headerTitle);
 	wrapper.appendChild(msgElement);

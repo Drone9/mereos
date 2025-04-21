@@ -76,7 +76,7 @@ const renderUI = (tab1Content) => {
 
 	const heading = document.createElement('h1');
 	heading.classList.add('heading');
-	heading.textContent = i18next.t('system_diagnostic');
+	heading.textContent = i18next.t('system_diagnostics');
 
 	const diagnosticStatus = document.createElement('div');
 	diagnosticStatus.classList.add('diagnostic-status', 'container-box');
@@ -89,7 +89,7 @@ const renderUI = (tab1Content) => {
 
 	const description = document.createElement('label');
 	description.classList.add('description');
-	description.textContent = i18next.t('system_diagnostic_msg');
+	description.textContent = i18next.t('system_diagnostics_msg');
 
 	const containerPrompt = document.createElement('div');
 	containerPrompt.classList.add('container-prompt');
@@ -135,7 +135,7 @@ const renderUI = (tab1Content) => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 		
-		registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
+		registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostics_passed' });
 		updatePersistData('preChecksSteps',{ diagnosticStep:true });
 		showTab('SystemRequirements');
 	});
@@ -295,12 +295,12 @@ const updateDiagnosticText = () => {
 
 	const heading = document.querySelector('.heading');
 	if (heading) {
-		heading.textContent = i18next.t('system_diagnostic');
+		heading.textContent = i18next.t('system_diagnostics');
 	}
 
 	const description = document.querySelector('.description');
 	if (description) {
-		description.textContent = i18next.t('system_diagnostic_msg');
+		description.textContent = i18next.t('system_diagnostics_msg');
 	}
 	
 	const btnText = document.querySelector('.orange-filled-btn');

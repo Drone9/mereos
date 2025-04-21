@@ -213,7 +213,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const setTextContent = (headingContainer, subHeadingContainer, messageElement, iconTextElements, iconData, continueButton) => {
-			headingContainer.textContent = i18next.t('system_diagnostic');
+			headingContainer.textContent = i18next.t('system_diagnostics');
 			subHeadingContainer.textContent = i18next.t('initial_system_check_passed');
 			messageElement.textContent = i18next.t('select_preferred_camera_and_microphone'); 
 	

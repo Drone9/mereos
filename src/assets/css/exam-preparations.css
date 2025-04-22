@@ -1,7 +1,7 @@
 .exam-preparation-container {
 	display: flex;
 	flex-direction: column;
-	background-color: #ffffff;
+	background-color: var(--theme-mode);;
 }
 
 .exam-preparation-wrapper {
@@ -27,6 +27,7 @@
 	text-align: center;
 	color: #222222;
 	margin: 26px auto 0px;
+	color: var(--text-color);
 	font-style: var(--font-style);
 }
 

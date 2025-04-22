@@ -18,6 +18,7 @@ import interact from 'interactjs';
 import '../assets/css/modal.css';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import { SystemRequirement } from '../SystemRequirement';
+import { stop_prechecks } from '../..';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
@@ -515,6 +516,16 @@ export const startSession = async () => {
 		});
 
 	} catch (e) {
+		const callBackFunc = () => {
+			if(e.response?.data?.detail === 'Token not found'){
+				window.globalCallback({
+					type: 'error',
+					code: 40025,
+					message: 'token_expired_login_again_to_perform_this_action',
+				});
+			}
+		};
+		stop_prechecks(callBackFunc);
 		showToast('error',e.response?.data?.detail);
 		logger.error('Error in start Session', e.response?.data?.detail);
 	}

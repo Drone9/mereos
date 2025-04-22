@@ -68,7 +68,7 @@
 	display: flex;
 	align-items: center;
 	text-align: center;
-	color: #222222;
+	color: var(--text-color);
 	margin: 27px auto 0px !important;
 }
 

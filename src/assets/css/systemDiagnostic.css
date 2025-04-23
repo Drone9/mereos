@@ -16,6 +16,7 @@
   margin-bottom: 0;
   margin-top: 31px;
   text-align: center;
+  color: var(--text-color);
 }
 
 .system-diagnostic-test-screen .container-prompt {
@@ -218,6 +219,7 @@
 
 .system-diagnostic-test-screen .grey-box-right  label{
   font-size: 16px;
+  color: var(--text-color);
 }
 
 .system-diagnostic-test-screen .box-section {

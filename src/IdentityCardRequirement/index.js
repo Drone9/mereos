@@ -41,10 +41,11 @@ export const IdentityCardRequirement = async (tabContent,callback) => {
 
 	const examPreparationContainer = document.createElement('div');
 	examPreparationContainer.className = 'exam-preparation-container';
+	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 
 	const headerImg = document.createElement('img');
 	headerImg.className = 'header-img';
-	headerImg.src = `${ASSET_URL}/oc-reading-book.png`;
+	headerImg.src = schoolTheme?.mode === 'dark' ? `${ASSET_URL}/oc-reading-book.svg`: `${ASSET_URL}/oc-reading-book.png`;
 	headerImg.alt = 'header-img';
 	examPreparationContainer.appendChild(headerImg);
 

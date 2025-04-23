@@ -118,6 +118,12 @@ export const aiEventsFeatures = [
 	'person_missing',
 ];
 
+export const tokenExpiredError = {
+	type: 'error',
+	code: 40025,
+	message: 'token_expired_login_again_to_perform_this_action'
+};
+
 export const languages = [
 	{name: 'English', value: 'english', src: `${ASSET_URL}/flag-of-uk.svg`, alt: '', keyword: 'en' },
 	{name: 'Spanish', value: 'spanish', src: `${ASSET_URL}/flag-of-spain.svg`, alt: '', keyword: 'es' },

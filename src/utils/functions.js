@@ -162,14 +162,14 @@ export const registerEvent = async ({ eventName,eventValue }) => {
 
 export const updateThemeColor = () => {
 	const defaultTheme = {
-		theming: '#FF961B',  
-		font: 'normal'       
+		theming: '#FF961B',
+		font: 'normal'
 	};
 
 	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
 
 	const isValidHex = (color) => {
-		const hexRegex = /^#[0-9A-F]{6}$/i;  
+		const hexRegex = /^#[0-9A-F]{6}$/i;
 		return hexRegex.test(color);
 	};
 
@@ -178,13 +178,15 @@ export const updateThemeColor = () => {
 		return validFontStyles.includes(font);
 	};
 
-	const themeColor = isValidHex(schoolTheme?.theming) 
-		? schoolTheme.theming 
-		: defaultTheme.theming; 
+	const themeColor = isValidHex(schoolTheme?.theming)
+		? schoolTheme.theming
+		: defaultTheme.theming;
 
-	const fontStyle = isValidFontStyle(schoolTheme?.font) 
-		? schoolTheme.font 
-		: defaultTheme.font;  
+	const fontStyle = isValidFontStyle(schoolTheme?.font)
+		? schoolTheme.font
+		: defaultTheme.font;
+
+	const isDarkMode = !!schoolTheme?.mode;
 
 	const themeToStore = {
 		...schoolTheme,
@@ -195,9 +197,10 @@ export const updateThemeColor = () => {
 	localStorage.setItem('schoolTheme', JSON.stringify(themeToStore));
 
 	document.documentElement.style.setProperty('--theme-color', themeColor);
+	document.documentElement.style.setProperty('--theme-mode', isDarkMode ? '#000' : '#fff');
+	document.documentElement.style.setProperty('--text-color', isDarkMode ? '#fff' : '#000');
 	document.documentElement.style.setProperty('--font-style', fontStyle);
 };
-
 
 export const loadZendeskWidget = () => {
 	const getSecureFeature = getSecureFeatures();
@@ -867,10 +870,10 @@ const detectPageRefreshCallback = (e) => {
 
 export const detectPageRefresh = () => {
 	window.addEventListener('beforeunload', detectPageRefreshCallback);
-}
+};
 
 // ************* Detect Back Button ***************** //
-const detectBackButtonCallback = (e) => {
+const detectBackButtonCallback = () => {
 	if (window.startRecordingCallBack) {
 		window.startRecordingCallBack({
 			type: 'error',
@@ -886,15 +889,15 @@ const detectBackButtonCallback = (e) => {
 
 export const detectBackButton = () => {
 	window.addEventListener('popstate', detectBackButtonCallback);
-}
+};
 
-//****************** DefaultEvent Callback *********************/
+//* ***************** DefaultEvent Callback *********************/
 const handleDefaultEvent = e => {
 	e.preventDefault();
 	e.stopPropagation();
 };
 
-//****************** Unlock browser from Events */
+//* ***************** Unlock browser from Events */
 export const unlockBrowserFromContent = () => {
 	window.removeEventListener('contextmenu', handleDefaultEvent);
 	window.removeEventListener('beforeunload', detectPageRefreshCallback);

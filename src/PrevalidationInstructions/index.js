@@ -98,7 +98,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 				};
 				localStorage.setItem('microphoneID',id);
 			}
-			// startWebcam();
 		};
 	
 		const nextStep = () => {
@@ -215,7 +214,9 @@ export const PrevalidationInstructions = async (tabContent) => {
 		const setTextContent = (headingContainer, subHeadingContainer, messageElement, iconTextElements, iconData, continueButton) => {
 			headingContainer.textContent = i18next.t('system_diagnostic');
 			subHeadingContainer.textContent = i18next.t('initial_system_check_passed');
-			messageElement.textContent = i18next.t('select_preferred_camera_and_microphone'); 
+			if(messageElement){
+				messageElement.textContent = i18next.t('select_preferred_camera_and_microphone'); 
+			}
 	
 			if (Array.isArray(iconTextElements)) {
 				iconData.forEach((icon, index) => {
@@ -249,46 +250,62 @@ export const PrevalidationInstructions = async (tabContent) => {
 			const cameraDropdown = document.getElementById('cameraDropdown');
 			const microphoneDropdown = document.getElementById('microphoneDropdown');
 			const messageElement = document.getElementById('message');
+			
+			if(cameraDropdown){
+				cameraDropdown.innerHTML = '';
+			}
+			if(microphoneDropdown){
+				microphoneDropdown.innerHTML = '';
+			}
 		
-			cameraDropdown.innerHTML = '';
-			microphoneDropdown.innerHTML = '';
-		
-			cameras.forEach(camera => {
+			cameras?.forEach(camera => {
 				const option = document.createElement('option');
 				option.value = camera.id;
 				option.textContent = camera.name;
 				if (camera.id === selectedCameraId) {
 					option.selected = true;
 				}
-				cameraDropdown.appendChild(option);
+				if(cameraDropdown){
+					cameraDropdown.appendChild(option);
+				}
 			});
 		
-			microphones.forEach(microphone => {
+			microphones?.forEach(microphone => {
 				const option = document.createElement('option');
 				option.value = microphone.id;
 				option.textContent = microphone.name;
 				if (microphone.id === selectedMicrophoneId) {
 					option.selected = true;
 				}
-				microphoneDropdown.appendChild(option);
+				if(microphoneDropdown){
+					microphoneDropdown.appendChild(option);
+				}
 			});
-		
-			messageElement.textContent = i18next.t('select_preferred_camera_and_microphone');
-		
-			cameraDropdown.onchange = (event) => {
-				selectedCameraId = event.target.value;
-				handleDeviceId(selectedCameraId, 'camera');
-			};
-		
-			microphoneDropdown.onchange = (event) => {
-				selectedMicrophoneId = event.target.value;
-				handleDeviceId(selectedMicrophoneId, 'microphone');
-			};
+			
+			if(messageElement){
+				messageElement.textContent = i18next.t('select_preferred_camera_and_microphone');
+			}
+			
+			if(cameraDropdown){
+				cameraDropdown.onchange = (event) => {
+					selectedCameraId = event.target.value;
+					handleDeviceId(selectedCameraId, 'camera');
+				};
+			}
+			
+			if(microphoneDropdown){
+				microphoneDropdown.onchange = (event) => {
+					selectedMicrophoneId = event.target.value;
+					handleDeviceId(selectedMicrophoneId, 'microphone');
+				};
+			}
 		};
 		
 		const startWebcam = async () => {
 			const videoContainer = document.getElementById('videoContainer');
-			videoContainer.innerHTML = '';
+			if(videoContainer){
+				videoContainer.innerHTML = '';
+			}
 	
 			try {
 				mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
@@ -303,8 +320,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 				}
 	
 				videoElement.srcObject = mediaStream;
-	
-				videoContainer.appendChild(videoElement);
+				
+				if(videoElement){
+					videoContainer.appendChild(videoElement);
+				}
 				currentCaptureMode = 'done';
 				updateUI();
 			} catch (error) {

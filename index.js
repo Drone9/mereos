@@ -38,7 +38,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 		if (logonResp.data) {
 			const token = logonResp.data.token;
 			const expiresInSeconds = logonResp.data.expires_in;
-			// const expiresInSeconds = 3 * 60;
+			// const expiresInSeconds =  60;
 			const expiresAt = Date.now() + expiresInSeconds * 1000;
 
 			localStorage.setItem('mereosToken', JSON.stringify({ token, expiresAt }));
@@ -161,11 +161,6 @@ window.stopPrecheckCallBack = null;
 async function stop_prechecks(callback) {
 	try {
 		window.stopPrecheckCallBack = callback;
-		const tokenData = localStorage.getItem('mereosToken');
-		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
-			localStorage.removeItem('mereosToken');
-			return callback(tokenExpiredError);
-		}
 		const modal = document.getElementById('precheck-modal');
 		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');

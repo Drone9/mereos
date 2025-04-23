@@ -8,6 +8,8 @@ import { testUploadSpeed } from '../services/general.services';
 import i18next from 'i18next';
 import { closeModal, openModal } from '../ExamsPrechecks';
 import { Notyf } from 'notyf';
+import { notifyTokenExpired } from './axios';
+import { stop_prechecks } from '../..';
 
 export const dataURIToBlob = (dataURI) => {
 	
@@ -253,21 +255,54 @@ export const cleanupZendeskWidget = () => {
 	}
 };
 
+export const authenticatedRequest = async (apiCall, params = null) => {
+	const mereosToken = getAuthenticationToken();
+  
+	if (!mereosToken) {
+		stop_prechecks(()=>null);
+		return {
+			type: 'error',
+			message: 'authentication_required',
+			code: 40023,
+			details: 'Valid authentication token required for this operation'
+		};
+	}
+  
+	const config = {
+		headers: {
+			token: mereosToken,
+		}
+	};
+  
+	if (params) {
+		config.params = params;
+	}
+  
+	return apiCall(config);
+};
+
 export const getAuthenticationToken = () => {
 	const tokenData = localStorage.getItem('mereosToken');
 
 	if (tokenData) {
-		const { token, expiresAt } = JSON.parse(tokenData);
-        
-		if (Date.now() > expiresAt) {
+		try {
+			const { token, expiresAt } = JSON.parse(tokenData);
+      
+			if (Date.now() > expiresAt) {
+				localStorage.removeItem('mereosToken');
+				notifyTokenExpired();
+				return null;
+			}
+      
+			return token;
+		} catch (error) {
 			localStorage.removeItem('mereosToken');
+			notifyTokenExpired();
 			return null;
 		}
-        
-		return token; 
 	}
 
-	return null; 
+	return null;
 };
 
 export const userRekognitionInfo = async (data) => {

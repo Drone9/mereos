@@ -1,4 +1,3 @@
-
 import Peer from 'peerjs';
 import { v4 } from 'uuid';
 import i18next, { t } from 'i18next';
@@ -58,7 +57,7 @@ export const MobileProctoring = async (tabContent) => {
 
 			switch (eventData?.message?.event || eventData?.event) {
 				case 'mobile_connection':
-					logger.success('mobile_connection',eventData.message);
+					logger.success('mobile_connection', eventData.message);
 					break;
 
 				case 'mobilePreChecksCompleted':
@@ -69,7 +68,7 @@ export const MobileProctoring = async (tabContent) => {
 					break;
 
 				case 'MobileRecordingStarted':
-					logger.success('MobileRecordingStarted',eventData.message);
+					logger.success('MobileRecordingStarted', eventData.message);
 					break;
 
 				case 'mobile-broadcast': {
@@ -98,7 +97,7 @@ export const MobileProctoring = async (tabContent) => {
 							});
 	
 							call?.on('error', (error) => {
-								logger.error('Error during call:',error);
+								logger.error('Error during call:', error);
 							});
 						} else {
 							logger.error('peerInstance is not initialized');
@@ -111,7 +110,7 @@ export const MobileProctoring = async (tabContent) => {
 					if (eventData?.message?.message === 'Violation') {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
-						showToast('error','mobile_phone_disconnected');
+						showToast('error', 'mobile_phone_disconnected');
 						if(window.mobileStream){
 							window.mobileStream.getTracks().forEach(track => track.stop());
 						}
@@ -195,12 +194,12 @@ export const MobileProctoring = async (tabContent) => {
 
 	const prevStep = (previousStep) => {
 		if(previousStep === 'previousStep'){
-			updatePersistData('preChecksSteps',{ mobileConnection:false });
+			updatePersistData('preChecksSteps', { mobileConnection: false });
 			let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 			const currentIndex = navHistory.indexOf('MobileProctoring');
 			const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
 			showTab(previousPage);
-		}else{
+		} else {
 			mobileSteps = 'tokenCode';
 			checkedVideo = false;
 			if(window.mobileStream){
@@ -219,222 +218,171 @@ export const MobileProctoring = async (tabContent) => {
 		if (!container) {
 			container = document.createElement('div');
 			container.className = 'mobile-conection-container';
-			tabContent.appendChild(container);
 			container.id = 'mobile-proctoring';
+			tabContent.appendChild(container);
 		}
-		container.innerHTML = '';
-
-		const wrapper = document.createElement('div');
-		wrapper.className = 'ivsf-wrapper';
-
-		const headerTitle = document.createElement('div');
-		headerTitle.className = 'mobile-header-title';
-		headerTitle.innerText = t('setting_up_your_phone_camera');
 		
-		const stepsContainer = document.createElement('div');
-		renderIdentityVerificationSteps(stepsContainer, 5);
+		const stepsHTML = document.createElement('div');
+		renderIdentityVerificationSteps(stepsHTML, 5);
 
-		wrapper.appendChild(headerTitle);
-		wrapper.appendChild(stepsContainer);
+		const baseHTML = `
+			<div class="ivsf-wrapper">
+				<div class="mobile-header-title">${t('setting_up_your_phone_camera')}</div>
+				${stepsHTML.innerHTML}
+				${renderStepContent(mobileSteps, socketGroupIds, secureFeatures)}
+			</div>
+		`;
+		
+		container.innerHTML = baseHTML;
 
-		if (mobileSteps === '') {
-			const mobileConnectionBanner = document.createElement('div');
-			mobileConnectionBanner.className = 'mobile-connection-banner';
+		setupEventListeners(mobileSteps);
 
-			const bannerImage = document.createElement('img');
-			bannerImage.className = 'banner-image';
-			bannerImage.src = `${ASSET_URL}/mobile-connection-banner.png`;
-			mobileConnectionBanner.appendChild(bannerImage);
-
-			const bannerInfoBox = document.createElement('div');
-			bannerInfoBox.className = 'banner-info-box';
-
-			const title = document.createElement('div');
-			title.className = 'title';
-			title.innerHTML = `<img src="${ASSET_URL}/info-blue.svg" /> <p>${t('during_your_assessment')}</p>`;
-
-			const desc = document.createElement('p');
-			desc.className = 'desc';
-			desc.innerHTML = `${t('notifications_on_your_phone_should_be_turned_off')}<br />${t('do_not_lock_your_phone')}`;
-
-			bannerInfoBox.appendChild(title);
-			bannerInfoBox.appendChild(desc);
-			mobileConnectionBanner.appendChild(bannerInfoBox);
-			wrapper.appendChild(mobileConnectionBanner);
-
-			const bottomDesc = document.createElement('div');
-			bottomDesc.className = 'bottom-desc';
-			bottomDesc.innerText = t('in_order_to_carry_out_your_assessment');
-			wrapper.appendChild(bottomDesc);
-
-			const btnContainer = document.createElement('div');
-			btnContainer.className = 'ivsf-btn-container';
-
-			const btnBack = document.createElement('button');
-			btnBack.className = 'orange-hollow-btn';
-			btnBack.innerText = t('i_already_have_the_app');
-			btnBack.onclick = prevStep;
-
-			const btnDownload = document.createElement('button');
-			btnDownload.className = 'orange-filled-btn';
-			btnDownload.innerText = t('download_the_app');
-			btnDownload.onclick = () => nextStep('downloadApp');
-
-			btnContainer.appendChild(btnBack);
-			btnContainer.appendChild(btnDownload);
-			wrapper.appendChild(btnContainer);
-
-		} else if (mobileSteps === 'downloadApp') {
-			const qrCodeContainer = document.createElement('div');
-			qrCodeContainer.className = 'qr-code-container';
-
-			const canvas = document.createElement('canvas');
-			qrCodeContainer.appendChild(canvas);
-
-			QRCode.toCanvas(canvas, 'https://mobile.mereos.eu/', function (error) {
-				if (error) 	logger.error('error in QR code', error);
-			});
-
-			const bottomDesc = document.createElement('p');
-			bottomDesc.className = 'bottom-desc';
-			bottomDesc.innerText = t('please_scan_this_qr_code');
-
-			const btnContainer = document.createElement('div');
-			btnContainer.className = 'ivsf-btn-container';
-
-			const previousBtn = document.createElement('button');
-			previousBtn.className = 'orange-hollow-btn';
-			previousBtn.innerText = t('previous_step');
-			previousBtn.onclick = () => prevStep('previousStep');
-
-			const btnDownloaded = document.createElement('button');
-			btnDownloaded.className = 'orange-filled-btn';
-			btnDownloaded.innerText = t('i_downloaded_the_app');
-			btnDownloaded.onclick = () => nextStep('tokenCode');
-
-			const prevStepsEntities = ['verify_candidate', 'verify_id','record_audio','record_room'];
-			if (secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0) {
-				btnContainer.appendChild(previousBtn);
+		if (mobileSteps === 'precheckCompleted') {
+			const videoContainer = container.querySelector('.video-container');
+			if (videoContainer) {
+				videoContainer.appendChild(remoteVideoRef);
+				
+				if (disabledNextBtn) {
+					const loaderHTML = `
+						<div class='video-loader'>
+							<div class='spinner'>
+								<div class='bounce1'></div>
+								<div class='bounce2'></div>
+								<div class='bounce3'></div>
+							</div>
+						</div>
+					`;
+					videoContainer.insertAdjacentHTML('beforeend', loaderHTML);
+				}
 			}
-			btnContainer.appendChild(btnDownloaded);
-			qrCodeContainer.appendChild(bottomDesc);
-			qrCodeContainer.appendChild(btnContainer);
-			wrapper.appendChild(qrCodeContainer);
-
-		} else if (mobileSteps === 'tokenCode') {
-			const qrCodeContainer = document.createElement('div');
-			qrCodeContainer.className = 'qr-code-container';
-			const canvas = document.createElement('canvas');
-			qrCodeContainer.appendChild(canvas);
-      
-			QRCode.toCanvas(canvas, JSON.stringify({
-				token: getAuthenticationToken(),
-				groupName: socketGroupIds?.groupName
-			}), function (error) {
-				if (error) 	logger.error('Error in QR code', error);
-			});
-
-			const bottomDesc = document.createElement('p');
-			bottomDesc.className = 'bottom-desc';
-			bottomDesc.innerText = t('open_the_mereos_mobile_application');
-
-			const btnContainer = document.createElement('div');
-			btnContainer.className = 'ivsf-btn-container';
-
-			const previousBtn = document.createElement('button');
-			previousBtn.className = 'orange-hollow-btn';
-			previousBtn.innerText = t('previous_step');
-			previousBtn.onclick = () => prevStep('previousStep');
-
-			const btnDownloaded = document.createElement('button');
-			btnDownloaded.className = 'orange-filled-btn';
-			btnDownloaded.innerText = t('i_dont_have_the_app');
-			btnDownloaded.onclick = () => nextStep('downloadApp');
-
-			const prevStepsEntities = ['verify_candidate', 'verify_id','record_audio','record_room'];
-			if (secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0) {
-				btnContainer.appendChild(previousBtn);
-			}
-			btnContainer.appendChild(btnDownloaded);
-			qrCodeContainer.appendChild(bottomDesc);
-			qrCodeContainer.appendChild(btnContainer);
-			wrapper.appendChild(qrCodeContainer);
-
-		} else {
-			const remoteMobileVideo = document.createElement('div');
-			remoteMobileVideo.className = 'remote-mobile-video';
-
-			const bannerVideoContainer = document.createElement('div');
-			bannerVideoContainer.className = 'mobile-broadcastin-container';
-
-			const bannerImage = document.createElement('img');
-			bannerImage.className = 'banner-image';
-			bannerImage.src = `${ASSET_URL}/user-video-tutorial.jpeg`;
-      
-			const videoContainer = document.createElement('div');
-			videoContainer.appendChild(remoteVideoRef);
-
-			if (disabledNextBtn) {
-				const loader = document.createElement('div');
-				loader.className = 'video-loader';
-				loader.innerHTML = `<div class='spinner'>
-				<div class='bounce1' style={colorStyles}></div>
-				<div class='bounce2' style={colorStyles}></div>
-				<div class='bounce3' style={colorStyles}></div>
-			</div>`;
-				videoContainer.appendChild(loader);
-			}
-
-			bannerVideoContainer.appendChild(bannerImage);
-			bannerVideoContainer.appendChild(videoContainer);
-
-			const exampleText = document.createElement('span');
-			exampleText.className = 'example-text';
-			exampleText.innerText = t('example_tutorial');
-
-			const bottomDescRemote = document.createElement('div');
-			bottomDescRemote.className = 'bottom-desc-remote';
-
-			const checkbox = document.createElement('input');
-			checkbox.type = 'checkbox';
-			checkbox.checked = checkedVideo;
-			checkbox.onchange = (e) => {
-				checkedVideo = e.target.checked; 
-				btnNext.disabled = !checkedVideo; 
-			};
-
-			const label = document.createElement('p');
-			label.innerText = t('is_the_camera_feedback_good');
-
-			bottomDescRemote.appendChild(checkbox);
-			bottomDescRemote.appendChild(label);
-			remoteMobileVideo.appendChild(bannerVideoContainer);
-			remoteMobileVideo.appendChild(exampleText);
-			remoteMobileVideo.appendChild(bottomDescRemote);
-
-			const btnContainer = document.createElement('div');
-			btnContainer.className = 'mobile-btn-container';
-
-			const btnPrevious = document.createElement('button');
-			btnPrevious.className = 'orange-hollow-btn';
-			btnPrevious.innerText = t('previous_step');
-			btnPrevious.onclick = prevStep;
-
-			const btnNext = document.createElement('button');
-			btnNext.className = 'orange-filled-btn';
-			btnNext.innerText = t('next');
-			btnNext.disabled = !checkedVideo || disabledNextBtn;
-			btnNext.onclick = () => nextStep('step4');
-
-			btnContainer.appendChild(btnPrevious);
-			btnContainer.appendChild(btnNext);
-			remoteMobileVideo.appendChild(btnContainer);
-			wrapper.appendChild(remoteMobileVideo);
-
 		}
+	}
 
-		container.appendChild(wrapper);
-		tabContent.appendChild(container);
+	function renderStepContent(step, socketGroupIds, secureFeatures) {
+		const prevStepsEntities = ['verify_candidate', 'verify_id', 'record_audio', 'record_room'];
+		const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
+		
+		switch (step) {
+			case '':
+				return `
+					<div class="mobile-connection-banner">
+						<img class="banner-image" src="${ASSET_URL}/mobile-connection-banner.png" />
+						<div class="banner-info-box">
+							<div class="title">
+								<img src="${ASSET_URL}/info-blue.svg" />
+								<p>${t('during_your_assessment')}</p>
+							</div>
+							<p class="desc">
+								${t('notifications_on_your_phone_should_be_turned_off')}<br />
+								${t('do_not_lock_your_phone')}
+							</p>
+						</div>
+					</div>
+					
+					<div class="bottom-desc">${t('in_order_to_carry_out_your_assessment')}</div>
+					
+					<div class="ivsf-btn-container">
+						<button class="orange-hollow-btn" id="already-have-app-btn">${t('i_already_have_the_app')}</button>
+						<button class="orange-filled-btn" id="download-app-btn">${t('download_the_app')}</button>
+					</div>
+				`;
+				
+			case 'downloadApp':
+				return `
+					<div class="qr-code-container">
+						<canvas id="download-qr-canvas"></canvas>
+						<p class="bottom-desc">${t('please_scan_this_qr_code')}</p>
+						<div class="ivsf-btn-container">
+							${showPrevButton ? `<button class="orange-hollow-btn" id="previous-step-btn">${t('previous_step')}</button>` : ''}
+							<button class="orange-filled-btn" id="downloaded-app-btn">${t('i_downloaded_the_app')}</button>
+						</div>
+					</div>
+				`;
+				
+			case 'tokenCode':
+				return `
+					<div class="qr-code-container">
+						<canvas id="token-qr-canvas"></canvas>
+						<p class="bottom-desc">${t('open_the_mereos_mobile_application')}</p>
+						<div class="ivsf-btn-container">
+							${showPrevButton ? `<button class="orange-hollow-btn" id="previous-step-btn">${t('previous_step')}</button>` : ''}
+							<button class="orange-filled-btn" id="no-app-btn">${t('i_dont_have_the_app')}</button>
+						</div>
+					</div>
+				`;
+				
+			default: 
+				return `
+					<div class="remote-mobile-video">
+						<div class="mobile-broadcastin-container">
+							<img class="banner-image" src="${ASSET_URL}/user-video-tutorial.jpeg" />
+							<div class="video-container"></div>
+						</div>
+						
+						<span class="example-text">${t('example_tutorial')}</span>
+						
+						<div class="bottom-desc-remote">
+							<input type="checkbox" id="video-check" ${checkedVideo ? 'checked' : ''} />
+							<p>${t('is_the_camera_feedback_good')}</p>
+						</div>
+						
+						<div class="mobile-btn-container">
+							<button class="orange-hollow-btn" id="previous-btn">${t('previous_step')}</button>
+							<button class="orange-filled-btn" id="next-btn" ${!checkedVideo || disabledNextBtn ? 'disabled' : ''}>
+								${t('next')}
+							</button>
+						</div>
+					</div>
+				`;
+		}
+	}
+
+	function setupEventListeners(step) {
+		const downloadCanvas = document.getElementById('download-qr-canvas');
+		const tokenCanvas = document.getElementById('token-qr-canvas');
+		const socketGroupIds = JSON.parse(localStorage.getItem('socketGroupId'));
+		switch (step) {
+			case '':
+				document.getElementById('already-have-app-btn')?.addEventListener('click', () => prevStep('tokenCode'));
+				document.getElementById('download-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
+				break;
+				
+			case 'downloadApp':
+				if (downloadCanvas) {
+					QRCode.toCanvas(downloadCanvas, 'https://mobile.mereos.eu/', function (error) {
+						if (error) logger.error('error in QR code', error);
+					});
+				}
+				document.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
+				document.getElementById('downloaded-app-btn')?.addEventListener('click', () => nextStep('tokenCode'));
+				break;
+				
+			case 'tokenCode':
+				
+				if (tokenCanvas) {
+					QRCode.toCanvas(tokenCanvas, JSON.stringify({
+						token: getAuthenticationToken(),
+						groupName: socketGroupIds?.groupName
+					}), function (error) {
+						if (error) logger.error('Error in QR code', error);
+					});
+				}
+				document.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
+				document.getElementById('no-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
+				break;
+				
+			default: 
+				document.getElementById('video-check')?.addEventListener('change', (e) => {
+					checkedVideo = e.target.checked;
+					const nextBtn = document.getElementById('next-btn');
+					if (nextBtn) {
+						nextBtn.disabled = !checkedVideo || disabledNextBtn;
+					}
+				});
+				document.getElementById('previous-btn')?.addEventListener('click', () => prevStep());
+				document.getElementById('next-btn')?.addEventListener('click', () => nextStep('step4'));
+				break;
+		}
 	}
 
 	const initProctoring = () => {

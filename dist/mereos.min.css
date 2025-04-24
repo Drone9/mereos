@@ -20,7 +20,6 @@
   display: flex;
   position: relative;
   margin: 10px;
-  white-space: pre-line;
 }
 
 .exam-preparation h1 {
@@ -204,6 +203,7 @@
   margin-bottom: 0;
   margin-top: 31px;
   text-align: center;
+  color: var(--text-color);
 }
 
 .system-diagnostic-test-screen .container-prompt {
@@ -406,6 +406,7 @@
 
 .system-diagnostic-test-screen .grey-box-right  label{
   font-size: 16px;
+  color: var(--text-color);
 }
 
 .system-diagnostic-test-screen .box-section {
@@ -673,13 +674,13 @@
 }
 .ivso-header-title {
 	font-family: Poppins;
+	color: var(--text-color);
 	font-style: var(--font-style);
 	font-weight: bold;
 	font-size: 32px;
 	display: flex;
 	align-items: center;
 	text-align: center;
-	color: #222222;
 	margin: 0px auto 7px;
 }
 
@@ -897,12 +898,12 @@
 .step-2-header-title {
     font-family: Poppins;
     font-style: var(--font-style);
+    color: var(--text-color);
     font-weight: bold;
     font-size: 35px;
     display: flex;
     align-items: center;
     text-align: center;
-    color: #222222;
     margin: 5px auto 0px;
 }
 
@@ -997,7 +998,7 @@
     display: flex;
     align-items: center;
     text-align: center;
-    color: #222222;
+    color: var(--text-color);
     margin: 0px auto 0px;
 }
 
@@ -1060,7 +1061,7 @@
   display: flex;
   align-items: center;
   text-align: center;
-  color: #222222;
+  color: var(--text-color);
   margin: 15px auto 0px;
 }
 
@@ -1340,7 +1341,7 @@
   display: flex;
   align-items: center;
   text-align: center;
-  color: #222222;
+  color: var(--text-color);
   margin: 15px auto 0px;
 }
 
@@ -1499,8 +1500,8 @@
 	border-radius: 5px;
 	align-items: center;
 	justify-content: center;
-	margin-top: 9px;
-	margin-bottom: 10px;
+	margin-top: 5px;
+	margin-bottom: 5px;
 }
 
 @media (max-width: 720px) {
@@ -1517,7 +1518,7 @@
 	display: flex;
 	align-items: center;
 	text-align: center;
-	color: #222222;
+	color: var(--text-color);
 	margin: 22px auto 0;
 }
 
@@ -1606,7 +1607,7 @@
 
 .ivsf-header-img-container {
 	position: relative;
-	margin: 10px auto 0px;
+	margin: 0px auto 0px;
 }
 
 @media(max-width:720px) {
@@ -1665,8 +1666,8 @@
 	display: flex;
 	align-items: center;
 	text-align: center;
-	color: #222222;
-	margin: 27px auto 0px !important;
+	color: var(--text-color);
+	margin: 20px auto 0px !important;
 }
 
 .ivsf-msg {
@@ -1722,7 +1723,7 @@
 
 .ivsf-btn-container {
 	display: flex;
-	margin: 20px auto 0px !important;
+	margin: 15px auto 0px !important;
 	gap: 20px;
 }
 
@@ -1788,6 +1789,7 @@
   margin: auto;
   gap: 10px;
   display: flex;
+  margin-top: 15px;
   justify-content: center;
 }
 .multi-device-block select {
@@ -1822,6 +1824,7 @@
   text-align: center;
   color: #222222;
   margin: 0px auto 0px;
+  color: var(--text-color);
 }
 .my-recorded-video{
   height: 245px;
@@ -1854,12 +1857,12 @@
 .pvi-instruction-txt {
   font-family: Poppins, sans-serif;
   font-style: var(--font-style);
+  color: var(--text-color);
   font-weight: 500;
   font-size: 13px;
   line-height: 24px;
   display: flex;
   align-items: center;
-  color: #222222;
   margin: 0px 15px 0px 5px;
 }
 
@@ -1877,7 +1880,7 @@
 }
 
 .pvi-btn-container {
-  margin: 10px 0px 0px;
+  margin: 0px 0px 0px;
   text-align: center;
 }
 
@@ -1901,7 +1904,7 @@
 .exam-preparation-container {
 	display: flex;
 	flex-direction: column;
-	background-color: #ffffff;
+	background-color: var(--theme-mode);;
 }
 
 .exam-preparation-wrapper {
@@ -1927,6 +1930,7 @@
 	text-align: center;
 	color: #222222;
 	margin: 26px auto 0px;
+	color: var(--text-color);
 	font-style: var(--font-style);
 }
 
@@ -2055,7 +2059,7 @@ body {
   left: 50%;
   z-index: 2147483647;
   transform: translate(-50%, -50%);
-  background: #FFFFFF;
+  background: var(--theme-mode);
   box-shadow: 0px 10px 50px rgba(0, 0, 0, 0.1);
   border-radius: 5px;
   font-size: 1.1rem;
@@ -2183,6 +2187,7 @@ body {
 .dropdown .select label{
   cursor: pointer;
   font-size: 14px;
+  color: var(--text-color);
 }
 
 .dropdown .select div {
@@ -2236,6 +2241,7 @@ body {
   text-align: center;
   margin-top: 25px;
   font-style: var(--font-style);
+  color: var(--text-color);
 }
 
 .system-requirement-test-screen .container-prompt {
@@ -2359,6 +2365,9 @@ body {
   gap: 10px;
   align-items: center;
 }
+.system-requirement-test-screen .grey-box-right label{
+  color: var(--text-color);
+}
 
 .system-requirement-test-screen .grey-box-right img {
   width: 42px;
@@ -2399,7 +2408,6 @@ body {
 .system-requirement-test-screen .button-section {
   display: flex;
   justify-content: center;
-  margin-top: 40px;
 }
 
 @media (max-width: 720px) {

@@ -24,74 +24,39 @@ const modal = document.createElement('div');
 modal.className = 'modal';
 modal.id = 'precheck-modal';
 
-const modalContent = document.createElement('div');
-modalContent.className = 'modal-content';
+modal.insertAdjacentHTML('beforeend', `
+  <div class="modal-content">
+    <div class="tabs-container"></div>
+    <div class="tab-contents-wrapper">
+      <div class="tab-content" id="ExamPreparation"></div>
+      <div class="tab-content" id="IdentityCardRequirement"></div>
+      <div class="tab-content" id="runSystemDiagnostics"></div>
+      <div class="tab-content" id="SystemRequirements"></div>
+      <div class="tab-content" id="IdentityVerificationScreenOne"></div>
+      <div class="tab-content" id="IdentityVerificationScreenTwo"></div>
+      <div class="tab-content" id="IdentityVerificationScreenThree"></div>
+      <div class="tab-content" id="IdentityVerificationScreenFour"></div>
+      <div class="tab-content" id="IdentityVerificationScreenFive"></div>
+      <div class="tab-content" id="Prevalidationinstruction"></div>
+      <div class="tab-content" id="MobileProctoring"></div>
+    </div>
+  </div>
+`);
 
-modal.appendChild(modalContent);
+const modalContent = modal.querySelector('.modal-content');
+const tabContentsWrapper = modal.querySelector('.tab-contents-wrapper');
 
-const tabsContainer = document.createElement('div');
-tabsContainer.className = 'tabs-container';
-
-modalContent.appendChild(tabsContainer);
-
-const tabContentsWrapper = document.createElement('div');
-tabContentsWrapper.className = 'tab-contents-wrapper';
-
-const ExamPreparationContainer = document.createElement('div');
-ExamPreparationContainer.className = 'tab-content';
-ExamPreparationContainer.id = 'ExamPreparation';
-
-const IdentityCardRequirementContainer = document.createElement('div');
-IdentityCardRequirementContainer.className = 'tab-content';
-IdentityCardRequirementContainer.id = 'IdentityCardRequirement';
-
-const SystemDiagnosticsContainer = document.createElement('div');
-SystemDiagnosticsContainer.className = 'tab-content';
-SystemDiagnosticsContainer.id = 'runSystemDiagnostics';
-
-const SystemRequirementContainer = document.createElement('div');
-SystemRequirementContainer.className = 'tab-content';
-SystemRequirementContainer.id = 'SystemRequirements';
-
-const IdentityVerificationScreenOneContainer = document.createElement('div');
-IdentityVerificationScreenOneContainer.className = 'tab-content';
-IdentityVerificationScreenOneContainer.id = 'IdentityVerificationScreenOne';
-
-const IdentityVerificationScreenTwoConatiner = document.createElement('div');
-IdentityVerificationScreenTwoConatiner.className = 'tab-content';
-IdentityVerificationScreenTwoConatiner.id = 'IdentityVerificationScreenTwo';
-
-const IdentityVerificationScreenThreeContainer = document.createElement('div');
-IdentityVerificationScreenThreeContainer.className = 'tab-content';
-IdentityVerificationScreenThreeContainer.id = 'IdentityVerificationScreenThree';
-
-const IdentityVerificationScreenFourContainer = document.createElement('div');
-IdentityVerificationScreenFourContainer.className = 'tab-content';
-IdentityVerificationScreenFourContainer.id = 'IdentityVerificationScreenFour';
-
-const IdentityVerificationScreenFiveContainer = document.createElement('div');
-IdentityVerificationScreenFiveContainer.className = 'tab-content';
-IdentityVerificationScreenFiveContainer.id = 'IdentityVerificationScreenFive';
-
-const PrevalidationinstructionContainer = document.createElement('div');
-PrevalidationinstructionContainer.className = 'tab-content';
-PrevalidationinstructionContainer.id = 'Prevalidationinstruction';
-
-const mobileProctingContainer = document.createElement('div');
-mobileProctingContainer.className = 'tab-content';
-mobileProctingContainer.id = 'MobileProctoring';
-
-tabContentsWrapper.appendChild(ExamPreparationContainer);
-tabContentsWrapper.appendChild(IdentityCardRequirementContainer);
-tabContentsWrapper.appendChild(SystemDiagnosticsContainer);
-tabContentsWrapper.appendChild(SystemRequirementContainer);
-tabContentsWrapper.appendChild(IdentityVerificationScreenOneContainer);
-tabContentsWrapper.appendChild(IdentityVerificationScreenTwoConatiner);
-tabContentsWrapper.appendChild(IdentityVerificationScreenThreeContainer);
-tabContentsWrapper.appendChild(IdentityVerificationScreenFourContainer);
-tabContentsWrapper.appendChild(IdentityVerificationScreenFiveContainer);
-tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
-tabContentsWrapper.appendChild(mobileProctingContainer);
+const ExamPreparationContainer = modal.querySelector('#ExamPreparation');
+const IdentityCardRequirementContainer = modal.querySelector('#IdentityCardRequirement');
+const SystemDiagnosticsContainer = modal.querySelector('#runSystemDiagnostics');
+const SystemRequirementContainer = modal.querySelector('#SystemRequirements');
+const IdentityVerificationScreenOneContainer = modal.querySelector('#IdentityVerificationScreenOne');
+const IdentityVerificationScreenTwoConatiner = modal.querySelector('#IdentityVerificationScreenTwo');
+const IdentityVerificationScreenThreeContainer = modal.querySelector('#IdentityVerificationScreenThree');
+const IdentityVerificationScreenFourContainer = modal.querySelector('#IdentityVerificationScreenFour');
+const IdentityVerificationScreenFiveContainer = modal.querySelector('#IdentityVerificationScreenFive');
+const PrevalidationinstructionContainer = modal.querySelector('#Prevalidationinstruction');
+const mobileProctingContainer = modal.querySelector('#MobileProctoring');
 
 const initializeLiveChat = () => {
 	const isLoggedIn = !!getAuthenticationToken();
@@ -244,89 +209,64 @@ const navigate = (newTabId) => {
 };
 
 const createLanguageDropdown = () => {
-	const modalHeader = document.createElement('div');
-	modalHeader.className = 'header';
-
-	const languageContainer = document.createElement('section');
-	languageContainer.className = 'dropdown';
-
 	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolTheme?.language || 'en';
 	const filterLanguage = normalizeLanguage(defaultLanguage);
 	let selectedLanguage = languages.find(lang => lang.keyword === filterLanguage.trim());
 
-	const selectContainer = document.createElement('div');
-	selectContainer.className = 'select';
-	selectContainer.onclick = () => languageDropdown.classList.toggle('active');
+	const headerHTML = `
+    <div class="header">
+      <section class="dropdown">
+        <div class="select">
+          <img src="${selectedLanguage.src}" alt="${selectedLanguage.alt}" class="flag-icon-img">
+          <label class="language">${i18next.t(selectedLanguage.value)}</label>
+          <img src="${ASSET_URL}/dropdown-btn.svg">
+        </div>
+        <section class="dropdown-content">
+          ${languages.map((lang, index) => `
+            <div data-index="${index}" class="dropdown-option ${lang.keyword === selectedLanguage.keyword ? 'selected' : ''}">
+              <img src="${lang.src}" alt="${lang.alt}" class="flag-icon-img">
+              <div class="text" id="dropdown-text-language">${i18next.t(lang.value)}</div>
+            </div>
+          `).join('')}
+        </section>
+      </section>
+    </div>
+  `;
 
-	const flagImg = document.createElement('img');
-	flagImg.src = selectedLanguage.src;
-	flagImg.alt = selectedLanguage.alt;
-	flagImg.className = 'flag-icon-img';
-	selectContainer.appendChild(flagImg);
+	modalContent.insertAdjacentHTML('afterbegin', headerHTML);
 
-	const label = document.createElement('label');
-	label.className = 'language';
-	label.textContent = i18next.t(selectedLanguage.value);
-	selectContainer.appendChild(label);
-
-	const dropdownIcon = document.createElement('img');
-	dropdownIcon.src = `${ASSET_URL}/dropdown-btn.svg`;
-	selectContainer.appendChild(dropdownIcon);
-
-	languageContainer.appendChild(selectContainer);
-
-	const languageDropdown = document.createElement('section');
-	languageDropdown.className = 'dropdown-content';
-
-	languages.forEach((lang, index) => {
-		const optionDiv = document.createElement('div');
-		optionDiv.key = index;
-
-		optionDiv.className = `dropdown-option ${lang.keyword === selectedLanguage.keyword ? 'selected' : ''}`;
-		optionDiv.onclick = () => onTrigger(lang);
-
-		const optionFlag = document.createElement('img');
-		optionFlag.src = lang.src;
-		optionFlag.alt = lang.alt;
-		optionFlag.className = 'flag-icon-img';
-		optionDiv.appendChild(optionFlag);
-
-		const optionText = document.createElement('div');
-		optionText.className = 'text';
-		optionText.id='dropdown-text-language';
-
-		optionText.textContent = i18next.t(lang.value);
-		optionDiv.appendChild(optionText);
-
-		languageDropdown.appendChild(optionDiv);
+	const selectContainer = modalContent.querySelector('.select');
+	const languageDropdown = modalContent.querySelector('.dropdown-content');
+	const flagImg = modalContent.querySelector('.select .flag-icon-img');
+	const label = modalContent.querySelector('.language');
+  
+	selectContainer.addEventListener('click', () => {
+		languageDropdown.classList.toggle('active');
 	});
 
-	languageContainer.appendChild(languageDropdown);
-	modalHeader.appendChild(languageContainer);
-	modalContent.insertBefore(modalHeader, modalContent.firstChild);
-
-	function onTrigger(selectedLang) {
-		selectedLanguage = selectedLang;
-	
-		i18next.changeLanguage(selectedLang.keyword)
-			.then(() => {
-				flagImg.src = selectedLang.src;
-				label.textContent = i18next.t(selectedLang.value);
-	
-				languages.forEach((lang,index) => {
-					const optionDiv = languageDropdown.children[index];
-					if (optionDiv) {
-						const optionText = optionDiv.querySelector('.text');
-						optionText.textContent = i18next.t(lang.value);
-					}
-				});
-			})
-			.catch(err => logger.error(err));
-	
-		languageDropdown.classList.remove('active');
-		updatePersistData('schoolTheme', { language: selectedLang.keyword });
-	}
+	const optionDivs = languageDropdown.querySelectorAll('.dropdown-option');
+	optionDivs.forEach(optionDiv => {
+		optionDiv.addEventListener('click', function() {
+			const index = parseInt(this.getAttribute('data-index'));
+			const selectedLang = languages[index];
+      
+			i18next.changeLanguage(selectedLang.keyword)
+				.then(() => {
+					flagImg.src = selectedLang.src;
+					label.textContent = i18next.t(selectedLang.value);
+          
+					optionDivs.forEach((div, i) => {
+						const optionText = div.querySelector('.text');
+						optionText.textContent = i18next.t(languages[i].value);
+					});
+				})
+				.catch(err => logger.error(err));
+      
+			languageDropdown.classList.remove('active');
+			updatePersistData('schoolTheme', { language: selectedLang.keyword });
+		});
+	});
 };
 
 const openModal = async (callback) => {

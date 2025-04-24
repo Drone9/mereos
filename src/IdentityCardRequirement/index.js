@@ -17,89 +17,70 @@ const vectors = [
 
 const getDateTime = () => new Date().toISOString();
 
-export const IdentityCardRequirement = async (tabContent,callback) => {
+export const IdentityCardRequirement = async (tabContent, callback) => {
 	if (!tabContent) {
 		logger.error('tabContent is not defined or is not a valid DOM element');
 		return;
 	}
 
 	const nextPage = () => {
-		registerEvent({ eventType: 'success', notify: false, eventName: 'identity_card_requirement_read', eventValue: getDateTime() });
-		showTab('runSystemDiagnostics',callback);
-		updatePersistData('preChecksSteps',{ identityConfirmation:true });
+		registerEvent({ 
+			eventType: 'success', 
+			notify: false, 
+			eventName: 'identity_card_requirement_read', 
+			eventValue: getDateTime() 
+		});
+		showTab('runSystemDiagnostics', callback);
+		updatePersistData('preChecksSteps', { identityConfirmation: true });
 	};
-	
+    
 	tabContent.innerHTML = '';
 
 	let mobileContainer = document?.getElementById('mobile-proctoring');
-	if(mobileContainer){
+	if (mobileContainer) {
 		mobileContainer.innerHTML = '';
 	}
 
-	const container = document.createElement('div');
-	container.className = 'exam-preparation';
+	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined 
+		? JSON.parse(localStorage.getItem('schoolTheme')) 
+		: {};
+    
+	const headerImgSrc = schoolTheme?.mode === 'dark' 
+		? `${ASSET_URL}/oc-reading-book.svg`
+		: `${ASSET_URL}/oc-reading-book.png`;
 
-	const examPreparationContainer = document.createElement('div');
-	examPreparationContainer.className = 'exam-preparation-container';
-	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
+	tabContent.insertAdjacentHTML('beforeend', `
+        <div class="exam-preparation">
+            <div class="exam-preparation-container">
+                <img class="header-img" src="${headerImgSrc}" alt="header-img">
+                <h1>${i18next.t('exam_preparation')}</h1>
+                <label class="ep-msg">${i18next.t('icc_msg')}</label>
+                <button class="orange-filled-btn">
+                    ${i18next.t('continue')}
+                </button>
+            </div>
+            <div class="bg-images">
+                ${vectors.map(vector => 
+		`<img class="${vector.name}" src="${vector.src}" alt="${vector.alt}">`
+	).join('')}
+            </div>
+        </div>
+    `);
 
-	const headerImg = document.createElement('img');
-	headerImg.className = 'header-img';
-	headerImg.src = schoolTheme?.mode === 'dark' ? `${ASSET_URL}/oc-reading-book.svg`: `${ASSET_URL}/oc-reading-book.png`;
-	headerImg.alt = 'header-img';
-	examPreparationContainer.appendChild(headerImg);
-
-	const title = document.createElement('h1');
-	title.textContent = i18next.t('exam_preparation');
-	examPreparationContainer.appendChild(title);
-
-	const msgLabel = document.createElement('label');
-	msgLabel.className = 'ep-msg';
-	msgLabel.textContent = i18next.t('icc_msg');
-	examPreparationContainer.appendChild(msgLabel);
-
-	const continueButton = document.createElement('button');
-	continueButton.className = 'orange-filled-btn';
-	continueButton.textContent = i18next.t('continue');
-	continueButton.style.marginTop = '10px';
-	continueButton.style.justifyContent = 'center';
+	const continueButton = tabContent.querySelector('.orange-filled-btn');
 	continueButton.addEventListener('click', nextPage);
-	examPreparationContainer.appendChild(continueButton);
 
-	container.appendChild(examPreparationContainer);
+	const updateTexts = () => {
+		const title = tabContent.querySelector('h1');
+		const msgLabel = tabContent.querySelector('.ep-msg');
+		const continueBtn = tabContent.querySelector('.orange-filled-btn');
+        
+		if (title) title.textContent = i18next.t('exam_preparation');
+		if (msgLabel) msgLabel.textContent = i18next.t('icc_msg');
+		if (continueBtn) continueBtn.textContent = i18next.t('continue');
+	};
 
-	const bgImagesContainer = document.createElement('div');
-	bgImagesContainer.className = 'bg-images';
-
-	vectors.forEach((vector) => {
-		const vectorImg = document.createElement('img');
-		vectorImg.className = vector.name;
-		vectorImg.src = vector.src;
-		vectorImg.alt = vector.alt;
-		bgImagesContainer.appendChild(vectorImg);
-	});
-
-	container.appendChild(bgImagesContainer);
-
-	tabContent.appendChild(container);
-
-	const styleElement = document.createElement('style');
-	styleElement.textContent = `
-    .exam-preparation {
-        /* Define your CSS styles here */
-    }
-    .exam-preparation-container {
-        /* Define your CSS styles here */
-    }
-    /* Define other classes as needed */
-  `;
-	document.head.appendChild(styleElement);
-	
-	i18next.on('languageChanged', () => {
-		title.textContent = i18next.t('exam_preparation');
-		msgLabel.textContent = i18next.t('icc_msg');
-		continueButton.textContent = i18next.t('continue');
-	});
+	i18next.on('languageChanged', updateTexts);
 };
 
 i18next.on('languageChanged', () => {

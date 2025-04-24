@@ -23,6 +23,7 @@ import { customCandidateAssessmentStatus } from './src/services/candidate-assess
 
 async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
+		localStorage.clear();
 		let logonResp;
 		try {
 			logonResp = await logonSchool(credentials);
@@ -38,7 +39,6 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 		if (logonResp.data) {
 			const token = logonResp.data.token;
 			const expiresInSeconds = logonResp.data.expires_in;
-			// const expiresInSeconds =  60;
 			const expiresAt = Date.now() + expiresInSeconds * 1000;
 
 			localStorage.setItem('mereosToken', JSON.stringify({ token, expiresAt }));

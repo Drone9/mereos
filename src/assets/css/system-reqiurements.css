@@ -18,6 +18,7 @@
   text-align: center;
   margin-top: 25px;
   font-style: var(--font-style);
+  color: var(--text-color);
 }
 
 .system-requirement-test-screen .container-prompt {
@@ -141,6 +142,9 @@
   gap: 10px;
   align-items: center;
 }
+.system-requirement-test-screen .grey-box-right label{
+  color: var(--text-color);
+}
 
 .system-requirement-test-screen .grey-box-right img {
   width: 42px;
@@ -181,7 +185,6 @@
 .system-requirement-test-screen .button-section {
   display: flex;
   justify-content: center;
-  margin-top: 40px;
 }
 
 @media (max-width: 720px) {

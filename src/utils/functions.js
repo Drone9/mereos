@@ -8,6 +8,8 @@ import { testUploadSpeed } from '../services/general.services';
 import i18next from 'i18next';
 import { closeModal, openModal } from '../ExamsPrechecks';
 import { Notyf } from 'notyf';
+import { notifyTokenExpired } from './axios';
+import { stop_prechecks } from '../..';
 
 export const dataURIToBlob = (dataURI) => {
 	
@@ -162,14 +164,14 @@ export const registerEvent = async ({ eventName,eventValue }) => {
 
 export const updateThemeColor = () => {
 	const defaultTheme = {
-		theming: '#FF961B',  
-		font: 'normal'       
+		theming: '#FF961B',
+		font: 'normal'
 	};
 
 	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
 
 	const isValidHex = (color) => {
-		const hexRegex = /^#[0-9A-F]{6}$/i;  
+		const hexRegex = /^#[0-9A-F]{6}$/i;
 		return hexRegex.test(color);
 	};
 
@@ -178,13 +180,15 @@ export const updateThemeColor = () => {
 		return validFontStyles.includes(font);
 	};
 
-	const themeColor = isValidHex(schoolTheme?.theming) 
-		? schoolTheme.theming 
-		: defaultTheme.theming; 
+	const themeColor = isValidHex(schoolTheme?.theming)
+		? schoolTheme.theming
+		: defaultTheme.theming;
 
-	const fontStyle = isValidFontStyle(schoolTheme?.font) 
-		? schoolTheme.font 
-		: defaultTheme.font;  
+	const fontStyle = isValidFontStyle(schoolTheme?.font)
+		? schoolTheme.font
+		: defaultTheme.font;
+
+	const isDarkMode = !!schoolTheme?.mode;
 
 	const themeToStore = {
 		...schoolTheme,
@@ -195,9 +199,10 @@ export const updateThemeColor = () => {
 	localStorage.setItem('schoolTheme', JSON.stringify(themeToStore));
 
 	document.documentElement.style.setProperty('--theme-color', themeColor);
+	document.documentElement.style.setProperty('--theme-mode', isDarkMode ? '#000' : '#fff');
+	document.documentElement.style.setProperty('--text-color', isDarkMode ? '#fff' : '#000');
 	document.documentElement.style.setProperty('--font-style', fontStyle);
 };
-
 
 export const loadZendeskWidget = () => {
 	const getSecureFeature = getSecureFeatures();
@@ -250,21 +255,54 @@ export const cleanupZendeskWidget = () => {
 	}
 };
 
+export const authenticatedRequest = async (apiCall, params = null) => {
+	const mereosToken = getAuthenticationToken();
+  
+	if (!mereosToken) {
+		stop_prechecks(()=>null);
+		return {
+			type: 'error',
+			message: 'authentication_required',
+			code: 40023,
+			details: 'Valid authentication token required for this operation'
+		};
+	}
+  
+	const config = {
+		headers: {
+			token: mereosToken,
+		}
+	};
+  
+	if (params) {
+		config.params = params;
+	}
+  
+	return apiCall(config);
+};
+
 export const getAuthenticationToken = () => {
 	const tokenData = localStorage.getItem('mereosToken');
 
 	if (tokenData) {
-		const { token, expiresAt } = JSON.parse(tokenData);
-        
-		if (Date.now() > expiresAt) {
+		try {
+			const { token, expiresAt } = JSON.parse(tokenData);
+      
+			if (Date.now() > expiresAt) {
+				localStorage.removeItem('mereosToken');
+				notifyTokenExpired();
+				return null;
+			}
+      
+			return token;
+		} catch (error) {
 			localStorage.removeItem('mereosToken');
+			notifyTokenExpired();
 			return null;
 		}
-        
-		return token; 
 	}
 
-	return null; 
+	return null;
 };
 
 export const userRekognitionInfo = async (data) => {
@@ -867,10 +905,10 @@ const detectPageRefreshCallback = (e) => {
 
 export const detectPageRefresh = () => {
 	window.addEventListener('beforeunload', detectPageRefreshCallback);
-}
+};
 
 // ************* Detect Back Button ***************** //
-const detectBackButtonCallback = (e) => {
+const detectBackButtonCallback = () => {
 	if (window.startRecordingCallBack) {
 		window.startRecordingCallBack({
 			type: 'error',
@@ -886,15 +924,15 @@ const detectBackButtonCallback = (e) => {
 
 export const detectBackButton = () => {
 	window.addEventListener('popstate', detectBackButtonCallback);
-}
+};
 
-//****************** DefaultEvent Callback *********************/
+//* ***************** DefaultEvent Callback *********************/
 const handleDefaultEvent = e => {
 	e.preventDefault();
 	e.stopPropagation();
 };
 
-//****************** Unlock browser from Events */
+//* ***************** Unlock browser from Events */
 export const unlockBrowserFromContent = () => {
 	window.removeEventListener('contextmenu', handleDefaultEvent);
 	window.removeEventListener('beforeunload', detectPageRefreshCallback);

@@ -254,12 +254,12 @@ const updateDiagnosticText = () => {
 
 	const heading = document.querySelector('.heading');
 	if (heading) {
-		heading.textContent = i18next.t('system_diagnostic');
+		heading.textContent = i18next.t('system_diagnostics');
 	}
 
 	const description = document.querySelector('.description');
 	if (description) {
-		description.textContent = i18next.t('system_diagnostic_msg');
+		description.textContent = i18next.t('system_diagnostics_msg');
 	}
     
 	const btnText = document.querySelector('.orange-filled-btn');

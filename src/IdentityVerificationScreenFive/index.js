@@ -209,14 +209,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const btnContainer = container.querySelector('.ivsf-btn-container');
 		if (!btnContainer) return;
 
-		// Clear existing buttons
 		btnContainer.innerHTML = '';
 
-		// Check if we need to show previous button
 		const prevStepsEntities = ['verify_candidate', 'verify_id', 'record_audio', 'record_room'];
 		const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
 
-		// Add buttons based on current mode
 		let buttonsHTML = '';
 		
 		if (showPrevButton) {
@@ -231,7 +228,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		
 		btnContainer.insertAdjacentHTML('beforeend', buttonsHTML);
 		
-		// Add event listeners
 		if (showPrevButton) {
 			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
 		}
@@ -244,14 +240,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const createInitialUI = () => {
-		// Clear existing content
 		tabContent.innerHTML = '';
 		
-		// Create steps container element for steps rendering
 		const stepsContainer = document.createElement('div');
 		renderIdentityVerificationSteps(stepsContainer, 6);
 		
-		// Create the basic HTML structure
 		tabContent.insertAdjacentHTML('beforeend', `
 			<div class="screen-share-container">
 				<div class="screen-wrapper">
@@ -266,28 +259,22 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			</div>
 		`);
 		
-		// Insert the steps container into the DOM
 		const stepsPlaceholder = tabContent.querySelector('.steps-container');
 		stepsPlaceholder.appendChild(stepsContainer);
 		
-		// Update buttons
 		updateButtons(tabContent.querySelector('.screen-share-container'));
 	};
 
-	// Create initial UI
 	createInitialUI();
 	
-	// Initialize screen sharing if not already started
 	if (!window.newStream) {
 		shareScreen();
 	}
 	
-	// Initialize socket connection if mobile proctoring is enabled
 	if (secureFeatures.find(entity => entity.key === 'mobile_proctoring')) {
 		initSocketConnection();
 	}
 	
-	// Set up language change listener
 	i18next.on('languageChanged', updateUI);
 	
 	return tabContent.querySelector('.screen-share-container');

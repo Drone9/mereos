@@ -24,12 +24,7 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 	}
 
 	const nextPage = () => {
-		registerEvent({ 
-			eventType: 'success', 
-			notify: false, 
-			eventName: 'identity_card_requirement_read', 
-			eventValue: getDateTime() 
-		});
+		registerEvent({ eventType: 'success', notify: false, eventName: 'identity_card_requirement_read', eventValue: getDateTime() });
 		showTab('runSystemDiagnostics', callback);
 		updatePersistData('preChecksSteps', { identityConfirmation: true });
 	};
@@ -41,48 +36,66 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 		mobileContainer.innerHTML = '';
 	}
 
-	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined 
-		? JSON.parse(localStorage.getItem('schoolTheme')) 
-		: {};
+	// Get school theme data
+	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? 
+		JSON.parse(localStorage.getItem('schoolTheme')) : {};
     
-	const headerImgSrc = schoolTheme?.mode === 'dark' 
-		? `${ASSET_URL}/oc-reading-book.svg`
-		: `${ASSET_URL}/oc-reading-book.png`;
+	// Create background images HTML
+	const vectorsHTML = vectors.map(vector => 
+		`<img class="${vector.name}" src="${vector.src}" alt="${vector.alt}">`
+	).join('');
 
+	// Create the main HTML using insertAdjacentHTML
 	tabContent.insertAdjacentHTML('beforeend', `
         <div class="exam-preparation">
             <div class="exam-preparation-container">
-                <img class="header-img" src="${headerImgSrc}" alt="header-img">
+                <img class="header-img" 
+                     src="${schoolTheme?.mode === 'dark' ? `${ASSET_URL}/oc-reading-book.svg` : `${ASSET_URL}/oc-reading-book.png`}" 
+                     alt="header-img">
                 <h1>${i18next.t('exam_preparation')}</h1>
                 <label class="ep-msg">${i18next.t('icc_msg')}</label>
-                <button class="orange-filled-btn">
+                <button id="continue-button" class="orange-filled-btn" style="margin-top: 10px; justify-content: center;">
                     ${i18next.t('continue')}
                 </button>
             </div>
             <div class="bg-images">
-                ${vectors.map(vector => 
-		`<img class="${vector.name}" src="${vector.src}" alt="${vector.alt}">`
-	).join('')}
+                ${vectorsHTML}
             </div>
         </div>
     `);
-
-	const continueButton = tabContent.querySelector('.orange-filled-btn');
-	continueButton.addEventListener('click', nextPage);
-
-	const updateTexts = () => {
-		const title = tabContent.querySelector('h1');
-		const msgLabel = tabContent.querySelector('.ep-msg');
-		const continueBtn = tabContent.querySelector('.orange-filled-btn');
+    
+	// Add CSS styles if needed
+	if (!document.getElementById('identity-card-styles')) {
+		const styleElement = document.createElement('style');
+		styleElement.id = 'identity-card-styles';
+		styleElement.textContent = `
+            /* Define your CSS styles here if needed - these could also be moved to your CSS file */
+        `;
+		document.head.appendChild(styleElement);
+	}
+    
+	// Add event listener to the continue button
+	document.getElementById('continue-button').addEventListener('click', nextPage);
+    
+	// Handle language changes only for this component
+	const languageChangeHandler = () => {
+		const titleElement = tabContent.querySelector('h1');
+		const msgElement = tabContent.querySelector('.ep-msg');
+		const continueButtonElement = tabContent.querySelector('#continue-button');
         
-		if (title) title.textContent = i18next.t('exam_preparation');
-		if (msgLabel) msgLabel.textContent = i18next.t('icc_msg');
-		if (continueBtn) continueBtn.textContent = i18next.t('continue');
+		if (titleElement) titleElement.textContent = i18next.t('exam_preparation');
+		if (msgElement) msgElement.textContent = i18next.t('icc_msg');
+		if (continueButtonElement) continueButtonElement.textContent = i18next.t('continue');
 	};
-
-	i18next.on('languageChanged', updateTexts);
+    
+	// Store the language change handler reference on the tabContent for cleanup later if needed
+	tabContent.languageChangeHandler = languageChangeHandler;
+    
+	// Add language change listener
+	i18next.on('languageChanged', languageChangeHandler);
 };
 
+// Global language change handler for when this tab becomes active
 i18next.on('languageChanged', () => {
 	const activeTab = document.querySelector('.tab-content.active');
 	if (activeTab && activeTab.id === 'IdentityCardRequirement') {

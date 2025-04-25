@@ -1,6 +1,6 @@
 import i18next from 'i18next';
 
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
@@ -166,7 +166,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 
 	const uploadCandidateIdentityCard = async () => {
 		if (currentState.isUploading) return; 
-    
+        
 		try {
 			currentState.isUploading = true;
 			renderUI();
@@ -222,144 +222,127 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		showTab(previousPage);
 	};
 
+	const setupEventListeners = () => {
+		shadowRoot.querySelector('#upload-identity-card')?.addEventListener('click', () => inputFile.click());
+		
+		shadowRoot.querySelectorAll('.orange-filled-btn, .orange-hollow-btn').forEach(button => {
+			const action = button.getAttribute('data-action');
+			if (action === 'take-photo') button.addEventListener('click', capturePhoto);
+			if (action === 'restart') button.addEventListener('click', handleRestart);
+			if (action === 'upload') button.addEventListener('click', uploadCandidateIdentityCard);
+			if (action === 'next') button.addEventListener('click', nextStep);
+			if (action === 'prev') button.addEventListener('click', prevStep);
+		});
+	};
+
 	const renderUI = async () => {
 		let container = tabContent.querySelector('.id-card-container');
 		if (!container) {
-			container = document.createElement('div');
-			container.className = 'id-card-container';
-			tabContent.appendChild(container);
+			tabContent.insertAdjacentHTML('beforeend', `
+                <div class="id-card-container">
+                    <div class="ivst-wrapper"></div>
+                </div>
+            `);
+			container = tabContent.querySelector('.id-card-container');
 		}
-		container.innerHTML = '';
 
-		let wrapper = container.querySelector('.ivst-wrapper');
-		if (!wrapper) {
-			wrapper = document.createElement('div');
-			wrapper.className = 'ivst-wrapper';
-			container.appendChild(wrapper);
-		}
-		wrapper.innerHTML = ''; 
+		const stepsContainerHTML = document.createElement('div');
+		renderIdentityVerificationSteps(stepsContainerHTML, 2);
 
-		let stepsContainer = document.createElement('div');
-		renderIdentityVerificationSteps(stepsContainer, 2);
-
-		const headerTitle = document.createElement('div');
-		headerTitle.className = 'ivst-header-title';
-		headerTitle.textContent = i18next.t('identity_validation');
-
-		const message = document.createElement('div');
-		message.className = 'ivst-msg';
-		message.textContent = i18next.t('initial_system_check_passed_get_ready_for_identity_validation');
-
-		const headerImgContainer = document.createElement('div');
-		headerImgContainer.className = 'ivst-header-img-container';
-
+		let headerImgHTML = '';
 		if (currentState.imageSrc) {
-			const img = document.createElement('img');
-			img.src = currentState.imageSrc;
-			img.className = 'ivst-header-img';
-			img.alt = 'captured-image';
-			headerImgContainer.appendChild(img);
-
-			const resultImg = document.createElement('img');
-			resultImg.src = currentState.msg.type === 'unsuccessful' ? `${ASSET_URL}/close-red.svg` : `${ASSET_URL}/checkmark-green.svg`;
-			resultImg.className = 'ivst-header-img-result';
-			resultImg.alt = 'tick-mark-green-bg';
-			if (currentState.msg.type !== 'checking') {
-				headerImgContainer.appendChild(resultImg);
-			}
+			headerImgHTML = `
+                <img src="${currentState.imageSrc}" class="ivst-header-img" alt="captured-image">
+                ${currentState.msg.type !== 'checking' ? 
+		`<img src="${currentState.msg.type === 'unsuccessful' ? 
+			`${ASSET_URL}/close-red.svg` : 
+			`${ASSET_URL}/checkmark-green.svg`}" 
+                        class="ivst-header-img-result" 
+                        alt="status-icon">` : 
+		''}
+            `;
 		} else {
-			photo = document.createElement('video');
-			photo.width = videoConstraints.width;
-			photo.height = videoConstraints.height;
-			photo.autoplay = true;
-			headerImgContainer.appendChild(photo);
-
-			stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-			if (stream !== null) {
-				photo.srcObject = stream;
-			}
-			const gridImg = document.createElement('img');
-			gridImg.src = `${ASSET_URL}/screen-centered-grid.svg`;
-			gridImg.className = 'ivst-screen-grid';
-			gridImg.alt = 'screen-centered-grid';
-			headerImgContainer.appendChild(gridImg);
+			headerImgHTML = `
+                <video width="${videoConstraints.width}" height="${videoConstraints.height}" autoplay></video>
+                <img src="${ASSET_URL}/screen-centered-grid.svg" class="ivst-screen-grid" alt="screen-centered-grid">
+            `;
 		}
 
-		wrapper.appendChild(headerTitle);
-		wrapper.appendChild(message);
-		wrapper.appendChild(stepsContainer);
-		wrapper.appendChild(headerImgContainer);
+		const messageHTML = currentState.msg.text ? 
+			`<div class="ivst-query-msg" id="queryMsg-msg" ${currentState.msg.type === 'unsuccessful' ? 'style="color: #E95E5E;"' : ''}>
+                ${i18next.t(currentState.msg.text)}
+            </div>` : '';
 
-		if (currentState.msg.text) {
-			const queryMsg = document.createElement('div');
-			queryMsg.className = 'ivst-query-msg';
-			queryMsg.id = 'queryMsg-msg';
-			queryMsg.textContent = i18next.t(currentState.msg.text);
-			if (currentState.msg.type === 'unsuccessful') {
-				queryMsg.style.color = '#E95E5E';
+		const uploadMsgHTML = !currentState.imageSrc ? 
+			`<div class="ivst-query-msg">
+                ${i18next.t('please_take_picture_or')} <span id="upload-identity-card" class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.
+            </div>` : '';
+
+		let buttonsHTML = '';
+		if (currentState.captureMode === 'take') {
+			buttonsHTML = `
+                ${secureFeatures.find(entity => entity.key === 'verify_candidate') ? 
+		`<button class="orange-hollow-btn" data-action="prev">${i18next.t('previous_step')}</button>` : ''}
+                <button class="orange-filled-btn" data-action="take-photo" ${disabledBtn || !!currentState.imageSrc ? 'disabled' : ''}>
+                    ${i18next.t('take_id_photo')}
+                </button>
+            `;
+		} else {
+			if (currentState.captureMode !== 'uploaded_photo') {
+				buttonsHTML = `
+                    <button class="orange-filled-btn" data-action="restart">${i18next.t('retake_id_photo')}</button>
+                    <button class="orange-filled-btn" data-action="upload" ${currentState.msg.type === 'unsuccessful' || currentState.isUploading ? 'disabled' : ''}>
+                        ${i18next.t('upload')}
+                    </button>
+                `;
+			} else {
+				buttonsHTML = `
+                    <button class="orange-filled-btn" data-action="restart">${i18next.t('retake_id_photo')}</button>
+                    <button class="orange-filled-btn" data-action="next">${i18next.t('next_step')}</button>
+                `;
 			}
-			wrapper.appendChild(queryMsg);
+		}
+
+		container.querySelector('.ivst-wrapper').innerHTML = `
+            <div class="ivst-header-title">${i18next.t('identity_validation')}</div>
+            <div class="ivst-msg">${i18next.t('initial_system_check_passed_get_ready_for_identity_validation')}</div>
+            ${stepsContainerHTML.innerHTML}
+            <div class="ivst-header-img-container">
+                ${headerImgHTML}
+            </div>
+            ${messageHTML}
+            ${uploadMsgHTML}
+            <div class="ivst-btn-container">
+                ${buttonsHTML}
+            </div>
+        `;
+
+		if (!inputFile) {
+			inputFile = document.createElement('input');
+			inputFile.type = 'file';
+			inputFile.name = 'idCard';
+			inputFile.accept = 'image/*';
+			inputFile.hidden = true;
+			inputFile.addEventListener('change', uploadImage);
+			container.appendChild(inputFile);
 		}
 
 		if (!currentState.imageSrc) {
-			const uploadMsg = document.createElement('div');
-			uploadMsg.className = 'ivst-query-msg';
-			uploadMsg.innerHTML = `${i18next.t('please_take_picture_or')} <span id='upload-identity-card' class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.`;
-			uploadMsg.querySelector('.ivst-file')?.addEventListener('click', () => inputFile.click());
-			wrapper.appendChild(uploadMsg);
-		}
-
-		const btnContainer = document.createElement('div');
-		btnContainer.className = 'ivst-btn-container';
-
-		if (currentState.captureMode === 'take') {
-			const prevBtn = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
-			const takePhotoBtn = createButton(`${i18next.t('take_id_photo')}`, 'orange-filled-btn', capturePhoto);
-			takePhotoBtn.disabled = disabledBtn || !!currentState.imageSrc;
-			if (secureFeatures.find(entity => entity.key === 'verify_candidate')) {
-				btnContainer.appendChild(prevBtn);
-			}
-			btnContainer.appendChild(takePhotoBtn);
-		} else {
-			const retakeBtn = createButton(`${i18next.t('retake_id_photo')}`, 'orange-filled-btn', handleRestart);
-			btnContainer.appendChild(retakeBtn);
-			if (currentState.captureMode !== 'uploaded_photo') {
-				const uploadBtn = createButton(`${i18next.t('upload')}`, 'orange-filled-btn', uploadCandidateIdentityCard);
-				uploadBtn.disabled = currentState.msg.type === 'unsuccessful' || currentState.isUploading;			
-				btnContainer.appendChild(uploadBtn);
-			} else {
-				const nextBtn = createButton(`${i18next.t('next_step')}`, 'orange-filled-btn', nextStep);
-				btnContainer.appendChild(nextBtn);
+			photo = container.querySelector('video');
+			if (photo) {
+				stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+				if (stream !== null) {
+					photo.srcObject = stream;
+				}
 			}
 		}
 
-		wrapper.appendChild(btnContainer);
-
-		inputFile = document.createElement('input');
-		inputFile.type = 'file';
-		inputFile.name = 'idCard';
-		inputFile.accept = 'image/*';
-		inputFile.hidden = true;
-		inputFile.addEventListener('change', uploadImage);
-		container.appendChild(inputFile);
-	};
-
-	const createButton = (text, className, onClick) => {
-		const button = document.createElement('button');
-		button.className = className;
-		button.textContent = text;
-		button.addEventListener('click', onClick);
-		return button;
+		setupEventListeners();
 	};
 
 	renderUI();
 
 	i18next.on('languageChanged', () => {
 		renderUI();
-		
-		const msg = document.getElementById('queryMsg-msg');
-		if (msg && currentState.msg.text) {
-			msg.textContent = i18next.t(currentState.msg.text);
-		}
 	});
 };

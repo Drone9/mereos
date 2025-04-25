@@ -14,7 +14,7 @@ import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
-import { initialSessionData, preChecksSteps } from './src/utils/constant';
+import { initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
 import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, getTimeInSeconds, hideZendeskWidget, logger, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
@@ -23,6 +23,7 @@ import { customCandidateAssessmentStatus } from './src/services/candidate-assess
 
 async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
+		localStorage.clear();
 		let logonResp;
 		try {
 			logonResp = await logonSchool(credentials);
@@ -37,8 +38,8 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 
 		if (logonResp.data) {
 			const token = logonResp.data.token;
-			const expiresInDays = 7;
-			const expiresAt = Date.now() + expiresInDays * 24 * 60 * 60 * 1000;
+			const expiresInSeconds = logonResp.data.expires_in;
+			const expiresAt = Date.now() + expiresInSeconds * 1000;
 
 			localStorage.setItem('mereosToken', JSON.stringify({ token, expiresAt }));
 
@@ -135,6 +136,11 @@ window.globalCallback = null;
 async function start_prechecks(callback,setting) {
 	try {
 		window.globalCallback = callback;
+		const tokenData = localStorage.getItem('mereosToken');
+		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
+			localStorage.removeItem('mereosToken');
+			return callback(tokenExpiredError);
+		}
 		localStorage.setItem('precheckSetting', setting);
 		window.precheckCompleted=false;
 		startSession();
@@ -199,7 +205,12 @@ window.roomInstance=null;
 async function start_session(callback) {
 	try {
 		window.startRecordingCallBack = callback;
-		
+		const tokenData = localStorage.getItem('mereosToken');
+		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
+			localStorage.removeItem('mereosToken');
+			return callback(tokenExpiredError);
+		}
+
 		if(!window.precheckCompleted){
 			window.startRecordingCallBack({ 
 				type:'error',
@@ -297,8 +308,15 @@ async function start_session(callback) {
 	}
 }
 
+window.stopRecordingCallBack = null;
 async function stop_session(callback) {
 	try {
+		window.stopRecordingCallBack=callback;
+		const tokenData = localStorage.getItem('mereosToken');
+		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
+			localStorage.removeItem('mereosToken');
+			return callback(tokenExpiredError);
+		}
 		const stopSessionResp = await stopAllRecordings();
 
 		if (stopSessionResp === 'stop_recording') {

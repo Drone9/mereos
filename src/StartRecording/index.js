@@ -229,7 +229,7 @@ export const startRecording = async () => {
 				} : true) });
 
 				if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
-					await startAIWebcam(mediaStream);
+					await startAIWebcam(room, mediaStream);
 				}else{
 					await setupWebcam(mediaStream);
 				}
@@ -494,7 +494,7 @@ const handleVideoResize = (predictions, context) => {
 	});
 };
 
-const startAIWebcam = async (mediaStream) => {
+const startAIWebcam = async (room,mediaStream) => {
 	try {
 		const secureFeatures = getSecureFeatures();
 		const multiplePeopleFeature = findConfigs(['multiple_people_detection'], secureFeatures?.entities).length > 0;
@@ -506,12 +506,33 @@ const startAIWebcam = async (mediaStream) => {
     
 		const net = await cocoSsd.load();
     
-		const { videoElement, canvas } = await setupWebcam(mediaStream);
+		const localParticipant = room.localParticipant;
+		const videoTrackPublications = Array.from(localParticipant.videoTracks.values());
+			
+		if (videoTrackPublications.length === 0) {
+			throw new Error('No video track available from local participant');
+		}
+			
+		const { canvas } = await setupWebcam(mediaStream);
 		const context = canvas.getContext('2d');
+
+		const processingVideo = document.createElement('video');
+		processingVideo.style.display = 'none';
+		processingVideo.srcObject = new MediaStream([videoTrackPublications[0].track.mediaStreamTrack]);
+		processingVideo.autoplay = true;
+		processingVideo.playsInline = true;
+			
+		await new Promise((resolve) => {
+			processingVideo.onloadedmetadata = () => {
+				processingVideo.width = processingVideo.videoWidth;
+				processingVideo.height = processingVideo.videoHeight;
+				resolve();
+			};
+		});
 
 		const session = convertDataIntoParse('session');
 		let seconds = session?.quizStartTime ? parseInt((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) : 0;
-
+		seconds = seconds + 1;
 		const activeViolations = {
 			multiple_people: null,
 			person_missing: null,
@@ -521,9 +542,9 @@ const startAIWebcam = async (mediaStream) => {
 		aiProcessingInterval = setInterval(async () => {
 			try {
 				seconds = seconds + 1;
-				if (videoElement.readyState !== 4) return;
+				if (processingVideo.readyState !== 4) return;
 
-				const image = tf.browser.fromPixels(videoElement);
+				const image = tf.browser.fromPixels(processingVideo);
 				const predictions = await net.detect(image);
 				tf.dispose(image);
 

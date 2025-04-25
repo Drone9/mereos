@@ -11,7 +11,7 @@ import {
 	updatePersistData 
 } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 import '../assets/css/system-reqiurements.css';
 
@@ -31,67 +31,36 @@ const statusIconMap = {
 	download_speed: 'download-speed-gray.svg'
 };
 
-const createDiagnosticItem = (id, label) => {
-	const diagnosticItem = document.createElement('div');
-	diagnosticItem.classList.add('requirement-item', 'grey-box');
-	diagnosticItem.id = `${id}RequirementItem`;
+const successIconMap = {
+	ram: ramGreen,
+	cpu: cpuGreen,
+	upload_speed: uploadSpeedGreen,
+	download_speed: downloadSpeedGreen,
+};
 
-	const greyBoxRight = document.createElement('div');
-	greyBoxRight.classList.add('grey-box-right');
+const failureIconMap = {
+	ram: ramRed,
+	cpu: cpuRed,
+	upload_speed: uploadSpeedRed,
+	download_speed: downloadSpeedRed
+};
 
-	const statusIcon = document.createElement('img');
-	statusIcon.id = `${id}StatusIcon`;
-	
-	statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
-	statusIcon.alt = '';
-
-	const labelElement = document.createElement('label');
-	labelElement.textContent = label;
-
-	const greyBoxLeft = document.createElement('div');
-	greyBoxLeft.classList.add('grey-box-left');
-
-	const loadingIcon = document.createElement('img');
-	loadingIcon.id = `${id}StatusLoading`;
-	loadingIcon.src = `${ASSET_URL}/loading-gray.svg`;
-	loadingIcon.alt = '';
-
-	greyBoxRight.appendChild(statusIcon);
-	greyBoxRight.appendChild(labelElement);
-	greyBoxLeft.appendChild(loadingIcon);
-	diagnosticItem.appendChild(greyBoxRight);
-	diagnosticItem.appendChild(greyBoxLeft);
-
-	return diagnosticItem;
+const createDiagnosticItemHTML = (id, label) => {
+	return `
+    <div class="requirement-item grey-box" id="${id}RequirementItem">
+        <div class="grey-box-right">
+            <img id="${id}StatusIcon" src="${ASSET_URL}/${statusIconMap[id]}" alt="">
+            <label>${label}</label>
+        </div>
+        <div class="grey-box-left">
+            <img id="${id}StatusLoading" src="${ASSET_URL}/loading-gray.svg" alt="">
+        </div>
+    </div>
+    `;
 };
 
 const renderUI = (tab1Content) => {
-	tab1Content.innerHTML = '';
-
-	const container = document.createElement('div');
-	container.classList.add('system-requirement-test-screen');
-
-	const heading = document.createElement('h1');
-	heading.classList.add('system-requirement-heading');
-	heading.textContent = i18next.t('system_requirements');
-
-	const diagnosticStatus = document.createElement('div');
-	diagnosticStatus.classList.add('diagnostic-status', 'container-box');
-
-	const innerContainer = document.createElement('div');
-	innerContainer.classList.add('container');
-
-	const containerTop = document.createElement('div');
-	containerTop.classList.add('container-top');
-
-	const description = document.createElement('label');
-	description.classList.add('system-requirement-description');
-	description.textContent = i18next.t('system_requirement_checking_msg');
-
-	const containerMiddle = document.createElement('div');
-	containerMiddle.classList.add('container-middle', 'box-section');
-
-	const candidateAssessment =  getSecureFeatures();
+	const candidateAssessment = getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
 
 	let verifyRam = secureFeatures.find(entity => entity.key === 'verify_ram');
@@ -99,38 +68,138 @@ const renderUI = (tab1Content) => {
 	let verifyUploadSpeed = secureFeatures.find(entity => entity.key === 'verify_upload_speed');
 	let verifyDownloadSpeed = secureFeatures.find(entity => entity.key === 'verify_download_speed');
 
-	let diagnosticItems = [];
+	let diagnosticItemsHTML = '';
 
-	if (verifyRam) diagnosticItems.push('ram');
-	if (verifyCPU) diagnosticItems.push('cpu');
-	if (verifyUploadSpeed) diagnosticItems.push('upload_speed');
-	if (verifyDownloadSpeed) diagnosticItems.push('download_speed');
+	if (verifyRam) diagnosticItemsHTML += createDiagnosticItemHTML('ram', i18next.t('ram'));
+	if (verifyCPU) diagnosticItemsHTML += createDiagnosticItemHTML('cpu', i18next.t('cpu'));
+	if (verifyUploadSpeed) diagnosticItemsHTML += createDiagnosticItemHTML('upload_speed', i18next.t('upload_speed'));
+	if (verifyDownloadSpeed) diagnosticItemsHTML += createDiagnosticItemHTML('download_speed', i18next.t('download_speed'));
 
-	diagnosticItems.forEach(item => {
-		const label = i18next.t(item);
-		const diagnosticItem = createDiagnosticItem(item, label);
-		containerMiddle.appendChild(diagnosticItem);
-	});
+	const html = `
+    <div class="system-requirement-test-screen">
+        <h1 class="system-requirement-heading">${i18next.t('system_requirements')}</h1>
+        <div class="diagnostic-status container-box">
+            <div class="container">
+                <label class="system-requirement-description">${i18next.t('system_requirement_checking_msg')}</label>
+                <div class="container-middle box-section">
+                    ${diagnosticItemsHTML}
+                </div>
+                <div class="button-section">
+                    <button class="orange-filled-btn" id="requirementContinueBtn" disabled>${i18next.t('continue')}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
 
-	const buttonSection = document.createElement('div');
-	buttonSection.classList.add('button-section');
+	tab1Content.innerHTML = html;
 
-	const continueBtn = document.createElement('button');
-	continueBtn.classList.add('orange-filled-btn');
-	continueBtn.id = 'requirementContinueBtn';
-	continueBtn.disabled = true;
-	continueBtn.textContent = i18next.t('continue');
-	continueBtn.addEventListener('click', () => {
+	// Add event listener for continue button
+	shadowRoot.getElementById('requirementContinueBtn').addEventListener('click', () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_requirement_passed' });
-		updatePersistData('preChecksSteps',{ requirementStep:true });
+		updatePersistData('preChecksSteps', { requirementStep: true });
 		showTab('Prevalidationinstruction');
 	});
 
-	buttonSection.appendChild(continueBtn);
-	innerContainer.append(containerTop, description, containerMiddle, buttonSection);
-	diagnosticStatus.appendChild(innerContainer);
-	container.append(heading, diagnosticStatus);
-	tab1Content.appendChild(container);
+	// Add diagnostic item click handlers
+	addDiagnosticItemClickHandlers();
+};
+
+const addDiagnosticItemClickHandlers = () => {
+	const ids = ['ram', 'cpu', 'upload_speed', 'download_speed'];
+	const checkFunctions = {
+		'ram': getRAMInfo,
+		'cpu': getCPUInfo,
+		'upload_speed': getNetworkUploadSpeed,
+		'download_speed': getNetworkDownloadSpeed
+	};
+
+	ids.forEach(id => {
+		if (checkFunctions[id]) {
+			handleDiagnosticItemClick(id, checkFunctions[id]);
+		}
+	});
+};
+
+const setElementStatus = (id, status, isSuccess) => {
+	const statusIcon = shadowRoot.getElementById(`${id}StatusIcon`);
+	const statusLoading = shadowRoot.getElementById(`${id}StatusLoading`);
+	if (!statusIcon || !statusLoading) {
+		return;
+	}
+
+	statusIcon.src = isSuccess ? status.success : status.failure;
+	statusLoading.src = isSuccess ? `${ASSET_URL}/checkmark-rounded-green.png` : `${ASSET_URL}/x-circle.png`;
+};
+
+const handleDiagnosticItemClick = (id, checkFunction) => {
+	const element = shadowRoot.getElementById(`${id}RequirementItem`);
+	if (!element) {
+		return;
+	}
+	const candidateAssessment = getSecureFeatures();
+	const profileSettings = candidateAssessment?.settings;
+
+	element.addEventListener('click', async () => {
+		const statusIcon = shadowRoot.getElementById(`${id}StatusIcon`);
+		const statusLoading = shadowRoot.getElementById(`${id}StatusLoading`);
+		const continueButton = shadowRoot.getElementById('requirementContinueBtn');
+
+		if (!statusIcon || !statusLoading) {
+			return;
+		}
+		continueButton.disabled = true;
+		statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
+		statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
+
+		const resp = await checkFunction();
+
+		const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
+		const isGoodRam = Number(ram_info) > profileSettings?.ram_size;
+
+		const isGoodCpu = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
+
+		const isGoodUpload = Number(resp?.speedMbps) > profileSettings?.upload_speed;
+		const isGoodDownload = Number(resp?.speedMbps) > profileSettings?.download_speed;
+
+		let finalResult;
+		switch (id) {
+			case 'ram':
+				finalResult = isGoodRam;
+				break;
+			case 'cpu':
+				finalResult = isGoodCpu;
+				break;
+			case 'upload_speed':
+				finalResult = isGoodUpload;
+				break;
+			case 'download_speed':
+				finalResult = isGoodDownload;
+				break;
+			default:
+				finalResult = resp;
+		}
+
+		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
+		updateContinueButtonState();
+	});
+};
+
+const updateContinueButtonState = () => {
+	const renderedItems = shadowRoot.querySelectorAll('.requirement-item');
+
+	const allDiagnosticsPassed = Array.from(renderedItems).every(item => {
+		const itemId = item.id.replace('RequirementItem', '');
+		const statusIcon = shadowRoot.getElementById(`${itemId}StatusIcon`);
+		if (!statusIcon) return false;
+
+		const currentIconPathname = new URL(statusIcon.src).pathname;
+		const expectedIconPathname = new URL(successIconMap[itemId] || '').pathname;
+
+		return currentIconPathname === expectedIconPathname;
+	});
+
+	shadowRoot.getElementById('requirementContinueBtn').disabled = !allDiagnosticsPassed;
 };
 
 export const SystemRequirement = async (tab1Content) => {
@@ -139,101 +208,6 @@ export const SystemRequirement = async (tab1Content) => {
 		return;
 	}
 	renderUI(tab1Content);
-
-	const setElementStatus = (id, status, isSuccess) => {
-		const statusIcon = document.getElementById(`${id}StatusIcon`);
-		const statusLoading = document.getElementById(`${id}StatusLoading`);
-		if (!statusIcon || !statusLoading) {
-			return;
-		}
-  
-		statusIcon.src = isSuccess ? status.success : status.failure;
-		statusLoading.src = isSuccess ? `${ASSET_URL}/checkmark-rounded-green.png` : `${ASSET_URL}/x-circle.png`;
-	};
-
-	const handleDiagnosticItemClick = (id, checkFunction) => {
-		const element = document.getElementById(`${id}RequirementItem`);
-		if (!element) {
-			return;
-		}
-		const candidateAssessment = getSecureFeatures();
-		const profileSettings = candidateAssessment?.settings;
-	
-		element.addEventListener('click', async () => {
-			const statusIcon = document.getElementById(`${id}StatusIcon`);
-			const statusLoading = document.getElementById(`${id}StatusLoading`);
-			const continueButton = document.getElementById('requirementContinueBtn');
-	
-			if (!statusIcon || !statusLoading) {
-				return;
-			}
-			continueButton.disabled = true;
-			statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
-			statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
-	
-			const resp = await checkFunction();
-
-			const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
-			const isGoodRam = Number(ram_info) > profileSettings?.ram_size;
-	
-			const isGoodCpu = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
-	
-			const isGoodUpload = Number(resp?.speedMbps) > profileSettings?.upload_speed;
-			const isGoodDownload = Number(resp?.speedMbps) > profileSettings?.download_speed;
-	
-			let finalResult;
-			switch (id) {
-				case 'ram':
-					finalResult = isGoodRam;
-					break;
-				case 'cpu':
-					finalResult = isGoodCpu;
-					break;
-				case 'upload_speed':
-					finalResult = isGoodUpload;
-					break;
-				case 'download_speed':
-					finalResult = isGoodDownload;
-					break;
-				default:
-					finalResult = resp;
-			}
-	
-			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
-			updateContinueButtonState();
-		});
-	};	
-
-	const updateContinueButtonState = () => {
-		const renderedItems = document.querySelectorAll('.requirement-item');
-
-		const allDiagnosticsPassed = Array.from(renderedItems).every(item => {
-			const itemId = item.id.replace('RequirementItem', '');
-			const statusIcon = document.getElementById(`${itemId}StatusIcon`);
-			if (!statusIcon) return false;
-
-			const currentIconPathname = new URL(statusIcon.src).pathname;
-			const expectedIconPathname = new URL(successIconMap[itemId] || '').pathname;
-
-			return currentIconPathname === expectedIconPathname;
-		});
-
-		document.getElementById('requirementContinueBtn').disabled = !allDiagnosticsPassed;
-	};
-
-	const successIconMap = {
-		ram: ramGreen,
-		cpu: cpuGreen,
-		upload_speed: uploadSpeedGreen,
-		download_speed: downloadSpeedGreen,
-	};
-
-	const failureIconMap = {
-		ram: ramRed,
-		cpu: cpuRed,
-		upload_speed: uploadSpeedRed,
-		download_speed: downloadSpeedRed
-	};
 
 	try {
 		const candidateAssessment = await getSecureFeatures();
@@ -249,11 +223,10 @@ export const SystemRequirement = async (tab1Content) => {
 
 		if (verifyRam) {
 			promises.push(getRAMInfo().then(resp => {
-				updatePersistData('session', { RAMSpeed:resp });
+				updatePersistData('session', { RAMSpeed: resp });
 				const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
 				const isGoodRam = Number(ram_info) > profileSettings?.ram_size;
 				setElementStatus('ram', { success: ramGreen, failure: ramRed }, isGoodRam);
-				handleDiagnosticItemClick('ram', getRAMInfo);
 				return isGoodRam;
 			}));
 		} else {
@@ -262,7 +235,7 @@ export const SystemRequirement = async (tab1Content) => {
 
 		if (verifyCPU) {
 			promises.push(getCPUInfo().then(resp => {
-				updatePersistData('session', { CPUSpeed:resp });
+				updatePersistData('session', { CPUSpeed: resp });
 				const isGoodCpu = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
 				setElementStatus('cpu', { success: cpuGreen, failure: cpuRed }, isGoodCpu);
 				return isGoodCpu;
@@ -273,10 +246,9 @@ export const SystemRequirement = async (tab1Content) => {
 
 		if (verifyUploadSpeed) {
 			promises.push(getNetworkUploadSpeed().then(network => {
-				updatePersistData('session', { uploadSpeed:network });
+				updatePersistData('session', { uploadSpeed: network });
 				const isGoodUpload = Number(network.speedMbps) > profileSettings?.upload_speed;
 				setElementStatus('upload_speed', { success: uploadSpeedGreen, failure: uploadSpeedRed }, isGoodUpload);
-				handleDiagnosticItemClick('upload_speed', getNetworkUploadSpeed);
 				return isGoodUpload;
 			}));
 		} else {
@@ -285,10 +257,9 @@ export const SystemRequirement = async (tab1Content) => {
 
 		if (verifyDownloadSpeed) {
 			promises.push(getNetworkDownloadSpeed().then(network => {
-				updatePersistData('session', { downloadSpeed:network });
+				updatePersistData('session', { downloadSpeed: network });
 				const isGoodDownload = Number(network.speedMbps) > profileSettings?.download_speed;
 				setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, isGoodDownload);
-				handleDiagnosticItemClick('download_speed', getNetworkDownloadSpeed);
 				return isGoodDownload;
 			}));
 		} else {
@@ -308,22 +279,22 @@ const updateDiagnosticText = () => {
 	const diagnosticItems = ['ram', 'cpu', 'upload_speed', 'download_speed'];
 
 	diagnosticItems.forEach(item => {
-		const labelElement = document.querySelector(`#${item}RequirementItem label`);
+		const labelElement = shadowRoot.querySelector(`#${item}RequirementItem label`);
 		if (labelElement) {
 			labelElement.textContent = i18next.t(item);
 		}
 	});
 
-	const heading = document.querySelector('.system-requirement-heading');
+	const heading = shadowRoot.querySelector('.system-requirement-heading');
 	if (heading) {
 		heading.textContent = i18next.t('system_requirements');
 	}
 
-	const description = document.querySelector('.system-requirement-description');
+	const description = shadowRoot.querySelector('.system-requirement-description');
 	if (description) {
 		description.textContent = i18next.t('system_requirement_checking_msg');
 	}
-	const btnText = document.getElementById('requirementContinueBtn');
+	const btnText = shadowRoot.getElementById('requirementContinueBtn');
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
 	}

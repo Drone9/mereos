@@ -4,7 +4,7 @@ import i18next from 'i18next';
 import { v4 } from 'uuid';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, detectBackButton, detectPageRefresh, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, detectBackButton, detectBackButtonCallback, detectPageRefresh, detectPageRefreshCallback, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
@@ -23,7 +23,7 @@ export const startRecording = async () => {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-	
+
 	detectPageRefresh();
 	detectBackButton();
 
@@ -927,6 +927,9 @@ export const stopAllRecordings = async () => {
 			clearInterval(aiProcessingInterval);
 			aiProcessingInterval = null;
 		}
+		
+		window.removeEventListener('beforeunload', detectPageRefreshCallback);
+		window.removeEventListener('popstate', detectBackButtonCallback);
 
 		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 			unlockBrowserFromContent();

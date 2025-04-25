@@ -1,9 +1,13 @@
-import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
-import '../assets/css/step2.css';
 import i18next from 'i18next';
+
+import { showTab } from '../ExamsPrechecks';
+
+import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
-import { showTab } from '../ExamsPrechecks';
+
+import '../assets/css/step2.css';
+import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let photo;
@@ -161,7 +165,12 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const uploadCandidateIdentityCard = async () => {
+		if (currentState.isUploading) return; 
+    
 		try {
+			currentState.isUploading = true;
+			renderUI();
+
 			currentState = {
 				...currentState,
 				msg: {
@@ -177,10 +186,11 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			});
 
 			if (resp?.data?.file_url) {
-				updatePersistData('session',{ identityCard: resp.data.file_url });
+				updatePersistData('session', { identityCard: resp.data.file_url });
 				currentState = {
 					...currentState,
 					captureMode: 'uploaded_photo',
+					isUploading: false, // Reset flag
 					msg: {
 						type: 'waiting',
 						text: 'candidate_id_is_uploaded_successfully'
@@ -193,8 +203,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		} catch (error) {
 			currentState = {
 				...currentState,
-				captureMode: 'take',
-				imageSrc: null,
+				isUploading: false,
 				msg: {
 					type: 'error',
 					text: 'something_went_wrong_please_upload_again'
@@ -210,25 +219,28 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenTwo');
 		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
-		console.log('previousPage',previousPage);
 		showTab(previousPage);
 	};
 
 	const renderUI = async () => {
-		let container = tabContent.querySelector('.ivso-container');
+		let container = tabContent.querySelector('.id-card-container');
 		if (!container) {
 			container = document.createElement('div');
-			container.className = 'ivso-container';
+			container.className = 'id-card-container';
 			tabContent.appendChild(container);
 		}
 		container.innerHTML = '';
 
+		let wrapper = container.querySelector('.ivst-wrapper');
+		if (!wrapper) {
+			wrapper = document.createElement('div');
+			wrapper.className = 'ivst-wrapper';
+			container.appendChild(wrapper);
+		}
+		wrapper.innerHTML = ''; 
+
 		let stepsContainer = document.createElement('div');
-
 		renderIdentityVerificationSteps(stepsContainer, 2);
-
-		const wrapper = document.createElement('div');
-		wrapper.className = 'ivst-wrapper';
 
 		const headerTitle = document.createElement('div');
 		headerTitle.className = 'ivst-header-title';
@@ -249,10 +261,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			headerImgContainer.appendChild(img);
 
 			const resultImg = document.createElement('img');
-			resultImg.src = currentState.msg.type === 'unsuccessful' ? `${ASSET_URL}/close-red.svg` :`${ASSET_URL}/checkmark-green.svg`;
+			resultImg.src = currentState.msg.type === 'unsuccessful' ? `${ASSET_URL}/close-red.svg` : `${ASSET_URL}/checkmark-green.svg`;
 			resultImg.className = 'ivst-header-img-result';
 			resultImg.alt = 'tick-mark-green-bg';
-			if(currentState.msg.type !== 'checking'){
+			if (currentState.msg.type !== 'checking') {
 				headerImgContainer.appendChild(resultImg);
 			}
 		} else {
@@ -263,7 +275,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			headerImgContainer.appendChild(photo);
 
 			stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-			if(stream !== null) {
+			if (stream !== null) {
 				photo.srcObject = stream;
 			}
 			const gridImg = document.createElement('img');
@@ -281,6 +293,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (currentState.msg.text) {
 			const queryMsg = document.createElement('div');
 			queryMsg.className = 'ivst-query-msg';
+			queryMsg.id = 'queryMsg-msg';
 			queryMsg.textContent = i18next.t(currentState.msg.text);
 			if (currentState.msg.type === 'unsuccessful') {
 				queryMsg.style.color = '#E95E5E';
@@ -291,8 +304,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (!currentState.imageSrc) {
 			const uploadMsg = document.createElement('div');
 			uploadMsg.className = 'ivst-query-msg';
-			uploadMsg.innerHTML = `${i18next.t('please_take_picture_or')} <span class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.`;
-			uploadMsg.querySelector('.ivst-file').addEventListener('click', () => inputFile.click());
+			uploadMsg.innerHTML = `${i18next.t('please_take_picture_or')} <span id='upload-identity-card' class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.`;
+			uploadMsg.querySelector('.ivst-file')?.addEventListener('click', () => inputFile.click());
 			wrapper.appendChild(uploadMsg);
 		}
 
@@ -303,7 +316,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			const prevBtn = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
 			const takePhotoBtn = createButton(`${i18next.t('take_id_photo')}`, 'orange-filled-btn', capturePhoto);
 			takePhotoBtn.disabled = disabledBtn || !!currentState.imageSrc;
-			if(secureFeatures.find(entity => entity.key === 'verify_candidate')){
+			if (secureFeatures.find(entity => entity.key === 'verify_candidate')) {
 				btnContainer.appendChild(prevBtn);
 			}
 			btnContainer.appendChild(takePhotoBtn);
@@ -312,7 +325,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			btnContainer.appendChild(retakeBtn);
 			if (currentState.captureMode !== 'uploaded_photo') {
 				const uploadBtn = createButton(`${i18next.t('upload')}`, 'orange-filled-btn', uploadCandidateIdentityCard);
-				uploadBtn.disabled = currentState.msg.type === 'unsuccessful';
+				uploadBtn.disabled = currentState.msg.type === 'unsuccessful' || currentState.isUploading;			
 				btnContainer.appendChild(uploadBtn);
 			} else {
 				const nextBtn = createButton(`${i18next.t('next_step')}`, 'orange-filled-btn', nextStep);
@@ -321,8 +334,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		}
 
 		wrapper.appendChild(btnContainer);
-
-		container.appendChild(wrapper);
 
 		inputFile = document.createElement('input');
 		inputFile.type = 'file';
@@ -344,7 +355,11 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	renderUI();
 
 	i18next.on('languageChanged', () => {
-		currentState.msg.text = i18next.t(currentState.msg.text);
 		renderUI();
+		
+		const msg = document.getElementById('queryMsg-msg');
+		if (msg && currentState.msg.text) {
+			msg.textContent = i18next.t(currentState.msg.text);
+		}
 	});
 };

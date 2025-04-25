@@ -157,6 +157,15 @@
     color: #8D979F;
     margin: 0px auto 0px;
 }
+.ivst-header-title {
+    font-weight: bold;
+    font-size: 32px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #222222;
+    margin: 0px auto 0px;
+}
 
 .ivst-file {
     text-decoration: underline;

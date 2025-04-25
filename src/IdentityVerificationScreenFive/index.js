@@ -1,11 +1,20 @@
-import { detectMultipleScreens, getDateTime, getSecureFeatures, logger, registerEvent, shareScreenFromContent, showToast, updatePersistData } from '../utils/functions';
-import '../assets/css/step5.css';
 import i18next from 'i18next';
+import { 
+	convertDataIntoParse,
+	detectMultipleScreens, 
+	getDateTime, 
+	getSecureFeatures, 
+	logger, 
+	registerEvent, 
+	shareScreenFromContent, 
+	showToast, 
+	updatePersistData
+} from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-
-
+import '../assets/css/step5.css';
+import * as TwilioVideo from 'twilio-video';
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
 	window.newStream = null;
@@ -28,9 +37,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const resp = await detectMultipleScreens();
 		if (resp) {
 			multipleScreens = true;
+			registerEvent({ eventType: 'error', notify: false, eventName: 'multiple_screens_detected' });
 		} else {
 			multipleScreens = false;
-			registerEvent({ eventType: 'error', notify: false, eventName: 'multiple_screens_detected' });
 		}
 	};
 
@@ -40,8 +49,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				mobileConnection: false,
 				screenSharing: false
 			});
-			window.globalCallback({ message: 'mobile_phone_disconneted' });
-			showToast('error','mobile_phone_disconneted');
+			window.globalCallback({ type:'error', message: 'mobile_phone_disconnected', code:40017 });
+			showToast('error','mobile_phone_disconnected');
 			logger.error('Socket not initialized');
 			return;
 		}
@@ -74,29 +83,43 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			logger.error('WebSocket connection closed');
 		};
 	};
-
-	let multipleScreensCheck = secureFeatures.find(entity => entity.name === 'Verify Desktop');
+	
+	let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
 
 	multipleScreensCheck && checkMultipleScreens();
 
 	const updateUI = () => {
 		headerTitle.textContent = i18next.t('verification_completed');
-		msgElement.textContent = i18next.t('verification_completed_msg');
-		queryMsg.textContent = i18next.t(msg.text);
-
-		if (msg.type === 'unsuccessful') {
-			queryMsg.style.color = '#E95E5E';
-		} else {
-			queryMsg.style.color = ''; 
+		// msgElement.textContent = i18next.t('verification_completed_msg');
+    
+		if (mode === 'startScreenRecording') {
+			msg = {
+				type: 'successful',
+				text: i18next.t('screen_shared_successfully')
+			};
+		} else if (mode === 'rerecordScreen') {
+			msg = {
+				type: 'unsuccessful',
+				text: i18next.t('screen_sharing_stopped')
+			};
+		} else if(mode === 'share-screen-again') {
+			msg = {
+				type: 'unsuccessful',
+				text: i18next.t('please_share_entire_screen')
+			};
 		}
+
+		queryMsg.textContent = i18next.t(msg.text);
+		queryMsg.style.color = msg.type === 'unsuccessful' ? '#E95E5E' : '';
 
 		btnContainer.innerHTML = '';
 
 		const prevButton = document.createElement('button');
 		prevButton.className = 'orange-hollow-btn';
 		prevButton.textContent = i18next.t('previous_step');
-		const prevStepsEntities = ['verify_candidate','verify_id','record_audio','record_room'];
-		if(secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0){
+
+		const prevStepsEntities = ['verify_candidate', 'verify_id', 'record_audio', 'record_room'];
+		if (secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0) {
 			prevButton.addEventListener('click', prevStep);
 			btnContainer.appendChild(prevButton);
 		}
@@ -108,7 +131,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			doneButton.disabled = multipleScreens;
 			doneButton.addEventListener('click', nextStep);
 			btnContainer.appendChild(doneButton);
-		} else if (mode === 'rerecordScreen') {
+		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again') {
 			reshareButton.className = 'orange-filled-btn';
 			reshareButton.textContent = i18next.t('reshare_screen');
 			reshareButton.addEventListener('click', shareScreen);
@@ -116,6 +139,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		}
 
 		wrapper.appendChild(btnContainer);
+
+		headerImg.src = `${ASSET_URL}/share-screen-${i18next.language || 'en'}.svg`;
 	};
 
 	const shareScreen = async () => {
@@ -140,34 +165,35 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					text: i18next.t('screen_shared_successfully')
 				};
 
-				videoTrack.addEventListener('ended', () => {
-					msg = {
-						type: 'unsuccessful',
-						text: i18next.t('screen_sharing_stopped')
-					};
-					mode = 'rerecordScreen';
-					updateUI();
-				});
 			} else {
 				mode = 'rerecordScreen';
 				videoTrack.stop();
 				throw new Error(i18next.t('please_share_entire_screen'));
 			}
 		} catch (err) {
-			logger.error('Error during screen sharing:', err);
-			mode = 'rerecordScreen';
+			logger.error('Error during screen sharing:', err.message);
+			mode = 'share-screen-again';
 			msg = {
-				type: 'unsuccessful',
-				text: 'screen_sharing_stopped'
+				type: err?.message === i18next.t('please_share_entire_screen') ? 'share-screen-again' : 'unsuccessful',
+				text: err?.message || 'screen_sharing_stopped'
 			};
 		}
 		updateUI();
 	};
 
-	const nextStep = () => {
+	const nextStep = async () => {
 		updatePersistData('preChecksSteps', { screenSharing: true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'screen_recording_window_shared', eventValue: getDateTime() });
 		showTab('IdentityVerificationScreenSix');
+
+		const session = convertDataIntoParse('session');
+
+		if(window.roomInstance){
+			let screenTrack = new TwilioVideo.LocalVideoTrack(window?.newStream?.getTracks()[0]);
+			let screenTrackPublished = await window.roomInstance.localParticipant.publishTrack(screenTrack);
+			let screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
+			updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+		}
 	};
 
 	const prevStep = () => {
@@ -177,7 +203,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 			window.socket?.send(JSON.stringify({ event: 'resetSession' }));
 		}
-		updatePersistData('preChecksSteps',{  mobileConnection: false,screenSharing:false });
+		updatePersistData('preChecksSteps',{ mobileConnection: false, screenSharing:false, roomScanningVideo:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFive');
 		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
@@ -208,12 +234,13 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const reshareButton = document.createElement('button');
 	const headerImg = document.createElement('img');
 	headerImg.classList.add('screen-share-dummy');
-	headerImg.src = `${ASSET_URL}/screen-recorder-mock.svg`;
+	headerImg.src = `${ASSET_URL}/share-screen-${i18next?.language ||'en'}.svg`;
 	headerImg.alt = 'camera-icon';
 	wrapper.appendChild(headerImg);
 
 	let queryMsg = document.createElement('div');
 	queryMsg.classList.add('ivsf-query-msg');
+	queryMsg.id = 'query-message-screen';
 	if (msg.text) {
 		queryMsg.textContent = i18next.t(msg.text);
 		if (msg.type === 'unsuccessful') {
@@ -225,46 +252,17 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const btnContainer = document.createElement('div');
 	btnContainer.classList.add('ivsf-btn-container');
 	let doneButton = document.createElement('button'); 
-
-	// const prevButton = document.createElement('button');
-	// prevButton.className = 'orange-hollow-btn';
-	// prevButton.textContent = i18next.t('previous_step');
-	// prevButton.addEventListener('click', prevStep);
-	// btnContainer.appendChild(prevButton);
-
-	// if (mode === 'startScreenRecording') {
-	// 	doneButton.className = 'orange-filled-btn';
-	// 	doneButton.textContent = i18next.t('done');
-	// 	doneButton.disabled = multipleScreens;
-	// 	doneButton.addEventListener('click', nextStep);
-	// 	btnContainer.appendChild(doneButton);
-	// } else if (mode === 'rerecordScreen') {
-		
-	// 	reshareButton.className = 'orange-filled-btn';
-	// 	reshareButton.textContent = i18next.t('reshare_screen');
-	// 	reshareButton.addEventListener('click', shareScreen);
-	// 	btnContainer.appendChild(reshareButton);
-	// }
-
-	// wrapper.appendChild(btnContainer);
 	container.appendChild(wrapper);
 
 	const styleElement = document.createElement('style');
-	styleElement.textContent = `
-        .screen-share-container {
-            /* Define your CSS styles here */
-        }
-        .screen-wrapper {
-            /* Define your CSS styles here */
-        }
-        /* Define other classes as needed */
-    `;
 	container.appendChild(styleElement);
 
 	tabContent.innerHTML = '';
 	tabContent.appendChild(container);
 
-	shareScreen();
+	if (!window.newStream) {
+		shareScreen();
+	}
 	if(secureFeatures.find(entity => entity.key === 'mobile_proctoring')){
 		initSocketConnection();
 	}	

@@ -95,7 +95,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 				};
 				localStorage.setItem('microphoneID',id);
 			}
-			startWebcam();
+			// startWebcam();
 		};
 	
 		const nextStep = () => {
@@ -209,7 +209,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 			setTextContent(headingContainer, subHeadingContainer, messageElement, iconTextElements, iconData);
 		};
 
-		const setTextContent = (headingContainer, subHeadingContainer, messageElement, iconTextElements, iconData) => {
+		const setTextContent = (headingContainer, subHeadingContainer, messageElement, iconTextElements, iconData, continueButton) => {
 			headingContainer.textContent = i18next.t('system_diagnostic');
 			subHeadingContainer.textContent = i18next.t('initial_system_check_passed');
 			messageElement.textContent = i18next.t('select_preferred_camera_and_microphone'); 
@@ -220,6 +220,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 						iconTextElements[index].textContent = i18next.t(icon.text); 
 					}
 				});
+			}
+	
+			if (continueButton) {
+				continueButton.textContent = i18next.t('continue');
 			}
 		};
 	
@@ -311,12 +315,13 @@ export const PrevalidationInstructions = async (tabContent) => {
 		init();
 
 		i18next.on('languageChanged', () => {
-			const headingContainer = shadowRoot.querySelector('.pvi-header-title');
-			const subHeadingContainer = shadowRoot.querySelector('.pvi-msg');
-			const messageElement = shadowRoot.getElementById('message');
-			const iconTextElements = shadowRoot.querySelectorAll('.pvi-instruction-txt');
+			const headingContainer = document.querySelector('.pvi-header-title');
+			const subHeadingContainer = document.querySelector('.pvi-msg');
+			const messageElement = document.getElementById('message');
+			const iconTextElements = document.querySelectorAll('.pvi-instruction-txt');
+			const continueButton = document.getElementById('continue-btn'); 
 	
-			setTextContent(headingContainer, subHeadingContainer, messageElement, Array.from(iconTextElements),iconData);
+			setTextContent(headingContainer, subHeadingContainer, messageElement, Array.from(iconTextElements), iconData, continueButton);
 		});
 	
 	} catch (error) {

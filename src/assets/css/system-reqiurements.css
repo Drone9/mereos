@@ -1,0 +1,226 @@
+.system-requirement-test-screen {
+  display: flex;
+  flex-direction: column;
+  white-space: pre-line;
+}
+
+@media (max-width: 720px) {
+  .system-requirement-test-screen .prompt-image {
+    width: 100%;
+  }
+}
+
+.system-requirement-test-screen .system-requirement-heading {
+  font-weight: 600;
+  font-size: 32px;
+  margin-bottom: 0;
+  margin-top: 31px;
+  text-align: center;
+  margin-top: 25px;
+  font-style: var(--font-style);
+}
+
+.system-requirement-test-screen .container-prompt {
+  width: 97%;
+}
+
+.system-requirement-test-screen .system-requirement-description {
+  font-family: Poppins, sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 16px;
+  line-height: 160%;
+  text-align: center;
+  color: #8D979F;
+  width: 650px;
+  margin: 30px auto 0;
+  font-style: var(--font-style);
+}
+
+@media (max-width: 720px) {
+  .system-requirement-test-screen .system-requirement-description {
+    width: 98%;
+  }
+}
+
+.system-requirement-test-screen .container-box {
+  display: flex;
+  justify-content: center;
+}
+
+.system-requirement-test-screen .container {
+  text-align: center;
+}
+
+.system-requirement-test-screen .container-top {
+  margin: 25px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.system-requirement-test-screen .container-middle {
+  display: flex;
+  margin: 20px 0;
+}
+
+@media (max-width: 720px) {
+  .system-requirement-test-screen .container-middle {
+    width: 100%;
+  }
+}
+
+.system-requirement-test-screen .grey-box,
+.system-requirement-test-screen .red-box,
+.system-requirement-test-screen .green-box {
+  border-radius: 4px;
+  width: 42%;
+  height: 100px;
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 16px;
+}
+
+.system-requirement-test-screen .grey-box {
+  border: 2px solid #dbe4eb;
+}
+
+.system-requirement-test-screen .red-box {
+  border: 2px solid #e95e5e;
+  background-color: #f6f6f9;
+  cursor: pointer;
+}
+
+.system-requirement-test-screen .green-box {
+  border: 2px solid #2FCE82;
+}
+
+@media (max-width: 720px) {
+  .system-requirement-test-screen .grey-box,
+  .system-requirement-test-screen .red-box,
+  .system-requirement-test-screen .green-box {
+    width: 90%;
+    margin: 0 auto;
+  }
+}
+
+.system-requirement-test-screen .green-box-right {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  margin: auto;
+  align-items: center;
+}
+
+.system-requirement-test-screen .grey-box-left {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+
+.system-requirement-test-screen .grey-box-left img {
+  width: 28px;
+}
+
+.system-requirement-test-screen .green-box-left {
+  display: flex;
+  margin-top: 10px;
+  margin-right: 5px;
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+
+.system-requirement-test-screen .grey-box-right {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  align-items: center;
+}
+
+.system-requirement-test-screen .grey-box-right img {
+  width: 42px;
+  height: 42px;
+}
+
+.system-requirement-test-screen .src-msg {
+  font-family: Poppins, sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 16px;
+  line-height: 160%;
+  text-align: center;
+  color: #8D979F;
+  margin: 30px auto 0;
+}
+
+.system-requirement-test-screen .src-msg-link {
+  color: var(--primaryColor);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.system-requirement-test-screen .box-section {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .system-requirement-test-screen .box-section {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+.system-requirement-test-screen .button-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+@media (max-width: 720px) {
+  .system-requirement-test-screen .button-section button {
+    width: 50% !important;
+  }
+}
+
+.system-requirement-test-screen .btn-next {
+  width: 200px;
+  height: 45px;
+  background: #F6F6F9;
+  border-radius: 5px;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #A7ABB2;
+}
+
+.system-requirement-test-screen .img-rotate {
+  animation: spin 3s linear infinite;
+}
+
+@-moz-keyframes spin {
+  100% {
+    -moz-transform: rotate(360deg);
+  }
+}
+
+@-webkit-keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+@keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}

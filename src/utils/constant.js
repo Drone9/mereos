@@ -1,8 +1,6 @@
 export const ASSET_URL = 'https://mereos-corder.s3.eu-west-3.amazonaws.com/library_icons';
 
-export const BASE_URL = process.env.NODE_ENV === 'production'
-	? 'https://corder-api.mereos.eu'
-	: 'https://corder-api.mereos-datasafe.com';
+export const BASE_URL = 'https://corder-api.mereos.eu';
 
 export const SOCKET_URL = 'wss://mobile-socket.mereos.eu/websocket/';
 
@@ -13,6 +11,7 @@ export const CONTENT_TYPE = Object.freeze({
 
 export const initialSessionData = {
 	aiEvents:[],
+	browserEvents:[],
 	start_time: null,
 	submission_time: null,
 	duration_taken: 0,
@@ -39,12 +38,21 @@ export const initialSessionData = {
 	twilioToken:null,
 	incident_level:null,
 	converationId:null,
-	candidate_assessment:null
+	candidate_assessment:null,
+	location:null,
+	downloadSpeed:null,
+	uploadSpeed:null,
+	CPUSpeed:null,
+	RAMSpeed:null,
+	room_id:null,
+	quizStartTime:0
 };
 
 export const preChecksSteps = {
 	examPreparation:false,
+	identityConfirmation:false,
 	diagnosticStep:false,
+	requirementStep:false,
 	preValidation:false,
 	userPhoto:false,
 	identityCardPhoto:false,
@@ -65,7 +73,7 @@ export const LockDownOptions = [
 	'force_full_screen',
 	'detect_resizing_of_window',
 	'disable_right_click',
-	'disable_function_keys',
+	'disable_keyboard_shortcuts',
 	'block_browser_screenshot',
 	'disable_clipboard'
 ];
@@ -81,9 +89,20 @@ export const systemDiagnosticSteps = [
 	'record_audio', 
 	'verify_connection', 
 	'track_location', 
-	'enable_notifications', 
 	'record_room',
 	'record_audio'
+];
+export const SYSTEM_REQUIREMENT_STEP = [
+	'verify_cpu', 
+	'verify_ram', 
+	'verify_upload_speed', 
+	'verify_download_speed'
+];
+
+export const examPreparationSteps = [
+	'record_video', 
+	'record_audio',
+	'record_screen',
 ];
 
 export const prevalidationSteps = [
@@ -91,6 +110,12 @@ export const prevalidationSteps = [
 	'record_audio',
 	'verify_id',
 	'record_room'
+];
+
+export const aiEventsFeatures = [
+	'object_detection', 
+	'multiple_people_detection',
+	'person_missing',
 ];
 
 export const languages = [
@@ -101,6 +126,7 @@ export const languages = [
 	{name: 'Portuguese (Brazil)', value: 'portuguese_brazil', src: `${ASSET_URL}/flag-of-brazil.svg`, alt: '', keyword: 'pt' },
 	{name: 'Italian', value: 'italian', src: `${ASSET_URL}/flag-of-italy.svg`, alt: '', keyword: 'it' },
 	{name: 'Dutch', value: 'dutch', src: `${ASSET_URL}/netherlands.svg`, alt: '', keyword: 'nl' },
+	{name: 'Welsh',value:'welsh', src: `${ASSET_URL}/flag-of-whales.png`,alt: '',keyword: 'cy'}
 ];
 
 export const examPreprationCss = `.exam-preparation {

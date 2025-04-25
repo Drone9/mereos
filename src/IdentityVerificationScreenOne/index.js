@@ -1,9 +1,13 @@
-import { dataURIToBlob, logger, registerEvent, updatePersistData, uploadFileInS3Folder, userRekognitionInfo } from '../utils/functions';
-import '../assets/css/step1.css';
 import i18next from 'i18next';
+
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
+
+import { dataURIToBlob, logger, registerEvent, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { ASSET_URL } from '../utils/constant';
+
+import '../assets/css/step1.css';
+import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
@@ -83,7 +87,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			try {
 				const resp = await userRekognitionInfo(data);
 				const predictions = resp?.data?.face?.FaceDetails;
-				console.log('predictions', predictions);
 	
 				img.onload = async function () {
 					if (predictions?.length && predictions.length === 1) {
@@ -149,7 +152,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				};
 				img.src = state.imageSrc;
 			} catch (error) {
-				console.error('Error processing the image:', error);
+				logger.error('Error processing the image:', error);
 				state = {
 					...state,
 					msg: {
@@ -173,7 +176,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 	const uploadUserCapturedPhoto = async () => {
 		try {
-			state.isUploading = true; 
+			state.isUploading = true;
 			renderUI();
 			state = {
 				...state,
@@ -182,10 +185,14 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 					text: 'file_is_being_uploaded',
 				},
 			};
+	
+			const blob = dataURIToBlob(state.imageSrc);
+	
 			let resp = await uploadFileInS3Folder({
 				folderName: 'candidate_images',
-				file: dataURIToBlob(state.imageSrc),
+				file: blob,
 			});
+	
 			if (resp?.data?.file_url) {
 				updatePersistData('session', { candidatePhoto: resp.data.file_url });
 				state = {
@@ -199,6 +206,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_uploaded_successfully' });
 			}
 		} catch (e) {
+			logger.error('Upload failed:', e);
 			state = {
 				...state,
 				captureMode: 'take',
@@ -209,11 +217,12 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				},
 			};
 			registerEvent({ eventType: 'error', notify: false, eventName: 'internet_connection_unstable' });
-		}finally{
-			state.isUploading = true; 
+		} finally {
+			state.isUploading = false;
+			renderUI();
 		}
-		renderUI();
 	};
+	
 
 	const renderUI = () => {
 		let ivsoContainer = tabContent.querySelector('.ivso-container');
@@ -227,7 +236,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		}
 	
 		const ivsoWrapper = document.createElement('div');
-		ivsoWrapper.className = 'ivso-wrapper';
+		ivsoWrapper.className = 'ivso-first-wrapper';
 	
 		const ivsHeaderTitle = document.createElement('div');
 		ivsHeaderTitle.className = 'ivso-header-title';
@@ -243,6 +252,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	
 		if (state.msg.text) {
 			ivsMsg.className = 'ivso-msg';
+			ivsMsg.id = 'success-msg';
 
 			if (state.msg.type === 'unsuccessful' || state.msg.type === 'something_went_wrong_please_upload_again') {
 				ivsMsg.style.color = '#E95E5E';
@@ -342,14 +352,18 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			ivsoWrapper.appendChild(ivsoQueryMsg);
 		}
 	
-		// Append the wrapper to the container
 		ivsoContainer.appendChild(ivsoWrapper);
 	};
 
 	renderUI();
 
 	i18next.on('languageChanged', () => {
-		state.msg.text = i18next.t(state.msg.text);
 		renderUI();
+		
+		const msg = document.getElementById('success-msg');
+		if (msg && state.msg.text) {
+			msg.textContent = i18next.t(state.msg.text);
+		}
 	});
+	
 };

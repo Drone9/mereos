@@ -87,6 +87,7 @@ body {
   font-size: 14px !important;
   font-weight: 400 !important;
   cursor: pointer;
+  color: var(--text-color);
 }
 .close {
   color: #aaa;
@@ -181,11 +182,12 @@ body {
   position: absolute;
   top: 42px;
   right: -70px;
-  background-color: white;
+  background-color: var(--theme-mode);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
   display: none;
+  border: 1px solid white;
 }
 
 .dropdown-content.active {
@@ -1999,12 +2001,16 @@ body {
 }
 .camera-container select{
   font-style: var(--font-style);
+  background-color:var(--theme-mode);
+  color: var(--text-color);
 }
 .microphone-container{
   width: 35%;
 }
 .microphone-container select{
   font-style: var(--font-style);
+  background-color:var(--theme-mode);
+  color: var(--text-color);
 }
 .pvi-header-title {
   font-family: Poppins, sans-serif;

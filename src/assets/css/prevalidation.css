@@ -41,12 +41,16 @@
 }
 .camera-container select{
   font-style: var(--font-style);
+  background-color:var(--theme-mode);
+  color: var(--text-color);
 }
 .microphone-container{
   width: 35%;
 }
 .microphone-container select{
   font-style: var(--font-style);
+  background-color:var(--theme-mode);
+  color: var(--text-color);
 }
 .pvi-header-title {
   font-family: Poppins, sans-serif;

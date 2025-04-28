@@ -227,6 +227,11 @@ const navigate = (newTabId) => {
 };
 
 const createLanguageDropdown = () => {
+	const existingHeader = modalContent.querySelector('.header');
+	if (existingHeader) {
+		existingHeader.remove();
+	}
+
 	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolTheme?.language || 'en';
 	const filterLanguage = normalizeLanguage(defaultLanguage);

@@ -1,10 +1,7 @@
 import i18next from 'i18next';
-
-import { showTab } from '../ExamsPrechecks';
-
 import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger } from '../utils/functions';
-
 import '../assets/css/prevalidation.css';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
@@ -110,8 +107,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const createUIElements = () => {
-			let container = tabContent.querySelector('.ivso-container');
-
+			let container = shadowRoot.querySelector('.ivso-container');
+	
 			if (!container) {
 				tabContent.insertAdjacentHTML('beforeend', '<div class="ivso-container"></div>');
 				container = tabContent.querySelector('.ivso-container');
@@ -151,12 +148,12 @@ export const PrevalidationInstructions = async (tabContent) => {
 							</div>
 					`);
 
-			document.getElementById('continue-btn').addEventListener('click', nextStep);
+			shadowRoot.getElementById('continue-btn').addEventListener('click', nextStep);
 		};
 
 		const updateUI = () => {
-			const cameraDropdown = document.getElementById('cameraDropdown');
-			const microphoneDropdown = document.getElementById('microphoneDropdown');
+			const cameraDropdown = shadowRoot.getElementById('cameraDropdown');
+			const microphoneDropdown = shadowRoot.getElementById('microphoneDropdown');
 					
 			if (cameraDropdown) {
 				let cameraOptionsHTML = cameras.map(camera => 
@@ -188,7 +185,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 			
 		const startWebcam = async () => {
-			const videoContainer = document.getElementById('videoContainer');
+			const videoContainer = shadowRoot.getElementById('videoContainer');
 			if (videoContainer) {
 				videoContainer.innerHTML = '';
 			}
@@ -200,7 +197,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 									<video id="myVideo" class="my-recorded-video" autoplay></video>
 							`);
 							
-				let videoElement = document.getElementById('myVideo');
+				let videoElement = shadowRoot.getElementById('myVideo');
 				videoElement.srcObject = mediaStream;
 							
 				currentCaptureMode = 'done';
@@ -212,20 +209,20 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const handleLanguageChange = () => {
-			document.querySelector('.pvi-header-title').textContent = i18next.t('system_diagnostic');
-			document.querySelector('.pvi-msg').textContent = i18next.t('initial_system_check_passed');
+			shadowRoot.querySelector('.pvi-header-title').textContent = i18next.t('system_diagnostic');
+			shadowRoot.querySelector('.pvi-msg').textContent = i18next.t('initial_system_check_passed');
 					
-			const messageElement = document.getElementById('message');
+			const messageElement = shadowRoot.getElementById('message');
 			if (messageElement) {
 				messageElement.textContent = i18next.t('select_preferred_camera_and_microphone');
 			}
 					
-			const continueButton = document.getElementById('continue-btn');
+			const continueButton = shadowRoot.getElementById('continue-btn');
 			if (continueButton) {
 				continueButton.textContent = i18next.t('continue');
 			}
 					
-			const instructionTexts = document.querySelectorAll('.pvi-instruction-txt');
+			const instructionTexts = shadowRoot.querySelectorAll('.pvi-instruction-txt');
 			instructionTexts.forEach((element, index) => {
 				if (index < iconData.length) {
 					element.textContent = i18next.t(iconData[index].text);

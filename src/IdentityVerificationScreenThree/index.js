@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
 
@@ -37,7 +37,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				const mediaStreamSource = audioContext.createMediaStreamSource(audioStream);
 				mediaStreamSource.connect(analyserNode);
 
-				const canvas = canvasRef || document.getElementById('audio-wavesform-canvas');
+				const canvas = canvasRef || shadowRoot.getElementById('audio-wavesform-canvas');
 				const canvasCtx = canvas?.getContext('2d');
 
 				const drawOnCanvas = () => {
@@ -187,7 +187,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			const stepsContainerElement = wrapper.querySelector('.ivst-steps-container');
 			stepsContainerElement.appendChild(stepsContainer);
 			
-			canvasRef = document.getElementById('audio-wavesform-canvas');
+			canvasRef = shadowRoot.getElementById('audio-wavesform-canvas');
 		} else {
 			const headerTitle = wrapper.querySelector('.ivst-header-title');
 			if (headerTitle) {
@@ -255,7 +255,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	drawAudioSpikes();
 
 	i18next.on('languageChanged', () => {
-		const msgElement = document.getElementById('audio-test-msg');
+		const msgElement = shadowRoot.getElementById('audio-test-msg');
 		if (msgElement && msg.text) {
 			msgElement.textContent = i18next.t(msg.text);
 		}

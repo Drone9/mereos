@@ -635,12 +635,48 @@ export const preventRightClick = () => {
 export const disableCopyPasteCut = () => {
 	return new Promise((resolve, _reject) => {
 		'cut copy paste'.split(' ').forEach((eventName) => {
-			window.addEventListener(eventName, e => {
+			document.addEventListener(eventName, e => {
 				e.preventDefault();
 				e.stopPropagation();
 				registerEvent({notify: false, eventName: 'copy_paste_cut', eventType: 'error'});
-			});
+			}, true);
 		});
+    
+		document.addEventListener('keydown', e => {
+			if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+				e.preventDefault();
+				e.stopPropagation();
+				registerEvent({notify: false, eventName: 'candidate_paste_the_content', eventType: 'error'});
+			}
+      
+			if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+				e.preventDefault();
+				e.stopPropagation();
+				registerEvent({notify: false, eventName: 'candidate_copy_the_content', eventType: 'error'});
+			}
+      
+			if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+				e.preventDefault();
+				e.stopPropagation();
+				registerEvent({notify: false, eventName: 'candidate_cut_the_content', eventType: 'error'});
+			}
+		}, true);
+    
+		if (navigator.clipboard) {
+			navigator.clipboard.writeText = function() {
+				return Promise.reject('Clipboard operations are disabled');
+			};
+      
+			navigator.clipboard.readText = function() {
+				return Promise.reject('Clipboard operations are disabled');
+			};
+		}
+    
+		document.addEventListener('contextmenu', e => {
+			e.preventDefault();
+			return false;
+		}, true);
+    
 		resolve(true);
 	});
 };
@@ -891,7 +927,7 @@ export const forceFullScreen = (element = document.documentElement) => {
 };
 
 // ************* Detect Page Refresh ***************** //
-const detectPageRefreshCallback = (e) => {
+export const detectPageRefreshCallback = (e) => {
 	e.preventDefault();
 	e.returnValue = '';
 
@@ -908,7 +944,7 @@ export const detectPageRefresh = () => {
 };
 
 // ************* Detect Back Button ***************** //
-const detectBackButtonCallback = () => {
+export const detectBackButtonCallback = () => {
 	if (window.startRecordingCallBack) {
 		window.startRecordingCallBack({
 			type: 'error',

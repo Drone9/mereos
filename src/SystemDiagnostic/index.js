@@ -11,7 +11,7 @@ import {
 	updatePersistData 
 } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 import '../assets/css/systemDiagnostic.css';
 
@@ -66,11 +66,11 @@ const renderUI = (tab1Content) => {
 
 	const html = `
     <div class="system-diagnostic-test-screen">
-        <h1 class="heading">${i18next.t('system_diagnostic')}</h1>
+        <h1 class="heading">${i18next.t('system_diagnostics')}</h1>
         <div class="diagnostic-status container-box">
             <div class="container">
                 <div class="container-top"></div>
-                <label class="description">${i18next.t('system_diagnostic_msg')}</label>
+                <label class="description">${i18next.t('system_diagnostics_msg')}</label>
                 <div class="container-prompt"></div>
                 <img src="${ASSET_URL}/microphone-${i18next.language || 'en'}.svg" alt="" id="microphone-img" width="350" class="prompt-image">
                 <div class="container-middle box-section">
@@ -86,7 +86,7 @@ const renderUI = (tab1Content) => {
 
 	tab1Content.innerHTML = html;
 
-	document.getElementById('diagnosticContinueBtn').addEventListener('click', () => {
+	shadowRoot.getElementById('diagnosticContinueBtn').addEventListener('click', () => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
         
@@ -121,7 +121,7 @@ const createDiagnosticItemHTML = (id, label) => {
 
 const addDiagnosticItemClickEvents = () => {
 	const handleDiagnosticItemClick = (id, checkFunction) => {
-		const element = document.getElementById(`${id}DiagnosticItem`);
+		const element = shadowRoot.getElementById(`${id}DiagnosticItem`);
 		if (!element || id === 'desktop') {
 			return;
 		}
@@ -139,8 +139,8 @@ const addDiagnosticItemClickEvents = () => {
 };
 
 const setElementStatus = (id, status, isSuccess) => {
-	const statusIcon = document.getElementById(`${id}StatusIcon`);
-	const statusLoading = document.getElementById(`${id}StatusLoading`);
+	const statusIcon = shadowRoot.getElementById(`${id}StatusIcon`);
+	const statusLoading = shadowRoot.getElementById(`${id}StatusLoading`);
 	if (!statusIcon || !statusLoading) {
 		return;
 	}
@@ -149,11 +149,11 @@ const setElementStatus = (id, status, isSuccess) => {
 };
 
 const updateContinueButtonState = () => {
-	const renderedItems = document.querySelectorAll('.diagnostic-item');
+	const renderedItems = shadowRoot.querySelectorAll('.diagnostic-item');
 
 	const allDiagnosticsPassed = Array.from(renderedItems).every(item => {
 		const itemId = item.id.replace('DiagnosticItem', '');
-		const statusIcon = document.getElementById(`${itemId}StatusIcon`);
+		const statusIcon = shadowRoot.getElementById(`${itemId}StatusIcon`);
 		if (!statusIcon) return false;
 
 		const currentIconPathname = new URL(statusIcon.src).pathname;
@@ -162,7 +162,7 @@ const updateContinueButtonState = () => {
 		return currentIconPathname === expectedIconPathname;
 	});
 
-	document.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
+	shadowRoot.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 };
 
 export const SystemDiagnostics = async (tab1Content) => {
@@ -239,10 +239,10 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 const updateDiagnosticText = () => {
 	const diagnosticItems = ['webcam', 'microphone', 'location', 'desktop'];
-	let microphoneImg = document.getElementById('microphone-img');
+	let microphoneImg = shadowRoot.getElementById('microphone-img');
 
 	diagnosticItems.forEach(item => {
-		const labelElement = document.querySelector(`#${item}DiagnosticItem label`);
+		const labelElement = shadowRoot.querySelector(`#${item}DiagnosticItem label`);
 		if (labelElement) {
 			labelElement.textContent = i18next.t(item);
 		}
@@ -252,17 +252,17 @@ const updateDiagnosticText = () => {
 		microphoneImg.src = `${ASSET_URL}/microphone-${i18next.language || 'en'}.svg`;
 	}
 
-	const heading = document.querySelector('.heading');
+	const heading = shadowRoot.querySelector('.heading');
 	if (heading) {
 		heading.textContent = i18next.t('system_diagnostics');
 	}
 
-	const description = document.querySelector('.description');
+	const description = shadowRoot.querySelector('.description');
 	if (description) {
 		description.textContent = i18next.t('system_diagnostics_msg');
 	}
     
-	const btnText = document.querySelector('.orange-filled-btn');
+	const btnText = shadowRoot.querySelector('.orange-filled-btn');
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
 	}

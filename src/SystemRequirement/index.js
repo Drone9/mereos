@@ -11,7 +11,7 @@ import {
 	updatePersistData 
 } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 import '../assets/css/system-reqiurements.css';
 
@@ -95,7 +95,7 @@ const renderUI = (tab1Content) => {
 	tab1Content.innerHTML = html;
 
 	// Add event listener for continue button
-	document.getElementById('requirementContinueBtn').addEventListener('click', () => {
+	shadowRoot.getElementById('requirementContinueBtn').addEventListener('click', () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_requirement_passed' });
 		updatePersistData('preChecksSteps', { requirementStep: true });
 		showTab('Prevalidationinstruction');
@@ -122,8 +122,8 @@ const addDiagnosticItemClickHandlers = () => {
 };
 
 const setElementStatus = (id, status, isSuccess) => {
-	const statusIcon = document.getElementById(`${id}StatusIcon`);
-	const statusLoading = document.getElementById(`${id}StatusLoading`);
+	const statusIcon = shadowRoot.getElementById(`${id}StatusIcon`);
+	const statusLoading = shadowRoot.getElementById(`${id}StatusLoading`);
 	if (!statusIcon || !statusLoading) {
 		return;
 	}
@@ -133,7 +133,7 @@ const setElementStatus = (id, status, isSuccess) => {
 };
 
 const handleDiagnosticItemClick = (id, checkFunction) => {
-	const element = document.getElementById(`${id}RequirementItem`);
+	const element = shadowRoot.getElementById(`${id}RequirementItem`);
 	if (!element) {
 		return;
 	}
@@ -141,9 +141,9 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 	const profileSettings = candidateAssessment?.settings;
 
 	element.addEventListener('click', async () => {
-		const statusIcon = document.getElementById(`${id}StatusIcon`);
-		const statusLoading = document.getElementById(`${id}StatusLoading`);
-		const continueButton = document.getElementById('requirementContinueBtn');
+		const statusIcon = shadowRoot.getElementById(`${id}StatusIcon`);
+		const statusLoading = shadowRoot.getElementById(`${id}StatusLoading`);
+		const continueButton = shadowRoot.getElementById('requirementContinueBtn');
 
 		if (!statusIcon || !statusLoading) {
 			return;
@@ -186,11 +186,11 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 };
 
 const updateContinueButtonState = () => {
-	const renderedItems = document.querySelectorAll('.requirement-item');
+	const renderedItems = shadowRoot.querySelectorAll('.requirement-item');
 
 	const allDiagnosticsPassed = Array.from(renderedItems).every(item => {
 		const itemId = item.id.replace('RequirementItem', '');
-		const statusIcon = document.getElementById(`${itemId}StatusIcon`);
+		const statusIcon = shadowRoot.getElementById(`${itemId}StatusIcon`);
 		if (!statusIcon) return false;
 
 		const currentIconPathname = new URL(statusIcon.src).pathname;
@@ -199,7 +199,7 @@ const updateContinueButtonState = () => {
 		return currentIconPathname === expectedIconPathname;
 	});
 
-	document.getElementById('requirementContinueBtn').disabled = !allDiagnosticsPassed;
+	shadowRoot.getElementById('requirementContinueBtn').disabled = !allDiagnosticsPassed;
 };
 
 export const SystemRequirement = async (tab1Content) => {
@@ -279,22 +279,22 @@ const updateDiagnosticText = () => {
 	const diagnosticItems = ['ram', 'cpu', 'upload_speed', 'download_speed'];
 
 	diagnosticItems.forEach(item => {
-		const labelElement = document.querySelector(`#${item}RequirementItem label`);
+		const labelElement = shadowRoot.querySelector(`#${item}RequirementItem label`);
 		if (labelElement) {
 			labelElement.textContent = i18next.t(item);
 		}
 	});
 
-	const heading = document.querySelector('.system-requirement-heading');
+	const heading = shadowRoot.querySelector('.system-requirement-heading');
 	if (heading) {
 		heading.textContent = i18next.t('system_requirements');
 	}
 
-	const description = document.querySelector('.system-requirement-description');
+	const description = shadowRoot.querySelector('.system-requirement-description');
 	if (description) {
 		description.textContent = i18next.t('system_requirement_checking_msg');
 	}
-	const btnText = document.getElementById('requirementContinueBtn');
+	const btnText = shadowRoot.getElementById('requirementContinueBtn');
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
 	}

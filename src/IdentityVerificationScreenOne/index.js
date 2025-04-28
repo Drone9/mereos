@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 import { dataURIToBlob, logger, registerEvent, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
@@ -318,7 +318,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		ivsoContainer.insertAdjacentHTML('beforeend', contentHTML);
         
 		if (state.captureMode !== 'take') {
-			document.getElementById('retake-btn').addEventListener('click', () => {
+			shadowRoot.getElementById('retake-btn').addEventListener('click', () => {
 				state = {
 					...state,
 					imageSrc: null,
@@ -339,15 +339,15 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		}
         
 		if (state.captureMode === 'uploaded_photo') {
-			document.getElementById('next-btn').addEventListener('click', nextStep);
+			shadowRoot.getElementById('next-btn').addEventListener('click', nextStep);
 		}
         
 		if (state.captureMode === 'take') {
-			document.getElementById('take-photo-btn').addEventListener('click', capturePhoto);
+			shadowRoot.getElementById('take-photo-btn').addEventListener('click', capturePhoto);
 		}
         
 		if (state.captureMode === 'retake' && state.msg.type === 'successful') {
-			const uploadBtn = document.getElementById('upload-btn');
+			const uploadBtn = shadowRoot.getElementById('upload-btn');
 			if (uploadBtn) {
 				uploadBtn.addEventListener('click', uploadUserCapturedPhoto);
 			}
@@ -368,7 +368,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	i18next.on('languageChanged', () => {
 		renderUI();
         
-		const msg = document.getElementById('success-msg');
+		const msg = shadowRoot.getElementById('success-msg');
 		if (msg && state.msg.text) {
 			msg.textContent = i18next.t(state.msg.text);
 		}

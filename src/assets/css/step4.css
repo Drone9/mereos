@@ -9,7 +9,7 @@
 
 .ivsf-header-img-container {
 	position: relative;
-	margin: 0px auto 0px;
+	margin: 10px auto 0px;
 }
 
 @media(max-width:720px) {
@@ -68,8 +68,8 @@
 	display: flex;
 	align-items: center;
 	text-align: center;
-	color: var(--text-color);
-	margin: 20px auto 0px !important;
+	color: #222222;
+	margin: 27px auto 0px !important;
 }
 
 .ivsf-msg {
@@ -125,7 +125,7 @@
 
 .ivsf-btn-container {
 	display: flex;
-	margin: 15px auto 0px !important;
+	margin: 20px auto 0px !important;
 	gap: 20px;
 }
 

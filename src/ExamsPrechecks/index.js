@@ -1,8 +1,7 @@
 import i18next from 'i18next';
-import '../assets/css/modal.css';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
-import { ASSET_URL,examPreparationSteps,examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,languages,  MobileProctoringCss,  modalCss,  preChecksSteps, preValidationCss, prevalidationSteps, spinner, SYSTEM_REQUIREMENT_STEP, systemDiagnosticCss, systemDiagnosticSteps, systemRequirementCss } from '../utils/constant';
 import 'notyf/notyf.min.css';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
+import { ASSET_URL,examPreparationSteps,languages,  preChecksSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from '../utils/constant';
 import 'notyf/notyf.min.css';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
 import { SystemDiagnostics } from '../SystemDiagnostic';
@@ -19,64 +18,79 @@ import interact from 'interactjs';
 import '../assets/css/modal.css';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import { SystemRequirement } from '../SystemRequirement';
-import { stop_prechecks } from '../..';
 
 const modal = document.createElement('div');
 modal.className = 'modal';
-modal.id = 'precheck-modal';
 
-export const shadowRoot = modal.attachShadow({ mode: 'open' });
-const mainStylying = document.createElement('style');
-mainStylying.textContent = `
-	${spinner}
-	${examPreprationCss} 
-	${modalCss} 
-	${systemDiagnosticCss} 
-	${preValidationCss} 
-	${IdentityVerificationScreenOneCss} 
-	${identityStepsCss} 
-	${IdentityVerificationScreenTwoCss} 
-	${IdentityVerificationScreenThreeCss} 
-	${IdentityVerificationScreenFourCss} 
-	${IdentityVerificationScreenFiveCss} 
-	${MobileProctoringCss}
-	${identityCardCss}
-	${systemRequirementCss}`;
+const modalContent = document.createElement('div');
+modalContent.className = 'modal-content';
 
-shadowRoot.appendChild(mainStylying);
+modal.appendChild(modalContent);
 
-shadowRoot.innerHTML += `
-  <div class="modal-content">
-    <div class="tabs-container"></div>
-    <div class="tab-contents-wrapper">
-      <div class="tab-content" id="ExamPreparation"></div>
-      <div class="tab-content" id="IdentityCardRequirement"></div>
-      <div class="tab-content" id="runSystemDiagnostics"></div>
-      <div class="tab-content" id="SystemRequirements"></div>
-      <div class="tab-content" id="IdentityVerificationScreenOne"></div>
-      <div class="tab-content" id="IdentityVerificationScreenTwo"></div>
-      <div class="tab-content" id="IdentityVerificationScreenThree"></div>
-      <div class="tab-content" id="IdentityVerificationScreenFour"></div>
-      <div class="tab-content" id="IdentityVerificationScreenFive"></div>
-      <div class="tab-content" id="Prevalidationinstruction"></div>
-      <div class="tab-content" id="MobileProctoring"></div>
-    </div>
-  </div>
-`;
+const tabsContainer = document.createElement('div');
+tabsContainer.className = 'tabs-container';
 
-const modalContent = shadowRoot.querySelector('.modal-content');
+modalContent.appendChild(tabsContainer);
 
-const ExamPreparationContainer = shadowRoot.querySelector('#ExamPreparation');
-const IdentityCardRequirementContainer = shadowRoot.querySelector('#IdentityCardRequirement');
-const SystemDiagnosticsContainer = shadowRoot.querySelector('#runSystemDiagnostics');
-const SystemRequirementContainer = shadowRoot.querySelector('#SystemRequirements');
-const IdentityVerificationScreenOneContainer = shadowRoot.querySelector('#IdentityVerificationScreenOne');
-const IdentityVerificationScreenTwoConatiner = shadowRoot.querySelector('#IdentityVerificationScreenTwo');
-const IdentityVerificationScreenThreeContainer = shadowRoot.querySelector('#IdentityVerificationScreenThree');
-const IdentityVerificationScreenFourContainer = shadowRoot.querySelector('#IdentityVerificationScreenFour');
-const IdentityVerificationScreenFiveContainer = shadowRoot.querySelector('#IdentityVerificationScreenFive');
-const PrevalidationinstructionContainer = shadowRoot.querySelector('#Prevalidationinstruction');
-const mobileProctingContainer = shadowRoot.querySelector('#MobileProctoring');
+const tabContentsWrapper = document.createElement('div');
+tabContentsWrapper.className = 'tab-contents-wrapper';
+
+const ExamPreparationContainer = document.createElement('div');
+ExamPreparationContainer.className = 'tab-content';
+ExamPreparationContainer.id = 'ExamPreparation';
+
+const IdentityCardRequirementContainer = document.createElement('div');
+IdentityCardRequirementContainer.className = 'tab-content';
+IdentityCardRequirementContainer.id = 'IdentityCardRequirement';
+
+const SystemDiagnosticsContainer = document.createElement('div');
+SystemDiagnosticsContainer.className = 'tab-content';
+SystemDiagnosticsContainer.id = 'runSystemDiagnostics';
+
+
+const SystemRequirementContainer = document.createElement('div');
+SystemRequirementContainer.className = 'tab-content';
+SystemRequirementContainer.id = 'SystemRequirements';
+
+const IdentityVerificationScreenOneContainer = document.createElement('div');
+IdentityVerificationScreenOneContainer.className = 'tab-content';
+IdentityVerificationScreenOneContainer.id = 'IdentityVerificationScreenOne';
+
+const IdentityVerificationScreenTwoConatiner = document.createElement('div');
+IdentityVerificationScreenTwoConatiner.className = 'tab-content';
+IdentityVerificationScreenTwoConatiner.id = 'IdentityVerificationScreenTwo';
+
+const IdentityVerificationScreenThreeContainer = document.createElement('div');
+IdentityVerificationScreenThreeContainer.className = 'tab-content';
+IdentityVerificationScreenThreeContainer.id = 'IdentityVerificationScreenThree';
+
+const IdentityVerificationScreenFourContainer = document.createElement('div');
+IdentityVerificationScreenFourContainer.className = 'tab-content';
+IdentityVerificationScreenFourContainer.id = 'IdentityVerificationScreenFour';
+
+const IdentityVerificationScreenFiveContainer = document.createElement('div');
+IdentityVerificationScreenFiveContainer.className = 'tab-content';
+IdentityVerificationScreenFiveContainer.id = 'IdentityVerificationScreenFive';
+
+const PrevalidationinstructionContainer = document.createElement('div');
+PrevalidationinstructionContainer.className = 'tab-content';
+PrevalidationinstructionContainer.id = 'Prevalidationinstruction';
+
+const mobileProctingContainer = document.createElement('div');
+mobileProctingContainer.className = 'tab-content';
+mobileProctingContainer.id = 'MobileProctoring';
+
+tabContentsWrapper.appendChild(ExamPreparationContainer);
+tabContentsWrapper.appendChild(IdentityCardRequirementContainer);
+tabContentsWrapper.appendChild(SystemDiagnosticsContainer);
+tabContentsWrapper.appendChild(SystemRequirementContainer);
+tabContentsWrapper.appendChild(IdentityVerificationScreenOneContainer);
+tabContentsWrapper.appendChild(IdentityVerificationScreenTwoConatiner);
+tabContentsWrapper.appendChild(IdentityVerificationScreenThreeContainer);
+tabContentsWrapper.appendChild(IdentityVerificationScreenFourContainer);
+tabContentsWrapper.appendChild(IdentityVerificationScreenFiveContainer);
+tabContentsWrapper.appendChild(PrevalidationinstructionContainer);
+tabContentsWrapper.appendChild(mobileProctingContainer);
 
 const initializeLiveChat = () => {
 	const isLoggedIn = !!getAuthenticationToken();
@@ -86,17 +100,6 @@ const initializeLiveChat = () => {
 
 	if (!isLoggedIn || !hasChatBot) return;
 
-	const existingChatIcon = document.getElementById('chat-icon');
-	const existingChatContainer = document.getElementById('talkjs-container');
-	
-	if (existingChatIcon) {
-		existingChatIcon.style.display = 'block';
-		if (existingChatContainer) {
-			existingChatContainer.style.display = 'block';
-		}
-		return;
-	}
-
 	const chatIcon = document.createElement('img');
 	chatIcon.className = 'chat-icon';
 	chatIcon.id = 'chat-icon';
@@ -104,214 +107,220 @@ const initializeLiveChat = () => {
 	chatIcon.style.bottom = '20px';
 	chatIcon.style.right = '20px';
 	chatIcon.style.zIndex = '99999999';
-	chatIcon.style.cursor = 'grab';
+	chatIcon.style.cursor = 'pointer';
 	chatIcon.src = `${ASSET_URL}/mereos.svg`;
 	chatIcon.alt = 'Chat Icon';
 	chatIcon.style.width = '50px';
 	chatIcon.style.height = '50px';
-	chatIcon.style.userSelect = 'none';
 
-	const chatContainer = document.createElement('div');
-	chatContainer.id = 'talkjs-container';
-	chatContainer.className = 'live-chat-container';
-	chatContainer.style.width = '400px';
-	chatContainer.style.height = '500px';
-	chatContainer.style.position = 'fixed';
-	chatContainer.style.bottom = '100px';
-	chatContainer.style.right = '20px';
-	chatContainer.style.zIndex = '9999';
-	chatContainer.style.backgroundColor = 'white';
-	chatContainer.style.border = '1px solid #ccc';
-	chatContainer.style.borderRadius = '8px';
-	chatContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
-	chatContainer.style.display = 'none';
+	chatIcon.addEventListener('click', toggleChat);
 
 	document.body.appendChild(chatIcon);
-	document.body.appendChild(chatContainer);
 
-	const positions = {
-		icon: { x: 0, y: 0 },
-		container: { x: 0, y: 0 }
-	};
+	function toggleChat() {
+		const container = document.getElementById('talkjs-container');
 
-	interact(chatIcon).draggable({
-		cursorChecker: () => 'grabbing',
-		modifiers: [
-			interact.modifiers.restrict({
-				restriction: 'parent',
-				endOnly: false,
-				elementRect: { top: 0, left: 0, bottom: 1, right: 1 }
-			})
-		],
-		listeners: {
-			start() {
-				chatIcon.style.cursor = 'grabbing';
-			},
-			move(event) {
-				positions.icon.x += event.dx;
-				positions.icon.y += event.dy;
-				positions.container.x += event.dx;
-				positions.container.y += event.dy;
-
-				chatIcon.style.transform = `translate(${positions.icon.x}px, ${positions.icon.y}px)`;
-				chatContainer.style.transform = `translate(${positions.container.x}px, ${positions.container.y}px)`;
-			},
-			end() {
-				chatIcon.style.cursor = 'grab';
+		if (container) {
+			if (container.style.display === 'none') {
+				container.style.display = 'block';
+			} else {
+				container.style.display = 'none';
 			}
+		} else {
+			const chatContainer = document.createElement('div');
+			chatContainer.id = 'talkjs-container';
+			chatContainer.className = 'live-chat-container';
+			chatContainer.style.width = '400px';
+			chatContainer.style.height = '500px';
+			chatContainer.style.position = 'fixed';
+			chatContainer.style.bottom = '100px';
+			chatContainer.style.right = '20px';
+			chatContainer.style.zIndex = '9999';
+			chatContainer.style.backgroundColor = 'white';
+			chatContainer.style.border = '1px solid #ccc';
+			chatContainer.style.borderRadius = '8px';
+			chatContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+
+			const loadingText = document.createElement('i');
+			chatContainer.appendChild(loadingText);
+
+			Talk.ready.then(() => {
+				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+				logger.success('candidateInviteAssessmentSection',candidateInviteAssessmentSection);
+
+				const me = new Talk.User({
+					id: candidateInviteAssessmentSection?.candidate?.id,
+					name: candidateInviteAssessmentSection?.candidate?.name,
+					email: candidateInviteAssessmentSection?.candidate?.email,
+					photoUrl: candidateInviteAssessmentSection?.candidate?.photo || `${ASSET_URL}/profile-draft-circled-orange.svg`,
+				});
+
+				const session = new Talk.Session({
+					appId: 'tl1lE0Vo',
+					me: me,
+				});
+
+				const other = new Talk.User({
+					id: candidateInviteAssessmentSection?.school?.id,
+					name: candidateInviteAssessmentSection?.school?.name,
+					email: candidateInviteAssessmentSection?.school?.email,
+					photoUrl: `${ASSET_URL}/profile-draft-circled-orange.svg`,
+				});
+
+				const conversationId = localStorage.getItem('conversationId');
+				const conversation = session.getOrCreateConversation(conversationId);
+				conversation.setParticipant(me);
+				conversation.setParticipant(other);
+
+				const chatbox = session.createChatbox();
+				chatbox.select(conversation);
+				chatbox.mount(chatContainer);
+			});
+
+			document.body.appendChild(chatContainer);
+
+			makeDraggable(chatContainer);
 		}
-	});
+	}
 
-	interact(chatContainer).draggable({
-		enabled: false
-	});
+	function makeDraggable(element) {
+		interact(element).draggable({
+			inertia: true,
+			listeners: {
+			
+				move(event) {
+					const { target } = event;
 
-	let clickStartTime = 0;
-	chatIcon.addEventListener('mousedown', (e) => {
-		e.stopPropagation();
-		clickStartTime = Date.now();
-	});
+					const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+					const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
 
-	chatIcon.addEventListener('click', (e) => {
-		e.stopPropagation();
-		if (Date.now() - clickStartTime < 200) {
-			chatContainer.style.display = chatContainer.style.display === 'none' ? 'block' : 'none';
-		}
-	});
+					target.style.transform = `translate(${x}px, ${y}px)`;
 
-	chatContainer.addEventListener('click', (e) => {
-		e.stopPropagation();
-	});
+					target.setAttribute('data-x', x);
+					target.setAttribute('data-y', y);
+				},
 
-	document.addEventListener('click', (e) => {
-		if (!chatIcon.contains(e.target) && !chatContainer.contains(e.target)) {
-			chatContainer.style.display = 'none';
-		}
-	});
-
-	Talk.ready.then(() => {
-		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-
-		const me = new Talk.User({
-			id: candidateInviteAssessmentSection?.candidate?.id,
-			name: candidateInviteAssessmentSection?.candidate?.name,
-			email: candidateInviteAssessmentSection?.candidate?.email,
-			photoUrl: candidateInviteAssessmentSection?.candidate?.photo || `${ASSET_URL}/profile-draft-circled-orange.svg`,
+			},
 		});
-
-		const session = new Talk.Session({
-			appId: 'tl1lE0Vo',
-			me: me,
-		});
-
-		const other = new Talk.User({
-			id: candidateInviteAssessmentSection?.school?.id,
-			name: candidateInviteAssessmentSection?.school?.name,
-			email: candidateInviteAssessmentSection?.school?.email,
-			photoUrl: `${ASSET_URL}/profile-draft-circled-orange.svg`,
-		});
-
-		const conversationId = localStorage.getItem('conversationId');
-		const conversation = session.getOrCreateConversation(conversationId);
-		conversation.setParticipant(me);
-		conversation.setParticipant(other);
-
-		const chatbox = session.createChatbox();
-		chatbox.select(conversation);
-		chatbox.mount(chatContainer);
-	});
+	}
 };
+
+modalContent.appendChild(tabContentsWrapper);
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
 };
 
 const createLanguageDropdown = () => {
+	const modalHeader = document.createElement('div');
+	modalHeader.className = 'header';
+
+	const languageContainer = document.createElement('section');
+	languageContainer.className = 'dropdown';
+
 	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolTheme?.language || 'en';
 	const filterLanguage = normalizeLanguage(defaultLanguage);
 	let selectedLanguage = languages.find(lang => lang.keyword === filterLanguage.trim());
 
-	const headerHTML = `
-    <div class="header">
-      <section class="dropdown">
-        <div class="select">
-          <img src="${selectedLanguage.src}" alt="${selectedLanguage.alt}" class="flag-icon-img">
-          <label class="language">${i18next.t(selectedLanguage.value)}</label>
-          <img src="${ASSET_URL}/dropdown-btn.svg">
-        </div>
-        <section class="dropdown-content">
-          ${languages.map((lang, index) => `
-            <div data-index="${index}" class="dropdown-option ${lang.keyword === selectedLanguage.keyword ? 'selected' : ''}">
-              <img src="${lang.src}" alt="${lang.alt}" class="flag-icon-img">
-              <div class="text" id="dropdown-text-language">${i18next.t(lang.value)}</div>
-            </div>
-          `).join('')}
-        </section>
-      </section>
-    </div>
-  `;
+	const selectContainer = document.createElement('div');
+	selectContainer.className = 'select';
+	selectContainer.onclick = () => languageDropdown.classList.toggle('active');
 
-	modalContent.insertAdjacentHTML('afterbegin', headerHTML);
+	const flagImg = document.createElement('img');
+	flagImg.src = selectedLanguage.src;
+	flagImg.alt = selectedLanguage.alt;
+	flagImg.className = 'flag-icon-img';
+	selectContainer.appendChild(flagImg);
 
-	const selectContainer = modalContent.querySelector('.select');
-	const languageDropdown = modalContent.querySelector('.dropdown-content');
-	const flagImg = modalContent.querySelector('.select .flag-icon-img');
-	const label = modalContent.querySelector('.language');
-  
-	selectContainer.addEventListener('click', () => {
-		languageDropdown.classList.toggle('active');
+	const label = document.createElement('label');
+	label.className = 'language';
+	label.textContent = i18next.t(selectedLanguage.value);
+	selectContainer.appendChild(label);
+
+	const dropdownIcon = document.createElement('img');
+	dropdownIcon.src = `${ASSET_URL}/dropdown-btn.svg`;
+	selectContainer.appendChild(dropdownIcon);
+
+	languageContainer.appendChild(selectContainer);
+
+	const languageDropdown = document.createElement('section');
+	languageDropdown.className = 'dropdown-content';
+
+	languages.forEach((lang, index) => {
+		const optionDiv = document.createElement('div');
+		optionDiv.key = index;
+
+		optionDiv.className = `dropdown-option ${lang.keyword === selectedLanguage.keyword ? 'selected' : ''}`;
+		optionDiv.onclick = () => onTrigger(lang);
+
+		const optionFlag = document.createElement('img');
+		optionFlag.src = lang.src;
+		optionFlag.alt = lang.alt;
+		optionFlag.className = 'flag-icon-img';
+		optionDiv.appendChild(optionFlag);
+
+		const optionText = document.createElement('div');
+		optionText.className = 'text';
+		optionText.id='dropdown-text-language';
+		optionText.textContent = i18next.t(lang.value);
+		optionDiv.appendChild(optionText);
+
+		languageDropdown.appendChild(optionDiv);
 	});
 
-	const optionDivs = languageDropdown.querySelectorAll('.dropdown-option');
-	optionDivs.forEach(optionDiv => {
-		optionDiv.addEventListener('click', function() {
-			const index = parseInt(this.getAttribute('data-index'));
-			const selectedLang = languages[index];
-      
-			i18next.changeLanguage(selectedLang.keyword)
-				.then(() => {
-					flagImg.src = selectedLang.src;
-					label.textContent = i18next.t(selectedLang.value);
-          
-					optionDivs.forEach((div, i) => {
-						const optionText = div.querySelector('.text');
-						optionText.textContent = i18next.t(languages[i].value);
-					});
-				})
-				.catch(err => logger.error(err));
-      
-			languageDropdown.classList.remove('active');
-			updatePersistData('schoolTheme', { language: selectedLang.keyword });
-		});
-	});
+	languageContainer.appendChild(languageDropdown);
+	modalHeader.appendChild(languageContainer);
+	modalContent.insertBefore(modalHeader, modalContent.firstChild);
+
+	function onTrigger(selectedLang) {
+		selectedLanguage = selectedLang;
+	
+		i18next.changeLanguage(selectedLang.keyword)
+			.then(() => {
+				flagImg.src = selectedLang.src;
+				label.textContent = i18next.t(selectedLang.value);
+	
+				languages.forEach((lang,index) => {
+					const optionDiv = languageDropdown.children[index];
+					if (optionDiv) {
+						const optionText = optionDiv.querySelector('.text');
+						optionText.textContent = i18next.t(lang.value);
+					}
+				});
+			})
+			.catch(err => logger.error(err));
+	
+		languageDropdown.classList.remove('active');
+		updatePersistData('schoolTheme', { language: selectedLang.keyword });
+	}
 };
 
 const openModal = async (callback) => {
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
-	const existingHeader = document.querySelector('.header');
-	if (existingHeader) {
-		existingHeader.remove();
-	}	
+	initializeLiveChat();
+	
 	const activeTab = handlePreChecksRedirection(callback);
+	logger.warn('activeTab',activeTab);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
 
 	if (preChecksStep === null) {
 		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 	}
 	showTab(activeTab, callback);
+	const session = convertDataIntoParse('session');
+	await startSession(session);
+
 	createLanguageDropdown();
 };
 
-
 function closeModal() {
 	if (typeof window.globalCallback === 'function') {
-		window.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
-		window.precheckCompleted = true;
+		window.globalCallback({ message: 'precheck_completed' });
 	}
 
-	modal.style.display = 'block';
+	modal.style.display = 'none';
 	modal.remove();
 
 	if(!getAuthenticationToken()){
@@ -321,7 +330,6 @@ function closeModal() {
 
 const showTab = async (tabId, callback) => {
 	try {
-		initializeI18next();
 		const getSecureFeature = getSecureFeatures();
 		const secureFeatures = getSecureFeature?.entities || [];
 
@@ -356,20 +364,20 @@ const showTab = async (tabId, callback) => {
 			localStorage.setItem('navHistory', JSON.stringify(filterNav));
 		}
 
-		initializeLiveChat();
 		loadZendeskWidget();
+		initializeI18next();
 		updateThemeColor();
 
-		const tabs = shadowRoot.querySelectorAll('.tab');
-		const tabContents = shadowRoot.querySelectorAll('.tab-content');
+		const tabs = document.querySelectorAll('.tab');
+		const tabContents = document.querySelectorAll('.tab-content');
 
 		tabs.forEach(tab => {
 			tab.classList.remove('active');
-			if (tab.dataset.tab === tabId) {	
+			if (tab.dataset.tab === tabId) {
 				tab.classList.add('active');
 			}
 		});
-		
+
 		tabContents.forEach(content => {
 			content.classList.remove('active');
 			if (content.id === tabId) {
@@ -452,21 +460,18 @@ const showTab = async (tabId, callback) => {
 	}
 };
 
-export const startSession = async () => {
-	const session = convertDataIntoParse('session');
+const startSession = async (session) => {
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 	try {
 		const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		if (resp?.data) {
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
-			if(!session?.browserEvents.filter(item => item.name === 'session_initiated')?.length){
-				registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
-			}
+			registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
 		}
 		updatePersistData('session',
 			{
 				id: resp.data.id,
-				sessionStatus: 'Attending'
+				sessionStatus: 'Initiated'
 			});
 			
 		await changeCandidateAssessmentStatus({
@@ -475,16 +480,6 @@ export const startSession = async () => {
 		});
 
 	} catch (e) {
-		const callBackFunc = () => {
-			if(e.response?.data?.detail === 'Token not found'){
-				window.globalCallback({
-					type: 'error',
-					code: 40025,
-					message: 'token_expired_login_again_to_perform_this_action',
-				});
-			}
-		};
-		stop_prechecks(callBackFunc);
 		showToast('error',e.response?.data?.detail);
 		logger.error('Error in start Session', e.response?.data?.detail);
 	}
@@ -497,6 +492,10 @@ window.addEventListener('storage', (event) => {
 		closeModalOnce();
 	}
 });
+
+if(getAuthenticationToken()){
+	initializeLiveChat();
+}
 
 function checkToken() {
 	if (!getAuthenticationToken() && !isModalClosed) {

@@ -63,12 +63,12 @@
 .step-2-header-title {
     font-family: Poppins;
     font-style: var(--font-style);
-    color: var(--text-color);
     font-weight: bold;
     font-size: 35px;
     display: flex;
     align-items: center;
     text-align: center;
+    color: #222222;
     margin: 5px auto 0px;
 }
 
@@ -163,7 +163,7 @@
     display: flex;
     align-items: center;
     text-align: center;
-    color: var(--text-color);
+    color: #222222;
     margin: 0px auto 0px;
 }
 

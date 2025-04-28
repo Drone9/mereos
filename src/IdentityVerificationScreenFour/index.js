@@ -9,6 +9,7 @@ import { ASSET_URL } from '../utils/constant';
 import '../assets/css/step4.css';
 import { uploadFileInS3Folder } from '../services/general.services.js';
 
+
 export const IdentityVerificationScreenFour = async (tabContent) => {
 	if (tabContent.querySelector('.screen-four-container')) return; 
 	window.userMediaStream = null;	
@@ -30,12 +31,13 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true
 	};
 
-	let autoStopRecordingTimeout = null;
 
 	const handleStartRecording = async (type) => {
 		try {
 			if (type === 'startRecording') {
-				mediaRecorder = new MediaRecorder(window.userMediaStream);
+				mediaRecorder = new MediaRecorder(window.userMediaStream, {
+					mimeType: 'video/webm; codecs=vp9'
+				});
 
 				mediaRecorder.ondataavailable = (event) => {
 					if (event.data.size > 0) {
@@ -44,7 +46,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				};
 
 				mediaRecorder.onstop = () => {
-					clearTimeout(autoStopRecordingTimeout); 
 					blob = new Blob(recordedChunks, { type: 'video/webm' });
 					showPlayer = true;
 					recordedChunks = [];
@@ -53,53 +54,44 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 				mediaRecorder.start();
 				recordingMode = 'beingRecorded';
-				stopButtonDisabled = true;
+				stopButtonDisabled = true; // Disable the stop button initially
 				updateUI();
 
+				// Enable stop button after 3 seconds
 				setTimeout(() => {
 					stopButtonDisabled = false;
 					updateUI();
 				}, 3000);
-
-				autoStopRecordingTimeout = setTimeout(() => {
-					if (mediaRecorder && mediaRecorder.state === 'recording') {
-						mediaRecorder.stop();
-						recordingMode = 'stopRecording';
-						updateUI();
-					}
-				}, 60000);
 			}
 		} catch (error) {
 			logger.error('Error accessing media devices:', error);
 		}
 	};
 
+
+
 	const handleRestartRecording = async () => {
 		showPlayer = false;
-		loading = false;
-		recordingMode = 'startRecording';
+		loading=false;
+		recordingMode ='startRecording';
 		textMessage = 'scan_your_room';
 		updateUI();
 	};
 
+
 	const handleStopRecording = async () => {
 		clearInterval(window.recordingDotInterval);
-		clearTimeout(autoStopRecordingTimeout);
 		if (mediaRecorder) {
 			mediaRecorder.stop();
 		}
 		recordingMode = 'stopRecording';
 		updateUI();
-	};	
+	};
 
 	const nextStep = async () => {
 		try {
 			showPlayer = false;
-			loading = false;
-			blob = null;
-			recordingMode = 'startRecording';
-			textMessage = 'scan_your_room';
-			updateUI();
+			loading=false;
 			if (window.userMediaStream) {
 				window.userMediaStream.getTracks().forEach(track => track.stop());
 				window.userMediaStream = null;
@@ -120,12 +112,12 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 	const prevStep = () => {
 		showPlayer = false;
-		loading = false;
-		recordingMode = 'startRecording';
+		loading=false;
+		recordingMode ='startRecording';
 		textMessage = 'scan_your_room';
-		blob = null;
+		blob=null;
 		updateUI();
-		updatePersistData('preChecksSteps', { audioDetection: false, roomScanningVideo: false });
+		updatePersistData('preChecksSteps',{ roomScanningVideo:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFour');
 		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
@@ -159,73 +151,86 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	const updateUI = async () => {
-		// Create main container if it doesn't exist
 		let container = tabContent?.querySelector('.screen-four-container');
 		if (!container) {
-			tabContent.insertAdjacentHTML('beforeend', `
-				<div class="screen-four-container" id="screen-four-main-container"></div>
-			`);
-			container = tabContent.querySelector('.screen-four-container');
+			container = document.createElement('div');
+			container.className = 'screen-four-container';
+			container.id = 'screen-four-main-container';
+			tabContent.appendChild(container);
 		}
-		
-		// Clear existing content
 		container.innerHTML = '';
-		
-		// Create the steps container
+
 		const stepsContainer = document.createElement('div');
 		renderIdentityVerificationSteps(stepsContainer, 4);
-		
-		// Create the HTML structure
-		container.insertAdjacentHTML('beforeend', `
-			<div class="ivsf-wrapper">
-				<div class="room-scan-header-title">${i18next.t('workspace_checking')}</div>
-				<div class="ivsf-msg">${i18next.t('workspace_checking_msg')}</div>
-				<div class="steps-container"></div>
-				<div class="ivsf-header-img-container"></div>
-				<div class="ivsf-query-msg" ${textMessage === 'something_went_wrong_please_upload_again' ? 'style="color: #E95E5E;"' : ''}>${i18next.t(textMessage)}</div>
-				<div class="ivsf-btn-container"></div>
-			</div>
-		`);
-		
-		// Add the steps container
-		const stepsPlaceholder = container.querySelector('.steps-container');
-		stepsPlaceholder.appendChild(stepsContainer);
-		
-		// Get references to containers we need to modify
-		const headerImgContainer = container.querySelector('.ivsf-header-img-container');
-		const btnContainer = container.querySelector('.ivsf-btn-container');
-		
-		// Handle the video/recording UI
+
+		const wrapper = document.createElement('div');
+		wrapper.className = 'ivsf-wrapper';
+
+		const headerTitle = document.createElement('div');
+		headerTitle.className = 'room-scan-header-title';
+		headerTitle.textContent = i18next.t('workspace_checking');
+
+		const message = document.createElement('div');
+		message.className = 'ivsf-msg';
+		message.textContent = i18next.t('workspace_checking_msg');
+
+		const headerImgContainer = document.createElement('div');
+		headerImgContainer.className = 'ivsf-header-img-container';
+
 		if (showPlayer && blob) {
-			headerImgContainer.insertAdjacentHTML('beforeend', `
-				<video id="myVideo" class="my-recorded-video2" controls autoplay></video>
-			`);
-			const videoElement = headerImgContainer.querySelector('#myVideo');
-			videoElement.src = URL.createObjectURL(blob);
+			const refVideo = document.createElement('video');
+			refVideo.id = 'myVideo';
+			refVideo.className = 'my-recorded-video2';
+			refVideo.controls = true;
+			refVideo.autoplay = true;
+			refVideo.src = URL.createObjectURL(blob);
+			headerImgContainer.appendChild(refVideo);
 		} else {
 			if (recordingMode === 'beingRecorded') {
-				headerImgContainer.insertAdjacentHTML('beforeend', `
-					<div class="ivsf-recording-badge-container">
-						<img class="ivsf-recording-dot" src="${ASSET_URL}/white-dot.svg" alt="recording-dot">
-						${i18next.t('recording')}
-					</div>
-					<video id="webcam-recorded-media" autoplay muted height="250"></video>
-				`);
-				
-				const dot = headerImgContainer.querySelector('.ivsf-recording-dot');
+				const recordingBadge = document.createElement('div');
+				recordingBadge.className = 'ivsf-recording-badge-container';
+
+				const dot = document.createElement('img');
+				dot.className = 'ivsf-recording-dot';
+				dot.src = `${ASSET_URL}/white-dot.svg`; // Start with the white dot
+				dot.alt = 'recording-dot';
+
 				let isRed = false;
 				const toggleDot = setInterval(() => {
 					dot.src = `${ASSET_URL}/${isRed ? 'white-dot.svg' : 'red-dot.svg'}`;
 					isRed = !isRed;
 				}, 1000);
 				window.recordingDotInterval = toggleDot;
-				
-				const webcam = headerImgContainer.querySelector('#webcam-recorded-media');
+				const webcam = document.createElement('video');
+				webcam.autoplay = true;
+				webcam.muted = true;
+				webcam.height = 250;
+				webcam.id = 'webcam-recorded-media';
 				webcam.srcObject = window.userMediaStream;
+
+				recordingBadge.appendChild(dot);
+				recordingBadge.appendChild(document.createTextNode(`${i18next.t('recording')}`));
+				headerImgContainer.appendChild(recordingBadge);
+				headerImgContainer.appendChild(webcam);
 			}
 		}
-		
-		// Handle buttons based on recording mode
+
+		wrapper.appendChild(headerTitle);
+		wrapper.appendChild(message);
+		wrapper.appendChild(stepsContainer);
+		wrapper.appendChild(headerImgContainer);
+
+		const queryMsg = document.createElement('div');
+		queryMsg.className = 'ivsf-query-msg';
+		queryMsg.textContent = i18next.t(textMessage);
+		if (textMessage === 'something_went_wrong_please_upload_again') {
+			queryMsg.style.color = '#E95E5E';
+		}
+		wrapper.appendChild(queryMsg);
+
+		const btnContainer = document.createElement('div');
+		btnContainer.className = 'ivsf-btn-container';
+
 		if (recordingMode === 'startRecording') {
 			const mediaOptions = {
 				audio: localStorage.getItem('microphoneID') !== null ? { deviceId: { exact: localStorage.getItem('microphoneID') }} : true,
@@ -233,54 +238,53 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			};
 
 			window.userMediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
-			
-			headerImgContainer.insertAdjacentHTML('beforeend', `
-				<video id="webcam-recording-media" autoplay muted height="250"></video>
-			`);
-			
-			const webcam = headerImgContainer.querySelector('#webcam-recording-media');
+			const webcam = document.createElement('video');
+
+			webcam.autoplay = true;
+			webcam.muted = true;
+			webcam.height = 250;
+			webcam.id = 'webcam-recording-media';
 			webcam.srcObject = window.userMediaStream;
-			
-			btnContainer.insertAdjacentHTML('beforeend', `
-				<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
-				<button class="orange-filled-btn">${i18next.t('record_video')}</button>
-			`);
-			
-			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
-			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', () => handleStartRecording('startRecording'));
+			headerImgContainer.appendChild(webcam);
+
+			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
+			const recordButton = createButton(`${i18next.t('record_video')}`, 'orange-filled-btn', () => handleStartRecording('startRecording'));
+			btnContainer.appendChild(prevButton);
+			btnContainer.appendChild(recordButton);
 		} else if (recordingMode === 'beingRecorded') {
-			const prevStepsEntities = ['verify_candidate', 'verify_id', 'record_audio'];
-			const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
-			
-			if (showPrevButton) {
-				btnContainer.insertAdjacentHTML('beforeend', `
-					<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
-				`);
-				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
+			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
+			const stopButton = createButton(`${i18next.t('stop_recording')}`, 'orange-filled-btn', handleStopRecording);
+			stopButton.disabled = stopButtonDisabled;
+			const prevStepsEntities = ['verify_candidate','verify_id','record_audio'];
+			if(secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0){
+				btnContainer.appendChild(prevButton);
 			}
-			
-			btnContainer.insertAdjacentHTML('beforeend', `
-				<button class="orange-filled-btn" ${stopButtonDisabled ? 'disabled' : ''}>${i18next.t('stop_recording')}</button>
-			`);
-			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', handleStopRecording);
+			btnContainer.appendChild(stopButton);
 		} else if (recordingMode === 'stopRecording' || recordingMode === 'uploaded_file') {
-			btnContainer.insertAdjacentHTML('beforeend', `
-				<button class="orange-hollow-btn">${i18next.t('reset')}</button>
-			`);
-			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', handleRestartRecording);
-			
+			const resetButton = createButton(`${i18next.t('reset')}`, 'orange-hollow-btn', handleRestartRecording);
+			btnContainer.appendChild(resetButton);
+
 			if (recordingMode !== 'uploaded_file') {
-				btnContainer.insertAdjacentHTML('beforeend', `
-					<button class="orange-filled-btn" ${loading ? 'disabled' : ''}>${i18next.t('upload')}</button>
-				`);
-				btnContainer.querySelector('.orange-filled-btn').addEventListener('click', uploadUserRoomVideo);
+				const uploadButton = createButton(`${i18next.t('upload')}`, 'orange-filled-btn', uploadUserRoomVideo);
+				uploadButton.disabled = loading;
+				btnContainer.appendChild(uploadButton);
 			} else {
-				btnContainer.insertAdjacentHTML('beforeend', `
-					<button class="orange-filled-btn">${i18next.t('next_step')}</button>
-				`);
-				btnContainer.querySelector('.orange-filled-btn').addEventListener('click', nextStep);
+				const nextButton = createButton(`${i18next.t('next_step')}`, 'orange-filled-btn', nextStep);
+				btnContainer.appendChild(nextButton);
 			}
 		}
+
+		wrapper.appendChild(btnContainer);
+		container.appendChild(wrapper);
+	};
+
+
+	const createButton = (text, className, onClick) => {
+		const button = document.createElement('button');
+		button.textContent = text;
+		button.className = className;
+		button.addEventListener('click', onClick);
+		return button;
 	};
 
 	handleStartRecording();

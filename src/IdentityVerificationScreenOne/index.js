@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { shadowRoot, showTab } from '../ExamsPrechecks';
+import { showTab } from '../ExamsPrechecks';
 
 import { dataURIToBlob, logger, registerEvent, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
@@ -35,10 +35,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			videoElement.width = state.videoConstraints.width;
 			videoElement.height = state.videoConstraints.height;
 			videoElement.autoplay = true;
-            
 			webcamStream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
 			videoElement.srcObject = webcamStream;
-            
 			if (tabContent) {
 				const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');
 				if (ivsoWebcamContainer) {
@@ -85,22 +83,22 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			const data = new FormData();
 			const imageUrl = await dataURLtoFile(state.imageSrc);
 			data.append('image', imageUrl);
-            
+			
 			try {
 				const resp = await userRekognitionInfo(data);
 				const predictions = resp?.data?.face?.FaceDetails;
-    
+	
 				img.onload = async function () {
 					if (predictions?.length && predictions.length === 1) {
 						const face = predictions[0];
-    
+	
 						const { Pose, Confidence } = face;
 						const isFullFace = 
-                        Confidence >= 95 &&
-                        Math.abs(Pose.Yaw) <= 10 && 
-                        Math.abs(Pose.Pitch) <= 10 && 
-                        Math.abs(Pose.Roll) <= 10;
-    
+						Confidence >= 95 &&
+						Math.abs(Pose.Yaw) <= 10 && 
+						Math.abs(Pose.Pitch) <= 10 && 
+						Math.abs(Pose.Roll) <= 10;
+	
 						if (isFullFace) {
 							state = {
 								...state,
@@ -149,7 +147,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 						startWebcam();
 						registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
 					}
-    
+	
 					renderUI();
 				};
 				img.src = state.imageSrc;
@@ -166,10 +164,10 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			}
 		}
 	};
-    
+	
 	const nextStep = () => {
 		if(webcamStream){
-      webcamStream?.getTracks()?.forEach((track) => track.stop());
+			webcamStream?.getTracks()?.forEach((track) => track.stop());
 		}
 		registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
 		updatePersistData('preChecksSteps',{ userPhoto:true });
@@ -187,14 +185,14 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 					text: 'file_is_being_uploaded',
 				},
 			};
-    
+	
 			const blob = dataURIToBlob(state.imageSrc);
-    
+	
 			let resp = await uploadFileInS3Folder({
 				folderName: 'candidate_images',
 				file: blob,
 			});
-    
+	
 			if (resp?.data?.file_url) {
 				updatePersistData('session', { candidatePhoto: resp.data.file_url });
 				state = {
@@ -224,106 +222,83 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			renderUI();
 		}
 	};
+	
 
 	const renderUI = () => {
 		let ivsoContainer = tabContent.querySelector('.ivso-container');
-        
+		
 		if (!ivsoContainer) {
-			tabContent.insertAdjacentHTML('beforeend', '<div class="ivso-container"></div>');
-			ivsoContainer = tabContent.querySelector('.ivso-container');
+			ivsoContainer = document.createElement('div');
+			ivsoContainer.className = 'ivso-container';
+			tabContent.appendChild(ivsoContainer);
 		} else {
 			ivsoContainer.innerHTML = '';
 		}
-        
-		const stepsContainer = document.createElement('div');
-		renderIdentityVerificationSteps(stepsContainer, 1);
-        
-		const messageColorStyle = (state.msg.type === 'unsuccessful' || 
-                                  state.msg.type === 'something_went_wrong_please_upload_again') 
-			? 'style="color: #E95E5E;"' : '';
-        
-		let contentHTML = `
-            <div class="ivso-first-wrapper">
-                <div class="ivso-header-title">${i18next.t('webcam_diagnostics')}</div>
-                <div class="first-header-msg">${i18next.t('your_face_must_visible_on_screen')}</div>
-                <div class="identity-steps-container">${stepsContainer.innerHTML}</div>
-        `;
-        
-		contentHTML += `<div class="ivso-header-img-container">`;
-        
-		if (state.imageSrc) {
-			contentHTML += `<img src="${state.imageSrc}" class="ivso-captured-img">`;
-		} else {
-			contentHTML += `<img src="${ASSET_URL}/screen-centered-grid.svg" class="ivso-screen-grid">`;
-		}
-      
-		contentHTML += `</div>`;
-
 	
+		const ivsoWrapper = document.createElement('div');
+		ivsoWrapper.className = 'ivso-wrapper';
+	
+		const ivsHeaderTitle = document.createElement('div');
+		ivsHeaderTitle.className = 'ivso-header-title';
+		ivsHeaderTitle.textContent = i18next.t('webcam_diagnostics');
+		const ivssubHeading = document.createElement('div');
+		ivssubHeading.className = 'first-header-msg';
+		ivssubHeading.textContent = i18next.t('your_face_must_visible_on_screen');
+		const stepsContainer = document.createElement('div');
 
-		contentHTML += `<div class="ivso-webcam-container"></div>`;
-        
+		renderIdentityVerificationSteps(stepsContainer, 1);
+	
+		let ivsMsg = document.createElement('div');
+	
 		if (state.msg.text) {
-			contentHTML += `
-                <div class="ivso-msg" id="success-msg" ${messageColorStyle}>
-                    ${i18next.t(state.msg.text)}
-                </div>
-            `;
-		}
+			ivsMsg.className = 'ivso-msg';
 
-		contentHTML += `<div class="ivso-btn-container">`;
-        
+			if (state.msg.type === 'unsuccessful' || state.msg.type === 'something_went_wrong_please_upload_again') {
+				ivsMsg.style.color = '#E95E5E';
+			}
+
+			ivsMsg.textContent = i18next.t(state.msg.text);
+		}
+	
+		const ivsoWebcamContainer = document.createElement('div');
+		ivsoWebcamContainer.className = 'ivso-webcam-container';
+	
+		const ivsoHeaderImgContainer = document.createElement('div');
+		ivsoHeaderImgContainer.className = 'ivso-header-img-container';
+	
+		const ivsoBtnContainer = document.createElement('div');
+		ivsoBtnContainer.className = 'ivso-btn-container';
+	
+		const ivsoQueryMsg = document.createElement('div');
+		ivsoQueryMsg.className = 'ivso-query-msg';
+	
+		if (state.imageSrc) {
+			const img = document.createElement('img');
+			img.src = state.imageSrc;
+			img.className = 'ivso-captured-img';
+			ivsoHeaderImgContainer.appendChild(img);
+		} else {
+			if (!webcamStream) {
+				startWebcam();
+			}
+			ivsoWebcamContainer.appendChild(videoElement);
+	
+			const gridImg = document.createElement('img');
+			gridImg.src = `${ASSET_URL}/screen-centered-grid.svg`;
+			gridImg.className = 'ivso-screen-grid';
+			ivsoHeaderImgContainer.appendChild(gridImg);
+		}
+	
 		if (state.captureMode !== 'take') {
-			contentHTML += `
-                <button class="orange-hollow-btn" id="retake-btn">
-                    ${i18next.t('retake_photo')}
-                </button>
-            `;
-		}
-        
-		if (state.captureMode === 'uploaded_photo') {
-			contentHTML += `
-                <button class="orange-filled-btn" id="next-btn">
-                    ${i18next.t('next_step')}
-                </button>
-            `;
-		}
-        
-		if (state.captureMode === 'take') {
-			contentHTML += `
-                <button class="orange-filled-btn" id="take-photo-btn">
-                    ${i18next.t('take_photo')}
-                </button>
-            `;
-		}
-        
-		if (state.captureMode === 'retake') {
-			const isDisabled = state.isUploading || state.msg.type !== 'successful' ? 'disabled' : '';
-			contentHTML += `
-                <button class="orange-filled-btn" id="upload-btn" ${isDisabled}>
-                    ${i18next.t('upload')}
-                </button>
-            `;
-		}
-        
-		contentHTML += `</div>`;
-        
-		// Query message for retake mode
-		if (state.captureMode === 'retake') {
-			contentHTML += `<div class="ivso-query-msg"></div>`;
-		}
-        
-		contentHTML += `</div>`;
-        
-		ivsoContainer.insertAdjacentHTML('beforeend', contentHTML);
-        
-		if (state.captureMode !== 'take') {
-			shadowRoot.getElementById('retake-btn').addEventListener('click', () => {
+			const retakePhotoBtn = document.createElement('button');
+			retakePhotoBtn.textContent = i18next.t('retake_photo');
+			retakePhotoBtn.className = 'orange-hollow-btn';
+			retakePhotoBtn.addEventListener('click', () => {
 				state = {
 					...state,
 					imageSrc: null,
 					captureMode: 'take',
-					isUploading: false,
+					isUploading:false,
 					videoConstraints: {
 						...state.videoConstraints,
 						deviceId: localStorage.getItem('deviceId') || undefined,
@@ -336,41 +311,54 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				renderUI();
 				startWebcam();
 			});
+			ivsoBtnContainer.appendChild(retakePhotoBtn);
 		}
-        
+	
 		if (state.captureMode === 'uploaded_photo') {
-			shadowRoot.getElementById('next-btn').addEventListener('click', nextStep);
+			const nextBtn = document.createElement('button');
+			nextBtn.textContent = i18next.t('next_step');
+			nextBtn.className = 'orange-filled-btn';
+			nextBtn.addEventListener('click', nextStep);
+			ivsoBtnContainer.appendChild(nextBtn);
 		}
-        
+	
 		if (state.captureMode === 'take') {
-			shadowRoot.getElementById('take-photo-btn').addEventListener('click', capturePhoto);
+			const takePhotoBtn = document.createElement('button');
+			takePhotoBtn.textContent = i18next.t('take_photo');
+			takePhotoBtn.className = 'orange-filled-btn';
+			takePhotoBtn.addEventListener('click', capturePhoto);
+			ivsoBtnContainer.appendChild(takePhotoBtn);
 		}
-        
-		if (state.captureMode === 'retake' && state.msg.type === 'successful') {
-			const uploadBtn = shadowRoot.getElementById('upload-btn');
-			if (uploadBtn) {
-				uploadBtn.addEventListener('click', uploadUserCapturedPhoto);
-			}
+	
+		if (state.captureMode === 'retake') {
+			const uploadPhotoBtn = document.createElement('button');
+			uploadPhotoBtn.textContent = i18next.t('upload');
+			uploadPhotoBtn.className = 'orange-filled-btn';
+			uploadPhotoBtn.disabled = state.isUploading || state.msg.type !== 'successful'; 
+			uploadPhotoBtn.addEventListener('click', uploadUserCapturedPhoto);
+			ivsoBtnContainer.appendChild(uploadPhotoBtn);
 		}
-        
-		if (!state.imageSrc && !webcamStream) {
-			startWebcam();
-		} else if (!state.imageSrc) {
-			const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');
-			if (ivsoWebcamContainer && videoElement) {
-				ivsoWebcamContainer.appendChild(videoElement);
-			}
+	
+		// Append elements to wrapper
+		ivsoWrapper.appendChild(ivsHeaderTitle);
+		ivsoWrapper.appendChild(ivssubHeading);
+		ivsoWrapper.appendChild(stepsContainer);
+		ivsoWrapper.appendChild(ivsoHeaderImgContainer);
+		ivsoWrapper.appendChild(ivsoWebcamContainer);
+		ivsoWrapper.appendChild(ivsMsg);
+		ivsoWrapper.appendChild(ivsoBtnContainer);
+		if (state.captureMode === 'retake') {
+			ivsoWrapper.appendChild(ivsoQueryMsg);
 		}
+	
+		// Append the wrapper to the container
+		ivsoContainer.appendChild(ivsoWrapper);
 	};
 
 	renderUI();
 
 	i18next.on('languageChanged', () => {
+		state.msg.text = i18next.t(state.msg.text);
 		renderUI();
-        
-		const msg = shadowRoot.getElementById('success-msg');
-		if (msg && state.msg.text) {
-			msg.textContent = i18next.t(state.msg.text);
-		}
 	});
 };

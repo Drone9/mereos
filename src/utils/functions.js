@@ -1,15 +1,13 @@
 import axios from 'axios';
-import { BASE_URL, examPreparationSteps, preChecksSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from './constant';
+import { BASE_URL, examPreparationSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.services';
 import { createEvent } from '../services/event.service';
 import { testUploadSpeed } from '../services/general.services';
 import i18next from 'i18next';
-import { closeModal, openModal } from '../ExamsPrechecks';
+import { closeModal } from '../ExamsPrechecks';
 import { Notyf } from 'notyf';
-import { notifyTokenExpired } from './axios';
-import { stop_prechecks } from '../..';
 
 export const dataURIToBlob = (dataURI) => {
 	
@@ -77,6 +75,36 @@ export const getLocation = () => {
 	});
 };
 
+// export const checkNotification = () => {
+// 	return new Promise((resolve, _reject) => {
+// 		if (!('Notification' in window)) {
+// 			resolve(false);
+// 		} else if (Notification.permission === 'granted') {
+// 			showNotification({
+// 				title: 'New notification message from mereos!',
+// 				body: 'Hey mate, Ready for the test ? It will be starting soon.',
+// 			});
+// 			resolve(true);
+// 		} else if (Notification.permission === 'denied' || Notification.permission === 'default') {
+// 			Notification.requestPermission()
+// 				.then((permission) => {
+// 					if (permission === 'granted') {
+// 						showNotification({
+// 							title: 'New notification message from mereos!',
+// 							body: 'Hey mate, Ready for the test ? It will be starting soon.',
+// 						});
+// 						resolve(true);
+// 					} else {
+// 						resolve(false);
+// 					}
+// 				})
+// 				.catch(err => {
+// 					logger.error('err', err);
+// 				});
+// 		}
+// 	});
+// };
+
 export const getMultipleCameraDevices = () => {
 	return new Promise((resolve, reject) => {
 		navigator.mediaDevices.enumerateDevices()
@@ -110,6 +138,17 @@ export const getMultipleCameraDevices = () => {
 	});
 };
 
+// export const showNotification = ({ title, body }) => {
+// 	try{
+// 		const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
+// 		let icons  = schoolTheme?.schoolLogo || `${ASSET_URL}/mereos.png`;
+// 		const notification = new Notification(title, { body: body, icon: icons });
+// 		logger.success(notification);
+// 	}catch(error) {
+// 		logger.error('Error in notification',error);
+// 	}
+// };
+
 export const detectMultipleScreens = async () => {
 	if (window.screen.isExtended) {
 		return true;
@@ -141,37 +180,35 @@ export const checkMicrophone = () => {
 	});
 };
 
-export const registerEvent = async ({ eventName,eventValue }) => {
+export const registerEvent = ({ eventName }) => {
 	try{
 		const session = convertDataIntoParse('session');
-		const { browserEvents } = session;
 
-		if (session?.id) {
+		if(session?.id){
 			const event = {
 				name: eventName,
-				value: eventValue,
+				value: eventName,
 				session_id: session?.id,
-				start_at: session?.quizStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.quizStartTime) / 1000) : 0
+				start_at: session?.sessionStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.sessionStartTime) / 1000) : 0
 			};
-
-			updatePersistData('session', { browserEvents:[...browserEvents, event] });
+				
 			return createEvent(event);
 		}
-	} catch (error) {
+	}catch(error){
 		logger.error('Error in register event', error);
 	}
 };
 
 export const updateThemeColor = () => {
 	const defaultTheme = {
-		theming: '#FF961B',
-		font: 'normal'
+		theming: '#FF961B',  
+		font: 'normal'       
 	};
 
 	const schoolTheme = JSON.parse(localStorage.getItem('schoolTheme'));
 
 	const isValidHex = (color) => {
-		const hexRegex = /^#[0-9A-F]{6}$/i;
+		const hexRegex = /^#[0-9A-F]{6}$/i;  
 		return hexRegex.test(color);
 	};
 
@@ -180,15 +217,13 @@ export const updateThemeColor = () => {
 		return validFontStyles.includes(font);
 	};
 
-	const themeColor = isValidHex(schoolTheme?.theming)
-		? schoolTheme.theming
-		: defaultTheme.theming;
+	const themeColor = isValidHex(schoolTheme?.theming) 
+		? schoolTheme.theming 
+		: defaultTheme.theming; 
 
-	const fontStyle = isValidFontStyle(schoolTheme?.font)
-		? schoolTheme.font
-		: defaultTheme.font;
-
-	const isDarkMode = !!schoolTheme?.mode;
+	const fontStyle = isValidFontStyle(schoolTheme?.font) 
+		? schoolTheme.font 
+		: defaultTheme.font;  
 
 	const themeToStore = {
 		...schoolTheme,
@@ -199,10 +234,9 @@ export const updateThemeColor = () => {
 	localStorage.setItem('schoolTheme', JSON.stringify(themeToStore));
 
 	document.documentElement.style.setProperty('--theme-color', themeColor);
-	document.documentElement.style.setProperty('--theme-mode', isDarkMode ? '#000' : '#fff');
-	document.documentElement.style.setProperty('--text-color', isDarkMode ? '#fff' : '#000');
 	document.documentElement.style.setProperty('--font-style', fontStyle);
 };
+
 
 export const loadZendeskWidget = () => {
 	const getSecureFeature = getSecureFeatures();
@@ -211,28 +245,11 @@ export const loadZendeskWidget = () => {
 	let script;
 
 	if (hasChatBot) {
-		if (!document.querySelector('#ze-snippet')) {
-			script = document.createElement('script');
-			script.src = 'https://static.zdassets.com/ekr/snippet.js?key=6542e7ef-41de-43ed-bc22-3d429a78ead3';
-			script.async = true;
-			script.id = 'ze-snippet';
-			document.body.appendChild(script);
-		}
-		
-		if (window.zE && typeof window.zE === 'function') {
-			window.zE('messenger', 'show');
-		}
-	}
-};
-
-export const hideZendeskWidget =() => {
-	if (window.zE && typeof window.zE === 'function') {
-		try {
-			window.zE('messenger', 'hide');
-			window.zE('messenger', 'close');
-		} catch (e) {
-			logger.error('Error resetting the Zendesk widget:', e);
-		}
+		script = document.createElement('script');
+		script.src = 'https://static.zdassets.com/ekr/snippet.js?key=6542e7ef-41de-43ed-bc22-3d429a78ead3';
+		script.async = true;
+		script.id = 'ze-snippet';
+		document.body.appendChild(script);
 	}
 };
 
@@ -245,64 +262,27 @@ export const cleanupZendeskWidget = () => {
 	if (window.zE && typeof window.zE === 'function') {
 		try {
 			window.zE('messenger', 'hide');
-			window.zE('messenger', 'close');
-
-			delete window.zE;
-			delete window.zESettings;
 		} catch (e) {
 			logger.error('Error resetting the Zendesk widget:', e);
 		}
 	}
 };
 
-export const authenticatedRequest = async (apiCall, params = null) => {
-	const mereosToken = getAuthenticationToken();
-  
-	if (!mereosToken) {
-		stop_prechecks(()=>null);
-		return {
-			type: 'error',
-			message: 'authentication_required',
-			code: 40023,
-			details: 'Valid authentication token required for this operation'
-		};
-	}
-  
-	const config = {
-		headers: {
-			token: mereosToken,
-		}
-	};
-  
-	if (params) {
-		config.params = params;
-	}
-  
-	return apiCall(config);
-};
-
 export const getAuthenticationToken = () => {
 	const tokenData = localStorage.getItem('mereosToken');
 
 	if (tokenData) {
-		try {
-			const { token, expiresAt } = JSON.parse(tokenData);
-      
-			if (Date.now() > expiresAt) {
-				localStorage.removeItem('mereosToken');
-				notifyTokenExpired();
-				return null;
-			}
-      
-			return token;
-		} catch (error) {
+		const { token, expiresAt } = JSON.parse(tokenData);
+        
+		if (Date.now() > expiresAt) {
 			localStorage.removeItem('mereosToken');
-			notifyTokenExpired();
 			return null;
 		}
+        
+		return token; 
 	}
 
-	return null;
+	return null; 
 };
 
 export const userRekognitionInfo = async (data) => {
@@ -321,6 +301,7 @@ export const srcToData = async (src) => {
 				const reader = new FileReader();
 				reader.onloadend = () => {
 					resolve(reader.result);
+					// getBase64StringFromDataURL
 					reader.result.replace('data:', '').replace(/^.+,/, '');
 				};
 				reader.readAsDataURL(blob);
@@ -374,22 +355,7 @@ export const shareScreenFromContent = () => {
 			: { video: { displaySurface: 'monitor' } }; 
 
 		navigator.mediaDevices.getDisplayMedia(constraints)
-			.then(stream => {
-				const track = stream.getVideoTracks()[0];
-
-				track.addEventListener('ended', () => {
-					registerEvent({notify: false, eventName: 'screen_shared_stopped', eventType: 'error'});
-					if(window.startRecordingCallBack){
-						window.startRecordingCallBack({ 
-							type:'error',
-							message: 'screen_share_stopped',
-							code:40012
-						});
-					}
-					openModal();
-				});
-				resolve(stream);
-			})
+			.then(stream => resolve(stream))
 			.catch(err => reject(err));
 	});
 };
@@ -455,47 +421,45 @@ export const updatePersistData = (key, updates) => {
 	}
 };
 
-export const addSectionSessionRecord = async (session) => {
+export const addSectionSessionRecord = async (session, candidateInviteAssessmentSection) => {
 	return new Promise(async (resolve, _reject) => {
 		try{
-			const { aiEvents, browserEvents } = session;
-			const secureFeatures = getSecureFeatures();
-			
 			let recordings;
-			if([...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios].length){
+			if(session?.user_video_name?.length || session?.user_audio_name?.length || session?.screen_sharing_video_name?.length || session?.mobileRecordings?.length || session?.mobileAudios?.length){
 				const sourceIds = [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
 				recordings = sourceIds?.length
 					? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
 					: [];
 			}
+		
 			let sectionSessionDetails = {
-				start_time: session?.quizStartTime,
+				start_time: session?.sessionStartTime,
 				submission_time: session?.submissionTime,
-				duration_taken: session?.quizStartTime ? getTimeInSeconds({isUTC: true}) - session.quizStartTime : 0,
+				duration_taken: session?.sessionStartTime ? getTimeInSeconds({isUTC: true}) - session.sessionStartTime : 0,
 				identity_card: session?.identityCard,
-				room_scan_video: session?.room_scan_video,
+				room_scan_video:session?.room_scan_video,
 				identity_photo: session?.candidatePhoto,
+				school: candidateInviteAssessmentSection?.school?.id || '',
+				assessment: session?.assessment?.id || 1,
+				candidate: candidateInviteAssessmentSection?.candidate?.id,
 				user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				user_audio_name: recordings?.data?.filter(recording => session.user_audio_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				roomscan_recordings: session?.roomScanRecordings,
 				session_id: session?.sessionId,
-				archive_id:session?.room_id,
-				location: session?.location,
 				collected_details: {
-					download_speed: session?.downloadSpeed,
-					upload_speed: session?.uploadSpeed,
-					cpu_info: session?.CPUSpeed,
-					ram_info: session?.RAMSpeed
+					location: session?.location,
 				},
 				status: session?.sessionStatus,
-				video_codec: recordings?.data?.filter(recording => session.user_video_name?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.codec)[0],
-				video_extension: recordings?.data?.filter(recording => session.user_video_name?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.container_format)[0],
-				incident_level: findIncidentLevel(aiEvents, browserEvents, secureFeatures),
+				video_codec: null,
+				video_extension: null,
+				archive_id:null,
+				attempt_id:null,
+				incident_level: session?.incident_level,
 				mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-				conversation_id: localStorage.getItem('conversationId') || '',
-				candidate_assessment: session?.candidate_assessment
+				conversation_id:localStorage.getItem('conversationId') || '',
+				candidate_assessment:session?.candidate_assessment
 			};
 	
 			if (session?.id) {
@@ -506,12 +470,9 @@ export const addSectionSessionRecord = async (session) => {
 			resolve(resp);
 		}catch(err){
 			if (err.response?.status === 403) {
-				if(window.globalCallback){
-					window?.globalCallback({type:'error', message: 'error_saving_session_info',code:40018 });
-				}
-			} 
-			if(window.startRecordingCallBack){
-				window?.startRecordingCallBack({type:'error', message: 'error_saving_session_info',code:40018 });
+				window.globalCallback({ message: err.response?.data?.detail });
+			} else {
+				window.globalCallback({ message: 'error_starting_prechecks'});
 			}
 			_reject(err);
 		}
@@ -551,8 +512,8 @@ export const lockBrowserFromContent = (entities) => {
 	return new Promise(async (resolve, _reject) => {
 		let result = {};
 		for (const entity of entities) {
-			switch (entity.key) {
-				case 'disable_right_click': {
+			switch (entity.name) {
+				case 'Disable Right Click': {
 					const disableRightClick = await preventRightClick();
 					if (disableRightClick) {
 						result = {...result, [entity.name]: true};
@@ -560,7 +521,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'disable_clipboard': {
+				case 'Disable Clipboard': {
 					const copyPasteCutDisabled = await disableCopyPasteCut();
 					if (copyPasteCutDisabled) {
 						result = {...result, [entity.name]: true};
@@ -568,7 +529,15 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'disable_keyboard_shortcuts': {
+				case 'Disable downloading': {
+					const disableDownloading = await disablePageDownload();
+					if (disableDownloading) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Disable function keys': {
 					const disableShortcuts = await preventShortCuts();
 					if (disableShortcuts) {
 						result = {...result, [entity.name]: true};
@@ -576,7 +545,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'disable_printing': {
+				case 'Disable Printing': {
 					const disablePrinting = await stopPrinting();
 					if (disablePrinting) {
 						result = {...result, [entity.name]: true};
@@ -584,7 +553,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'detect_unfocus': {
+				case 'Detect unfocus': {
 					const defocusDisabled = await detectUnfocusOfTab();
 					if (defocusDisabled) {
 						result = {...result, [entity.name]: true};
@@ -592,7 +561,15 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'detect_resizing_of_window': {
+				case 'Disable switch to other Apps': {
+					const detectPageLeaving = await preventPreClosure();
+					if (detectPageLeaving) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
+
+				case 'Detect resizing of window': {
 					const disableWindowResize = await detectWindowResize(null);
 					if (disableWindowResize) {
 						result = {...result, [entity.name]: true};
@@ -600,7 +577,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'verify_desktop': {
+				case 'Verify Desktop': {
 					const dualDisplay = await detectDualDisplay();
 					if (dualDisplay) {
 						result = {...result, [entity.name]: true};
@@ -608,7 +585,7 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'force_full_screen': {
+				case 'Force Full Screen': {
 					const fullScreen = await forceFullScreen();
 					if (fullScreen) {
 						result = {...result, [entity.name]: true};
@@ -625,6 +602,16 @@ export const lockBrowserFromContent = (entities) => {
 	});
 };
 
+function disablePageDownload() {
+	document.addEventListener('contextmenu', (event) => event.preventDefault());
+
+	document.addEventListener('keydown', (event) => {
+		if ((event.ctrlKey || event.metaKey) && ['s', 'p', 'u'].includes(event.key.toLowerCase())) {
+			event.preventDefault();
+		}
+	});
+}
+
 export const preventRightClick = () => {
 	return new Promise((resolve, _reject) => {
 		document.addEventListener('contextmenu', handleDefaultEvent);
@@ -635,11 +622,7 @@ export const preventRightClick = () => {
 export const disableCopyPasteCut = () => {
 	return new Promise((resolve, _reject) => {
 		'cut copy paste'.split(' ').forEach((eventName) => {
-			window.addEventListener(eventName, e => {
-				e.preventDefault();
-				e.stopPropagation();
-				registerEvent({notify: false, eventName: 'copy_paste_cut', eventType: 'error'});
-			});
+			window.addEventListener(eventName, handleDefaultEvent);
 		});
 		resolve(true);
 	});
@@ -820,6 +803,7 @@ const handleResize = () => {
 	clearTimeout(resizeTimeout);
 
 	resizeTimeout = setTimeout(() => {
+		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
 		isResizing = false;
 	}, 500);
 };
@@ -890,53 +874,13 @@ export const forceFullScreen = (element = document.documentElement) => {
 	}
 };
 
-// ************* Detect Page Refresh ***************** //
-const detectPageRefreshCallback = (e) => {
-	e.preventDefault();
-	e.returnValue = '';
-
-	registerEvent({ 
-		eventType: 'error', 
-		notify: false, 
-		eventName: 'candidate_clicked_on_refresh_button',
-		eventValue: getDateTime() 
-	});
-};
-
-export const detectPageRefresh = () => {
-	window.addEventListener('beforeunload', detectPageRefreshCallback);
-};
-
-// ************* Detect Back Button ***************** //
-const detectBackButtonCallback = () => {
-	if (window.startRecordingCallBack) {
-		window.startRecordingCallBack({
-			type: 'error',
-			message: 'candidate_clicked_on_browser_back_button' ,
-			code: 40005
-		});
-		window.recordingStart = false;
-		if (window?.socket?.readyState === WebSocket.OPEN) {
-			window.socket?.send(JSON.stringify({ event: 'resetSession' }));
-		}
-	}
-};
-
-export const detectBackButton = () => {
-	window.addEventListener('popstate', detectBackButtonCallback);
-};
-
-//* ***************** DefaultEvent Callback *********************/
 const handleDefaultEvent = e => {
 	e.preventDefault();
 	e.stopPropagation();
 };
 
-//* ***************** Unlock browser from Events */
 export const unlockBrowserFromContent = () => {
-	window.removeEventListener('contextmenu', handleDefaultEvent);
-	window.removeEventListener('beforeunload', detectPageRefreshCallback);
-	window.removeEventListener('popstate', detectBackButtonCallback);
+	document.removeEventListener('contextmenu', handleDefaultEvent);
 
 	'cut copy paste'.split(' ').forEach((eventName) => {
 		window.removeEventListener(eventName, handleDefaultEvent);
@@ -968,11 +912,15 @@ export const unlockBrowserFromContent = () => {
 };
 
 export const getPreviousRoute = (currentRoute, navHistory, hasFeature) => {
+	// Find the index of the current route in the navigation history
 	const currentIndex = navHistory.indexOf(currentRoute);
 
+	// Ensure the current route is valid and there's a previous route
 	if (currentIndex > 0) {
+		// Get the previous route
 		const previousRoute = navHistory[currentIndex - 1];
 
+		// Map of features required for each route
 		const featureMap = {
 			'ExamPreparation': 'record_video',
 			'runSystemDiagnostics': 'systemDiagnosticSteps',
@@ -985,58 +933,74 @@ export const getPreviousRoute = (currentRoute, navHistory, hasFeature) => {
 			'IdentityVerificationScreenFive': 'record_screen',
 		};
 
+		// Get the feature required for the previous route
 		const requiredFeature = featureMap[previousRoute];
 
+		// Check if the feature is allowed
 		if (!requiredFeature || hasFeature(requiredFeature)) {
 			return previousRoute;
 		}
 	}
 
+	// Return null if no valid previous route is found
 	return null;
 };
 
+
 export const handlePreChecksRedirection = () => {
 	const sessionSetting = localStorage.getItem('precheckSetting');
-	const preChecksStep = convertDataIntoParse('preChecksSteps');
-	const getSecureFeature = getSecureFeatures();
-	const secureFeatures = getSecureFeature?.entities || [];
-	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
 	if(sessionSetting === 'session_resume'){
-		if (!preChecksStep?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
+		const preChecksSteps = convertDataIntoParse('preChecksSteps');
+		const getSecureFeature = getSecureFeatures();
+		const secureFeatures = getSecureFeature?.entities || [];
+		const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
+
+		if (!preChecksSteps?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
 			return 'ExamPreparation';
-		}if (!preChecksStep?.identityConfirmation && hasFeature('verify_id')) {
+		}if (!preChecksSteps?.identityConfirmation && hasFeature('verify_id')) {
 			return 'IdentityCardRequirement';
-		} else if(!preChecksStep?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
+		} else if(!preChecksSteps?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
 			return 'runSystemDiagnostics';
-		} else if(!preChecksStep?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
+		} else if(!preChecksSteps?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
 			return 'SystemRequirements';
-		} else if(!preChecksStep?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
+		} else if(!preChecksSteps?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
 			return 'Prevalidationinstruction';
 		}
-		else if(!preChecksStep?.userPhoto && hasFeature('verify_candidate')){
+		else if(!preChecksSteps?.userPhoto && hasFeature('verify_candidate')){
 			return 'IdentityVerificationScreenOne';
-		}else if(!preChecksStep?.identityCardPhoto && hasFeature('verify_id')){
+		}else if(!preChecksSteps?.identityCardPhoto && hasFeature('verify_id')){
 			return 'IdentityVerificationScreenTwo';
-		}else if(!preChecksStep?.audioDetection && hasFeature('record_audio')){
+		}else if(!preChecksSteps?.audioDetection && hasFeature('record_audio')){
 			return 'IdentityVerificationScreenThree';
-		}else if(!preChecksStep?.roomScanningVideo && hasFeature('record_room')){
+		}else if(!preChecksSteps?.roomScanningVideo && hasFeature('record_room')){
 			return 'IdentityVerificationScreenFour';
-		}else if(!preChecksStep?.mobileConnection && hasFeature('mobile_proctoring')){
+		}else if(!preChecksSteps?.mobileConnection && hasFeature('mobile_proctoring')){
 			return 'MobileProctoring';
-		}else if(!preChecksStep?.screenSharing || hasFeature('record_screen')){
+		}else if(!preChecksSteps?.screenSharing || hasFeature('record_screen')){
 			return 'IdentityVerificationScreenFive';
 		} else{
 			closeModal();
 		}
 	}else{
-		if (window.precheckCompleted && hasFeature('record_screen')) {
-			return 'IdentityVerificationScreenFive';
-		}else{
-			localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
-			return 'ExamPreparation';
+		return 'ExamPreparation';
+	}
+};
+
+export const findIncidentLevel = (ai_events) => {
+	let result = 'low';
+
+	for (const item of ai_events || []) {
+		const { endTime, startTime } = item;
+		const difference = endTime - startTime;
+
+		if (difference > 10) {
+			return 'high';
+		} else if (difference > 5) {
+			result = 'medium';
 		}
 	}
+	return result;
 };
 
 export const normalizeLanguage = (input) => {
@@ -1052,8 +1016,7 @@ export const normalizeLanguage = (input) => {
 		german:'de',
 		italian:'it',
 		dutch:'nl',
-		portugese:'pt',
-		welsh:'cy'
+		portugese:'pt'
 	};
 	return languageMap[input] || input;
 };
@@ -1080,15 +1043,14 @@ export const logger = {
 };
 
 export const initializeI18next = () => {
+	if (i18next.isInitialized) return;
+
 	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolLanguage?.language || 'en';
 
 	i18next.init({
 		lng: normalizeLanguage(defaultLanguage),
 		resources: {
-			cy: {
-				translation: require('../assets/locales/cy/translation.json')
-			}, 
 			en: {
 				translation: require('../assets/locales/en/translation.json')
 			}, 
@@ -1246,79 +1208,13 @@ export const getNetworkUploadSpeed = async () => {
 			const endTime = new Date().getTime();
 			const duration = (endTime - startTime) / 1000;
 			const bitsLoaded = myData.test.length * 8;
-			const speedBps = (bitsLoaded / duration).toFixed(2);
-			const speedKbps = (speedBps / 1024).toFixed(2);
-			const speedMbps = (speedKbps / 1024).toFixed(2);
-
-			return { 	
-				speedBps,
-				speedKbps,
-				speedMbps 
-			};
+			const speedMbps = ((bitsLoaded / duration) / 1024 / 1024).toFixed(2);
+	
+			return { speedMbps: speedMbps };
 		}
         
 	} catch (err) {
 		console.error(err);
 		return false;
 	}
-};
-
-export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) => {
-	const aiIncidentlevel = findAIIncidentLevel(aiEvents, profile);
-	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
-	
-	if (aiIncidentlevel === 'high' || browserIncidentlevel === 'high') {
-		return 'high';
-	} else if (aiIncidentlevel === 'medium' || browserIncidentlevel === 'medium') {
-		return 'medium';
-	} else {
-		return 'low';
-	}
-};
-
-export const findAIIncidentLevel = (aiEvents = [], profile) => {	
-	let result = 'low';
-	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
-	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
-
-	for (const item of aiEvents) {
-		const difference = item.endTime - item.startTime;
-		if (difference >= metrics[item.name]) {
-			result = 'high';
-			break;
-		} else if (difference >= profile?.settings?.proctoring_behavior?.metrics[item.name] / 2) {
-			result = 'medium';
-		}
-	}
-	return result;
-};
-
-export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
-	let result = 'low';
-
-	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
-	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
-
-	let copyPasteCutEvents = browserEvents.filter(item => item.name === 'copy_paste_cut');
-	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
-	let navigatingAwayEvents = browserEvents.filter(item =>
-		['moved_away_from_page', 'moved_to_another_app', 'moved_to_another_window'].includes(item.name)
-	);
-
-	if (
-		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] ||
-		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] ||
-		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away']
-	) {
-		result = 'high';
-	} else if (
-		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] / 2 ||
-		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] / 2 ||
-		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away'] / 2
-	) {
-		result = 'medium';
-	}
-
-
-	return result;
 };

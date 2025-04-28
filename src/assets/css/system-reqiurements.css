@@ -10,22 +10,20 @@
   }
 }
 
-.system-requirement-test-screen .system-requirement-heading {
+.system-requirement-test-screen .heading {
   font-weight: 600;
   font-size: 32px;
   margin-bottom: 0;
   margin-top: 31px;
   text-align: center;
   margin-top: 25px;
-  font-style: var(--font-style);
-  color: var(--text-color);
 }
 
 .system-requirement-test-screen .container-prompt {
   width: 97%;
 }
 
-.system-requirement-test-screen .system-requirement-description {
+.system-requirement-test-screen .description {
   font-family: Poppins, sans-serif;
   font-style: normal;
   font-weight: normal;
@@ -35,11 +33,10 @@
   color: #8D979F;
   width: 650px;
   margin: 30px auto 0;
-  font-style: var(--font-style);
 }
 
 @media (max-width: 720px) {
-  .system-requirement-test-screen .system-requirement-description {
+  .system-requirement-test-screen .description {
     width: 98%;
   }
 }
@@ -76,7 +73,7 @@
 .system-requirement-test-screen .red-box,
 .system-requirement-test-screen .green-box {
   border-radius: 4px;
-  width: 42%;
+  width: 38%;
   height: 100px;
   display: flex;
   position: relative;
@@ -142,9 +139,6 @@
   gap: 10px;
   align-items: center;
 }
-.system-requirement-test-screen .grey-box-right label{
-  color: var(--text-color);
-}
 
 .system-requirement-test-screen .grey-box-right img {
   width: 42px;
@@ -185,6 +179,7 @@
 .system-requirement-test-screen .button-section {
   display: flex;
   justify-content: center;
+  margin-top: 40px;
 }
 
 @media (max-width: 720px) {

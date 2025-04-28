@@ -1,14 +1,22 @@
 import axiosInstance from '../utils/axios.js';
-import { authenticatedRequest } from '../utils/functions.js';
+import { getAuthenticationToken } from '../utils/functions.js';
 
 export const changeCandidateAssessmentStatus = async (data) => {
-	return authenticatedRequest(config => 
-		axiosInstance.put('/candidates/custom_candidate_assessment/',data,config)
-	);
+	const token =  getAuthenticationToken();
+	const config = {
+		headers: {
+			token: token,
+		},
+	};
+	return axiosInstance.put('/candidates/custom_candidate_assessment/', data, config);
 };
 
 export const customCandidateAssessmentStatus = async (data) => {
-	return authenticatedRequest(config => 
-		axiosInstance.post('/candidates/custom_candidate_assessment/',data,config)
-	);
+	const token =  getAuthenticationToken();
+	const config = {
+		headers: {
+			token: token,
+		},
+	};
+	return axiosInstance.post('/candidates/custom_candidate_assessment/', data, config);
 };

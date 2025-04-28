@@ -1,8 +1,12 @@
-import { authenticatedRequest } from '../utils/functions';
+import { getAuthenticationToken } from '../utils/functions';
 import axios from '../utils/axios.js';
 
 export const createCandidate = async (data) => {
-	return authenticatedRequest(config => 
-		axios.post('/candidates/candidate_candidate/',data,config)
-	);
+	const mereosToken = getAuthenticationToken();
+	const config = {
+		headers: {
+			token: mereosToken,
+		},
+	};
+	return axios.post('/candidates/candidate_candidate/', data, config);
 };

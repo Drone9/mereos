@@ -6,7 +6,7 @@
 	flex-direction: column;
 }
 
-.ivso-first-wrapper {
+.ivso-wrapper {
 	display: flex;
 	flex-direction: column;
 }
@@ -17,13 +17,13 @@
 }
 .ivso-header-title {
 	font-family: Poppins;
-	color: var(--text-color);
 	font-style: var(--font-style);
 	font-weight: bold;
 	font-size: 32px;
 	display: flex;
 	align-items: center;
 	text-align: center;
+	color: #222222;
 	margin: 0px auto 7px;
 }
 

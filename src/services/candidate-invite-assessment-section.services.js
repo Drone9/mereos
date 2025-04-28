@@ -1,15 +1,23 @@
 import axiosInstance from '../utils/axios.js';
-import { authenticatedRequest } from '../utils/functions.js';
+import { getAuthenticationToken } from '../utils/functions.js';
 
 export const getCandidateInviteAssessmentSection = async (params) => {
-	return authenticatedRequest(config => 
-		axiosInstance.post(`assessment/public_candidate_invite_assessment_section/`,config),
-	params
-	);
+	const token =  getAuthenticationToken();
+	const config = {
+		headers: {
+			token:token,
+		},
+		params: params
+	};
+	return axiosInstance.get(`assessment/public_candidate_invite_assessment_section/`, config);
 };
 
 export const changeCandidateInviteAssessmentSectionStatus = async (data) => {
-	return authenticatedRequest(config => 
-		axiosInstance.put(`assessment/public_candidate_invite_assessment_section/`,data,config),
-	);
+	const token =  getAuthenticationToken();
+	const config = {
+		headers: {
+			token: token,
+		},
+	};
+	return axiosInstance.put('/assessment/change_candidate_invite_assessment_section_status/', data, config);
 };

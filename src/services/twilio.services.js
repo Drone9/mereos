@@ -1,35 +1,55 @@
 import axiosInstance from '../utils/axios';
-import { authenticatedRequest } from '../utils/functions';
+import { getAuthenticationToken } from '../utils/functions';
 
 export const getRoomSid = async (params) => {
-	return authenticatedRequest(config => 
-		axiosInstance.get('/twilio/create_room/',config),
-	params
-	);
+	const token = getAuthenticationToken();
+	const config = {
+		headers: {
+			token: `${token}`,
+		},
+		params
+	};
+	return axiosInstance.get(`/twilio/create_room/`, config);
 };
 
 export const getRecordings = async (params) => {
-	return authenticatedRequest(config => 
-		axiosInstance.get('/twilio/get_recordings_sid/',config),
-	params
-	);
+	const token = getAuthenticationToken();
+	const config = {
+		headers: {
+			token: `${token}`,
+		},
+		params
+	};
+	return axiosInstance.get('/twilio/get_recordings_sid/', config);
 };
 
 export const getToken = async (params) => {
-	return authenticatedRequest(config => 
-		axiosInstance.get('/twilio/get-token/',config),
-	params
-	);
+	const token = getAuthenticationToken();
+	const config = {
+		headers: {
+			token: `${token}`,
+		},
+		params
+	};
+	return axiosInstance.get(`/twilio/get-token/`, config);
 };
 
 export const getRecordingSid = async (data) => {
-	return authenticatedRequest(config => 
-		axiosInstance.post('/twilio/get_SID/',data,config)
-	);
+	const token = getAuthenticationToken();
+	const config = {
+		headers: {
+			token: `${token}`,
+		}
+	};
+	return axiosInstance.post(`/twilio/get_SID/`, data, config);
 };
 
 export const getCreateRoom = async (data) => {
-	return authenticatedRequest(config => 
-		axiosInstance.post('/twilio/candidate_get_create_room/',data,config)
-	);
+	const token = getAuthenticationToken();
+	const config = {
+		headers: {
+			token: `${token}`,
+		}
+	};
+	return axiosInstance.post('/twilio/candidate_get_create_room/', data, config);
 };

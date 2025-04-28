@@ -166,7 +166,7 @@
   display: flex;
   align-items: center;
   text-align: center;
-  color: var(--text-color);
+  color: #222222;
   margin: 15px auto 0px;
 }
 

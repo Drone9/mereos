@@ -23,7 +23,6 @@
   margin: auto;
   gap: 10px;
   display: flex;
-  margin-top: 15px;
   justify-content: center;
 }
 .multi-device-block select {
@@ -39,14 +38,8 @@
 .camera-container{
   width: 35%;
 }
-.camera-container select{
-  font-style: var(--font-style);
-}
 .microphone-container{
   width: 35%;
-}
-.microphone-container select{
-  font-style: var(--font-style);
 }
 .pvi-header-title {
   font-family: Poppins, sans-serif;
@@ -58,7 +51,6 @@
   text-align: center;
   color: #222222;
   margin: 0px auto 0px;
-  color: var(--text-color);
 }
 .my-recorded-video{
   height: 245px;
@@ -91,12 +83,12 @@
 .pvi-instruction-txt {
   font-family: Poppins, sans-serif;
   font-style: var(--font-style);
-  color: var(--text-color);
   font-weight: 500;
   font-size: 13px;
   line-height: 24px;
   display: flex;
   align-items: center;
+  color: #222222;
   margin: 0px 15px 0px 5px;
 }
 
@@ -114,7 +106,7 @@
 }
 
 .pvi-btn-container {
-  margin: 0px 0px 0px;
+  margin: 10px 0px 0px;
   text-align: center;
 }
 

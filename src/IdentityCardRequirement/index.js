@@ -2,7 +2,7 @@ import '../assets/css/identity-card.css';
 import { logger, registerEvent, updatePersistData } from '../utils/functions';
 import i18next from 'i18next';
 import { ASSET_URL } from '../utils/constant';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 const vectors = [
 	{ name: 'img1', src: `${ASSET_URL}/oc-address.svg`, alt: '' },
@@ -31,7 +31,7 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
     
 	tabContent.innerHTML = '';
 
-	let mobileContainer = document?.getElementById('mobile-proctoring');
+	let mobileContainer = shadowRoot?.getElementById('mobile-proctoring');
 	if (mobileContainer) {
 		mobileContainer.innerHTML = '';
 	}
@@ -65,7 +65,7 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
     `);
     
 	// Add CSS styles if needed
-	if (!document.getElementById('identity-card-styles')) {
+	if (!shadowRoot.getElementById('identity-card-styles')) {
 		const styleElement = document.createElement('style');
 		styleElement.id = 'identity-card-styles';
 		styleElement.textContent = `
@@ -75,7 +75,7 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 	}
     
 	// Add event listener to the continue button
-	document.getElementById('continue-button').addEventListener('click', nextPage);
+	shadowRoot.getElementById('continue-button').addEventListener('click', nextPage);
     
 	// Handle language changes only for this component
 	const languageChangeHandler = () => {
@@ -97,7 +97,7 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 
 // Global language change handler for when this tab becomes active
 i18next.on('languageChanged', () => {
-	const activeTab = document.querySelector('.tab-content.active');
+	const activeTab = shadowRoot.querySelector('.tab-content.active');
 	if (activeTab && activeTab.id === 'IdentityCardRequirement') {
 		IdentityCardRequirement(activeTab);
 	}

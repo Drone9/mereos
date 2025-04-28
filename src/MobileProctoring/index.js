@@ -9,6 +9,7 @@ import { initSocket } from '../utils/socket';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
+import { shadowRoot } from '../ExamsPrechecks';
 
 import '../assets/css/mobile-proctoring.css';
 
@@ -79,7 +80,7 @@ export const MobileProctoring = async (tabContent) => {
 
 						if (peerInstance) { 
 							const call = peerInstance.call(eventData?.message?.message, mediaStream);
-							let remoteVideo = document.getElementById('remote-mobile-video-container');
+							let remoteVideo = shadowRoot.getElementById('remote-mobile-video-container');
 				
 							call?.on('stream', (remoteStream) => {
 								remoteVideo.srcObject = remoteStream;
@@ -182,8 +183,8 @@ export const MobileProctoring = async (tabContent) => {
 			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
 			updatePersistData('preChecksSteps', { mobileConnection: true });
 			showTab('IdentityVerificationScreenFive');
-			let container = document.getElementById('mobile-proctoring');
-			if (container) {
+			let container = shadowRoot.getElementById('mobile-proctoring');
+			if(container){
 				container.innerHTML = '';
 			}
 			if (remoteVideoRef) {
@@ -338,13 +339,13 @@ export const MobileProctoring = async (tabContent) => {
 	}
 
 	function setupEventListeners(step) {
-		const downloadCanvas = document.getElementById('download-qr-canvas');
-		const tokenCanvas = document.getElementById('token-qr-canvas');
+		const downloadCanvas = shadowRoot.getElementById('download-qr-canvas');
+		const tokenCanvas = shadowRoot.getElementById('token-qr-canvas');
 		const socketGroupIds = JSON.parse(localStorage.getItem('socketGroupId'));
 		switch (step) {
 			case '':
-				document.getElementById('already-have-app-btn')?.addEventListener('click', () => prevStep('tokenCode'));
-				document.getElementById('download-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
+				shadowRoot.getElementById('already-have-app-btn')?.addEventListener('click', () => prevStep('tokenCode'));
+				shadowRoot.getElementById('download-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
 				break;
 				
 			case 'downloadApp':
@@ -353,8 +354,8 @@ export const MobileProctoring = async (tabContent) => {
 						if (error) logger.error('error in QR code', error);
 					});
 				}
-				document.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
-				document.getElementById('downloaded-app-btn')?.addEventListener('click', () => nextStep('tokenCode'));
+				shadowRoot.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
+				shadowRoot.getElementById('downloaded-app-btn')?.addEventListener('click', () => nextStep('tokenCode'));
 				break;
 				
 			case 'tokenCode':
@@ -367,20 +368,20 @@ export const MobileProctoring = async (tabContent) => {
 						if (error) logger.error('Error in QR code', error);
 					});
 				}
-				document.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
-				document.getElementById('no-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
+				shadowRoot.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
+				shadowRoot.getElementById('no-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
 				break;
 				
 			default: 
-				document.getElementById('video-check')?.addEventListener('change', (e) => {
+				shadowRoot.getElementById('video-check')?.addEventListener('change', (e) => {
 					checkedVideo = e.target.checked;
-					const nextBtn = document.getElementById('next-btn');
+					const nextBtn = shadowRoot.getElementById('next-btn');
 					if (nextBtn) {
 						nextBtn.disabled = !checkedVideo || disabledNextBtn;
 					}
 				});
-				document.getElementById('previous-btn')?.addEventListener('click', () => prevStep());
-				document.getElementById('next-btn')?.addEventListener('click', () => nextStep('step4'));
+				shadowRoot.getElementById('previous-btn')?.addEventListener('click', () => prevStep());
+				shadowRoot.getElementById('next-btn')?.addEventListener('click', () => nextStep('step4'));
 				break;
 		}
 	}

@@ -1,7 +1,8 @@
 import i18next from 'i18next';
-import 'notyf/notyf.min.css';
+import '../assets/css/modal.css';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
-import { ASSET_URL,examPreparationSteps,languages,  preChecksSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from '../utils/constant';
+import { ASSET_URL,examPreparationSteps,examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,languages,  MobileProctoringCss,  modalCss,  preChecksSteps, preValidationCss, prevalidationSteps, spinner, SYSTEM_REQUIREMENT_STEP, systemDiagnosticCss, systemDiagnosticSteps, systemRequirementCss } from '../utils/constant';
+import 'notyf/notyf.min.css';
 import 'notyf/notyf.min.css';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
 import { SystemDiagnostics } from '../SystemDiagnostic';
@@ -24,7 +25,27 @@ const modal = document.createElement('div');
 modal.className = 'modal';
 modal.id = 'precheck-modal';
 
-modal.insertAdjacentHTML('beforeend', `
+export const shadowRoot = modal.attachShadow({ mode: 'open' });
+const mainStylying = document.createElement('style');
+mainStylying.textContent = `
+	${spinner}
+	${examPreprationCss} 
+	${modalCss} 
+	${systemDiagnosticCss} 
+	${preValidationCss} 
+	${IdentityVerificationScreenOneCss} 
+	${identityStepsCss} 
+	${IdentityVerificationScreenTwoCss} 
+	${IdentityVerificationScreenThreeCss} 
+	${IdentityVerificationScreenFourCss} 
+	${IdentityVerificationScreenFiveCss} 
+	${MobileProctoringCss}
+	${identityCardCss}
+	${systemRequirementCss}`;
+
+shadowRoot.appendChild(mainStylying);
+
+shadowRoot.innerHTML += `
   <div class="modal-content">
     <div class="tabs-container"></div>
     <div class="tab-contents-wrapper">
@@ -41,22 +62,21 @@ modal.insertAdjacentHTML('beforeend', `
       <div class="tab-content" id="MobileProctoring"></div>
     </div>
   </div>
-`);
+`;
 
-const modalContent = modal.querySelector('.modal-content');
-const tabContentsWrapper = modal.querySelector('.tab-contents-wrapper');
+const modalContent = shadowRoot.querySelector('.modal-content');
 
-const ExamPreparationContainer = modal.querySelector('#ExamPreparation');
-const IdentityCardRequirementContainer = modal.querySelector('#IdentityCardRequirement');
-const SystemDiagnosticsContainer = modal.querySelector('#runSystemDiagnostics');
-const SystemRequirementContainer = modal.querySelector('#SystemRequirements');
-const IdentityVerificationScreenOneContainer = modal.querySelector('#IdentityVerificationScreenOne');
-const IdentityVerificationScreenTwoConatiner = modal.querySelector('#IdentityVerificationScreenTwo');
-const IdentityVerificationScreenThreeContainer = modal.querySelector('#IdentityVerificationScreenThree');
-const IdentityVerificationScreenFourContainer = modal.querySelector('#IdentityVerificationScreenFour');
-const IdentityVerificationScreenFiveContainer = modal.querySelector('#IdentityVerificationScreenFive');
-const PrevalidationinstructionContainer = modal.querySelector('#Prevalidationinstruction');
-const mobileProctingContainer = modal.querySelector('#MobileProctoring');
+const ExamPreparationContainer = shadowRoot.querySelector('#ExamPreparation');
+const IdentityCardRequirementContainer = shadowRoot.querySelector('#IdentityCardRequirement');
+const SystemDiagnosticsContainer = shadowRoot.querySelector('#runSystemDiagnostics');
+const SystemRequirementContainer = shadowRoot.querySelector('#SystemRequirements');
+const IdentityVerificationScreenOneContainer = shadowRoot.querySelector('#IdentityVerificationScreenOne');
+const IdentityVerificationScreenTwoConatiner = shadowRoot.querySelector('#IdentityVerificationScreenTwo');
+const IdentityVerificationScreenThreeContainer = shadowRoot.querySelector('#IdentityVerificationScreenThree');
+const IdentityVerificationScreenFourContainer = shadowRoot.querySelector('#IdentityVerificationScreenFour');
+const IdentityVerificationScreenFiveContainer = shadowRoot.querySelector('#IdentityVerificationScreenFive');
+const PrevalidationinstructionContainer = shadowRoot.querySelector('#Prevalidationinstruction');
+const mobileProctingContainer = shadowRoot.querySelector('#MobileProctoring');
 
 const initializeLiveChat = () => {
 	const isLoggedIn = !!getAuthenticationToken();
@@ -202,8 +222,6 @@ const initializeLiveChat = () => {
 	});
 };
 
-modalContent.appendChild(tabContentsWrapper);
-
 const navigate = (newTabId) => {
 	showTab(newTabId);
 };
@@ -286,13 +304,14 @@ const openModal = async (callback) => {
 	createLanguageDropdown();
 };
 
+
 function closeModal() {
 	if (typeof window.globalCallback === 'function') {
 		window.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
 		window.precheckCompleted = true;
 	}
 
-	modal.style.display = 'none';
+	modal.style.display = 'block';
 	modal.remove();
 
 	if(!getAuthenticationToken()){
@@ -341,16 +360,16 @@ const showTab = async (tabId, callback) => {
 		loadZendeskWidget();
 		updateThemeColor();
 
-		const tabs = document.querySelectorAll('.tab');
-		const tabContents = document.querySelectorAll('.tab-content');
+		const tabs = shadowRoot.querySelectorAll('.tab');
+		const tabContents = shadowRoot.querySelectorAll('.tab-content');
 
 		tabs.forEach(tab => {
 			tab.classList.remove('active');
-			if (tab.dataset.tab === tabId) {
+			if (tab.dataset.tab === tabId) {	
 				tab.classList.add('active');
 			}
 		});
-
+		
 		tabContents.forEach(content => {
 			content.classList.remove('active');
 			if (content.id === tabId) {

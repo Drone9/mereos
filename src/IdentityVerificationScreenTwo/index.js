@@ -1,6 +1,6 @@
 import i18next from 'i18next';
 
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
@@ -223,9 +223,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const setupEventListeners = () => {
-		document.querySelector('#upload-identity-card')?.addEventListener('click', () => inputFile.click());
+		shadowRoot.querySelector('#upload-identity-card')?.addEventListener('click', () => inputFile.click());
 		
-		document.querySelectorAll('.orange-filled-btn, .orange-hollow-btn').forEach(button => {
+		shadowRoot.querySelectorAll('.orange-filled-btn, .orange-hollow-btn').forEach(button => {
 			const action = button.getAttribute('data-action');
 			if (action === 'take-photo') button.addEventListener('click', capturePhoto);
 			if (action === 'restart') button.addEventListener('click', handleRestart);

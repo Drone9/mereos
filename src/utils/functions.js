@@ -748,68 +748,81 @@ export const removeUnfocusListener = () => {
 };
 
 export const preventShortCuts = (allowedFunctionKeys = []) => {
-	return new Promise((resolve, _reject) => {
-		document.onkeydown = (event) => {
-			event = event || window.event;
+	return new Promise((resolve) => {
+		const blockedKeys = new Set([
+			27,   // Escape
+			91,   // Meta (Windows/Command key)
+			44,   // Print Screen
+			173,  // Volume Mute
+			174,  // Volume Down
+			175,  // Volume Up
+			176,  // Next Track
+			177,  // Previous Track
+			178,  // Stop Media
+			179,  // Play/Pause
+			180,  // Mail
+			181,  // Select Media
+			182,  // Start Application 1
+			183,  // Start Application 2
+			145,  // Scroll Lock
+			// Function keys (F1-F12)
+			...Array.from({length: 12}, (_, i) => 112 + i)
+		]);
 
-			// List of key codes to be blocked
-			const blockedKeys = [
-				27,  // Escape
-				91,  // Meta (Windows key, Command key on Mac)
-				112, // F1
-				113, // F2
-				114, // F3
-				115, // F4
-				116, // F5
-				117, // F6
-				118, // F7
-				119, // F8
-				120, // F9
-				121, // F10
-				122, // F11
-				123, // F12
-				91, // window btn
-				44, // Print Screen,
-				173,
-				174,
-				114,
-				145,
-			];
+		const isAlphabetKey = (key) => /^[a-zA-Z]$/.test(key);
+		const isFunctionKey = (keyCode) => keyCode >= 112 && keyCode <= 123;
+		const isNumericKey = (keyCode) => keyCode >= 48 && keyCode <= 57;
 
-			if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
-				event.preventDefault();
-				event.stopPropagation();
-			}
+		const handleKeyDown = (event) => {
+			const {key, keyCode, ctrlKey, metaKey, shiftKey, altKey} = event;
 
-			// Check for Ctrl/Meta + any alphabet key
-			if (
-				(event.ctrlKey || event.metaKey) && 
-							'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(event.key) !== -1
-			) {
-				event.preventDefault();
-				event.stopPropagation();
-			}
-
-			// Check for Ctrl + Shift + any alphabet key
-			if (
-				(event.ctrlKey || event.metaKey) && event.shiftKey &&
-							'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(event.key) !== -1
-			) {
-				event.preventDefault();
-				event.stopPropagation();
-			}
-
-			// Check for specific function keys and other special keys
-			if (blockedKeys.includes(event.keyCode)) {
-				// Allow specific function key combinations if they are in the allowed list
-				if (event.keyCode >= 112 && event.keyCode <= 123 && allowedFunctionKeys.includes(event.keyCode)) {
-					return; // Allow the function key if it is in the allowed list
+			if (ctrlKey || metaKey) {
+				if (key.toLowerCase() === 'n' || key.toLowerCase() === 't') {
+					event.preventDefault();
+					event.stopPropagation();
+					event.stopImmediatePropagation();
+					return;
 				}
 
+				if (isAlphabetKey(key) || 
+            ['p', 's', 'o', 'u', 'i', 'w', 'f', 'tab'].includes(key.toLowerCase())) {
+					event.preventDefault();
+					event.stopPropagation();
+					event.stopImmediatePropagation();
+					return;
+				}
+			}
+
+			if ((ctrlKey || metaKey) && shiftKey && isAlphabetKey(key)) {
 				event.preventDefault();
 				event.stopPropagation();
+				event.stopImmediatePropagation();
+				return;
+			}
+
+			if (altKey && (isAlphabetKey(key) || isNumericKey(keyCode) || 
+          ['tab', 'f4'].includes(key.toLowerCase()))) {
+				event.preventDefault();
+				event.stopPropagation();
+				event.stopImmediatePropagation();
+				return;
+			}
+
+			if (blockedKeys.has(keyCode)) {
+				if (isFunctionKey(keyCode) && allowedFunctionKeys.includes(keyCode)) {
+					return;
+				}
+        
+				event.preventDefault();
+				event.stopPropagation();
+				event.stopImmediatePropagation();
 			}
 		};
+
+		// Add event listener with high priority
+		document.addEventListener('keydown', handleKeyDown, {capture: true, passive: false});
+		window.addEventListener('keydown', handleKeyDown, {capture: true, passive: false});
+
 		resolve(true);
 	});
 };
@@ -1036,6 +1049,7 @@ export const handlePreChecksRedirection = () => {
 	const preChecksStep = convertDataIntoParse('preChecksSteps');
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
+	const navHistory = localStorage.getItem('navHistory');
 	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
 	if(sessionSetting === 'session_resume'){
@@ -1066,7 +1080,7 @@ export const handlePreChecksRedirection = () => {
 			closeModal();
 		}
 	}else{
-		if (window.precheckCompleted && hasFeature('record_screen')) {
+		if ((window.precheckCompleted && hasFeature('record_screen')) || navHistory?.includes('IdentityVerificationScreenFive')) {
 			return 'IdentityVerificationScreenFive';
 		}else{
 			localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));

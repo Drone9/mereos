@@ -88,11 +88,11 @@ const initializeLiveChat = () => {
 
 	const existingChatIcon = document.getElementById('chat-icon');
 	const existingChatContainer = document.getElementById('talkjs-container');
-	
+  
 	if (existingChatIcon) {
 		existingChatIcon.style.display = 'block';
 		if (existingChatContainer) {
-			existingChatContainer.style.display = 'block';
+			existingChatContainer.style.display = 'none';
 		}
 		return;
 	}
@@ -167,14 +167,23 @@ const initializeLiveChat = () => {
 	});
 
 	let clickStartTime = 0;
+	let isDragging = false;
+
 	chatIcon.addEventListener('mousedown', (e) => {
 		e.stopPropagation();
 		clickStartTime = Date.now();
+		isDragging = false;
+	});
+
+	chatIcon.addEventListener('mousemove', () => {
+		if (Date.now() - clickStartTime > 50) {
+			isDragging = true;
+		}
 	});
 
 	chatIcon.addEventListener('click', (e) => {
 		e.stopPropagation();
-		if (Date.now() - clickStartTime < 200) {
+		if (!isDragging && Date.now() - clickStartTime < 200) {
 			chatContainer.style.display = chatContainer.style.display === 'none' ? 'block' : 'none';
 		}
 	});
@@ -189,37 +198,39 @@ const initializeLiveChat = () => {
 		}
 	});
 
-	Talk.ready.then(() => {
-		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+	if (!existingChatContainer) {
+		Talk.ready.then(() => {
+			const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 
-		const me = new Talk.User({
-			id: candidateInviteAssessmentSection?.candidate?.id,
-			name: candidateInviteAssessmentSection?.candidate?.name,
-			email: candidateInviteAssessmentSection?.candidate?.email,
-			photoUrl: candidateInviteAssessmentSection?.candidate?.photo || `${ASSET_URL}/profile-draft-circled-orange.svg`,
+			const me = new Talk.User({
+				id: candidateInviteAssessmentSection?.candidate?.id,
+				name: candidateInviteAssessmentSection?.candidate?.name,
+				email: candidateInviteAssessmentSection?.candidate?.email,
+				photoUrl: candidateInviteAssessmentSection?.candidate?.photo || `${ASSET_URL}/profile-draft-circled-orange.svg`,
+			});
+
+			const session = new Talk.Session({
+				appId: 'tl1lE0Vo',
+				me: me,
+			});
+
+			const other = new Talk.User({
+				id: candidateInviteAssessmentSection?.school?.id,
+				name: candidateInviteAssessmentSection?.school?.name,
+				email: candidateInviteAssessmentSection?.school?.email,
+				photoUrl: `${ASSET_URL}/profile-draft-circled-orange.svg`,
+			});
+
+			const conversationId = localStorage.getItem('conversationId');
+			const conversation = session.getOrCreateConversation(conversationId);
+			conversation.setParticipant(me);
+			conversation.setParticipant(other);
+
+			const chatbox = session.createChatbox();
+			chatbox.select(conversation);
+			chatbox.mount(chatContainer);
 		});
-
-		const session = new Talk.Session({
-			appId: 'tl1lE0Vo',
-			me: me,
-		});
-
-		const other = new Talk.User({
-			id: candidateInviteAssessmentSection?.school?.id,
-			name: candidateInviteAssessmentSection?.school?.name,
-			email: candidateInviteAssessmentSection?.school?.email,
-			photoUrl: `${ASSET_URL}/profile-draft-circled-orange.svg`,
-		});
-
-		const conversationId = localStorage.getItem('conversationId');
-		const conversation = session.getOrCreateConversation(conversationId);
-		conversation.setParticipant(me);
-		conversation.setParticipant(other);
-
-		const chatbox = session.createChatbox();
-		chatbox.select(conversation);
-		chatbox.mount(chatContainer);
-	});
+	}
 };
 
 const navigate = (newTabId) => {
@@ -296,9 +307,11 @@ const openModal = async (callback) => {
 	document.body.appendChild(modal);
 	modal.style.display = 'block';
 	const existingHeader = document.querySelector('.header');
+
 	if (existingHeader) {
 		existingHeader.remove();
 	}	
+
 	const activeTab = handlePreChecksRedirection(callback);
 	const preChecksStep = JSON.parse(localStorage.getItem('preChecksSteps'));
 
@@ -308,7 +321,6 @@ const openModal = async (callback) => {
 	showTab(activeTab, callback);
 	createLanguageDropdown();
 };
-
 
 function closeModal() {
 	if (typeof window.globalCallback === 'function') {

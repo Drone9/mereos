@@ -141,6 +141,11 @@ async function start_prechecks(callback,setting) {
 			localStorage.removeItem('mereosToken');
 			return callback(tokenExpiredError);
 		}
+		
+		if(!setting){
+			localStorage.removeItem('navHistory');
+		}
+
 		localStorage.setItem('precheckSetting', setting);
 		window.precheckCompleted=false;
 		startSession();
@@ -161,10 +166,16 @@ window.stopPrecheckCallBack = null;
 async function stop_prechecks(callback) {
 	try {
 		window.stopPrecheckCallBack = callback;
+		const sessionSetting = localStorage.getItem('precheckSetting');
 		const modal = document.getElementById('precheck-modal');
 		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');
+		logger.success('sessionSetting',sessionSetting);
 
+		if(sessionSetting !== 'session_resume'){
+			localStorage.removeItem('preChecksSteps');
+			localStorage.setItem('navHistory',JSON.stringify([]));
+		}
 		if (chatIcons.length > 0) {
 			chatIcons.forEach(icon => {
 				icon.style.display = 'none';

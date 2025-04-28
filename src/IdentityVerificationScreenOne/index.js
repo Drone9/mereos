@@ -239,7 +239,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		renderIdentityVerificationSteps(stepsContainer, 1);
         
 		const messageColorStyle = (state.msg.type === 'unsuccessful' || 
-                                  state.msg.type === 'something_went_wrong_please_upload_again') 
+      state.msg.type === 'something_went_wrong_please_upload_again') 
 			? 'style="color: #E95E5E;"' : '';
         
 		let contentHTML = `

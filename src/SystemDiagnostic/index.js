@@ -86,7 +86,7 @@ const renderUI = (tab1Content) => {
 
 	tab1Content.innerHTML = html;
 
-	shadowRoot.getElementById('diagnosticContinueBtn').addEventListener('click', () => {
+	shadowRoot.getElementById('diagnosticContinueBtn')?.addEventListener('click', () => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
         

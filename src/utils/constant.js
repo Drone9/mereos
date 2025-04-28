@@ -427,7 +427,8 @@ export const examPreprationCss = `.exam-preparation-container {
 }
 `;
 
-export const modalCss = `@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+export const modalCss = `
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 
 body {
   font-family: 'Poppins', sans-serif;
@@ -504,6 +505,7 @@ body {
   font-size: 14px !important;
   font-weight: 400 !important;
   cursor: pointer;
+  color: var(--text-color);
 }
 .close {
   color: #aaa;
@@ -598,11 +600,12 @@ body {
   position: absolute;
   top: 42px;
   right: -70px;
-  background-color: white;
+  background-color: var(--theme-mode);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
   display: none;
+  border: 1px solid white;
 }
 
 .dropdown-content.active {
@@ -850,6 +853,7 @@ export const systemRequirementCss = `
   }
 }
 `;
+
 export const systemDiagnosticCss =`.system-diagnostic-test-screen {
   display: flex;
   flex-direction: column;
@@ -1142,7 +1146,7 @@ export const systemDiagnosticCss =`.system-diagnostic-test-screen {
 	font-weight: 500;
 	border-radius: 5px;
 	padding: 10px 20px;
-  background-color: #ffffff; 
+  background-color: var(--theme-mode);
   font-style: var(--font-style);
   border: 1px solid var(--theme-color);
   cursor: pointer;
@@ -1202,8 +1206,7 @@ export const systemDiagnosticCss =`.system-diagnostic-test-screen {
 	}
 }`;
 
-export const preValidationCss = `
-.pvi-container {
+export const preValidationCss = `.pvi-container {
   display: flex;
   flex-direction: column;
   margin: auto;
@@ -1218,10 +1221,7 @@ export const preValidationCss = `
 }
 
 .pvi-header-img {
-    margin: 20px auto 0px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  margin: 20px auto 0px;
 }
 .pvi-instruction-img{
   width: 40px;
@@ -1231,6 +1231,7 @@ export const preValidationCss = `
   margin: auto;
   gap: 10px;
   display: flex;
+  margin-top: 15px;
   justify-content: center;
 }
 .multi-device-block select {
@@ -1246,8 +1247,18 @@ export const preValidationCss = `
 .camera-container{
   width: 35%;
 }
+.camera-container select{
+  font-style: var(--font-style);
+  background-color:var(--theme-mode);
+  color: var(--text-color);
+}
 .microphone-container{
   width: 35%;
+}
+.microphone-container select{
+  font-style: var(--font-style);
+  background-color:var(--theme-mode);
+  color: var(--text-color);
 }
 .pvi-header-title {
   font-family: Poppins, sans-serif;
@@ -1255,11 +1266,11 @@ export const preValidationCss = `
   font-weight: bold;
   font-size: 26px;
   display: flex;
-  justify-content: center;
   align-items: center;
   text-align: center;
   color: #222222;
   margin: 0px auto 0px;
+  color: var(--text-color);
 }
 .my-recorded-video{
   height: 245px;
@@ -1272,7 +1283,6 @@ export const preValidationCss = `
   line-height: 160%;
   display: flex;
   align-items: center;
-  justify-content: center;
   text-align: center;
   color: #8D979F;
   margin: 0px auto 0px;
@@ -1293,12 +1303,12 @@ export const preValidationCss = `
 .pvi-instruction-txt {
   font-family: Poppins, sans-serif;
   font-style: var(--font-style);
+  color: var(--text-color);
   font-weight: 500;
   font-size: 13px;
   line-height: 24px;
   display: flex;
   align-items: center;
-  color: #222222;
   margin: 0px 15px 0px 5px;
 }
 
@@ -1306,7 +1316,6 @@ export const preValidationCss = `
   font-family: Poppins, sans-serif;
   font-style: var(--font-style);
   font-weight: normal;
-  justify-content: center;
   font-size: 14px;
   line-height: 21px;
   display: flex;
@@ -1317,7 +1326,7 @@ export const preValidationCss = `
 }
 
 .pvi-btn-container {
-  margin: 10px 0px 0px;
+  margin: 0px 0px 0px;
   text-align: center;
 }
 
@@ -1952,7 +1961,9 @@ export const IdentityVerificationScreenThreeCss = `.ivst-container {
 
 .ivst-container .ivst-audio-text {
   padding: 10px 20px;
-  background-color: #f7f9fc;
+  background-color: var(--theme-mode);
+  color: var(--text-color);
+	border: 1px solid white;
   font-weight: 500;
   font-size: 16px;
   line-height: 140%;

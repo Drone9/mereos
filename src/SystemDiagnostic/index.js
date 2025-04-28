@@ -66,11 +66,11 @@ const renderUI = (tab1Content) => {
 
 	const html = `
     <div class="system-diagnostic-test-screen">
-        <h1 class="heading">${i18next.t('system_diagnostic')}</h1>
+        <h1 class="heading">${i18next.t('system_diagnostics')}</h1>
         <div class="diagnostic-status container-box">
             <div class="container">
                 <div class="container-top"></div>
-                <label class="description">${i18next.t('system_diagnostic_msg')}</label>
+                <label class="description">${i18next.t('system_diagnostics_msg')}</label>
                 <div class="container-prompt"></div>
                 <img src="${ASSET_URL}/microphone-${i18next.language || 'en'}.svg" alt="" id="microphone-img" width="350" class="prompt-image">
                 <div class="container-middle box-section">

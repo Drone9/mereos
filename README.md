@@ -49,6 +49,8 @@ var assessment_object = {
 var theme_object ={
     language: 'es',
     theming: '#00000',
+    mode:"dark",
+    font: "italic"
     ...
 }
 

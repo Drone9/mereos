@@ -129,7 +129,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 			});
 
 			container.insertAdjacentHTML('beforeend', `
-							<div class="pvi-header-title">${i18next.t('system_diagnostic')}</div>
+							<div class="pvi-header-title">${i18next.t('system_diagnostics')}</div>
 							<div class="pvi-msg">${i18next.t('initial_system_check_passed')}</div>
 							<div class="pvi-instructions-container">${instructionsHTML}</div>
 							<div id="videoMainContainer" class="pvi-header-img">

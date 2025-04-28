@@ -1,10 +1,7 @@
 import i18next from 'i18next';
-
-import { showTab } from '../ExamsPrechecks';
-
 import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger } from '../utils/functions';
-
 import '../assets/css/prevalidation.css';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
@@ -12,7 +9,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		let mediaStream = null;
 		let cameras = [];
 		let microphones = [];
-		let selectedMicrophoneId=null;
+		let selectedMicrophoneId = null;
 		let selectedCameraId = null;
 		let videoConstraints = {
 			width: 640,
@@ -79,7 +76,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 			},
 		];
 
-		logger.success('currentCaptureMode',currentCaptureMode);
+		logger.success('currentCaptureMode', currentCaptureMode);
 
 		const handleDeviceId = async (id, type) => {
 			if (type === 'camera') {
@@ -87,220 +84,122 @@ export const PrevalidationInstructions = async (tabContent) => {
 					...videoConstraints,
 					deviceId: { ideal: id }
 				};
-	
-				localStorage.setItem('deviceId',id);
+				localStorage.setItem('deviceId', id);
 			}
-	
+
 			if (type === 'microphone') {
 				audioConstraints = {
 					...audioConstraints,
 					deviceId: { ideal: id }
 				};
-				localStorage.setItem('microphoneID',id);
+				localStorage.setItem('microphoneID', id);
 			}
-			startWebcam();
 		};
-	
+
 		const nextStep = () => {
 			if (mediaStream) {
-				mediaStream?.getTracks()?.forEach(track => track.stop());
-				mediaStream = null;
+							mediaStream?.getTracks()?.forEach(track => track.stop());
+							mediaStream = null;
 			}
-			registerEvent({eventType: 'success', notify: false, eventName: 'prevalidation_passed'});
+			registerEvent({ eventType: 'success', notify: false, eventName: 'prevalidation_passed' });
 			updatePersistData('preChecksSteps', { preValidation: true });
 			showTab('IdentityVerificationScreenOne');
 		};
 
 		const createUIElements = () => {
-			let container = tabContent.querySelector('.ivso-container');
+			let container = shadowRoot.querySelector('.ivso-container');
 	
 			if (!container) {
-				container = document.createElement('div');
-				container.className = 'ivso-container';
-				tabContent.appendChild(container);
+				tabContent.insertAdjacentHTML('beforeend', '<div class="ivso-container"></div>');
+				container = tabContent.querySelector('.ivso-container');
 			} else {
 				container.innerHTML = '';
 			}
 
-			const headingContainer = document.createElement('div');
-			const subHeadingContainer = document.createElement('div');
-			
-			headingContainer.className = 'pvi-header-title';
-			subHeadingContainer.className = 'pvi-msg';
-	
-			container.append(headingContainer);
-			container.append(subHeadingContainer);
-	
-			const instructionsContainer = document.createElement('div');
-			instructionsContainer.className = 'pvi-instructions-container';
-	
-			const iconTextElements = [];
-	
+			let instructionsHTML = '';
 			iconData.forEach(icon => {
-				const svgWrapper = document.createElement('div');
-				svgWrapper.className = 'pvi-instruction-svg';
-				svgWrapper.innerHTML = icon.svg;
-				const circles = svgWrapper.querySelectorAll('circle');
-				circles.forEach(circle => {
-					circle.setAttribute('fill', `${themeColor?.theming}`);
-				});
-
-				instructionsContainer.appendChild(svgWrapper);
-
-				const textElement = document.createElement('div');
-				textElement.className = 'pvi-instruction-txt';
-				iconTextElements.push(textElement); 
-				instructionsContainer.appendChild(textElement);
+				const coloredSvg = icon.svg.replace('fill="#FF961B"', `fill="${themeColor?.theming || '#FF961B'}"`);
+				instructionsHTML += `
+									<div class="pvi-instruction-svg">${coloredSvg}</div>
+									<div class="pvi-instruction-txt">${i18next.t(icon.text)}</div>
+							`;
 			});
-	
-			container.appendChild(instructionsContainer);
-	
-			const videoMainContainer = document.createElement('div');
-			videoMainContainer.id = 'videoMainContainer';
-			videoMainContainer.className = 'pvi-header-img';
-	
-			const videoContainer = document.createElement('div');
-			videoContainer.id = 'videoContainer';
-			videoMainContainer.appendChild(videoContainer);
-	
-			container.appendChild(videoMainContainer);
-	
-			const dropdownContainer = document.createElement('div');
-			dropdownContainer.id = 'dropdownContainer';
-			dropdownContainer.className = 'multi-device-block';
-	
-			const cameraContainer = document.createElement('div');
-			cameraContainer.className = 'camera-container';
-	
-			const cameraDropdown = document.createElement('select');
-			cameraDropdown.id = 'cameraDropdown';
-			cameraContainer.appendChild(cameraDropdown);
-			dropdownContainer.appendChild(cameraContainer);
-	
-			const microPhoneContainer = document.createElement('div');
-			microPhoneContainer.className = 'microphone-container';
-	
-			const microphoneDropdown = document.createElement('select');
-			microphoneDropdown.id = 'microphoneDropdown';
-			microPhoneContainer.appendChild(microphoneDropdown);
-			dropdownContainer.appendChild(microPhoneContainer);
-	
-			const messageElement = document.createElement('div');
-			messageElement.id = 'message';
-			messageElement.className = 'pvi-query-msg';
-	
-			const buttonContainer = document.createElement('div');
-			buttonContainer.id = 'button-container';
-			buttonContainer.className = 'pvi-btn-container';
-	
-			const continueBtn = document.createElement('button');
-			continueBtn.id = 'continue-btn';
-			continueBtn.textContent = i18next.t('continue'); 
-			continueBtn.className = 'orange-filled-btn';
-			continueBtn.style.marginLeft = 'auto';
-			continueBtn.style.padding = '9px 32px';
-			continueBtn.addEventListener('click', nextStep);
-	
-			buttonContainer.append(continueBtn);
-	
-			container.appendChild(dropdownContainer);
-			container.appendChild(messageElement);
-			container.appendChild(buttonContainer);
-	
-			tabContent.appendChild(container);
-	
-			setTextContent(headingContainer, subHeadingContainer, messageElement, iconTextElements, iconData);
-		};
 
-		const setTextContent = (headingContainer, subHeadingContainer, messageElement, iconTextElements, iconData) => {
-			headingContainer.textContent = i18next.t('system_diagnostic');
-			subHeadingContainer.textContent = i18next.t('initial_system_check_passed');
-			messageElement.textContent = i18next.t('select_preferred_camera_and_microphone'); 
-	
-			if (Array.isArray(iconTextElements)) {
-				iconData.forEach((icon, index) => {
-					if (iconTextElements[index]) { 
-						iconTextElements[index].textContent = i18next.t(icon.text); 
-					}
-				});
-			}
-		};
-	
-		const init = async () => {
-			cameras = await getMultipleCameraDevices();
-			cameras = cameras?.map(camera => ({id: camera.deviceId, name: camera.label, ...camera }));
-			localStorage.setItem('deviceId',cameras?.length ? cameras[0].id : null);
-			selectedCameraId = cameras?.length ? cameras[0].id : null;
+			container.insertAdjacentHTML('beforeend', `
+							<div class="pvi-header-title">${i18next.t('system_diagnostic')}</div>
+							<div class="pvi-msg">${i18next.t('initial_system_check_passed')}</div>
+							<div class="pvi-instructions-container">${instructionsHTML}</div>
+							<div id="videoMainContainer" class="pvi-header-img">
+									<div id="videoContainer"></div>
+							</div>
+							<div id="dropdownContainer" class="multi-device-block">
+									<div class="camera-container">
+											<select id="cameraDropdown"></select>
+									</div>
+									<div class="microphone-container">
+											<select id="microphoneDropdown"></select>
+									</div>
+							</div>
+							<div id="message" class="pvi-query-msg">${i18next.t('select_preferred_camera_and_microphone')}</div>
+							<div id="button-container" class="pvi-btn-container">
+									<button id="continue-btn" class="orange-filled-btn" style="margin-left: auto; padding: 9px 32px;">
+											${i18next.t('continue')}
+									</button>
+							</div>
+					`);
 
-			microphones = await checkForMultipleMicrophones();
-			microphones = microphones?.map(microphone => ({id: microphone.deviceId, name: microphone.label, ...microphone }));
-			localStorage.setItem('microphoneID',microphones?.length ? microphones[0].id : null);
-			selectedMicrophoneId = microphones?.length ? microphones[0].id : null;
-
-			startWebcam();
-			updateUI();
+			shadowRoot.getElementById('continue-btn').addEventListener('click', nextStep);
 		};
 
 		const updateUI = () => {
-			const cameraDropdown = document.getElementById('cameraDropdown');
-			const microphoneDropdown = document.getElementById('microphoneDropdown');
-			const messageElement = document.getElementById('message');
-		
-			cameraDropdown.innerHTML = '';
-			microphoneDropdown.innerHTML = '';
-		
-			cameras.forEach(camera => {
-				const option = document.createElement('option');
-				option.value = camera.id;
-				option.textContent = camera.name;
-				if (camera.id === selectedCameraId) {
-					option.selected = true;
-				}
-				cameraDropdown.appendChild(option);
-			});
-		
-			microphones.forEach(microphone => {
-				const option = document.createElement('option');
-				option.value = microphone.id;
-				option.textContent = microphone.name;
-				if (microphone.id === selectedMicrophoneId) {
-					option.selected = true;
-				}
-				microphoneDropdown.appendChild(option);
-			});
-		
-			messageElement.textContent = i18next.t('select_preferred_camera_and_microphone');
-		
-			cameraDropdown.onchange = (event) => {
-				selectedCameraId = event.target.value;
-				handleDeviceId(selectedCameraId, 'camera');
-			};
-		
-			microphoneDropdown.onchange = (event) => {
-				selectedMicrophoneId = event.target.value;
-				handleDeviceId(selectedMicrophoneId, 'microphone');
-			};
+			const cameraDropdown = shadowRoot.getElementById('cameraDropdown');
+			const microphoneDropdown = shadowRoot.getElementById('microphoneDropdown');
+					
+			if (cameraDropdown) {
+				let cameraOptionsHTML = cameras.map(camera => 
+					`<option value="${camera.id}" ${camera.id === selectedCameraId ? 'selected' : ''}>
+											${camera.name}
+									</option>`
+				).join('');
+				cameraDropdown.innerHTML = cameraOptionsHTML;
+							
+				cameraDropdown.onchange = (event) => {
+					selectedCameraId = event.target.value;
+					handleDeviceId(selectedCameraId, 'camera');
+				};
+			}
+					
+			if (microphoneDropdown) {
+				let microphoneOptionsHTML = microphones.map(microphone => 
+					`<option value="${microphone.id}" ${microphone.id === selectedMicrophoneId ? 'selected' : ''}>
+											${microphone.name}
+									</option>`
+				).join('');
+				microphoneDropdown.innerHTML = microphoneOptionsHTML;
+							
+				microphoneDropdown.onchange = (event) => {
+					selectedMicrophoneId = event.target.value;
+					handleDeviceId(selectedMicrophoneId, 'microphone');
+				};
+			}
 		};
-		
+			
 		const startWebcam = async () => {
-			const videoContainer = document.getElementById('videoContainer');
-			videoContainer.innerHTML = '';
+			const videoContainer = shadowRoot.getElementById('videoContainer');
+			if (videoContainer) {
+				videoContainer.innerHTML = '';
+			}
 	
 			try {
 				mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-	
-				let videoElement = document.getElementById('myVideo');
-				if (!videoElement) {
-					videoElement = document.createElement('video');
-					videoElement.id = 'myVideo';
-					videoElement.className = 'my-recorded-video';
-					videoElement.controls = false; 
-					videoElement.autoplay = true; 
-				}
-	
+							
+				videoContainer.insertAdjacentHTML('beforeend', `
+									<video id="myVideo" class="my-recorded-video" autoplay></video>
+							`);
+							
+				let videoElement = shadowRoot.getElementById('myVideo');
 				videoElement.srcObject = mediaStream;
-	
-				videoContainer.appendChild(videoElement);
+							
 				currentCaptureMode = 'done';
 				updateUI();
 			} catch (error) {
@@ -309,19 +208,48 @@ export const PrevalidationInstructions = async (tabContent) => {
 			}
 		};
 
+		const handleLanguageChange = () => {
+			shadowRoot.querySelector('.pvi-header-title').textContent = i18next.t('system_diagnostic');
+			shadowRoot.querySelector('.pvi-msg').textContent = i18next.t('initial_system_check_passed');
+					
+			const messageElement = shadowRoot.getElementById('message');
+			if (messageElement) {
+				messageElement.textContent = i18next.t('select_preferred_camera_and_microphone');
+			}
+					
+			const continueButton = shadowRoot.getElementById('continue-btn');
+			if (continueButton) {
+				continueButton.textContent = i18next.t('continue');
+			}
+					
+			const instructionTexts = shadowRoot.querySelectorAll('.pvi-instruction-txt');
+			instructionTexts.forEach((element, index) => {
+				if (index < iconData.length) {
+					element.textContent = i18next.t(iconData[index].text);
+				}
+			});
+		};
+
 		createUIElements();
+			
+		const init = async () => {
+			cameras = await getMultipleCameraDevices();
+			cameras = cameras?.map(camera => ({id: camera.deviceId, name: camera.label, ...camera }));
+			localStorage.setItem('deviceId', cameras?.length ? cameras[0].id : null);
+			selectedCameraId = cameras?.length ? cameras[0].id : null;
+
+			microphones = await checkForMultipleMicrophones();
+			microphones = microphones?.map(microphone => ({id: microphone.deviceId, name: microphone.label, ...microphone }));
+			localStorage.setItem('microphoneID', microphones?.length ? microphones[0].id : null);
+			selectedMicrophoneId = microphones?.length ? microphones[0].id : null;
+
+			startWebcam();
+			updateUI();
+		};
 
 		init();
-
-		i18next.on('languageChanged', () => {
-			const headingContainer = document.querySelector('.pvi-header-title');
-			const subHeadingContainer = document.querySelector('.pvi-msg');
-			const messageElement = document.getElementById('message');
-			const iconTextElements = document.querySelectorAll('.pvi-instruction-txt');
-	
-			setTextContent(headingContainer, subHeadingContainer, messageElement, Array.from(iconTextElements),iconData);
-		});
-	
+			
+		i18next.on('languageChanged', handleLanguageChange);
 	} catch (error) {
 		logger.error('Failed to initialize; error: ' + error);
 	}

@@ -48,7 +48,7 @@
   display: flex;
   align-items: center;
   text-align: center;
-  color: #222222;
+  color: var(--text-color);
   margin: 15px auto 0px;
 }
 
@@ -84,7 +84,7 @@
   text-align: center;
 }
 
-.ivst-container .ivst-msg {
+.ivst-container .audio-test-msg {
   font-size: 15px;
   display: flex;
   align-items: center;

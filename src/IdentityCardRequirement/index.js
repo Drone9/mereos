@@ -2,7 +2,7 @@ import '../assets/css/identity-card.css';
 import { logger, registerEvent, updatePersistData } from '../utils/functions';
 import i18next from 'i18next';
 import { ASSET_URL } from '../utils/constant';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 const vectors = [
 	{ name: 'img1', src: `${ASSET_URL}/oc-address.svg`, alt: '' },
@@ -17,7 +17,7 @@ const vectors = [
 
 const getDateTime = () => new Date().toISOString();
 
-export const IdentityCardRequirement = async (tabContent,callback) => {
+export const IdentityCardRequirement = async (tabContent, callback) => {
 	if (!tabContent) {
 		logger.error('tabContent is not defined or is not a valid DOM element');
 		return;
@@ -25,84 +25,79 @@ export const IdentityCardRequirement = async (tabContent,callback) => {
 
 	const nextPage = () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'identity_card_requirement_read', eventValue: getDateTime() });
-		showTab('runSystemDiagnostics',callback);
-		updatePersistData('preChecksSteps',{ identityConfirmation:true });
+		showTab('runSystemDiagnostics', callback);
+		updatePersistData('preChecksSteps', { identityConfirmation: true });
 	};
-	
+    
 	tabContent.innerHTML = '';
 
-	let mobileContainer = document?.getElementById('mobile-proctoring');
-	if(mobileContainer){
+	let mobileContainer = shadowRoot?.getElementById('mobile-proctoring');
+	if (mobileContainer) {
 		mobileContainer.innerHTML = '';
 	}
 
-	const container = document.createElement('div');
-	container.className = 'exam-preparation';
+	// Get school theme data
+	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? 
+		JSON.parse(localStorage.getItem('schoolTheme')) : {};
+    
+	// Create background images HTML
+	const vectorsHTML = vectors.map(vector => 
+		`<img class="${vector.name}" src="${vector.src}" alt="${vector.alt}">`
+	).join('');
 
-	const examPreparationContainer = document.createElement('div');
-	examPreparationContainer.className = 'exam-preparation-container';
-
-	const headerImg = document.createElement('img');
-	headerImg.className = 'header-img';
-	headerImg.src = `${ASSET_URL}/oc-reading-book.png`;
-	headerImg.alt = 'header-img';
-	examPreparationContainer.appendChild(headerImg);
-
-	const title = document.createElement('h1');
-	title.textContent = i18next.t('exam_preparation');
-	examPreparationContainer.appendChild(title);
-
-	const msgLabel = document.createElement('label');
-	msgLabel.className = 'ep-msg';
-	msgLabel.textContent = i18next.t('icc_msg');
-	examPreparationContainer.appendChild(msgLabel);
-
-	const continueButton = document.createElement('button');
-	continueButton.className = 'orange-filled-btn';
-	continueButton.textContent = i18next.t('continue');
-	continueButton.style.marginTop = '10px';
-	continueButton.style.justifyContent = 'center';
-	continueButton.addEventListener('click', nextPage);
-	examPreparationContainer.appendChild(continueButton);
-
-	container.appendChild(examPreparationContainer);
-
-	const bgImagesContainer = document.createElement('div');
-	bgImagesContainer.className = 'bg-images';
-
-	vectors.forEach((vector) => {
-		const vectorImg = document.createElement('img');
-		vectorImg.className = vector.name;
-		vectorImg.src = vector.src;
-		vectorImg.alt = vector.alt;
-		bgImagesContainer.appendChild(vectorImg);
-	});
-
-	container.appendChild(bgImagesContainer);
-
-	tabContent.appendChild(container);
-
-	const styleElement = document.createElement('style');
-	styleElement.textContent = `
-    .exam-preparation {
-        /* Define your CSS styles here */
-    }
-    .exam-preparation-container {
-        /* Define your CSS styles here */
-    }
-    /* Define other classes as needed */
-  `;
-	document.head.appendChild(styleElement);
-	
-	i18next.on('languageChanged', () => {
-		title.textContent = i18next.t('exam_preparation');
-		msgLabel.textContent = i18next.t('icc_msg');
-		continueButton.textContent = i18next.t('continue');
-	});
+	// Create the main HTML using insertAdjacentHTML
+	tabContent.insertAdjacentHTML('beforeend', `
+        <div class="exam-preparation">
+            <div class="exam-preparation-container">
+                <img class="header-img" 
+                     src="${schoolTheme?.mode === 'dark' ? `${ASSET_URL}/oc-reading-book.svg` : `${ASSET_URL}/oc-reading-book.png`}" 
+                     alt="header-img">
+                <h1>${i18next.t('exam_preparation')}</h1>
+                <label class="ep-msg">${i18next.t('icc_msg')}</label>
+                <button id="continue-button" class="orange-filled-btn" style="margin-top: 10px; justify-content: center;">
+                    ${i18next.t('continue')}
+                </button>
+            </div>
+            <div class="bg-images">
+                ${vectorsHTML}
+            </div>
+        </div>
+    `);
+    
+	// Add CSS styles if needed
+	if (!shadowRoot.getElementById('identity-card-styles')) {
+		const styleElement = document.createElement('style');
+		styleElement.id = 'identity-card-styles';
+		styleElement.textContent = `
+            /* Define your CSS styles here if needed - these could also be moved to your CSS file */
+        `;
+		document.head.appendChild(styleElement);
+	}
+    
+	// Add event listener to the continue button
+	shadowRoot.getElementById('continue-button').addEventListener('click', nextPage);
+    
+	// Handle language changes only for this component
+	const languageChangeHandler = () => {
+		const titleElement = tabContent.querySelector('h1');
+		const msgElement = tabContent.querySelector('.ep-msg');
+		const continueButtonElement = tabContent.querySelector('#continue-button');
+        
+		if (titleElement) titleElement.textContent = i18next.t('exam_preparation');
+		if (msgElement) msgElement.textContent = i18next.t('icc_msg');
+		if (continueButtonElement) continueButtonElement.textContent = i18next.t('continue');
+	};
+    
+	// Store the language change handler reference on the tabContent for cleanup later if needed
+	tabContent.languageChangeHandler = languageChangeHandler;
+    
+	// Add language change listener
+	i18next.on('languageChanged', languageChangeHandler);
 };
 
+// Global language change handler for when this tab becomes active
 i18next.on('languageChanged', () => {
-	const activeTab = document.querySelector('.tab-content.active');
+	const activeTab = shadowRoot.querySelector('.tab-content.active');
 	if (activeTab && activeTab.id === 'IdentityCardRequirement') {
 		IdentityCardRequirement(activeTab);
 	}

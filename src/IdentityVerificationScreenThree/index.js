@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { showTab } from '../ExamsPrechecks';
+import { shadowRoot, showTab } from '../ExamsPrechecks';
 
 import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
 
@@ -37,7 +37,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				const mediaStreamSource = audioContext.createMediaStreamSource(audioStream);
 				mediaStreamSource.connect(analyserNode);
 
-				const canvas = canvasRef || document.getElementById('audio-wavesform-canvas');
+				const canvas = canvasRef || shadowRoot.getElementById('audio-wavesform-canvas');
 				const canvasCtx = canvas?.getContext('2d');
 
 				const drawOnCanvas = () => {
@@ -69,7 +69,6 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			} else {
 				throw audioPermission.state;
 			}
-
 		} catch (error) {
 			logger.error('no_mircophone_detected:', error);
 		}
@@ -117,14 +116,13 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				msg.text = 'audio_test_failed';
 				updateUI();
 			}
-
 		}, 1000);
 	};
 
 	const stopRecording = () => {
 		if (animationFrameId) {
 			cancelAnimationFrame(animationFrameId);
-			animationFrameId = null; // Reset the ID
+			animationFrameId = null;
 		}
 		if (audioStream) {
 			audioStream.getTracks().forEach(track => track.stop());
@@ -144,121 +142,123 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	const prevStep = () => {
 		cleanup();
 		updatePersistData('preChecksSteps', { audioDetection: false });
+	
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenThree');
 		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+	
+		if (previousPage === 'Prevalidationinstruction') {
+			updatePersistData('preChecksSteps', { preValidation: false });
+		} else if (previousPage === 'IdentityVerificationScreenTwo') {
+			updatePersistData('preChecksSteps', { identityCardPhoto: false });
+		} else if (previousPage === 'IdentityVerificationScreenOne') {
+			updatePersistData('preChecksSteps', { userPhoto: false });
+		}
+	
 		showTab(previousPage);
 	};
-
+	
 	const updateUI = () => {
 		let container = tabContent.querySelector('.ivst-container');
 		if (!container) {
-			container = document.createElement('div');
-			container.className = 'ivst-container';
-			tabContent.appendChild(container);
+			tabContent.insertAdjacentHTML('beforeend', `
+				<div class="ivst-container"></div>
+			`);
+			container = tabContent.querySelector('.ivst-container');
 		}
 
 		const stepsContainer = document.createElement('div');
 		renderIdentityVerificationSteps(stepsContainer, 3);
+		
 		let wrapper = container.querySelector('.ivst-wrapper');
-    
 		if (!wrapper) {
-			wrapper = document.createElement('div');
-			wrapper.className = 'ivst-wrapper';
-
-			const headerTitle = document.createElement('div');
-			headerTitle.className = 'ivst-header-title';
-			wrapper.appendChild(headerTitle);
-
-			wrapper.appendChild(stepsContainer);
-
-			const message = document.createElement('div');
-			message.className = 'ivst-msg';
-        
-			const audioText = document.createElement('div');
-			audioText.className = 'ivst-audio-text';
-			audioText.style.textAlign = 'center';
-			wrapper.appendChild(audioText);
-
-			canvasRef = document.createElement('canvas');
-			canvasRef.width = 800;
-			canvasRef.id = 'audio-wavesform-canvas';
-			canvasRef.height = 200;
-
-			wrapper.appendChild(canvasRef);
-			wrapper.appendChild(message);
-			container.appendChild(wrapper);
-		}
-
-		const headerTitle = wrapper.querySelector('.ivst-header-title');
-		if (headerTitle) {
-			headerTitle.textContent = i18next.t('audio_check');
-		}
-
-		const audioText = wrapper.querySelector('.ivst-audio-text');
-		if (audioText) {
-			audioText.textContent = i18next.t('no_point_in_running_leave_in_time');
-		}
-
-		const messageElement = wrapper.querySelector('.ivst-msg');
-		if (messageElement) {
-			messageElement.textContent = i18next.t(msg.text);
-			if (msg.type === 'unsuccessful') {
-				messageElement.style.color = '#E95E5E';
-			} else {
-				messageElement.style.color = '';
-			}
-		}
-
-		let btnContainer = wrapper.querySelector('.ivst-btn-container');
-		if (!btnContainer) {
-			btnContainer = document.createElement('div');
-			btnContainer.className = 'ivst-btn-container';
-			wrapper.appendChild(btnContainer);
+			container.insertAdjacentHTML('beforeend', `
+				<div class="ivst-wrapper">
+					<div class="ivst-header-title">${i18next.t('audio_check')}</div>
+					<div class="ivst-steps-container"></div>
+					<div class="ivst-audio-text" style="text-align: center;">${i18next.t('no_point_in_running_leave_in_time')}</div>
+					<canvas id="audio-wavesform-canvas" width="800" height="200"></canvas>
+					<div class="audio-test-msg" id="audio-test-msg">${i18next.t(msg.text)}</div>
+					<div class="ivst-btn-container"></div>
+				</div>
+			`);
+			
+			wrapper = container.querySelector('.ivst-wrapper');
+			const stepsContainerElement = wrapper.querySelector('.ivst-steps-container');
+			stepsContainerElement.appendChild(stepsContainer);
+			
+			canvasRef = shadowRoot.getElementById('audio-wavesform-canvas');
 		} else {
-			btnContainer.innerHTML = '';
+			const headerTitle = wrapper.querySelector('.ivst-header-title');
+			if (headerTitle) {
+				headerTitle.textContent = i18next.t('audio_check');
+			}
+			
+			const audioText = wrapper.querySelector('.ivst-audio-text');
+			if (audioText) {
+				audioText.textContent = i18next.t('no_point_in_running_leave_in_time');
+			}
+			
+			const messageElement = wrapper.querySelector('.audio-test-msg');
+			if (messageElement) {
+				messageElement.textContent = i18next.t(msg.text);
+				messageElement.style.color = msg.type === 'unsuccessful' ? '#E95E5E' : '';
+			}
+			
+			const stepsContainerElement = wrapper.querySelector('.ivst-steps-container');
+			stepsContainerElement.innerHTML = '';
+			stepsContainerElement.appendChild(stepsContainer);
 		}
-
+		
+		const btnContainer = wrapper.querySelector('.ivst-btn-container');
+		btnContainer.innerHTML = ''; // Clear existing buttons
+		
 		if (msg.type === '') {
-			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
-			prevButton.disabled = disabledBtn;
-			const recordButton = createButton(`${i18next.t('record_audio')}`, 'orange-filled-btn', startRecording);
-			recordButton.disabled = disabledBtn;
-			btnContainer.appendChild(prevButton);
-			btnContainer.appendChild(recordButton);
+			btnContainer.insertAdjacentHTML('beforeend', `
+				<button class="orange-hollow-btn" ${disabledBtn ? 'disabled' : ''}>${i18next.t('previous_step')}</button>
+				<button class="orange-filled-btn" ${disabledBtn ? 'disabled' : ''}>${i18next.t('record_audio')}</button>
+			`);
+			
+			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
+			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', startRecording);
 		} else if (msg.type === 'unsuccessful') {
-			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);
-			const reRecordButton = createButton(`${i18next.t('re_record_audio')}`, 'orange-filled-btn', startRecording);
 			const prevStepsEntities = ['verify_candidate', 'verify_id'];
-			if (secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0) {
-				btnContainer.appendChild(prevButton);
+			const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
+			
+			if (showPrevButton) {
+				btnContainer.insertAdjacentHTML('beforeend', `
+					<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
+				`);
+				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
 			}
-			btnContainer.appendChild(reRecordButton);
+			
+			btnContainer.insertAdjacentHTML('beforeend', `
+				<button class="orange-filled-btn">${i18next.t('re_record_audio')}</button>
+			`);
+			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', startRecording);
 		} else {
-			const reRecordButton = createButton(`${i18next.t('re_record_audio')}`, 'orange-hollow-btn', startRecording);
-			const doneButton = createButton(`${i18next.t('done')}`, 'orange-filled-btn', nextStep);
-			btnContainer.appendChild(reRecordButton);
-			btnContainer.appendChild(doneButton);
+			btnContainer.insertAdjacentHTML('beforeend', `
+				<button class="orange-hollow-btn">${i18next.t('re_record_audio')}</button>
+				<button class="orange-filled-btn">${i18next.t('done')}</button>
+			`);
+			
+			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', startRecording);
+			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', nextStep);
 		}
 
 		if (canvasRef) {
-			drawAudioSpikes(); 
+			drawAudioSpikes();
 		}
-	};
-
-	const createButton = (text, className, onClick) => {
-		const button = document.createElement('button');
-		button.textContent = text;
-		button.className = className;
-		button.addEventListener('click', onClick);
-		return button;
 	};
 
 	updateUI();
 	drawAudioSpikes();
 
 	i18next.on('languageChanged', () => {
-		msg.text = i18next.t(msg.text);
+		const msgElement = shadowRoot.getElementById('audio-test-msg');
+		if (msgElement && msg.text) {
+			msgElement.textContent = i18next.t(msg.text);
+		}
 		updateUI();
 	});
 
@@ -285,4 +285,3 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		cleanup
 	};
 };
-

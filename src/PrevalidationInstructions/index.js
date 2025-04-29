@@ -3,10 +3,10 @@ import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, u
 import '../assets/css/prevalidation.css';
 import { shadowRoot, showTab } from '../ExamsPrechecks';
 
+window.prevalidationStream = null;
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
 		let currentCaptureMode = null;
-		let mediaStream = null;
 		let cameras = [];
 		let microphones = [];
 		let selectedMicrophoneId = null;
@@ -85,6 +85,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 					deviceId: { ideal: id }
 				};
 				localStorage.setItem('deviceId', id);
+				await startWebcam();
 			}
 
 			if (type === 'microphone') {
@@ -93,13 +94,14 @@ export const PrevalidationInstructions = async (tabContent) => {
 					deviceId: { ideal: id }
 				};
 				localStorage.setItem('microphoneID', id);
+				await startWebcam();
 			}
 		};
 
 		const nextStep = () => {
-			if (mediaStream) {
-							mediaStream?.getTracks()?.forEach(track => track.stop());
-							mediaStream = null;
+			if (window.prevalidationStream) {
+				window.prevalidationStream?.getTracks()?.forEach(track => track.stop());
+				window.prevalidationStream = null;
 			}
 			registerEvent({ eventType: 'success', notify: false, eventName: 'prevalidation_passed' });
 			updatePersistData('preChecksSteps', { preValidation: true });
@@ -186,20 +188,37 @@ export const PrevalidationInstructions = async (tabContent) => {
 			
 		const startWebcam = async () => {
 			const videoContainer = shadowRoot.getElementById('videoContainer');
+			
+			if (window.prevalidationStream) {
+				window.prevalidationStream.getTracks().forEach(track => track.stop());
+				window.prevalidationStream = null;
+			}
+
 			if (videoContainer) {
 				videoContainer.innerHTML = '';
 			}
-	
+
 			try {
-				mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-							
+				window.prevalidationStream = await navigator.mediaDevices.getUserMedia({ 
+					video: videoConstraints, 
+					audio: audioConstraints  
+				});
+											
 				videoContainer.insertAdjacentHTML('beforeend', `
-									<video id="myVideo" class="my-recorded-video" autoplay></video>
-							`);
-							
-				let videoElement = shadowRoot.getElementById('myVideo');
-				videoElement.srcObject = mediaStream;
-							
+							<video id="myVideo" class="my-recorded-video" autoplay muted playsinline></video>
+					`);
+											
+				const videoElement = shadowRoot.getElementById('myVideo');
+
+				if (videoElement) {
+					videoElement.srcObject = window.prevalidationStream;
+					videoElement.onloadedmetadata = () => {
+						videoElement.play().catch(err => {
+							logger.error('Video play failed:', err);
+						});
+					};
+				}
+											
 				currentCaptureMode = 'done';
 				updateUI();
 			} catch (error) {
@@ -208,8 +227,9 @@ export const PrevalidationInstructions = async (tabContent) => {
 			}
 		};
 
+
 		const handleLanguageChange = () => {
-			shadowRoot.querySelector('.pvi-header-title').textContent = i18next.t('system_diagnostic');
+			shadowRoot.querySelector('.pvi-header-title').textContent = i18next.t('system_diagnostics');
 			shadowRoot.querySelector('.pvi-msg').textContent = i18next.t('initial_system_check_passed');
 					
 			const messageElement = shadowRoot.getElementById('message');
@@ -243,7 +263,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 			localStorage.setItem('microphoneID', microphones?.length ? microphones[0].id : null);
 			selectedMicrophoneId = microphones?.length ? microphones[0].id : null;
 
-			startWebcam();
+			await startWebcam();
 			updateUI();
 		};
 

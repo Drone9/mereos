@@ -20,6 +20,7 @@ import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
+import { webcamStream } from './src/IdentityVerificationScreenOne';
 
 async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
@@ -170,8 +171,15 @@ async function stop_prechecks(callback) {
 		const modal = document.getElementById('precheck-modal');
 		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');
-		logger.success('sessionSetting',sessionSetting);
 
+		if(webcamStream){
+			webcamStream?.getTracks()?.forEach((track) => track.stop());
+		}
+		if(window.prevalidationStream){
+			window.prevalidationStream?.getTracks()?.forEach((track) => track.stop());
+			window.prevalidationStream=null;
+		}
+		
 		if(sessionSetting !== 'session_resume'){
 			localStorage.removeItem('preChecksSteps');
 			localStorage.setItem('navHistory',JSON.stringify([]));

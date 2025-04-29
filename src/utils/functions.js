@@ -983,7 +983,7 @@ const handleDefaultEvent = e => {
 
 //* ***************** Unlock browser from Events */
 export const unlockBrowserFromContent = () => {
-	window.removeEventListener('contextmenu', handleDefaultEvent);
+	document.removeEventListener('contextmenu', handleDefaultEvent);
 	window.removeEventListener('beforeunload', detectPageRefreshCallback);
 	window.removeEventListener('popstate', detectBackButtonCallback);
 

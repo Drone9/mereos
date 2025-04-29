@@ -9,6 +9,8 @@ import { ASSET_URL } from '../utils/constant';
 import '../assets/css/step1.css';
 import { uploadFileInS3Folder } from '../services/general.services.js';
 
+	
+export let webcamStream = null;
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
 		isUploading: false,
@@ -26,7 +28,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		},
 	};
 
-	let webcamStream = null;
 	let videoElement = null;
 
 	const startWebcam = async () => {
@@ -352,8 +353,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				uploadBtn.addEventListener('click', uploadUserCapturedPhoto);
 			}
 		}
-        
-		if (!state.imageSrc && !webcamStream) {
+		const hasActiveTracks = webcamStream?.getTracks?.().some(track => track.readyState === 'live');
+		if (!state.imageSrc && (!webcamStream || !hasActiveTracks)) {
 			startWebcam();
 		} else if (!state.imageSrc) {
 			const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');

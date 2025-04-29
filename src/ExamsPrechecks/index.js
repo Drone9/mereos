@@ -79,6 +79,8 @@ const PrevalidationinstructionContainer = shadowRoot.querySelector('#Prevalidati
 const mobileProctingContainer = shadowRoot.querySelector('#MobileProctoring');
 
 const initializeLiveChat = () => {
+	let unreadCount = 0;
+
 	const isLoggedIn = !!getAuthenticationToken();
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
@@ -86,7 +88,7 @@ const initializeLiveChat = () => {
 
 	if (!isLoggedIn || !hasChatBot) return;
 
-	const existingChatIcon = document.getElementById('chat-icon');
+	const existingChatIcon = document.getElementById('chat-icon-wrapper');
 	const existingChatContainer = document.getElementById('talkjs-container');
   
 	if (existingChatIcon) {
@@ -97,44 +99,27 @@ const initializeLiveChat = () => {
 		return;
 	}
 
-	const chatIcon = document.createElement('img');
-	chatIcon.className = 'chat-icon';
-	chatIcon.id = 'chat-icon';
-	chatIcon.style.position = 'fixed';
-	chatIcon.style.bottom = '20px';
-	chatIcon.style.right = '20px';
-	chatIcon.style.zIndex = '99999999';
-	chatIcon.style.cursor = 'grab';
-	chatIcon.src = `${ASSET_URL}/mereos.svg`;
-	chatIcon.alt = 'Chat Icon';
-	chatIcon.style.width = '50px';
-	chatIcon.style.height = '50px';
-	chatIcon.style.userSelect = 'none';
+	document.body.insertAdjacentHTML('beforeend', `
+    <div id="chat-icon-wrapper" class="chat-icon-wrapper" style="position: fixed; bottom: 20px; right: 20px; z-index: 99999999; cursor: grab; width: 50px; height: 50px; user-select: none;">
+      <img id="chat-icon" class="chat-icon" src="${ASSET_URL}/mereos.svg" alt="Chat Icon" style="width: 100%; height: 100%;">
+      <div id="notification-badge" class="notification-badge" style="position: absolute; top: -8px; right: -8px; background-color: #FF4136; color: white; border-radius: 50%; width: 22px; height: 22px; display: none; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; box-shadow: 0 0 0 2px white;">0</div>
+    </div>
+  `);
 
-	const chatContainer = document.createElement('div');
-	chatContainer.id = 'talkjs-container';
-	chatContainer.className = 'live-chat-container';
-	chatContainer.style.width = '400px';
-	chatContainer.style.height = '500px';
-	chatContainer.style.position = 'fixed';
-	chatContainer.style.bottom = '100px';
-	chatContainer.style.right = '20px';
-	chatContainer.style.zIndex = '9999';
-	chatContainer.style.backgroundColor = 'white';
-	chatContainer.style.border = '1px solid #ccc';
-	chatContainer.style.borderRadius = '8px';
-	chatContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
-	chatContainer.style.display = 'none';
+	document.body.insertAdjacentHTML('beforeend', `
+    <div id="talkjs-container" class="live-chat-container" style="width: 400px; height: 500px; position: fixed; bottom: 100px; right: 20px; z-index: 9999; background-color: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); display: none;"></div>
+  `);
 
-	document.body.appendChild(chatIcon);
-	document.body.appendChild(chatContainer);
+	const chatIconWrapper = document.getElementById('chat-icon-wrapper');
+	const notificationBadge = document.getElementById('notification-badge');
+	const chatContainer = document.getElementById('talkjs-container');
 
 	const positions = {
 		icon: { x: 0, y: 0 },
 		container: { x: 0, y: 0 }
 	};
 
-	interact(chatIcon).draggable({
+	interact(chatIconWrapper).draggable({
 		cursorChecker: () => 'grabbing',
 		modifiers: [
 			interact.modifiers.restrict({
@@ -145,7 +130,7 @@ const initializeLiveChat = () => {
 		],
 		listeners: {
 			start() {
-				chatIcon.style.cursor = 'grabbing';
+				chatIconWrapper.style.cursor = 'grabbing';
 			},
 			move(event) {
 				positions.icon.x += event.dx;
@@ -153,11 +138,11 @@ const initializeLiveChat = () => {
 				positions.container.x += event.dx;
 				positions.container.y += event.dy;
 
-				chatIcon.style.transform = `translate(${positions.icon.x}px, ${positions.icon.y}px)`;
+				chatIconWrapper.style.transform = `translate(${positions.icon.x}px, ${positions.icon.y}px)`;
 				chatContainer.style.transform = `translate(${positions.container.x}px, ${positions.container.y}px)`;
 			},
 			end() {
-				chatIcon.style.cursor = 'grab';
+				chatIconWrapper.style.cursor = 'grab';
 			}
 		}
 	});
@@ -169,22 +154,29 @@ const initializeLiveChat = () => {
 	let clickStartTime = 0;
 	let isDragging = false;
 
-	chatIcon.addEventListener('mousedown', (e) => {
+	chatIconWrapper.addEventListener('mousedown', (e) => {
 		e.stopPropagation();
 		clickStartTime = Date.now();
 		isDragging = false;
 	});
 
-	chatIcon.addEventListener('mousemove', () => {
+	chatIconWrapper.addEventListener('mousemove', () => {
 		if (Date.now() - clickStartTime > 50) {
 			isDragging = true;
 		}
 	});
 
-	chatIcon.addEventListener('click', (e) => {
+	chatIconWrapper.addEventListener('click', (e) => {
 		e.stopPropagation();
 		if (!isDragging && Date.now() - clickStartTime < 200) {
 			chatContainer.style.display = chatContainer.style.display === 'none' ? 'block' : 'none';
+      
+			if (chatContainer.style.display === 'block') {
+				notificationBadge.style.display = 'none';
+				notificationBadge.textContent = '0';
+				unreadCount = 0;
+				updateNotificationBadge(0);
+			}
 		}
 	});
 
@@ -193,7 +185,7 @@ const initializeLiveChat = () => {
 	});
 
 	document.addEventListener('click', (e) => {
-		if (!chatIcon.contains(e.target) && !chatContainer.contains(e.target)) {
+		if (!chatIconWrapper.contains(e.target) && !chatContainer.contains(e.target)) {
 			chatContainer.style.display = 'none';
 		}
 	});
@@ -226,10 +218,34 @@ const initializeLiveChat = () => {
 			conversation.setParticipant(me);
 			conversation.setParticipant(other);
 
+			window.unreadConversation = conversation;      
+      
+			session.onMessage(event => {
+				logger.success('event',event);
+				logger.success('conversationId',conversationId);
+				if (event.conversation && event.conversation.id === conversationId && 
+            !event.isByMe &&
+            chatContainer.style.display === 'none') {
+					unreadCount++;
+					updateNotificationBadge(unreadCount);
+				}
+			});
+			
 			const chatbox = session.createChatbox();
 			chatbox.select(conversation);
 			chatbox.mount(chatContainer);
 		});
+	}
+  
+	function updateNotificationBadge(count) {
+		const badge = document.getElementById('notification-badge');
+    
+		if (count > 0) {
+			badge.textContent = count > 99 ? '99+' : count;
+			badge.style.display = 'flex';
+		} else {
+			badge.style.display = 'none';
+		}
 	}
 };
 

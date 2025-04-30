@@ -532,6 +532,7 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 	try{
 		const session = convertDataIntoParse('session');
+		const { aiEvents } = session;
 		const event = {
 			name: eventName,
 			start_at: startTime,
@@ -540,7 +541,8 @@ export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 			created_at: getDateTime(),
 			session_id: session?.id
 		};
-				
+
+		updatePersistData('session', { aiEvents:[...aiEvents, event] });
 		await createAiEvent(event);
 	}catch(e){
 		logger.error('Error in register ai event',e);
@@ -983,7 +985,7 @@ const handleDefaultEvent = e => {
 
 //* ***************** Unlock browser from Events */
 export const unlockBrowserFromContent = () => {
-	window.removeEventListener('contextmenu', handleDefaultEvent);
+	document.removeEventListener('contextmenu', handleDefaultEvent);
 	window.removeEventListener('beforeunload', detectPageRefreshCallback);
 	window.removeEventListener('popstate', detectBackButtonCallback);
 
@@ -1332,7 +1334,7 @@ export const findAIIncidentLevel = (aiEvents = [], profile) => {
 	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
 
 	for (const item of aiEvents) {
-		const difference = item.endTime - item.startTime;
+		const difference = item.end_at - item.start_at;
 		if (difference >= metrics[item.name]) {
 			result = 'high';
 			break;

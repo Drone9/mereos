@@ -1184,10 +1184,10 @@ export const systemDiagnosticCss =`.system-diagnostic-test-screen {
   background-color: var(--theme-color);
   cursor: pointer;
 	&:disabled {
-		background-image: linear-gradient(#F6F6F9, #F6F6F9) !important;
-		color: #A7ABB2 !important;
-		border: 1px solid #F6F6F9 !important;
-		background-color: #F6F6F9 !important;
+		background-color: var(--theme-color);
+		color: var(--text-color) !important;
+    opacity:0.5;
+    cursor:not-allowed;
 	}
 	&:hover {
 		box-shadow: 1px 1px 2px rgb(32 33 36 / 28%)
@@ -1406,8 +1406,8 @@ export const identityStepsCss = `.ivs-container {
   display: flex;
   white-space: nowrap;
   align-items: center;
-  color: #92959A;
-  border-bottom: 3.5px solid #EAEDF2;
+  color: var(--text-color);
+  border-bottom: 3.5px solid var(--text-color);
   border-radius: 1px;
   padding-bottom: 10px;
 }

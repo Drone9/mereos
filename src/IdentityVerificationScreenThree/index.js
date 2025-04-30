@@ -9,7 +9,6 @@ import '../assets/css/step3.css';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
 	let canvasRef = null;
-	let audioStream = null;
 	let audioContext;
 	let analyserNode;
 	let disabledBtn = false;
@@ -29,12 +28,12 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			stopRecording(); 
 			const audioPermission = await navigator.permissions.query({ name: 'microphone' });
 			if (audioPermission.state === 'granted') {
-				audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+				window.globalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
 
 				audioContext = new AudioContext();
 				analyserNode = audioContext.createAnalyser();
 				analyserNode.fftSize = 2048;
-				const mediaStreamSource = audioContext.createMediaStreamSource(audioStream);
+				const mediaStreamSource = audioContext.createMediaStreamSource(window.globalStream);
 				mediaStreamSource.connect(analyserNode);
 
 				const canvas = canvasRef || shadowRoot.getElementById('audio-wavesform-canvas');
@@ -124,14 +123,14 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			cancelAnimationFrame(animationFrameId);
 			animationFrameId = null;
 		}
-		if (audioStream) {
-			audioStream.getTracks().forEach(track => track.stop());
+		if (window.globalStream) {
+			window.globalStream.getTracks().forEach(track => track.stop());
 		}
 	};
 
 	const nextStep = async () => {
-		if (audioStream) {
-			audioStream.getAudioTracks().forEach(track => track.stop());
+		if (window.globalStream) {
+			window.globalStream.getAudioTracks().forEach(track => track.stop());
 		}
 		cleanup();
 		updatePersistData('preChecksSteps', { audioDetection: true });
@@ -263,8 +262,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	});
 
 	const cleanup = () => {
-		if (audioStream) {
-			audioStream.getTracks().forEach(track => track.stop()); 
+		if (window.globalStream) {
+			window.globalStream.getTracks().forEach(track => track.stop()); 
 		}
 		if (audioContext) {
 			audioContext.close(); 

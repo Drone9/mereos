@@ -26,7 +26,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		},
 	};
 
-	let webcamStream = null;
 	let videoElement = null;
 
 	const startWebcam = async () => {
@@ -36,8 +35,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			videoElement.height = state.videoConstraints.height;
 			videoElement.autoplay = true;
             
-			webcamStream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
-			videoElement.srcObject = webcamStream;
+			window.globalStream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
+			videoElement.srcObject = window.globalStream;
             
 			if (tabContent) {
 				const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');
@@ -168,8 +167,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	};
     
 	const nextStep = () => {
-		if(webcamStream){
-      webcamStream?.getTracks()?.forEach((track) => track.stop());
+		if(window.globalStream){
+      window.globalStream?.getTracks()?.forEach((track) => track.stop());
 		}
 		registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
 		updatePersistData('preChecksSteps',{ userPhoto:true });
@@ -352,8 +351,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				uploadBtn.addEventListener('click', uploadUserCapturedPhoto);
 			}
 		}
-        
-		if (!state.imageSrc && !webcamStream) {
+		const hasActiveTracks = window.globalStream?.getTracks?.().some(track => track.readyState === 'live');
+		if (!state.imageSrc && (!window.globalStream || !hasActiveTracks)) {
 			startWebcam();
 		} else if (!state.imageSrc) {
 			const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');

@@ -9,7 +9,7 @@
 
 window.openModal = openModal;
 
-import {  openModal, startSession } from './src/ExamsPrechecks';
+import {  openModal, shadowRoot, startSession } from './src/ExamsPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
@@ -170,8 +170,28 @@ async function stop_prechecks(callback) {
 		const modal = document.getElementById('precheck-modal');
 		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');
-		logger.success('sessionSetting',sessionSetting);
 
+		if (window.globalStream) {
+			window.globalStream.getTracks().forEach(track => {
+				track.stop();
+				track.enabled = false;
+				track.onended = null;
+				track.onmute = null;
+				track.onunmute = null;
+			});
+			const videoElements = [
+				...document.querySelectorAll('video'),
+				...shadowRoot.querySelectorAll('video')
+			];
+			
+			videoElements.forEach(video => {
+				if (video.srcObject === window.globalStream) {
+					video.srcObject = null;
+				}
+			});
+			window.globalStream = null;
+		}
+		
 		if(sessionSetting !== 'session_resume'){
 			localStorage.removeItem('preChecksSteps');
 			localStorage.setItem('navHistory',JSON.stringify([]));
@@ -235,16 +255,24 @@ async function start_session(callback) {
 			window.recordingStart=true;
 			const secureFeatures = getSecureFeatures();
 			const dateTime = new Date();
+			const currentTimeInSeconds = Math.abs(getTimeInSeconds({ isUTC: true, inputDate: dateTime }));
+            
+			const previousSessionData = convertDataIntoParse('session') || {};
 			
+			let quizStartTime = previousSessionData.quizStartTime;
+			if (!quizStartTime || quizStartTime <= 0) {
+				quizStartTime = currentTimeInSeconds;
+			}
+	
 			updatePersistData('session', {
-				quizStartTime: getTimeInSeconds({  isUTC: true,inputDate: dateTime }),
+				quizStartTime: quizStartTime,
+				lastUpdated: currentTimeInSeconds
 			});
 
 			if (secureFeatures?.entities?.length > 0) {
 				const mobileRoomSessionId = v4();
 				const newRoomSessionId = v4();
 				
-
 				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
 					try {
 						const resp = await getRoomSid({ session_id: mobileRoomSessionId, auto_record: true });

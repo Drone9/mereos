@@ -14,6 +14,7 @@ let aiProcessingInterval = null;
 let aiEvents = [];
 let mediaStream = null;
 let mobileRoomInstance = null;
+const trackStoppedListeners = new Map();
 
 export const startRecording = async () => {	
 	let screenTrack = null;
@@ -295,17 +296,24 @@ export const startRecording = async () => {
 			room.localParticipant.videoTracks.forEach((publication) => {
 				const track = publication.track;
 				if (track) {
-					track.on('stopped', () => {
-						if(window.startRecordingCallBack){
+					const stoppedListener = () => {
+						if (window.startRecordingCallBack) {
 							window.startRecordingCallBack({ 
-								type:'error',
+								type: 'error',
 								message: 'camera_is_stopped',
-								code:40019
+								code: 40019
 							});
 						}
-						
-						registerEvent({ eventType: 'error', notify: false, eventName: 'camera_permission_disabled', eventValue: dateTime });
-					});
+						registerEvent({ 
+							eventType: 'error', 
+							notify: false, 
+							eventName: 'camera_permission_disabled', 
+							eventValue: dateTime 
+						});
+					};
+					
+					track.on('stopped', stoppedListener);
+					trackStoppedListeners.set(track, stoppedListener);
 				}
 			});
 		
@@ -337,7 +345,12 @@ export const startRecording = async () => {
 			
 			});
 
-			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
+			registerEvent({ 
+				eventType: 'success', 
+				notify: false, 
+				eventName: 'recording_started_successfully', 
+				startAt: dateTime 
+			});
 			
 			if(window.startRecordingCallBack){
 				window.startRecordingCallBack({ 
@@ -617,9 +630,6 @@ const startAIWebcam = async (room,mediaStream) => {
 						};
             
 						registerAIEvent(data);
-						updatePersistData('session', {
-							aiEvents: [data, ...session.aiEvents]
-						});
             
 						activeViolations[key] = null;
 					}
@@ -653,7 +663,6 @@ export const cleanupLocalVideo = () => {
 	if(imgContainer){
 		imgContainer.remove();
 	}
-	
 	if(webVideoContainer){
 		webVideoContainer.remove();
 	}
@@ -855,6 +864,12 @@ export const stopAllRecordings = async () => {
 		
 		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');
+		const notificationBagde = document.getElementById('notification-badge');
+
+		if(notificationBagde){
+			notificationBagde.style.display = 'none';
+			notificationBagde.remove();
+		}
 
 		if (chatIcons.length > 0) {
 			chatIcons.forEach(icon => {
@@ -886,6 +901,13 @@ export const stopAllRecordings = async () => {
 				track.stop();
 				track.enabled = false;
 			});
+		}
+
+		if(trackStoppedListeners){
+			trackStoppedListeners.forEach((listener, track) => {
+				track.off('stopped', listener);
+			});
+			trackStoppedListeners.clear();
 		}
 
 		window.recordingStart=false;

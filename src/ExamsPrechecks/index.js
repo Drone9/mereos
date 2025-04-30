@@ -221,8 +221,6 @@ const initializeLiveChat = () => {
 			window.unreadConversation = conversation;      
       
 			session.onMessage(event => {
-				logger.success('event',event);
-				logger.success('conversationId',conversationId);
 				if (event.conversation && event.conversation.id === conversationId && 
             !event.isByMe &&
             chatContainer.style.display === 'none') {

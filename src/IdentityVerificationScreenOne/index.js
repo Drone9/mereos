@@ -9,8 +9,6 @@ import { ASSET_URL } from '../utils/constant';
 import '../assets/css/step1.css';
 import { uploadFileInS3Folder } from '../services/general.services.js';
 
-	
-export let webcamStream = null;
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
 		isUploading: false,
@@ -37,8 +35,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			videoElement.height = state.videoConstraints.height;
 			videoElement.autoplay = true;
             
-			webcamStream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
-			videoElement.srcObject = webcamStream;
+			window.globalStream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
+			videoElement.srcObject = window.globalStream;
             
 			if (tabContent) {
 				const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');
@@ -169,8 +167,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	};
     
 	const nextStep = () => {
-		if(webcamStream){
-      webcamStream?.getTracks()?.forEach((track) => track.stop());
+		if(window.globalStream){
+      window.globalStream?.getTracks()?.forEach((track) => track.stop());
 		}
 		registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
 		updatePersistData('preChecksSteps',{ userPhoto:true });
@@ -353,8 +351,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				uploadBtn.addEventListener('click', uploadUserCapturedPhoto);
 			}
 		}
-		const hasActiveTracks = webcamStream?.getTracks?.().some(track => track.readyState === 'live');
-		if (!state.imageSrc && (!webcamStream || !hasActiveTracks)) {
+		const hasActiveTracks = window.globalStream?.getTracks?.().some(track => track.readyState === 'live');
+		if (!state.imageSrc && (!window.globalStream || !hasActiveTracks)) {
 			startWebcam();
 		} else if (!state.imageSrc) {
 			const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');

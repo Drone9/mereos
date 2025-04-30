@@ -11,7 +11,6 @@ import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
 	if (tabContent.querySelector('.screen-four-container')) return; 
-	window.userMediaStream = null;	
 	let recordingMode = 'startRecording';
 	let showPlayer = false;
 	let textMessage = 'scan_your_room';
@@ -35,7 +34,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	const handleStartRecording = async (type) => {
 		try {
 			if (type === 'startRecording') {
-				mediaRecorder = new MediaRecorder(window.userMediaStream);
+				mediaRecorder = new MediaRecorder(window.globalStream);
 
 				mediaRecorder.ondataavailable = (event) => {
 					if (event.data.size > 0) {
@@ -100,9 +99,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			recordingMode = 'startRecording';
 			textMessage = 'scan_your_room';
 			updateUI();
-			if (window.userMediaStream) {
-				window.userMediaStream.getTracks().forEach(track => track.stop());
-				window.userMediaStream = null;
+			if (window.globalStream) {
+				window.globalStream.getTracks().forEach(track => track.stop());
+				window.globalStream = null;
 			}
 			updatePersistData('preChecksSteps', { roomScanningVideo: true });
 			registerEvent({
@@ -159,7 +158,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	const updateUI = async () => {
-		// Create main container if it doesn't exist
 		let container = tabContent?.querySelector('.screen-four-container');
 		if (!container) {
 			tabContent.insertAdjacentHTML('beforeend', `
@@ -168,14 +166,11 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			container = tabContent.querySelector('.screen-four-container');
 		}
 		
-		// Clear existing content
 		container.innerHTML = '';
 		
-		// Create the steps container
 		const stepsContainer = document.createElement('div');
 		renderIdentityVerificationSteps(stepsContainer, 4);
 		
-		// Create the HTML structure
 		container.insertAdjacentHTML('beforeend', `
 			<div class="ivsf-wrapper">
 				<div class="room-scan-header-title">${i18next.t('workspace_checking')}</div>
@@ -187,15 +182,12 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			</div>
 		`);
 		
-		// Add the steps container
 		const stepsPlaceholder = container.querySelector('.steps-container');
 		stepsPlaceholder.appendChild(stepsContainer);
 		
-		// Get references to containers we need to modify
 		const headerImgContainer = container.querySelector('.ivsf-header-img-container');
 		const btnContainer = container.querySelector('.ivsf-btn-container');
 		
-		// Handle the video/recording UI
 		if (showPlayer && blob) {
 			headerImgContainer.insertAdjacentHTML('beforeend', `
 				<video id="myVideo" class="my-recorded-video2" controls autoplay></video>
@@ -221,25 +213,24 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				window.recordingDotInterval = toggleDot;
 				
 				const webcam = headerImgContainer.querySelector('#webcam-recorded-media');
-				webcam.srcObject = window.userMediaStream;
+				webcam.srcObject = window.globalStream;
 			}
 		}
 		
-		// Handle buttons based on recording mode
 		if (recordingMode === 'startRecording') {
 			const mediaOptions = {
 				audio: localStorage.getItem('microphoneID') !== null ? { deviceId: { exact: localStorage.getItem('microphoneID') }} : true,
 				video: videoConstraints.video,
 			};
 
-			window.userMediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
+			window.globalStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
 			
 			headerImgContainer.insertAdjacentHTML('beforeend', `
 				<video id="webcam-recording-media" autoplay muted height="250"></video>
 			`);
 			
 			const webcam = headerImgContainer.querySelector('#webcam-recording-media');
-			webcam.srcObject = window.userMediaStream;
+			webcam.srcObject = window.globalStream;
 			
 			btnContainer.insertAdjacentHTML('beforeend', `
 				<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>

@@ -3,7 +3,6 @@ import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, u
 import '../assets/css/prevalidation.css';
 import { shadowRoot, showTab } from '../ExamsPrechecks';
 
-window.prevalidationStream = null;
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
 		let currentCaptureMode = null;
@@ -99,9 +98,11 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const nextStep = () => {
-			if (window.prevalidationStream) {
-				window.prevalidationStream?.getTracks()?.forEach(track => track.stop());
-				window.prevalidationStream = null;
+			if (window.globalStream) {
+				window.globalStream?.getTracks()?.forEach(track => track.stop());
+				window.globalStream = null;
+				const videoElement = shadowRoot.getElementById('myVideo');
+				videoElement.srcObject=null;
 			}
 			registerEvent({ eventType: 'success', notify: false, eventName: 'prevalidation_passed' });
 			updatePersistData('preChecksSteps', { preValidation: true });
@@ -109,47 +110,50 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const createUIElements = () => {
-			let container = shadowRoot.querySelector('.ivso-container');
-	
-			if (!container) {
-				tabContent.insertAdjacentHTML('beforeend', '<div class="ivso-container"></div>');
-				container = tabContent.querySelector('.ivso-container');
-			} else {
-				container.innerHTML = '';
+			const oldContainer = shadowRoot.querySelector('.ivso-container');
+			if (oldContainer) {
+				oldContainer.remove();
 			}
-
-			let instructionsHTML = '';
-			iconData.forEach(icon => {
+		
+			tabContent.insertAdjacentHTML('beforeend', '<div class="ivso-container"></div>');
+			const container = tabContent.querySelector('.ivso-container');
+		
+			let instructionsHTML = iconData.map(icon => {
 				const coloredSvg = icon.svg.replace('fill="#FF961B"', `fill="${themeColor?.theming || '#FF961B'}"`);
-				instructionsHTML += `
-									<div class="pvi-instruction-svg">${coloredSvg}</div>
-									<div class="pvi-instruction-txt">${i18next.t(icon.text)}</div>
-							`;
-			});
-
-			container.insertAdjacentHTML('beforeend', `
-							<div class="pvi-header-title">${i18next.t('system_diagnostics')}</div>
-							<div class="pvi-msg">${i18next.t('initial_system_check_passed')}</div>
-							<div class="pvi-instructions-container">${instructionsHTML}</div>
-							<div id="videoMainContainer" class="pvi-header-img">
-									<div id="videoContainer"></div>
-							</div>
-							<div id="dropdownContainer" class="multi-device-block">
-									<div class="camera-container">
-											<select id="cameraDropdown"></select>
-									</div>
-									<div class="microphone-container">
-											<select id="microphoneDropdown"></select>
-									</div>
-							</div>
-							<div id="message" class="pvi-query-msg">${i18next.t('select_preferred_camera_and_microphone')}</div>
-							<div id="button-container" class="pvi-btn-container">
-									<button id="continue-btn" class="orange-filled-btn" style="margin-left: auto; padding: 9px 32px;">
-											${i18next.t('continue')}
-									</button>
-							</div>
-					`);
-
+				return `
+					<div class="pvi-instruction-svg">${coloredSvg}</div>
+					<div class="pvi-instruction-txt">${i18next.t(icon.text)}</div>
+				`;
+			}).join('');
+		
+			container.innerHTML = `
+				<div class="pvi-header-title">${i18next.t('system_diagnostics')}</div>
+				<div class="pvi-msg">${i18next.t('initial_system_check_passed')}</div>
+				<div class="pvi-instructions-container">${instructionsHTML}</div>
+				<div id="videoMainContainer" class="pvi-header-img">
+					<div id="videoContainer"></div>
+				</div>
+				<div id="dropdownContainer" class="multi-device-block">
+					<div class="camera-container">
+						<select id="cameraDropdown"></select>
+					</div>
+					<div class="microphone-container">
+						<select id="microphoneDropdown"></select>
+					</div>
+				</div>
+				<div id="message" class="pvi-query-msg">${i18next.t('select_preferred_camera_and_microphone')}</div>
+				<div id="button-container" class="pvi-btn-container">
+					<button id="continue-btn" class="orange-filled-btn" style="margin-left: auto; padding: 9px 32px;">
+						${i18next.t('continue')}
+					</button>
+				</div>
+			`;
+		
+			const oldButton = shadowRoot.getElementById('continue-btn');
+			if (oldButton) {
+				oldButton.removeEventListener('click', nextStep);
+			}
+		
 			shadowRoot.getElementById('continue-btn').addEventListener('click', nextStep);
 		};
 
@@ -187,19 +191,23 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 			
 		const startWebcam = async () => {
-			const videoContainer = shadowRoot.getElementById('videoContainer');
-			
-			if (window.prevalidationStream) {
-				window.prevalidationStream.getTracks().forEach(track => track.stop());
-				window.prevalidationStream = null;
-			}
-
-			if (videoContainer) {
-				videoContainer.innerHTML = '';
-			}
-
 			try {
-				window.prevalidationStream = await navigator.mediaDevices.getUserMedia({ 
+				const videoContainer = shadowRoot.getElementById('videoContainer');
+			
+				if (window.globalStream) {
+					const videoElement = shadowRoot.getElementById('myVideo');
+					window.globalStream?.getTracks()?.forEach(track => track.stop());
+					window.globalStream = null;
+					if(videoElement){
+						videoElement.srcObject = null;
+					}
+				}
+
+				if (videoContainer) {
+					videoContainer.innerHTML = '';
+				}
+			
+				window.globalStream = await navigator.mediaDevices.getUserMedia({ 
 					video: videoConstraints, 
 					audio: audioConstraints  
 				});
@@ -210,14 +218,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 											
 				const videoElement = shadowRoot.getElementById('myVideo');
 
-				if (videoElement) {
-					videoElement.srcObject = window.prevalidationStream;
-					videoElement.onloadedmetadata = () => {
-						videoElement.play().catch(err => {
-							logger.error('Video play failed:', err);
-						});
-					};
-				}
+				videoElement.srcObject = window.globalStream;
 											
 				currentCaptureMode = 'done';
 				updateUI();
@@ -250,7 +251,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 			});
 		};
 
-		createUIElements();
 			
 		const init = async () => {
 			cameras = await getMultipleCameraDevices();
@@ -262,6 +262,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 			microphones = microphones?.map(microphone => ({id: microphone.deviceId, name: microphone.label, ...microphone }));
 			localStorage.setItem('microphoneID', microphones?.length ? microphones[0].id : null);
 			selectedMicrophoneId = microphones?.length ? microphones[0].id : null;
+
+			createUIElements();
 
 			await startWebcam();
 			updateUI();

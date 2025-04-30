@@ -630,9 +630,6 @@ const startAIWebcam = async (room,mediaStream) => {
 						};
             
 						registerAIEvent(data);
-						updatePersistData('session', {
-							aiEvents: [data, ...session.aiEvents]
-						});
             
 						activeViolations[key] = null;
 					}

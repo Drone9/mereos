@@ -12,11 +12,9 @@ export const ExamPreparation = async (tabContent) => {
 		return;
 	}
     
-	logger.error('tabContent', tabContent);
 	tabContent.innerHTML = '';
 	let tncRead = false;
 	let errMsg = false;
-	logger.success('in the ExamPreparation');
     
 	if (currentLanguageHandler) {
 		i18next.off('languageChanged', currentLanguageHandler);

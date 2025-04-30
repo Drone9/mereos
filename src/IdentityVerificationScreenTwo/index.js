@@ -12,7 +12,6 @@ import { uploadFileInS3Folder } from '../services/general.services.js';
 export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let photo;
 	let inputFile;
-	let stream = null;
 	let disabledBtn = false;
 	let fileObj;
 	let currentState = {
@@ -156,8 +155,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const nextStep = async () => {
-		if(stream?.getTracks()){
-			stream.getTracks().forEach(track => track.stop());
+		if(window.globalStream?.getTracks()){
+			window.globalStream.getTracks().forEach(track => track.stop());
 		}
 		updatePersistData('preChecksSteps',{ identityCardPhoto:true });
 		registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_verified_successfully', eventValue: getDateTime()});
@@ -330,9 +329,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (!currentState.imageSrc) {
 			photo = container.querySelector('video');
 			if (photo) {
-				stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-				if (stream !== null) {
-					photo.srcObject = stream;
+				window.globalStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+				if (window.globalStream !== null) {
+					photo.srcObject = window.globalStream;
 				}
 			}
 		}

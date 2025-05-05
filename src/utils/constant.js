@@ -1151,10 +1151,10 @@ export const systemDiagnosticCss =`.system-diagnostic-test-screen {
   border: 1px solid var(--theme-color);
   cursor: pointer;
 	&:disabled {
-		background-image: linear-gradient(#F6F6F9, #F6F6F9) !important;
 		color: #A7ABB2 !important;
 		border: 1px solid #F6F6F9 !important;
-		background-color: #F6F6F9 !important;
+		background-color: transparent !important;
+    cursor:not-allowed;
 	}
 	&:hover {
 		box-shadow: 1px 1px 2px rgb(32 33 36 / 28%)

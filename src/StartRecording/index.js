@@ -317,6 +317,30 @@ export const startRecording = async () => {
 				}
 			});
 		
+			room.localParticipant.audioTracks.forEach((publication) => {
+				const track = publication.track;
+				if (track) {
+					const stoppedListener = () => {
+						if (window.startRecordingCallBack) {
+							window.startRecordingCallBack({ 
+								type: 'error',
+								message: 'microphone_is_stopped',
+								code: 40019
+							});
+						}
+						registerEvent({ 
+							eventType: 'error', 
+							notify: false, 
+							eventName: 'microphone_permission_denied', 
+							eventValue: dateTime 
+						});
+					};
+					
+					track.on('stopped', stoppedListener);
+					trackStoppedListeners.set(track, stoppedListener);
+				}
+			});
+
 			room.on('reconnecting', () => {
 				cleanupLocalVideo();
 				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){

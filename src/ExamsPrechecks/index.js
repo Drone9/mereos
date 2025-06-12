@@ -1,9 +1,10 @@
 import i18next from 'i18next';
 import '../assets/css/modal.css';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
-import { ASSET_URL,examPreparationSteps,examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,languages,  MobileProctoringCss,  modalCss,  preChecksSteps, preValidationCss, prevalidationSteps, spinner, SYSTEM_REQUIREMENT_STEP, systemDiagnosticCss, systemDiagnosticSteps, systemRequirementCss } from '../utils/constant';
+import { examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import 'notyf/notyf.min.css';
 import 'notyf/notyf.min.css';
+import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, prevalidationSteps, systemDiagnosticSteps, preChecksSteps } from '../utils/constant';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
 import { SystemDiagnostics } from '../SystemDiagnostic';
 import { IdentityVerificationScreenOne } from '../IdentityVerificationScreenOne';
@@ -102,7 +103,7 @@ const initializeLiveChat = () => {
 	document.body.insertAdjacentHTML('beforeend', `
     <div id="chat-icon-wrapper" class="chat-icon-wrapper" style="position: fixed; bottom: 20px; right: 20px; z-index: 99999999; cursor: grab; width: 50px; height: 50px; user-select: none;">
       <img id="chat-icon" class="chat-icon" src="${ASSET_URL}/mereos.svg" alt="Chat Icon" style="width: 100%; height: 100%;">
-      <div id="notification-badge" class="notification-badge" style="position: absolute; top: -8px; right: -8px; background-color: #FF4136; color: white; border-radius: 50%; width: 22px; height: 22px; display: none; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; box-shadow: 0 0 0 2px white;">0</div>
+      <div id="notification-badge" class="notification-badge" style="position: absolute; top: -5px; right: -5px; background-color: #FF4136; border-radius: 50%; width: 12px; height: 12px; display: none; box-shadow: 0 0 0 2px white;"></div>
     </div>
   `);
 
@@ -173,7 +174,6 @@ const initializeLiveChat = () => {
       
 			if (chatContainer.style.display === 'block') {
 				notificationBadge.style.display = 'none';
-				notificationBadge.textContent = '0';
 				unreadCount = 0;
 				updateNotificationBadge(0);
 			}
@@ -239,8 +239,7 @@ const initializeLiveChat = () => {
 		const badge = document.getElementById('notification-badge');
     
 		if (count > 0) {
-			badge.textContent = count > 99 ? '99+' : count;
-			badge.style.display = 'flex';
+			badge.style.display = 'block';
 		} else {
 			badge.style.display = 'none';
 		}
@@ -352,13 +351,14 @@ function closeModal() {
 
 const showTab = async (tabId, callback) => {
 	try {
+		console.log('tabId',tabId);
 		initializeI18next();
 		const getSecureFeature = getSecureFeatures();
 		const secureFeatures = getSecureFeature?.entities || [];
 
 		const featureMap = {
-			'IdentityCardRequirement':'verify_id',
 			'ExamPreparation': examPreparationSteps,
+			'IdentityCardRequirement':'verify_id',
 			'runSystemDiagnostics': systemDiagnosticSteps,
 			'SystemRequirements': SYSTEM_REQUIREMENT_STEP,
 			'Prevalidationinstruction': prevalidationSteps,
@@ -422,7 +422,7 @@ const showTab = async (tabId, callback) => {
 			await IdentityCardRequirement(IdentityCardRequirementContainer);
 		} else if (tabId === 'runSystemDiagnostics') {
 			if (!isFeatureAllowed) {
-				navigate('Prevalidationinstruction');
+				navigate('SystemRequirements');
 				return;
 			}
 			SystemDiagnostics(SystemDiagnosticsContainer);

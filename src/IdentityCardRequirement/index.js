@@ -36,16 +36,13 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 		mobileContainer.innerHTML = '';
 	}
 
-	// Get school theme data
 	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? 
 		JSON.parse(localStorage.getItem('schoolTheme')) : {};
     
-	// Create background images HTML
 	const vectorsHTML = vectors.map(vector => 
 		`<img class="${vector.name}" src="${vector.src}" alt="${vector.alt}">`
 	).join('');
 
-	// Create the main HTML using insertAdjacentHTML
 	tabContent.insertAdjacentHTML('beforeend', `
         <div class="exam-preparation">
             <div class="exam-preparation-container">
@@ -64,7 +61,6 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
         </div>
     `);
     
-	// Add CSS styles if needed
 	if (!shadowRoot.getElementById('identity-card-styles')) {
 		const styleElement = document.createElement('style');
 		styleElement.id = 'identity-card-styles';
@@ -74,10 +70,8 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 		document.head.appendChild(styleElement);
 	}
     
-	// Add event listener to the continue button
 	shadowRoot.getElementById('continue-button').addEventListener('click', nextPage);
     
-	// Handle language changes only for this component
 	const languageChangeHandler = () => {
 		const titleElement = tabContent.querySelector('h1');
 		const msgElement = tabContent.querySelector('.ep-msg');
@@ -88,14 +82,11 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 		if (continueButtonElement) continueButtonElement.textContent = i18next.t('continue');
 	};
     
-	// Store the language change handler reference on the tabContent for cleanup later if needed
 	tabContent.languageChangeHandler = languageChangeHandler;
     
-	// Add language change listener
 	i18next.on('languageChanged', languageChangeHandler);
 };
 
-// Global language change handler for when this tab becomes active
 i18next.on('languageChanged', () => {
 	const activeTab = shadowRoot.querySelector('.tab-content.active');
 	if (activeTab && activeTab.id === 'IdentityCardRequirement') {

@@ -859,28 +859,6 @@ export const stopPrinting = () => {
 	});
 };
 
-let resizeTimeout;
-let isResizing = false;
-
-const handleResize = () => {
-	if (!isResizing) {
-		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
-		isResizing = true;
-	}
-
-	clearTimeout(resizeTimeout);
-
-	resizeTimeout = setTimeout(() => {
-		isResizing = false;
-	}, 500);
-};
-
-export const detectWindowResize = () => {
-	return new Promise((resolve, _reject) => {
-		window.addEventListener('resize', handleResize);
-		resolve(true);
-	});
-};
 
 export const exitFullScreen = () => {
 	try {
@@ -894,50 +872,6 @@ export const exitFullScreen = () => {
 		}
 	} catch (error) {
 		logger.error('An error occurred while attempting to exit fullscreen:', error);
-	}
-};
-
-let whiteBackgroundElement; // Declare outside to access in the event listener
-
-export const forceFullScreen = (element = document.documentElement) => {
-	try {
-		// Attempt to request fullscreen based on the browser
-		if (typeof element.requestFullscreen === 'function') {
-			element.requestFullscreen();
-		} else if (typeof element.webkitRequestFullscreen === 'function') { /* Safari */
-			element.webkitRequestFullscreen();
-		} else if (typeof element.msRequestFullscreen === 'function') { /* IE11 */
-			element.msRequestFullscreen();
-		}
-
-		// Create the white background element only if it doesn't exist
-		if (!whiteBackgroundElement) {
-			whiteBackgroundElement = document.createElement('div');
-			whiteBackgroundElement.id = 'white-Background-Element';
-			whiteBackgroundElement.style.backgroundColor = 'white';
-			whiteBackgroundElement.style.top = '0';
-			whiteBackgroundElement.style.left = '0';
-			whiteBackgroundElement.style.width = '100%';
-			whiteBackgroundElement.style.height = '100%';
-			whiteBackgroundElement.style.overflow = 'auto'; // Enable scrolling
-			whiteBackgroundElement.style.zIndex = '1000'; // Ensure it's on top
-
-			document.body.appendChild(whiteBackgroundElement);
-		}
-
-		const handleFullscreenChange = () => {
-			if (!document.fullscreenElement) {
-				if (whiteBackgroundElement && document.body.contains(whiteBackgroundElement)) {
-					document.body.removeChild(whiteBackgroundElement);
-					whiteBackgroundElement = null;
-				}
-				document.removeEventListener('fullscreenchange', handleFullscreenChange); 
-			}
-		};
-
-		document.addEventListener('fullscreenchange', handleFullscreenChange);
-	} catch (error) {
-		logger.error('An error occurred while attempting to enter fullscreen:', error);
 	}
 };
 
@@ -1373,4 +1307,93 @@ export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
 
 
 	return result;
+};
+
+
+let isFullscreenTransition = false;
+let fullscreenTransitionTimeout;
+let isProgrammaticFullscreen = false;
+
+export const forceFullScreen = (element = document.documentElement) => {
+	try {
+		isFullscreenTransition = true;
+		isProgrammaticFullscreen = true;
+		console.log('isFullscreenTransition',isFullscreenTransition);
+
+		// Clear any pending timeout
+		if (fullscreenTransitionTimeout) {
+			clearTimeout(fullscreenTransitionTimeout);
+		}
+
+		// Attempt to request fullscreen based on the browser
+		if (typeof element.requestFullscreen === 'function') {
+			element.requestFullscreen();
+		} else if (typeof element.webkitRequestFullscreen === 'function') { /* Safari */
+			element.webkitRequestFullscreen();
+		} else if (typeof element.msRequestFullscreen === 'function') { /* IE11 */
+			element.msRequestFullscreen();
+		}
+
+		const whiteBackgroundElement = document.createElement('div');
+		whiteBackgroundElement.style.backgroundColor = 'white';
+		whiteBackgroundElement.style.top = '0';
+		whiteBackgroundElement.style.left = '0';
+		whiteBackgroundElement.style.width = '100%';
+		whiteBackgroundElement.style.height = '100%';
+		whiteBackgroundElement.style.overflow = 'auto';
+		whiteBackgroundElement.style.zIndex = '1000';
+
+		document.body.appendChild(whiteBackgroundElement);
+
+		const handleFullscreenChange = () => {
+			if (!document.fullscreenElement) {
+				// User exited fullscreen
+				if (whiteBackgroundElement && document.body.contains(whiteBackgroundElement)) {
+					document.body.removeChild(whiteBackgroundElement);
+				}
+				document.removeEventListener('fullscreenchange', handleFullscreenChange);
+			}
+		};
+
+		fullscreenTransitionTimeout = setTimeout(() => {
+			isFullscreenTransition = false;
+			isProgrammaticFullscreen = false;
+		}, 1000);
+
+		document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+		return Promise.resolve(true);
+	} catch (error) {
+		isFullscreenTransition = false;
+		isProgrammaticFullscreen = false;
+		console.error('An error occurred while attempting to enter fullscreen:', error);
+		return Promise.resolve(false);
+	}
+};
+
+export const detectWindowResize = () => {
+	return new Promise((resolve, _reject) => {
+		window.addEventListener('resize', handleResize);
+		resolve(true);
+	});
+};
+
+let resizeTimeout;
+let isResizing = false;
+
+const handleResize = () => {
+	if (isProgrammaticFullscreen) {
+		return;
+	}
+
+	if (!isResizing) {
+		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+		isResizing = true;
+	}
+
+	clearTimeout(resizeTimeout);
+
+	resizeTimeout = setTimeout(() => {
+		isResizing = false;
+	}, 500);
 };

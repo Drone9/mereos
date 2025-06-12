@@ -4,7 +4,27 @@ import i18next from 'i18next';
 import { v4 } from 'uuid';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, detectBackButton, detectBackButtonCallback, detectPageRefresh, detectPageRefreshCallback, findConfigs, getDateTime, getSecureFeatures, getTimeInSeconds, initializeI18next, lockBrowserFromContent, logger, registerAIEvent, registerEvent, showToast, unlockBrowserFromContent, updatePersistData } from '../utils/functions';
+import { 
+	addSectionSessionRecord, 
+	cleanupZendeskWidget, 
+	convertDataIntoParse, 
+	detectBackButton, 
+	detectBackButtonCallback, 
+	detectPageRefresh, 
+	detectPageRefreshCallback, 
+	findConfigs, 
+	getDateTime, 
+	getSecureFeatures, 
+	getTimeInSeconds, 
+	initializeI18next, 
+	lockBrowserFromContent, 
+	logger, 
+	registerAIEvent, 
+	registerEvent, 
+	showToast, 
+	unlockBrowserFromContent, 
+	updatePersistData 
+} from '../utils/functions';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
@@ -70,6 +90,41 @@ export const startRecording = async () => {
 		}
 		localStorage.clear();
 	};
+
+	// let userBrowserEvents = null;
+	// let userAiEvents = null;
+	// let forceClosureTriggered = false;
+
+	// function onSessionOrSectionChange(forceClosure) {
+	// 	if (!session || forceClosureTriggered) return;
+	// 	const session = convertDataIntoParse('session');
+
+	// 	userBrowserEvents = session.browserEvents;
+	// 	userAiEvents = session.aiEvents;
+
+	// 	if (!userAiEvents || !userBrowserEvents) {
+	// 		console.warn('Missing required events data');
+	// 		return;
+	// 	}
+
+	// 	const incidentLevel = findIncidentLevel(
+	// 		userAiEvents,
+	// 		userBrowserEvents,
+	// 		secureFeatures
+	// 	);
+
+	// 	console.log('Incident level detected:', incidentLevel);
+
+	// 	const configs = findConfigs(
+	// 		['force_closure'],
+	// 		secureFeatures?.entities || []
+	// 	);
+
+	// 	if (incidentLevel === 'high' && configs.length > 0) {
+	// 		forceClosureTriggered = true;
+	// 		forceClosure();
+	// 	}
+	// }
 
 	const initSocketConnection = () => {
 		if (!window.socket) {

@@ -120,7 +120,12 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 				localStorage.setItem('secureFeatures', JSON.stringify(candidateAssessmentResp?.data?.profile));
 			}
 
-			return logonResp.data;
+			return callback({
+				type: 'success',
+				message: 'init_function_complete',
+				code: 50004,
+				details: logonResp.data,
+			});
 		}
 	} catch (error) {
 		return callback({

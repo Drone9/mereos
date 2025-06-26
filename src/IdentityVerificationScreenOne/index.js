@@ -170,7 +170,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		if(window.globalStream){
       window.globalStream?.getTracks()?.forEach((track) => track.stop());
 		}
-		registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_captured_successfully' });
 		updatePersistData('preChecksSteps',{ userPhoto:true });
 		showTab('IdentityVerificationScreenTwo');
 	};

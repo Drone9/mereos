@@ -2,7 +2,7 @@ import i18next from 'i18next';
 
 import { shadowRoot, showTab } from '../ExamsPrechecks';
 
-import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 
@@ -159,7 +159,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			window.globalStream.getTracks().forEach(track => track.stop());
 		}
 		updatePersistData('preChecksSteps',{ identityCardPhoto:true });
-		registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_verified_successfully', eventValue: getDateTime()});
 		showTab('IdentityVerificationScreenThree');
 	};
 

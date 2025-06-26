@@ -1019,5 +1019,9 @@
 	"your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality": "Uw internet is erg traag. Zorg ervoor dat u een stabiele internetverbinding heeft.",
 	"your_session_will_end_when_the_time_is_up": "Uw sessie eindigt wanneer de tijd op is of wanneer u op 'Indienen en afsluiten' klikt.",
 	"your_time_is_valuable": "Uw tijd is waardevol",
-	"your_warm_pool_may_have_ideal_candidate_to_instahire": "Uw warme pool heeft mogelijk een ideale kandidaat om snel in te huren via Instahiring."
+	"your_warm_pool_may_have_ideal_candidate_to_instahire": "Uw warme pool heeft mogelijk een ideale kandidaat om snel in te huren via Instahiring.",
+	"camera_permission_disabled": "Cameratoestemming uitgeschakeld",
+	"microphone_permission_denied": "Microfoontoestemming uitgeschakeld",
+	"assessment_closed_due_to_multiple_violation":"Beoordeling gesloten wegens meerdere overtredingen",
+	"signaling_connection_disconnected": "Beoordeling gesloten vanwege geen internetverbinding"
 }

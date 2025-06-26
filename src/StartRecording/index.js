@@ -13,6 +13,7 @@ import {
 	detectPageRefresh, 
 	detectPageRefreshCallback, 
 	findConfigs, 
+	findIncidentLevel, 
 	getDateTime, 
 	getSecureFeatures, 
 	getTimeInSeconds, 
@@ -35,7 +36,9 @@ let aiEvents = [];
 let mediaStream = null;
 let mobileRoomInstance = null;
 const trackStoppedListeners = new Map();
-
+let forceClosureTriggered = false;
+let incidentCheckInterval = null;
+	
 export const startRecording = async () => {	
 	let screenTrack = null;
 	let cameraRecordings = [];
@@ -52,79 +55,130 @@ export const startRecording = async () => {
 		try {
 			if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
 				try {
+					const isOnline = navigator.onLine;
 					const updatedSession = convertDataIntoParse('session');
-					addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
-					registerEvent({ 
-						eventType: 'success', 
-						notify: false, 
-						eventName: 'signaling_connection_disconnected', 
-						eventValue: getDateTime() 
-					});
+
+					const noop = () => {};
+					document.removeEventListener('visibilitychange', noop);
+					document.removeEventListener('beforeunload', detectPageRefreshCallback);
+					window.removeEventListener('beforeunload', detectPageRefreshCallback);
+
+					if (!isOnline) {
+						showToast('error', 'signaling_connection_disconnected');
+						addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+						registerEvent({ 
+							eventType: 'success', 
+							notify: false, 
+							eventName: 'signaling_connection_disconnected', 
+							eventValue: getDateTime() 
+						});
+						window.startRecordingCallBack({ 
+							type: 'error', 
+							message: 'signaling_connection_disconnected',
+							code: 40006
+						});
+					} else {
+						showToast('error', 'assessment_closed_due_to_multiple_violation');
+						await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+						
+						await registerEvent({ 
+							eventType: 'error', 
+							notify: false, 
+							eventName: 'assessment_closed_due_to_multiple_violation', 
+							eventValue: getDateTime(),
+						});
+
+						window.startRecordingCallBack({ 
+							type: 'error', 
+							message: 'assessment_closed_due_to_multiple_violation',
+							code: 400010
+						});
+					}
+
+					resetSessionData();
 				} catch (apiError) {
+					logger.error('API error during force closure:', apiError);
 					resetSessionData();
 				}
-				resetSessionData();
 			} else {
-				window.roomInstance=null;
-				window.recordingStart=false;
-				if(window.startRecordingCallBack){
+				window.roomInstance = null;
+				window.recordingStart = false;
+				if (window.startRecordingCallBack) {
 					window.startRecordingCallBack({ 
-						type:'error', 
-						message: 'internet_connection_lost_session_cant_resume',
-						code:40006
+						type: 'error', 
+						message: 'signaling_connection_disconnected',
+						code: 40006
 					});
 				}
 			}
 		} catch (error) {
-			logger.error('Error in resetSession:', error);
+			logger.error('Error in forceClosure:', error);
+			resetSessionData();
 		}
 	};
 
 	const resetSessionData = () => {
-		if(window.startRecordingCallBack){
+		if (incidentCheckInterval) {
+			clearInterval(incidentCheckInterval);
+			incidentCheckInterval = null;
+		}
+	
+		if (aiProcessingInterval) {
+			clearInterval(aiProcessingInterval);
+			aiProcessingInterval = null;
+		}
+
+		localStorage.clear();
+	
+		forceClosureTriggered = false;
+
+		if (window.startRecordingCallBack) {
 			window.startRecordingCallBack({ 
-				type:'error',
+				type: 'error',
 				message: 'internet_connection_lost_force_close_your_session',
-				code:40007
+				code: 40007
 			});
 		}
-		localStorage.clear();
 	};
 
-	// let userBrowserEvents = null;
-	// let userAiEvents = null;
-	// let forceClosureTriggered = false;
+	const startIncidentMonitoring = () => {
+		
+		
+		if (incidentCheckInterval) {
+			clearInterval(incidentCheckInterval);
+		}
 
-	// function onSessionOrSectionChange(forceClosure) {
-	// 	if (!session || forceClosureTriggered) return;
-	// 	const session = convertDataIntoParse('session');
+		incidentCheckInterval = setInterval(() => {
+		
+			if (forceClosureTriggered) {
+				return;
+			}
+			const session = convertDataIntoParse('session');
+			const { aiEvents,browserEvents } = session;
 
-	// 	userBrowserEvents = session.browserEvents;
-	// 	userAiEvents = session.aiEvents;
+			if (!aiEvents || !browserEvents) {
+				console.warn('Missing required events data');
+				return;
+			}
 
-	// 	if (!userAiEvents || !userBrowserEvents) {
-	// 		console.warn('Missing required events data');
-	// 		return;
-	// 	}
+			const secureFeatures = getSecureFeatures();
+			const incidentLevel = findIncidentLevel(
+				aiEvents,
+				browserEvents,
+				secureFeatures
+			);
+			console.log('userAiEvents',aiEvents,'userBrowserEvents',browserEvents);
+			console.log('Incident level detected:', incidentLevel);
 
-	// 	const incidentLevel = findIncidentLevel(
-	// 		userAiEvents,
-	// 		userBrowserEvents,
-	// 		secureFeatures
-	// 	);
+			if (incidentLevel === 'high' && 
+			findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0) {
+				forceClosureTriggered = true;
+				forceClosure();
+			}
+		}, 2000);
+	};
 
-	// 	console.log('Incident level detected:', incidentLevel);
-
-	// 	const configs = findConfigs(
-	// 		['force_closure'],
-	// 		secureFeatures?.entities || []
-	// 	);
-
-	// 	if (incidentLevel === 'high' && configs.length > 0) {
-	// 		forceClosureTriggered = true;
-	// 		forceClosure();
-	// 	}
-	// }
+	startIncidentMonitoring();
 
 	const initSocketConnection = () => {
 		if (!window.socket) {
@@ -936,7 +990,12 @@ export const stopAllRecordings = async () => {
 	try {
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
+		if (incidentCheckInterval) {
+			clearInterval(incidentCheckInterval);
+			incidentCheckInterval = null;
+		}
 
+		forceClosureTriggered = false;
 		if (window.socket && window.socket.readyState === WebSocket.OPEN) {
 			window.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}

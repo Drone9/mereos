@@ -1019,5 +1019,9 @@
 	"your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality": "Votre connexion Internet est très lente. Veuillez vous assurer d'avoir une connexion Internet stable.",
 	"your_session_will_end_when_the_time_is_up": "Votre session se terminera lorsque le temps sera écoulé ou lorsque vous cliquerez sur “Soumettre et quitter”.",
 	"your_time_is_valuable": "Votre temps est précieux",
-	"your_warm_pool_may_have_ideal_candidate_to_instahire": "Votre piscine chauffée peut avoir un candidat idéal pour Instahire."
+	"your_warm_pool_may_have_ideal_candidate_to_instahire": "Votre piscine chauffée peut avoir un candidat idéal pour Instahire.",
+	"camera_permission_disabled": "Autorisation de caméra désactivée",
+	"microphone_permission_denied": "Autorisation de microphone désactivée",
+	"assessment_closed_due_to_multiple_violation":"Évaluation clôturée en raison de multiples infractions",
+	"signaling_connection_disconnected": "Évaluation fermée en raison d'aucune connexion internet"
 }

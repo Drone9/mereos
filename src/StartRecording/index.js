@@ -152,15 +152,17 @@ export const startRecording = async () => {
 				return;
 			}
 			const session = convertDataIntoParse('session');
-			const { aiEvents,browserEvents } = session;
+			const { 
+				// aiEvents,
+				browserEvents } = session;
 
 			const secureFeatures = getSecureFeatures();
 			const incidentLevel = findIncidentLevel(
-				aiEvents,
+				// aiEvents,
 				browserEvents,
 				secureFeatures
 			);
-
+			// logger.success('aiEvents',aiEvents);
 			if (incidentLevel === 'high' && 
 			findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0) {
 				forceClosureTriggered = true;

@@ -2,7 +2,7 @@ import i18next from 'i18next';
 
 import { shadowRoot, showTab } from '../ExamsPrechecks';
 
-import { acceptableLabels, acceptableText, dataURIToBlob, getDateTime, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 
@@ -155,11 +155,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const nextStep = async () => {
-		if(window.globalStream?.getTracks()){
-			window.globalStream.getTracks().forEach(track => track.stop());
+		if(window.mereos.globalStream?.getTracks()){
+			window.mereos.globalStream.getTracks().forEach(track => track.stop());
 		}
 		updatePersistData('preChecksSteps',{ identityCardPhoto:true });
-		registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_verified_successfully', eventValue: getDateTime()});
 		showTab('IdentityVerificationScreenThree');
 	};
 
@@ -329,9 +328,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (!currentState.imageSrc) {
 			photo = container.querySelector('video');
 			if (photo) {
-				window.globalStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-				if (window.globalStream !== null) {
-					photo.srcObject = window.globalStream;
+				window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+				if (window.mereos.globalStream !== null) {
+					photo.srcObject = window.mereos.globalStream;
 				}
 			}
 		}

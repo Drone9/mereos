@@ -98,9 +98,9 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const nextStep = () => {
-			if (window.globalStream) {
-				window.globalStream?.getTracks()?.forEach(track => track.stop());
-				window.globalStream = null;
+			if (window.mereos.globalStream) {
+				window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
+				window.mereos.globalStream = null;
 				const videoElement = shadowRoot.getElementById('myVideo');
 				videoElement.srcObject=null;
 			}
@@ -194,10 +194,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 			try {
 				const videoContainer = shadowRoot.getElementById('videoContainer');
 			
-				if (window.globalStream) {
+				if (window.mereos.globalStream) {
 					const videoElement = shadowRoot.getElementById('myVideo');
-					window.globalStream?.getTracks()?.forEach(track => track.stop());
-					window.globalStream = null;
+					window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
+					window.mereos.globalStream = null;
 					if(videoElement){
 						videoElement.srcObject = null;
 					}
@@ -207,7 +207,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 					videoContainer.innerHTML = '';
 				}
 			
-				window.globalStream = await navigator.mediaDevices.getUserMedia({ 
+				window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ 
 					video: videoConstraints, 
 					audio: audioConstraints  
 				});
@@ -218,7 +218,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 											
 				const videoElement = shadowRoot.getElementById('myVideo');
 
-				videoElement.srcObject = window.globalStream;
+				videoElement.srcObject = window.mereos.globalStream;
 											
 				currentCaptureMode = 'done';
 				updateUI();

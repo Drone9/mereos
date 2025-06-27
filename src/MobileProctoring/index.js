@@ -14,7 +14,7 @@ import { shadowRoot } from '../ExamsPrechecks';
 import '../assets/css/mobile-proctoring.css';
 
 export const MobileProctoring = async (tabContent) => {
-	window.mobileStream = null;
+	window.mereos.mobileStream = null;
 	let mobileSteps = ''; 
 	let disabledNextBtn = false; 
 	let checkedVideo = false;
@@ -28,14 +28,14 @@ export const MobileProctoring = async (tabContent) => {
 	const initSocketConnection = () => {
 		initSocket();
 
-		if (!window.socket) {
+		if (!window.mereos.socket) {
 			logger.error('Socket not initialized');
 			return;
 		}
 
 		const sendResetSession = () => {
-			if (window.socket.readyState === WebSocket.OPEN) {
-				window.socket.send(JSON.stringify({ event: 'resetSession' }));
+			if (window.mereos.socket.readyState === WebSocket.OPEN) {
+				window.mereos.socket.send(JSON.stringify({ event: 'resetSession' }));
 				mobileSteps = '';
 			} else {
 				logger.warn('Socket is not open, cannot send resetSession');
@@ -46,14 +46,14 @@ export const MobileProctoring = async (tabContent) => {
 			sendResetSession();
 		}
 
-		window.socket.onopen = () => {
+		window.mereos.socket.onopen = () => {
 			logger.success('WebSocket connection established');
 			if (!remoteVideoRef.srcObject?.getTracks()?.length) {
 				sendResetSession();
 			}
 		};
 
-		window.socket.onmessage = (event) => {
+		window.mereos.socket.onmessage = (event) => {
 			const eventData = JSON.parse(event.data);
 
 			switch (eventData?.message?.event || eventData?.event) {
@@ -63,7 +63,7 @@ export const MobileProctoring = async (tabContent) => {
 
 				case 'mobilePreChecksCompleted':
 					mobileSteps = 'precheckCompleted';
-					window.socket?.send(JSON.stringify({ event: 'requestMobileBroadcast' }));
+					window.mereos.socket?.send(JSON.stringify({ event: 'requestMobileBroadcast' }));
 					disabledNextBtn = true;
 					renderUI();
 					break;
@@ -76,7 +76,7 @@ export const MobileProctoring = async (tabContent) => {
 					renderUI();
 					const getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 					getUserMedia({ video: true, audio: false }, (mediaStream) => {
-						window.mobileStream = mediaStream;
+						window.mereos.mobileStream = mediaStream;
 
 						if (peerInstance) { 
 							const call = peerInstance.call(eventData?.message?.message, mediaStream);
@@ -112,8 +112,8 @@ export const MobileProctoring = async (tabContent) => {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
 						showToast('error', 'mobile_phone_disconnected');
-						if(window.mobileStream){
-							window.mobileStream.getTracks().forEach(track => track.stop());
+						if(window.mereos.mobileStream){
+							window.mereos.mobileStream.getTracks().forEach(track => track.stop());
 						}
 						renderUI();
 					} else {
@@ -127,11 +127,11 @@ export const MobileProctoring = async (tabContent) => {
 			}
 		};
 
-		window.socket.onerror = (error) => {
+		window.mereos.socket.onerror = (error) => {
 			logger.error('WebSocket error:', error);
 		};
 
-		window.socket.onclose = () => {
+		window.mereos.socket.onclose = () => {
 			logger.error('WebSocket connection closed');
 		};
 	};
@@ -179,7 +179,7 @@ export const MobileProctoring = async (tabContent) => {
 		mobileSteps = newStep;
 		renderUI(); 
 		if (newStep === 'step4') {
-			window.mobileStream?.getTracks()?.forEach((track) => track.stop());
+			window.mereos.mobileStream?.getTracks()?.forEach((track) => track.stop());
 			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
 			updatePersistData('preChecksSteps', { mobileConnection: true });
 			showTab('IdentityVerificationScreenFive');
@@ -203,11 +203,11 @@ export const MobileProctoring = async (tabContent) => {
 		} else {
 			mobileSteps = 'tokenCode';
 			checkedVideo = false;
-			if(window.mobileStream){
-				window.mobileStream?.getTracks()?.forEach(track => track.stop());
+			if(window.mereos.mobileStream){
+				window.mereos.mobileStream?.getTracks()?.forEach(track => track.stop());
 			}
-			if (window.socket.readyState === WebSocket.OPEN) {
-				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+			if (window.mereos.socket.readyState === WebSocket.OPEN) {
+				window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 			}
 			renderUI(); 
 		}
@@ -322,10 +322,10 @@ export const MobileProctoring = async (tabContent) => {
 						
 						<span class="example-text">${t('example_tutorial')}</span>
 						
-						<div class="bottom-desc-remote">
-							<input type="checkbox" id="video-check" ${checkedVideo ? 'checked' : ''} />
-							<p>${t('is_the_camera_feedback_good')}</p>
-						</div>
+						 <label for="video-check" class="bottom-desc-remote">
+								<input type="checkbox" id="video-check" ${checkedVideo ? 'checked' : ''} />
+								<span>${t('is_the_camera_feedback_good')}</span>
+						</label>
 						
 						<div class="mobile-btn-container">
 							<button class="orange-hollow-btn" id="previous-btn">${t('previous_step')}</button>
@@ -387,8 +387,8 @@ export const MobileProctoring = async (tabContent) => {
 	}
 
 	const initProctoring = () => {
-		if(window.webStream) {
-			window.webStream.getTracks().forEach(track => track.stop());
+		if(window.mereos.webStream) {
+			window.mereos.webStream.getTracks().forEach(track => track.stop());
 		}
 		initSocketConnection();
 		initPeerConnection();

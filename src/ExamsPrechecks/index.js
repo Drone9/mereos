@@ -337,8 +337,8 @@ const openModal = async (callback) => {
 
 function closeModal() {
 	if (typeof window.globalCallback === 'function') {
-		window.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
 		window.precheckCompleted = true;
+		window.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
 	}
 
 	modal.style.display = 'block';

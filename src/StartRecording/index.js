@@ -142,8 +142,6 @@ export const startRecording = async () => {
 	};
 
 	const startIncidentMonitoring = () => {
-		
-		
 		if (incidentCheckInterval) {
 			clearInterval(incidentCheckInterval);
 		}
@@ -156,19 +154,12 @@ export const startRecording = async () => {
 			const session = convertDataIntoParse('session');
 			const { aiEvents,browserEvents } = session;
 
-			if (!aiEvents || !browserEvents) {
-				console.warn('Missing required events data');
-				return;
-			}
-
 			const secureFeatures = getSecureFeatures();
 			const incidentLevel = findIncidentLevel(
 				aiEvents,
 				browserEvents,
 				secureFeatures
 			);
-			console.log('userAiEvents',aiEvents,'userBrowserEvents',browserEvents);
-			console.log('Incident level detected:', incidentLevel);
 
 			if (incidentLevel === 'high' && 
 			findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0) {

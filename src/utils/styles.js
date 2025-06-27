@@ -2096,9 +2096,10 @@ export const MobileProctoringCss = `.mobile-conection-container {
 .bottom-desc-remote input {
   accent-color: var(--theme-color);
 }
-.bottom-desc-remote p{
+.bottom-desc-remote span{
   margin: 0;
   font-size: 15px;
+  cursor:pointer;
 }
 .qr-code-container {
   display: flex;

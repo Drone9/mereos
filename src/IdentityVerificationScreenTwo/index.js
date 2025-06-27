@@ -155,8 +155,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const nextStep = async () => {
-		if(window.globalStream?.getTracks()){
-			window.globalStream.getTracks().forEach(track => track.stop());
+		if(window.mereos.globalStream?.getTracks()){
+			window.mereos.globalStream.getTracks().forEach(track => track.stop());
 		}
 		updatePersistData('preChecksSteps',{ identityCardPhoto:true });
 		showTab('IdentityVerificationScreenThree');
@@ -328,9 +328,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (!currentState.imageSrc) {
 			photo = container.querySelector('video');
 			if (photo) {
-				window.globalStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-				if (window.globalStream !== null) {
-					photo.srcObject = window.globalStream;
+				window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+				if (window.mereos.globalStream !== null) {
+					photo.srcObject = window.mereos.globalStream;
 				}
 			}
 		}

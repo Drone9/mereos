@@ -6,9 +6,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
 */
-
-window.openModal = openModal;
-
+window.mereos = window.mereos || {};
 import {  openModal, shadowRoot, startSession } from './src/ExamsPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
@@ -137,10 +135,9 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 	}
 }
 
-window.globalCallback = null;
 async function start_prechecks(callback,setting) {
 	try {
-		window.globalCallback = callback;
+		window.mereos.globalCallback = callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');
@@ -152,7 +149,7 @@ async function start_prechecks(callback,setting) {
 		}
 
 		localStorage.setItem('precheckSetting', setting);
-		window.precheckCompleted=false;
+		window.mereos.precheckCompleted=false;
 		startSession();
 		openModal(callback);
 	} catch (error) {
@@ -166,18 +163,16 @@ async function start_prechecks(callback,setting) {
 	}
 }
 
-window.stopPrecheckCallBack = null;
-
 async function stop_prechecks(callback) {
 	try {
-		window.stopPrecheckCallBack = callback;
+		window.mereos.stopPrecheckCallBack = callback;
 		const sessionSetting = localStorage.getItem('precheckSetting');
 		const modal = document.getElementById('precheck-modal');
 		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');
 
-		if (window.globalStream) {
-			window.globalStream.getTracks().forEach(track => {
+		if (window.mereos.globalStream) {
+			window.mereos.globalStream.getTracks().forEach(track => {
 				track.stop();
 				track.enabled = false;
 				track.onended = null;
@@ -190,11 +185,11 @@ async function stop_prechecks(callback) {
 			];
 			
 			videoElements.forEach(video => {
-				if (video.srcObject === window.globalStream) {
+				if (video.srcObject === window.mereos.globalStream) {
 					video.srcObject = null;
 				}
 			});
-			window.globalStream = null;
+			window.mereos.globalStream = null;
 		}
 		
 		if(sessionSetting !== 'session_resume'){
@@ -235,20 +230,17 @@ async function stop_prechecks(callback) {
 	}
 }
 
-window.startRecordingCallBack = null;
-window.recordingStart=false;
-window.roomInstance=null;
 async function start_session(callback) {
 	try {
-		window.startRecordingCallBack = callback;
+		window.mereos.startRecordingCallBack = callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');
 			return callback(tokenExpiredError);
 		}
 
-		if(!window.precheckCompleted){
-			window.startRecordingCallBack({ 
+		if(!window.mereos.precheckCompleted){
+			window.mereos.startRecordingCallBack({ 
 				type:'error',
 				message: 'please_complete_your_prechecks' ,
 				code:40019
@@ -256,8 +248,8 @@ async function start_session(callback) {
 			return;
 		}
 
-		if(window.roomInstance === null && !window.recordingStart){
-			window.recordingStart=true;
+		if(!window.mereos.roomInstance && !window.mereos.recordingStart){
+			window.mereos.recordingStart=true;
 			const secureFeatures = getSecureFeatures();
 			const dateTime = new Date();
 			const currentTimeInSeconds = Math.abs(getTimeInSeconds({ isUTC: true, inputDate: dateTime }));
@@ -288,8 +280,8 @@ async function start_session(callback) {
 							mobileRoomSessionId: mobileRoomSessionId,
 						});
 	
-						if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-							window.socket.send(
+						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+							window.mereos.socket.send(
 								JSON.stringify({
 									event: 'twilioToken',
 									message: mobileTwilioToken?.data?.token,
@@ -297,8 +289,8 @@ async function start_session(callback) {
 							);
 						}
 					} catch (err) {
-						if(window.startRecordingCallBack){
-							window.startRecordingCallBack({
+						if(window.mereos.startRecordingCallBack){
+							window.mereos.startRecordingCallBack({
 								type: 'error',
 								message: 'error_in_mobile_proctoring_setup',
 								details: err,
@@ -322,7 +314,7 @@ async function start_session(callback) {
 							});
 						}
 					} catch (err) {
-						window.startRecordingCallBack({
+						window.mereos.startRecordingCallBack({
 							type: 'error',
 							message: 'error_in_web_room_creation',
 							details: err,
@@ -334,7 +326,7 @@ async function start_session(callback) {
 	
 				startRecording();
 			} else {
-				window.startRecordingCallBack({ 
+				window.mereos.startRecordingCallBack({ 
 					type:'success',
 					message: 'recording_started_successfully',
 					code:50000
@@ -352,10 +344,9 @@ async function start_session(callback) {
 	}
 }
 
-window.stopRecordingCallBack = null;
 async function stop_session(callback) {
 	try {
-		window.stopRecordingCallBack=callback;
+		window.mereos.stopRecordingCallBack=callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');
@@ -398,5 +389,5 @@ async function stop_session(callback) {
 	}
 }
 
-// window.mereos = {init, start_prechecks, start_session, stop_session};
+// window.mereos.mereos = {init, start_prechecks, start_session, stop_session};
 export {init, start_prechecks,stop_prechecks, start_session, stop_session };

@@ -34,7 +34,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	const handleStartRecording = async (type) => {
 		try {
 			if (type === 'startRecording') {
-				mediaRecorder = new MediaRecorder(window.globalStream);
+				mediaRecorder = new MediaRecorder(window.mereos.globalStream);
 
 				mediaRecorder.ondataavailable = (event) => {
 					if (event.data.size > 0) {
@@ -82,7 +82,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	const handleStopRecording = async () => {
-		clearInterval(window.recordingDotInterval);
+		clearInterval(window.mereos.recordingDotInterval);
 		clearTimeout(autoStopRecordingTimeout);
 		if (mediaRecorder) {
 			mediaRecorder.stop();
@@ -99,9 +99,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			recordingMode = 'startRecording';
 			textMessage = 'scan_your_room';
 			updateUI();
-			if (window.globalStream) {
-				window.globalStream.getTracks().forEach(track => track.stop());
-				window.globalStream = null;
+			if (window.mereos.globalStream) {
+				window.mereos.globalStream.getTracks().forEach(track => track.stop());
+				window.mereos.globalStream = null;
 			}
 			updatePersistData('preChecksSteps', { roomScanningVideo: true });
 			registerEvent({
@@ -210,10 +210,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 					dot.src = `${ASSET_URL}/${isRed ? 'white-dot.svg' : 'red-dot.svg'}`;
 					isRed = !isRed;
 				}, 1000);
-				window.recordingDotInterval = toggleDot;
+				window.mereos.recordingDotInterval = toggleDot;
 				
 				const webcam = headerImgContainer.querySelector('#webcam-recorded-media');
-				webcam.srcObject = window.globalStream;
+				webcam.srcObject = window.mereos.globalStream;
 			}
 		}
 		
@@ -223,14 +223,14 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				video: videoConstraints.video,
 			};
 
-			window.globalStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
+			window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
 			
 			headerImgContainer.insertAdjacentHTML('beforeend', `
 				<video id="webcam-recording-media" autoplay muted height="250"></video>
 			`);
 			
 			const webcam = headerImgContainer.querySelector('#webcam-recording-media');
-			webcam.srcObject = window.globalStream;
+			webcam.srcObject = window.mereos.globalStream;
 			
 			btnContainer.insertAdjacentHTML('beforeend', `
 				<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>

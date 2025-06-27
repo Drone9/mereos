@@ -336,9 +336,9 @@ const openModal = async (callback) => {
 };
 
 function closeModal() {
-	if (typeof window.globalCallback === 'function') {
-		window.precheckCompleted = true;
-		window.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
+	if (typeof window?.mereos?.globalCallback === 'function') {
+		window.mereos.precheckCompleted = true;
+		window.mereos.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
 	}
 
 	modal.style.display = 'block';
@@ -508,7 +508,7 @@ export const startSession = async () => {
 	} catch (e) {
 		const callBackFunc = () => {
 			if(e.response?.data?.detail === 'Token not found'){
-				window.globalCallback({
+				window.mereos.globalCallback({
 					type: 'error',
 					code: 40025,
 					message: 'token_expired_login_again_to_perform_this_action',

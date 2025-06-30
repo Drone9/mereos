@@ -187,6 +187,9 @@ export const SystemDiagnostics = async (tab1Content) => {
 			promises.push(checkCamera().then(stream => {
 				cameraStream = stream; 
 				setElementStatus('webcam', { success: videoGreen, failure: videoRed }, stream);
+				if (!stream) {
+					registerEvent({eventType: 'error', notify: false, eventName: 'webcam_not_working'});
+				}
 				return stream;
 			}));
 		} else {
@@ -197,6 +200,9 @@ export const SystemDiagnostics = async (tab1Content) => {
 			promises.push(checkMicrophone().then(stream => {
 				audioStream = stream; 
 				setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, stream);
+				if (!stream) {
+					registerEvent({eventType: 'error', notify: false, eventName: 'microphone_not_working'});
+				}
 				return stream;
 			}));
 		} else {
@@ -207,6 +213,9 @@ export const SystemDiagnostics = async (tab1Content) => {
 			promises.push(getLocation().then(location => {
 				updatePersistData('session', { location });
 				setElementStatus('location', { success: locationGreen, failure: locationRed }, location);
+				if (!location) {
+					registerEvent({eventType: 'error', notify: false, eventName: 'location_not_working'});
+				}
 				return location;
 			}));
 		} else {
@@ -216,6 +225,9 @@ export const SystemDiagnostics = async (tab1Content) => {
 		if (multipleScreensCheck) {
 			promises.push(detectMultipleScreens().then(isDetected => {
 				setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected ? true : false);
+				if (isDetected) {
+					registerEvent({eventType: 'error', notify: false, eventName: 'multiple_screens_detected'});
+				}
 				return isDetected;
 			}));
 		} else {

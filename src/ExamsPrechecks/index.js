@@ -4,7 +4,7 @@ import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, ge
 import { examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import 'notyf/notyf.min.css';
 import 'notyf/notyf.min.css';
-import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, prevalidationSteps, systemDiagnosticSteps, preChecksSteps } from '../utils/constant';
+import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, systemDiagnosticSteps, preChecksSteps } from '../utils/constant';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
 import { SystemDiagnostics } from '../SystemDiagnostic';
 import { IdentityVerificationScreenOne } from '../IdentityVerificationScreenOne';
@@ -361,7 +361,7 @@ const showTab = async (tabId, callback) => {
 			'IdentityCardRequirement':'verify_id',
 			'runSystemDiagnostics': systemDiagnosticSteps,
 			'SystemRequirements': SYSTEM_REQUIREMENT_STEP,
-			'Prevalidationinstruction': prevalidationSteps,
+			'Prevalidationinstruction': 'verify_multiple_devices',
 			'IdentityVerificationScreenOne': 'verify_candidate',
 			'IdentityVerificationScreenTwo': 'verify_id',
 			'IdentityVerificationScreenThree': 'record_audio',

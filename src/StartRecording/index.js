@@ -6,6 +6,7 @@ import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import { 
 	addSectionSessionRecord, 
+	checkPermissionStatus, 
 	cleanupZendeskWidget, 
 	convertDataIntoParse, 
 	detectBackButton, 
@@ -395,49 +396,55 @@ export const startRecording = async () => {
 				}
 			});
 			
-			room.localParticipant.videoTracks.forEach((publication) => {
-				const track = publication.track;
-				if (track) {
-					const stoppedListener = () => {
-						if (window.mereos.startRecordingCallBack) {
-							window.mereos.startRecordingCallBack({ 
-								type: 'error',
-								message: 'camera_is_stopped',
-								code: 40019
+			room.localParticipant.videoTracks.forEach(({ track }) => {
+				if (track && track.kind === 'video') {
+					const stoppedListener = async () => {
+						const status = await checkPermissionStatus();
+
+						if (status.camera === 'denied') {
+							if (window.mereos.startRecordingCallBack) {
+								window.mereos.startRecordingCallBack({ 
+									type: 'error',
+									message: 'camera_is_stopped',
+									code: 40019
+								});
+							}
+							registerEvent({ 
+								eventType: 'error', 
+								notify: false, 
+								eventName: 'camera_permission_disabled', 
+								eventValue: new Date() 
 							});
 						}
-						registerEvent({ 
-							eventType: 'error', 
-							notify: false, 
-							eventName: 'camera_permission_disabled', 
-							eventValue: dateTime 
-						});
 					};
-					
+
 					track.on('stopped', stoppedListener);
 					trackStoppedListeners.set(track, stoppedListener);
 				}
 			});
-		
-			room.localParticipant.audioTracks.forEach((publication) => {
-				const track = publication.track;
-				if (track) {
-					const stoppedListener = () => {
-						if (window.mereos.startRecordingCallBack) {
-							window.mereos.startRecordingCallBack({ 
-								type: 'error',
-								message: 'microphone_is_stopped',
-								code: 40019
+
+			room.localParticipant.audioTracks.forEach(({ track }) => {
+				if (track && track.kind === 'audio') {
+					const stoppedListener = async () => {
+						const status = await checkPermissionStatus();
+
+						if (status.microphone === 'denied') {
+							if (window.mereos.startRecordingCallBack) {
+								window.mereos.startRecordingCallBack({ 
+									type: 'error',
+									message: 'microphone_is_stopped',
+									code: 40019
+								});
+							}
+							registerEvent({ 
+								eventType: 'error', 
+								notify: false, 
+								eventName: 'microphone_permission_denied', 
+								eventValue: new Date() 
 							});
 						}
-						registerEvent({ 
-							eventType: 'error', 
-							notify: false, 
-							eventName: 'microphone_permission_denied', 
-							eventValue: dateTime 
-						});
 					};
-					
+
 					track.on('stopped', stoppedListener);
 					trackStoppedListeners.set(track, stoppedListener);
 				}
@@ -493,7 +500,14 @@ export const startRecording = async () => {
 			}
 			
 		} catch (error) {
-			logger.error('error in startRecording',error);
+			logger.error('error in startRecording',error.message);
+			if(window.mereos.startRecordingCallBack){
+				window.mereos.startRecordingCallBack({ 
+					type:'success',
+					message: error.message.includes('Permission') ? 'please_allow_camera_or_microphone_permission' : error.message,
+					code:50000
+				});
+			}
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});

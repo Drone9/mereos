@@ -1,5 +1,11 @@
 import axios from 'axios';
-import { BASE_URL, examPreparationSteps, preChecksSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from './constant';
+import { 
+	BASE_URL, 
+	examPreparationSteps, 
+	preChecksSteps, 
+	SYSTEM_REQUIREMENT_STEP, 
+	systemDiagnosticSteps
+} from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.services';
@@ -707,7 +713,6 @@ export const detectDualDisplay = () => {
 	});
 };
 
-
 let visibilityChangeHandler;
 
 export const detectUnfocusOfTab = () => {
@@ -1000,7 +1005,7 @@ export const handlePreChecksRedirection = () => {
 			return 'runSystemDiagnostics';
 		} else if(!preChecksStep?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
 			return 'SystemRequirements';
-		} else if(!preChecksStep?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
+		} else if(!preChecksStep?.preValidation && hasFeature('verify_multiple_devices')){
 			return 'Prevalidationinstruction';
 		}
 		else if(!preChecksStep?.userPhoto && hasFeature('verify_candidate')){
@@ -1308,7 +1313,9 @@ export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
 	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
 	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
 
-	let copyPasteCutEvents = browserEvents.filter(item => item.name === 'copy_paste_cut');
+	let copyPasteCutEvents = browserEvents.filter(item =>
+		['candidate_paste_the_content', 'candidate_copy_the_content','copy_and_paste'].includes(item.name)
+	);
 	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
 	let navigatingAwayEvents = browserEvents.filter(item =>
 		['moved_away_from_page', 'moved_to_another_app', 'moved_to_another_window'].includes(item.name)
@@ -1418,4 +1425,21 @@ const handleResize = () => {
 	resizeTimeout = setTimeout(() => {
 		isResizing = false;
 	}, 500);
+};
+
+export const checkPermissionStatus = async () => {
+	const results = {};
+
+	if (navigator.permissions) {
+		try {
+			const camStatus = await navigator.permissions.query({ name: 'camera' });
+			const micStatus = await navigator.permissions.query({ name: 'microphone' });
+			results.camera = camStatus.state; // 'granted' | 'denied' | 'prompt'
+			results.microphone = micStatus.state;
+		} catch (err) {
+			console.warn('Permission check failed', err);
+		}
+	}
+
+	return results;
 };

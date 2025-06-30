@@ -73,17 +73,22 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const handleRestart = () => {
+		if (inputFile) {
+			inputFile.value = '';
+		}
+	
 		currentState = {
 			...currentState,
 			captureMode: 'take',
 			imageSrc: null,
+			isUploading: false, 
 			msg: {
 				text: ''
 			}
 		};
 		renderUI();
 	};
-
+	
 	const uploadImage = async (event) => {
 		if (event.target.files.length > 0) {
 			fileObj = event.target.files[0];

@@ -17,6 +17,7 @@ import '../assets/css/systemDiagnostic.css';
 
 let cameraStream = null;
 let audioStream = null;
+let screenMonitorInterval = null; 
 
 const videoGreen = `${ASSET_URL}/video-camera-green.svg`;
 const microPhoneGreen = `${ASSET_URL}/microphone-green.svg`;
@@ -39,6 +40,13 @@ const failureIconMap = {
 	microphone: microPhoneRed,
 	location: locationRed,
 	desktop: multipleScreenRed
+};
+
+const stopScreenMonitoring = () => {
+	if (screenMonitorInterval) {
+		clearInterval(screenMonitorInterval);
+		screenMonitorInterval = null;
+	}
 };
 
 const renderUI = (tab1Content) => {
@@ -89,7 +97,8 @@ const renderUI = (tab1Content) => {
 	shadowRoot.getElementById('diagnosticContinueBtn')?.addEventListener('click', () => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
-        
+		stopScreenMonitoring();
+
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
 		updatePersistData('preChecksSteps',{ diagnosticStep:true });
 		showTab('SystemRequirements');
@@ -165,6 +174,31 @@ const updateContinueButtonState = () => {
 	shadowRoot.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 };
 
+const startScreenMonitoring = () => {
+	screenMonitorInterval = setInterval(async () => {
+		try {
+			const isDetected = await detectMultipleScreens();
+			const desktopElement = shadowRoot.getElementById('desktopDiagnosticItem');
+		
+			if (desktopElement) {
+				setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected);
+				
+				if (isDetected) {
+					registerEvent({
+						eventType: 'error', 
+						notify: false, 
+						eventName: 'multiple_screens_detected'
+					});
+				}
+				
+				updateContinueButtonState();
+			}
+		} catch (error) {
+			logger.error('Error during screen monitoring:', error);
+		}
+	}, 2000);
+};
+
 export const SystemDiagnostics = async (tab1Content) => {
 	if (!tab1Content) {
 		logger.error('Element with id "runSystemDiagnostics" not found.');
@@ -228,6 +262,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 				if (isDetected) {
 					registerEvent({eventType: 'error', notify: false, eventName: 'multiple_screens_detected'});
 				}
+				startScreenMonitoring();
 				return isDetected;
 			}));
 		} else {

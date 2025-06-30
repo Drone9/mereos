@@ -360,7 +360,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			}
 		}
 	};
-
+	
+	startWebcam();
 	renderUI();
 
 	i18next.on('languageChanged', () => {

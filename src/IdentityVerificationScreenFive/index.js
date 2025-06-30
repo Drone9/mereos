@@ -133,8 +133,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		const session = convertDataIntoParse('session');
 
-		if(window.mereos.roomInstance){
-			let screenTrack = new TwilioVideo.LocalVideoTrack(window?.newStream?.getTracks()[0]);
+		if(window?.mereos?.roomInstance){
+			let screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0]);
 			let screenTrackPublished = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
 			let screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
 			updatePersistData('session', { screen_sharing_video_name: screenRecordings });

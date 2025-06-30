@@ -1425,3 +1425,20 @@ const handleResize = () => {
 		isResizing = false;
 	}, 500);
 };
+
+export const checkPermissionStatus = async () => {
+	const results = {};
+
+	if (navigator.permissions) {
+		try {
+			const camStatus = await navigator.permissions.query({ name: 'camera' });
+			const micStatus = await navigator.permissions.query({ name: 'microphone' });
+			results.camera = camStatus.state; // 'granted' | 'denied' | 'prompt'
+			results.microphone = micStatus.state;
+		} catch (err) {
+			console.warn('Permission check failed', err);
+		}
+	}
+
+	return results;
+};

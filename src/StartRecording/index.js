@@ -397,7 +397,7 @@ export const startRecording = async () => {
 			
 			room.localParticipant.videoTracks.forEach((publication) => {
 				const track = publication.track;
-				if (track) {
+				if (track && track.kind === 'video') {
 					const stoppedListener = () => {
 						if (window.mereos.startRecordingCallBack) {
 							window.mereos.startRecordingCallBack({ 
@@ -421,7 +421,7 @@ export const startRecording = async () => {
 		
 			room.localParticipant.audioTracks.forEach((publication) => {
 				const track = publication.track;
-				if (track) {
+				if (track && track.kind === 'audio') {
 					const stoppedListener = () => {
 						if (window.mereos.startRecordingCallBack) {
 							window.mereos.startRecordingCallBack({ 
@@ -493,7 +493,14 @@ export const startRecording = async () => {
 			}
 			
 		} catch (error) {
-			logger.error('error in startRecording',error);
+			logger.error('error in startRecording',error.message);
+			if(window.mereos.startRecordingCallBack){
+				window.mereos.startRecordingCallBack({ 
+					type:'success',
+					message: error.message.includes('Permission') ? 'please_allow_camera_or_microphone_permission' : error.message,
+					code:50000
+				});
+			}
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});

@@ -1,5 +1,11 @@
 import axios from 'axios';
-import { BASE_URL, examPreparationSteps, preChecksSteps, prevalidationSteps, SYSTEM_REQUIREMENT_STEP, systemDiagnosticSteps } from './constant';
+import { 
+	BASE_URL, 
+	examPreparationSteps, 
+	preChecksSteps, 
+	SYSTEM_REQUIREMENT_STEP, 
+	systemDiagnosticSteps
+} from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { createAiEvent } from '../services/ai-event.services';
@@ -1000,7 +1006,7 @@ export const handlePreChecksRedirection = () => {
 			return 'runSystemDiagnostics';
 		} else if(!preChecksStep?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
 			return 'SystemRequirements';
-		} else if(!preChecksStep?.preValidation && secureFeatures?.filter(entity => prevalidationSteps.includes(entity.key))?.length){
+		} else if(!preChecksStep?.preValidation && hasFeature('verify_multiple_devices')){
 			return 'Prevalidationinstruction';
 		}
 		else if(!preChecksStep?.userPhoto && hasFeature('verify_candidate')){

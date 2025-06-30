@@ -68,14 +68,15 @@ export const recordingEvents = ['record_screen','record_audio','record_video','m
    
 export const LockDownOptions = [
 	'detect_unfocus',
-	'disable_downloading',
 	'disable_printing',
 	'force_full_screen',
 	'detect_resizing_of_window',
 	'disable_right_click',
 	'disable_keyboard_shortcuts',
-	'block_browser_screenshot',
-	'disable_clipboard'
+	'disable_clipboard',
+	'notify',
+	'force_closure',
+	'camera_view'
 ];
 
 export const defaultTheme = {

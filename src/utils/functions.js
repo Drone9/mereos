@@ -713,7 +713,6 @@ export const detectDualDisplay = () => {
 	});
 };
 
-
 let visibilityChangeHandler;
 
 export const detectUnfocusOfTab = () => {
@@ -1314,7 +1313,9 @@ export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
 	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
 	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
 
-	let copyPasteCutEvents = browserEvents.filter(item => item.name === 'copy_paste_cut');
+	let copyPasteCutEvents = browserEvents.filter(item =>
+		['candidate_paste_the_content', 'candidate_copy_the_content','copy_and_paste'].includes(item.name)
+	);
 	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
 	let navigatingAwayEvents = browserEvents.filter(item =>
 		['moved_away_from_page', 'moved_to_another_app', 'moved_to_another_window'].includes(item.name)

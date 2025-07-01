@@ -278,7 +278,7 @@ export const startRecording = async () => {
 
 	if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 		await lockBrowserFromContent(secureFeatures?.entities || []);
-		registerEvent({ eventType: 'success', notify: false, eventName: 'browser_locked_successfully', eventValue: getDateTime() });
+		// registerEvent({ eventType: 'success', notify: false, eventName: 'browser_locked_successfully', eventValue: getDateTime() });
 	}
 
 	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {

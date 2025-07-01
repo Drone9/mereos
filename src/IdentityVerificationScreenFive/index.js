@@ -156,7 +156,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const updateUI = () => {
-		// Update message based on current mode
 		if (mode === 'startScreenRecording') {
 			msg = {
 				type: 'successful',
@@ -174,10 +173,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			};
 		}
 
-		// Check if the container already exists
 		const existingContainer = tabContent.querySelector('.screen-share-container');
 		if (existingContainer) {
-			// Update existing elements instead of recreating everything
 			const headerTitle = existingContainer.querySelector('.ivsf-header-titles');
 			if (headerTitle) {
 				headerTitle.textContent = i18next.t('verification_completed');
@@ -197,10 +194,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				headerImg.src = `${ASSET_URL}/share-screen-${i18next.language || 'en'}.svg`;
 			}
 
-			// Update buttons
 			updateButtons(existingContainer);
 		} else {
-			// Create the entire UI structure from scratch
 			createInitialUI();
 		}
 	};

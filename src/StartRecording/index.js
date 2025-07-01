@@ -14,7 +14,7 @@ import {
 	detectPageRefresh, 
 	detectPageRefreshCallback, 
 	findConfigs, 
-	findIncidentLevel, 
+	forceClosureIncident, 
 	getDateTime, 
 	getSecureFeatures, 
 	getTimeInSeconds, 
@@ -155,10 +155,11 @@ export const startRecording = async () => {
 			const session = convertDataIntoParse('session');
 			const { 
 				// aiEvents,
-				browserEvents } = session;
+				browserEvents 
+			} = session;
 
 			const secureFeatures = getSecureFeatures();
-			const incidentLevel = findIncidentLevel(
+			const incidentLevel = forceClosureIncident(
 				// aiEvents,
 				browserEvents,
 				secureFeatures
@@ -1042,8 +1043,8 @@ export const stopAllRecordings = async () => {
 			mediaStream=null;
 		}
 
-		if (window?.newStream) {
-			window?.newStream.getTracks().forEach(track => {
+		if (window?.mereos?.newStream) {
+			window?.mereos?.newStream.getTracks().forEach(track => {
 				track.stop();
 				track.enabled = false;
 			});
@@ -1058,16 +1059,27 @@ export const stopAllRecordings = async () => {
 
 		window.mereos.recordingStart=false;
 
-		if (window?.roomInstance) {
-			window?.roomInstance.localParticipant.tracks.forEach(publication => {
+		if (window?.mereos?.roomInstance) {
+			const tracks = window?.mereos?.roomInstance?.localParticipant?.tracks;
+			if (!tracks) return;
+    
+			for (const publication of tracks) {
 				const track = publication.track;
-				if (track) {
+				if (!track) continue;
+        
+				try {
+					await window.mereos.roomInstance.localParticipant.unpublishTrack(track);
+            
 					track.stop();
-					track.detach().forEach(element => element.remove());
-					track.disable();
-					window?.roomInstance.localParticipant.unpublishTrack(track);
+					const elements = track.detach();
+					elements.forEach(element => element.remove());
+            
+					if (track.disable) track.disable();
+				} catch (error) {
+					logger.error('Failed to cleanup track:', error);
 				}
-			});
+			}
+
 			window.mereos.roomInstance.participants.forEach(participant => {
 				participant.removeAllListeners();
 			});

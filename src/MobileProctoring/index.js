@@ -112,6 +112,11 @@ export const MobileProctoring = async (tabContent) => {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
 						showToast('error', 'mobile_phone_disconnected');
+						updatePersistData('preChecksSteps', { 
+							mobileConnection: false,
+							screenSharing: false
+						});
+						window.mereos.precheckCompleted=false;
 						if(window.mereos.mobileStream){
 							window.mereos.mobileStream.getTracks().forEach(track => track.stop());
 						}
@@ -179,7 +184,6 @@ export const MobileProctoring = async (tabContent) => {
 		mobileSteps = newStep;
 		renderUI(); 
 		if (newStep === 'step4') {
-			window.mereos.mobileStream?.getTracks()?.forEach((track) => track.stop());
 			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
 			updatePersistData('preChecksSteps', { mobileConnection: true });
 			showTab('IdentityVerificationScreenFive');
@@ -203,9 +207,6 @@ export const MobileProctoring = async (tabContent) => {
 		} else {
 			mobileSteps = 'tokenCode';
 			checkedVideo = false;
-			if(window.mereos.mobileStream){
-				window.mereos.mobileStream?.getTracks()?.forEach(track => track.stop());
-			}
 			if (window.mereos.socket.readyState === WebSocket.OPEN) {
 				window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 			}

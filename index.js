@@ -242,17 +242,22 @@ async function start_session(callback) {
 		}
 		const hasRecordScreen = findConfigs(['record_screen'], secureFeatures?.entities).length > 0;
 		const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
-		const noStream = !window.mereos?.newStream;
+		const screenShareStream = !window.mereos?.newStream;
 		const notCompleted = !window.mereos?.precheckCompleted;
+		const mobileStream = !window.mereos?.mobileStream;
 
-		if(
-			(hasRecordScreen && noStream && notCompleted) || 
-			(hasMobileProctoring && notCompleted && !window.mereos.socket)
-		){
+		if (
+			(hasRecordScreen && screenShareStream && notCompleted) || 
+			(hasMobileProctoring && notCompleted && !mobileStream)
+		) {
+			updatePersistData('preChecksSteps', { 
+				mobileConnection: false,
+				screenSharing: false
+			});
 			window.mereos.startRecordingCallBack({ 
-				type:'error',
-				message: 'please_complete_your_prechecks' ,
-				code:40019
+				type: 'error',
+				message: 'please_complete_your_prechecks',
+				code: 40019
 			});
 			return;
 		}

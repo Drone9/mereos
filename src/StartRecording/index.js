@@ -154,17 +154,14 @@ export const startRecording = async () => {
 			}
 			const session = convertDataIntoParse('session');
 			const { 
-				// aiEvents,
 				browserEvents 
 			} = session;
 
 			const secureFeatures = getSecureFeatures();
 			const incidentLevel = forceClosureIncident(
-				// aiEvents,
 				browserEvents,
 				secureFeatures
 			);
-			// logger.success('aiEvents',aiEvents);
 			if (incidentLevel === 'high' && 
 			findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0) {
 				forceClosureTriggered = true;
@@ -176,7 +173,7 @@ export const startRecording = async () => {
 	startIncidentMonitoring();
 
 	const initSocketConnection = () => {
-		if (!window.mereos.socket) {
+		if (!window.mereos?.socket) {
 			updatePersistData('preChecksSteps', { 
 				mobileConnection: false,
 				screenSharing: false
@@ -242,6 +239,11 @@ export const startRecording = async () => {
 								code:40010
 							});
 						}
+						updatePersistData('preChecksSteps', { 
+							mobileConnection: false,
+							screenSharing: false
+						});
+						window.mereos.precheckCompleted=false;
 					}
 					registerEvent({ eventType: 'error', notify: false, eventName:'mobile_phone_disconnected' , eventValue: getDateTime() });
 					break;
@@ -257,7 +259,7 @@ export const startRecording = async () => {
 		};
 	};
 	
-	if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
+	if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length && window?.mereos?.mobileStream){
 		initSocketConnection();
 	}
 
@@ -327,10 +329,24 @@ export const startRecording = async () => {
 				room_id: room?.sid 
 			});
 
+			const mediaConstraints = {};
+
+			if (findConfigs(['record_video'], secureFeatures?.entities).length) {
+				mediaConstraints.video = localStorage.getItem('deviceId') 
+					? { deviceId: { exact: localStorage.getItem('deviceId') } } 
+					: true;
+			}
+
+			if (findConfigs(['record_audio'], secureFeatures?.entities).length) {
+				mediaConstraints.audio = localStorage.getItem('microphoneID') 
+					? { deviceId: { exact: localStorage.getItem('microphoneID') } } 
+					: true;
+			} else {
+				mediaConstraints.audio = false;
+			}
+			
 			if(secureFeatures?.entities?.find(entity => entity.key === 'record_video')){
-				mediaStream = await navigator.mediaDevices.getUserMedia({ video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true, audio: (localStorage.getItem('microphoneID') ? {
-					deviceId: { exact: localStorage.getItem('microphoneID') },
-				} : true) });
+				mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
 
 				if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
 					await startAIWebcam(room, mediaStream);
@@ -391,6 +407,8 @@ export const startRecording = async () => {
 							code:40013
 						});
 					}
+
+					registerEvent({ eventType: 'success', notify: false, eventName: 'slow_internet_detected', startAt: dateTime });
 				
 					showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
 				}
@@ -1003,6 +1021,9 @@ export const stopAllRecordings = async () => {
 			incidentCheckInterval = null;
 		}
 
+		if(window?.mereos?.mobileStream){
+			window?.mereos?.mobileStream?.getTracks()?.forEach((track) => track.stop());
+		}
 		forceClosureTriggered = false;
 		if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 			window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));

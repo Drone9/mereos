@@ -884,6 +884,10 @@ export const detectPageRefreshCallback = (e) => {
 	e.preventDefault();
 	e.returnValue = '';
 
+	if (window.mereos?.socket?.readyState === WebSocket.OPEN) {
+			window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
+	}
+
 	registerEvent({ 
 		eventType: 'error', 
 		notify: false, 

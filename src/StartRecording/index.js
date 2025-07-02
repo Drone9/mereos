@@ -243,7 +243,7 @@ export const startRecording = async () => {
 							});
 						}
 					}
-					registerEvent({ eventType: 'error', notify: false, eventName:eventData?.message?.message , eventValue: getDateTime() });
+					registerEvent({ eventType: 'error', notify: false, eventName:'mobile_phone_disconnected' , eventValue: getDateTime() });
 					break;
 
 				default:

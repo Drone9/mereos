@@ -885,8 +885,13 @@ export const detectPageRefreshCallback = (e) => {
 	e.returnValue = '';
 
 	if (window.mereos?.socket?.readyState === WebSocket.OPEN) {
-			window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
+		window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 	}
+
+	updatePersistData('preChecksSteps', { 
+		mobileConnection: false,
+		screenSharing: false
+	});
 
 	registerEvent({ 
 		eventType: 'error', 
@@ -1016,7 +1021,7 @@ export const handlePreChecksRedirection = () => {
 			return 'IdentityVerificationScreenThree';
 		}else if(!preChecksStep?.roomScanningVideo && hasFeature('record_room')){
 			return 'IdentityVerificationScreenFour';
-		}else if(!preChecksStep?.mobileConnection && hasFeature('mobile_proctoring')){
+		}else if(!preChecksStep?.mobileConnection && hasFeature('mobile_proctoring') || !window.mereos?.mobileStream){
 			return 'MobileProctoring';
 		}else if(!preChecksStep?.screenSharing || hasFeature('record_screen')){
 			return 'IdentityVerificationScreenFive';

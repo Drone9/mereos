@@ -10,7 +10,17 @@ import '../assets/css/step4.css';
 import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
-	if (tabContent.querySelector('.screen-four-container')) return; 
+	let container = tabContent.querySelector('.screen-four-container');
+	if (container) {
+	// Clean up stream and reset states
+		if (window.mereos.globalStream) {
+			window.mereos.globalStream.getTracks().forEach(track => track.stop());
+			window.mereos.globalStream = null;
+		}
+		clearInterval(window.mereos.recordingDotInterval);
+		tabContent.removeChild(container);
+	}
+
 	let recordingMode = 'startRecording';
 	let showPlayer = false;
 	let textMessage = 'scan_your_room';
@@ -123,6 +133,11 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		recordingMode = 'startRecording';
 		textMessage = 'scan_your_room';
 		blob = null;
+		if (window.mereos.globalStream) {
+			window.mereos.globalStream.getTracks().forEach(track => track.stop());
+			window.mereos.globalStream = null;
+		}
+		clearInterval(window.mereos.recordingDotInterval);
 		updateUI();
 		updatePersistData('preChecksSteps', { audioDetection: false, roomScanningVideo: false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));

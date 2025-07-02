@@ -233,14 +233,22 @@ async function stop_prechecks(callback) {
 
 async function start_session(callback) {
 	try {
+		const secureFeatures = getSecureFeatures();
 		window.mereos.startRecordingCallBack = callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');
 			return callback(tokenExpiredError);
 		}
+		const hasRecordScreen = findConfigs(['record_screen'], secureFeatures?.entities).length > 0;
+		const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
+		const noStream = !window.mereos?.newStream;
+		const notCompleted = !window.mereos?.precheckCompleted;
 
-		if(!window.mereos.precheckCompleted){
+		if(
+			(hasRecordScreen && noStream && notCompleted) || 
+			(hasMobileProctoring && notCompleted && !window.mereos.socket)
+		){
 			window.mereos.startRecordingCallBack({ 
 				type:'error',
 				message: 'please_complete_your_prechecks' ,
@@ -251,7 +259,6 @@ async function start_session(callback) {
 
 		if(!window.mereos.roomInstance && !window.mereos.recordingStart){
 			window.mereos.recordingStart=true;
-			const secureFeatures = getSecureFeatures();
 			const dateTime = new Date();
 			const currentTimeInSeconds = Math.abs(getTimeInSeconds({ isUTC: true, inputDate: dateTime }));
             

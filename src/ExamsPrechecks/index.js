@@ -317,10 +317,17 @@ const createLanguageDropdown = () => {
 };
 
 const openModal = async (callback) => {
+	if (modal.parentNode) {
+		modal.parentNode.removeChild(modal);
+	}
 	document.body.appendChild(modal);
+	
 	modal.style.display = 'block';
-	const existingHeader = document.querySelector('.header');
+	modal.style.zIndex = '2147483647';
+	
+	document.body.classList.add('modal-active');
 
+	const existingHeader = document.querySelector('.header');
 	if (existingHeader) {
 		existingHeader.remove();
 	}	
@@ -331,8 +338,11 @@ const openModal = async (callback) => {
 	if (preChecksStep === null) {
 		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 	}
+	
 	showTab(activeTab, callback);
 	createLanguageDropdown();
+
+	modal.style.transform = 'translateZ(0)';
 };
 
 function closeModal() {

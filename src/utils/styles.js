@@ -459,6 +459,15 @@ body {
   margin-right: 5px;
 }
 
+body.modal-active iframe:not(.modal iframe) {
+    visibility: hidden !important;
+}
+
+body.modal-active embed:not(.modal embed),
+body.modal-active object:not(.modal object),
+body.modal-active applet:not(.modal applet) {
+    visibility: hidden !important;
+}
 .dropdown-content {
   position: absolute;
   top: 42px;

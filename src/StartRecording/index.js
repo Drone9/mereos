@@ -279,7 +279,6 @@ export const startRecording = async () => {
 
 	if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 		await lockBrowserFromContent(secureFeatures?.entities || []);
-		// registerEvent({ eventType: 'success', notify: false, eventName: 'browser_locked_successfully', eventValue: getDateTime() });
 	}
 
 	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
@@ -493,12 +492,6 @@ export const startRecording = async () => {
 					code:50000
 				});
 			}
-
-			const updatedSession = convertDataIntoParse('session');
-			let resp = await addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
-			if(resp){
-				registerEvent({ eventType: 'success', notify: false, eventName: 'session_started', startAt: dateTime });
-			}
 			
 		} catch (error) {
 			logger.error('error in startRecording',error.message);
@@ -526,6 +519,12 @@ export const startRecording = async () => {
 			});
 		}
 		window.mereos.recordingStart = true;
+	}
+	const updatedSession = convertDataIntoParse('session');
+	let resp = await addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
+	if(resp){
+		const dateTime = new Date();
+		registerEvent({ eventType: 'success', notify: false, eventName: 'session_started', startAt: dateTime });
 	}
 };
 

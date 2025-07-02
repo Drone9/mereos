@@ -321,7 +321,7 @@ body {
   top: 50%;
   height: 530px;
   left: 50%;
-  z-index: 21474836473949420;
+  z-index: 99999999999999999;
   transform: translate(-50%, -50%);
   background: var(--theme-mode);
   box-shadow: 0px 10px 50px rgba(0, 0, 0, 0.1);

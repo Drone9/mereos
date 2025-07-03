@@ -12,7 +12,6 @@ import { uploadFileInS3Folder } from '../services/general.services.js';
 export const IdentityVerificationScreenFour = async (tabContent) => {
 	let container = tabContent.querySelector('.screen-four-container');
 	if (container) {
-	// Clean up stream and reset states
 		if (window.mereos.globalStream) {
 			window.mereos.globalStream.getTracks().forEach(track => track.stop());
 			window.mereos.globalStream = null;

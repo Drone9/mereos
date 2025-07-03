@@ -13,11 +13,12 @@ import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, getTimeInSeconds, hideZendeskWidget, logger, updatePersistData } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, logger, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
+import i18next from 'i18next';
 
 async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
@@ -45,10 +46,11 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			try {
 				resp = await createCandidate(candidateData);
 			} catch (error) {
+				const message = handleBackendError(i18next.t,error?.response?.data?.message);
 				localStorage.removeItem('mereosToken');
 				return callback({
 					type: 'error',
-					message: 'error_in_create_candidate',
+					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 					code: 40021,
 					details: error,
 				});
@@ -79,10 +81,11 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			try {
 				assessmentResp = await createCandidateAssessment(data);
 			} catch (error) {
+				const message = handleBackendError(i18next.t,error?.response?.data?.message);
 				localStorage.removeItem('mereosToken');
 				return callback({
 					type: 'error',
-					message: 'error_in_create_candidate_assessment',
+					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 					code: 40022,
 					details: error,
 				});
@@ -100,10 +103,11 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 				try {
 					candidateAssessmentResp = await customCandidateAssessmentStatus(candidateAssessmentData);
 				} catch (error) {
+					const message = handleBackendError(i18next.t,error?.response?.data?.message);
 					localStorage.removeItem('mereosToken');
 					return callback({
 						type: 'error',
-						message: 'error_in_custom_candidate_assessment_status',
+						message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 						code: 40023,
 						details: error,
 					});

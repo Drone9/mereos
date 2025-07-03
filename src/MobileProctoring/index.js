@@ -88,8 +88,9 @@ export const MobileProctoring = async (tabContent) => {
 								remoteVideo.setAttribute('playsinline', true);
 								disabledNextBtn = false;
 								renderUI();
+								setupEventListeners(mobileSteps); // <== Add this!
 							});
-	
+
 							call?.on('close', () => {
 								if(remoteVideo.srcObject){
 									remoteVideo.srcObject = null;
@@ -112,10 +113,10 @@ export const MobileProctoring = async (tabContent) => {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
 						showToast('error', 'mobile_phone_disconnected');
-						updatePersistData('preChecksSteps', { 
-							mobileConnection: false,
-							screenSharing: false
-						});
+						// updatePersistData('preChecksSteps', { 
+						// 	mobileConnection: false,
+						// 	screenSharing: false
+						// });
 						window.mereos.precheckCompleted=false;
 						if(window.mereos.mobileStream){
 							window.mereos.mobileStream.getTracks().forEach(track => track.stop());

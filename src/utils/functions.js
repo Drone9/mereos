@@ -1465,3 +1465,35 @@ export const checkPermissionStatus = async () => {
 
 	return results;
 };
+
+export const handleBackendError = (t, error) => {
+	console.log('error',error);
+	let message = '';
+
+	if (!error) {
+		message = t('something_went_wrong_please_try_again_later');
+	} 
+	else if (typeof error === 'string') {
+		const translated = t(error);
+		message = translated !== error ? translated : error;
+	} 
+	else if (typeof error === 'object') {
+		if (error && typeof error === 'string') {
+			const translated = t(error);
+			message = translated !== error ? translated : error;
+		} 
+		else if (typeof error === 'object') {
+			const firstKey = Object.keys(error)[0];
+			const firstMsgArray = error[firstKey];
+
+			if (Array.isArray(firstMsgArray) && firstMsgArray.length > 0) {
+				message = firstMsgArray[0];
+			} else {
+				message = t('something_went_wrong_please_try_again_later');
+			}
+		}
+	}
+
+	return { type: 'error', message };
+};
+

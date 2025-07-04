@@ -378,6 +378,9 @@ export const MobileProctoring = async (tabContent) => {
 				shadowRoot.getElementById('video-check')?.addEventListener('change', (e) => {
 					checkedVideo = e.target.checked;
 					const nextBtn = shadowRoot.getElementById('next-btn');
+					console.log('disabledNextBtn',disabledNextBtn);
+					console.log('checkedVideo',!checkedVideo);
+					renderUI();
 					if (nextBtn) {
 						nextBtn.disabled = !checkedVideo || disabledNextBtn;
 					}

@@ -225,9 +225,16 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		showTab(previousPage);
 	};
 
+	const triggerFileUpload = () => {
+		if (inputFile) inputFile.click();
+	};
 	const setupEventListeners = () => {
-		shadowRoot.querySelector('#upload-identity-card')?.addEventListener('click', () => inputFile.click());
-		
+		const uploadEl = shadowRoot.querySelector('#upload-identity-card');
+		if (uploadEl) {
+			uploadEl.removeEventListener('click', triggerFileUpload);
+			uploadEl.addEventListener('click', triggerFileUpload);
+		}
+
 		shadowRoot.querySelectorAll('.orange-filled-btn, .orange-hollow-btn').forEach(button => {
 			const action = button.getAttribute('data-action');
 			if (action === 'take-photo') button.addEventListener('click', capturePhoto);

@@ -26,7 +26,7 @@ const modal = document.createElement('div');
 modal.className = 'modal';
 modal.id = 'precheck-modal';
 
-export const shadowRoot = modal.attachShadow({ mode: 'open' });
+export const shadowRoot = modal.attachShadow({ mode: 'closed' });
 const mainStylying = document.createElement('style');
 mainStylying.textContent = `
 	${spinner}

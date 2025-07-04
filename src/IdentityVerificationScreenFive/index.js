@@ -26,9 +26,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		logger.error('tabContent is not defined or is not a valid DOM element');
 		return;
 	}
-	if (tabContent.querySelector('.screen-share-container')) {
-		return;
-	}
 
 	let stream = null;
 	let mode = 'startScreenRecording';

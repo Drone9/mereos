@@ -1093,6 +1093,7 @@ export const preValidationCss = `.pvi-container {
 
 .pvi-header-img {
   margin: 20px auto 0px;
+  height: 230px;
 }
 .pvi-instruction-img{
   width: 40px;
@@ -1194,6 +1195,7 @@ export const preValidationCss = `.pvi-container {
   text-align: center;
   margin: 9px auto 0px;
   cursor: pointer;
+  margin-bottom:10px;
 }
 
 .pvi-btn-container {

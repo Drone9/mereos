@@ -1023,5 +1023,6 @@
 	"camera_permission_disabled": "Caniatâd Camera wedi'i Analluogi",
 	"microphone_permission_denied": "Caniatâd Meicroffon wedi'i Analluogi",
 	"assessment_closed_due_to_multiple_violation":"Cauwyd yr asesiad oherwydd sawl trosedd",
-	"signaling_connection_disconnected": "Asesiad wedi'i gau oherwydd dim cysylltiad rhyngrwyd"
+	"signaling_connection_disconnected": "Asesiad wedi'i gau oherwydd dim cysylltiad rhyngrwyd",
+	"enable_camera_microphone_permissions": "Caniatewch ganiatâd i'r camera a'r meicroffon i barhau"
 }

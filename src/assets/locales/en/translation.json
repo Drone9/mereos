@@ -1024,5 +1024,6 @@
 	"camera_permission_disabled":"Camera Permission Disabled",
 	"microphone_permission_denied":"Microphone Permission Disabled",
 	"assessment_closed_due_to_multiple_violation":"Assessment closed due to multiple violation",
-	"signaling_connection_disconnected":"Assessment closed due to No internet connection"
+	"signaling_connection_disconnected":"Assessment closed due to No internet connection",
+	"enable_camera_microphone_permissions": "Please enable camera and microphone permissions to continue"
 }

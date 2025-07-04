@@ -1023,5 +1023,6 @@
 	"camera_permission_disabled": "Autorizzazione fotocamera disabilitata",
 	"microphone_permission_denied": "Autorizzazione microfono disabilitata",
 	"assessment_closed_due_to_multiple_violation":"Valutazione chiusa a causa di violazioni multiple",
-	"signaling_connection_disconnected": "Valutazione chiusa a causa di nessuna connessione internet"
+	"signaling_connection_disconnected": "Valutazione chiusa a causa di nessuna connessione internet",
+	"enable_camera_microphone_permissions": "Abilita le autorizzazioni per fotocamera e microfono per continuare"
 }

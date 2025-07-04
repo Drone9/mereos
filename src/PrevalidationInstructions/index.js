@@ -10,6 +10,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		let microphones = [];
 		let selectedMicrophoneId = null;
 		let selectedCameraId = null;
+		let permissionDenied = false; // Track permission status
 		let videoConstraints = {
 			width: 640,
 			height: 480,
@@ -109,6 +110,28 @@ export const PrevalidationInstructions = async (tabContent) => {
 			showTab('IdentityVerificationScreenOne');
 		};
 
+		// Function to update continue button state
+		const updateContinueButton = () => {
+			const continueButton = shadowRoot.getElementById('continue-btn');
+			const messageElement = shadowRoot.getElementById('message');
+			
+			if (continueButton && messageElement) {
+				if (permissionDenied) {
+					continueButton.disabled = true;
+					continueButton.style.opacity = '0.5';
+					continueButton.style.cursor = 'not-allowed';
+					messageElement.textContent = i18next.t('enable_camera_microphone_permissions');
+					messageElement.style.color = '#ff4444';
+				} else {
+					continueButton.disabled = false;
+					continueButton.style.opacity = '1';
+					continueButton.style.cursor = 'pointer';
+					messageElement.textContent = i18next.t('select_preferred_camera_and_microphone');
+					messageElement.style.color = '';
+				}
+			}
+		};
+
 		const createUIElements = () => {
 			const oldContainer = shadowRoot.querySelector('.ivso-container');
 			if (oldContainer) {
@@ -154,7 +177,14 @@ export const PrevalidationInstructions = async (tabContent) => {
 				oldButton.removeEventListener('click', nextStep);
 			}
 		
-			shadowRoot.getElementById('continue-btn').addEventListener('click', nextStep);
+			const continueButton = shadowRoot.getElementById('continue-btn');
+			continueButton.addEventListener('click', (e) => {
+				if (permissionDenied) {
+					e.preventDefault();
+					return;
+				}
+				nextStep();
+			});
 		};
 
 		const updateUI = () => {
@@ -188,6 +218,9 @@ export const PrevalidationInstructions = async (tabContent) => {
 					handleDeviceId(selectedMicrophoneId, 'microphone');
 				};
 			}
+
+			// Update continue button state
+			updateContinueButton();
 		};
 			
 		const startWebcam = async () => {
@@ -217,26 +250,34 @@ export const PrevalidationInstructions = async (tabContent) => {
 					`);
 											
 				const videoElement = shadowRoot.getElementById('myVideo');
-
 				videoElement.srcObject = window.mereos.globalStream;
-											
+				
+				// Reset permission denied flag on successful stream
+				permissionDenied = false;
 				currentCaptureMode = 'done';
 				updateUI();
 			} catch (error) {
 				logger.error('Webcam error:', error);
+				
+				// Check if error is due to permission denial
+				if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+					permissionDenied = true;
+					logger.error('Camera/Microphone permission denied');
+				} else if (error.name === 'NotFoundError') {
+					logger.error('Camera/Microphone not found');
+					permissionDenied = true;
+				} else {
+					logger.error('Other webcam error:', error.message);
+					permissionDenied = true;
+				}
+				
 				updateUI();
 			}
 		};
 
-
 		const handleLanguageChange = () => {
 			shadowRoot.querySelector('.pvi-header-title').textContent = i18next.t('system_diagnostics');
 			shadowRoot.querySelector('.pvi-msg').textContent = i18next.t('initial_system_check_passed');
-					
-			const messageElement = shadowRoot.getElementById('message');
-			if (messageElement) {
-				messageElement.textContent = i18next.t('select_preferred_camera_and_microphone');
-			}
 					
 			const continueButton = shadowRoot.getElementById('continue-btn');
 			if (continueButton) {
@@ -249,9 +290,11 @@ export const PrevalidationInstructions = async (tabContent) => {
 					element.textContent = i18next.t(iconData[index].text);
 				}
 			});
+
+			// Update message based on current permission status
+			updateContinueButton();
 		};
 
-			
 		const init = async () => {
 			cameras = await getMultipleCameraDevices();
 			cameras = cameras?.map(camera => ({id: camera.deviceId, name: camera.label, ...camera }));

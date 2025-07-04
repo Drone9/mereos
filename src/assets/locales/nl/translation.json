@@ -1023,5 +1023,6 @@
 	"camera_permission_disabled": "Cameratoestemming uitgeschakeld",
 	"microphone_permission_denied": "Microfoontoestemming uitgeschakeld",
 	"assessment_closed_due_to_multiple_violation":"Beoordeling gesloten wegens meerdere overtredingen",
-	"signaling_connection_disconnected": "Beoordeling gesloten vanwege geen internetverbinding"
+	"signaling_connection_disconnected": "Beoordeling gesloten vanwege geen internetverbinding",
+	"enable_camera_microphone_permissions": "Schakel camera- en microfoontoestemmingen in om door te gaan"
 }

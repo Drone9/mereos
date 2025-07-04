@@ -1103,7 +1103,7 @@ export const preValidationCss = `.pvi-container {
   margin: auto;
   gap: 10px;
   display: flex;
-  margin-top: 15px;
+  margin-top: 30px;
   justify-content: center;
 }
 .multi-device-block select {

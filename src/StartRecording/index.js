@@ -375,8 +375,8 @@ export const startRecording = async () => {
 			if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
 				if(window.mereos?.newStream?.getTracks()[0]){
 					screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0]);
-					let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
-					screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
+					window.mereos.screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
+					screenRecordings = [...session.screen_sharing_video_name, window.mereos.screenTrackPublished.trackSid];
 					updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 				}else{
 					if(window.mereos.startRecordingCallBack){

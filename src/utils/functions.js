@@ -885,10 +885,10 @@ const detectPageRefreshCallback = (e) => {
 
 export const detectPageRefresh = () => {
 	window.addEventListener('beforeunload', detectPageRefreshCallback);
-}
+};
 
 // ************* Detect Back Button ***************** //
-const detectBackButtonCallback = (e) => {
+const detectBackButtonCallback = () => {
 	if (window.startRecordingCallBack) {
 		window.startRecordingCallBack({
 			type: 'error',
@@ -904,15 +904,15 @@ const detectBackButtonCallback = (e) => {
 
 export const detectBackButton = () => {
 	window.addEventListener('popstate', detectBackButtonCallback);
-}
+};
 
-//****************** DefaultEvent Callback *********************/
+//* ***************** DefaultEvent Callback *********************/
 const handleDefaultEvent = e => {
 	e.preventDefault();
 	e.stopPropagation();
 };
 
-//****************** Unlock browser from Events */
+//* ***************** Unlock browser from Events */
 export const unlockBrowserFromContent = () => {
 	window.removeEventListener('contextmenu', handleDefaultEvent);
 	window.removeEventListener('beforeunload', detectPageRefreshCallback);

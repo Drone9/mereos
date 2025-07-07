@@ -1002,7 +1002,7 @@ export const handlePreChecksRedirection = () => {
 			return 'IdentityVerificationScreenThree';
 		}else if(!preChecksStep?.roomScanningVideo && hasFeature('record_room')){
 			return 'IdentityVerificationScreenFour';
-		}else if(!preChecksStep?.mobileConnection && hasFeature('mobile_proctoring')){
+		}else if(!preChecksStep?.mobileConnection && hasFeature('mobile_proctoring') || !window.mereos?.mobileStream){
 			return 'MobileProctoring';
 		}else if(!preChecksStep?.screenSharing || hasFeature('record_screen')){
 			return 'IdentityVerificationScreenFive';

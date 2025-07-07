@@ -842,6 +842,10 @@ export const stopAllRecordings = async () => {
 			});
 		}
 
+		if(window.mobileStream){
+			window.mobileStream?.getTracks()?.forEach(track => track.stop());
+		}
+
 		if (chatContainer) {
 			chatContainer.style.display = 'none';
 			chatContainer.remove();

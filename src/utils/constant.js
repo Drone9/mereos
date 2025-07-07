@@ -128,3 +128,9 @@ export const languages = [
 	{name: 'Dutch', value: 'dutch', src: `${ASSET_URL}/netherlands.svg`, alt: '', keyword: 'nl' },
 	{name: 'Welsh',value:'welsh', src: `${ASSET_URL}/flag-of-whales.png`,alt: '',keyword: 'cy'}
 ];
+
+export const tokenExpiredError = {
+	type: 'error',
+	code: 40025,
+	message: 'token_expired_login_again_to_perform_this_action'
+};

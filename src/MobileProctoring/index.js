@@ -179,7 +179,6 @@ export const MobileProctoring = async (tabContent) => {
 		mobileSteps = newStep;
 		renderUI(); 
 		if(newStep === 'step4'){
-			window.mobileStream?.getTracks()?.forEach((track) => track.stop());
 			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successfull', eventValue: getDateTime() });
 			updatePersistData('preChecksSteps', { mobileConnection: true });
 			showTab('IdentityVerificationScreenFive');
@@ -203,9 +202,6 @@ export const MobileProctoring = async (tabContent) => {
 		}else{
 			mobileSteps = 'tokenCode';
 			checkedVideo = false;
-			if(window.mobileStream){
-				window.mobileStream?.getTracks()?.forEach(track => track.stop());
-			}
 			if (window.socket.readyState === WebSocket.OPEN) {
 				window.socket?.send(JSON.stringify({ event: 'resetSession' }));
 			}

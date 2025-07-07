@@ -14,7 +14,7 @@ import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
-import { initialSessionData, preChecksSteps } from './src/utils/constant';
+import { initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
 import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, getTimeInSeconds, hideZendeskWidget, logger, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
@@ -198,13 +198,31 @@ window.recordingStart=false;
 window.roomInstance=null;
 async function start_session(callback) {
 	try {
+		const secureFeatures = getSecureFeatures();
 		window.startRecordingCallBack = callback;
-		
-		if(!window.precheckCompleted){
-			window.startRecordingCallBack({ 
-				type:'error',
-				message: 'please_complete_your_prechecks' ,
-				code:40019
+		const tokenData = localStorage.getItem('mereosToken');
+		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
+			localStorage.removeItem('mereosToken');
+			return callback(tokenExpiredError);
+		}
+		const hasRecordScreen = findConfigs(['record_screen'], secureFeatures?.entities).length > 0;
+		const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
+		const screenShareStream = !window?.newStream;
+		const notCompleted = !window?.precheckCompleted;
+		const mobileStream = !window?.mobileStream;
+
+		if (
+			(hasRecordScreen && screenShareStream && notCompleted) || 
+			(hasMobileProctoring && notCompleted && !mobileStream)
+		) {
+			updatePersistData('preChecksSteps', { 
+				mobileConnection: false,
+				screenSharing: false
+			});
+			window.mereos.startRecordingCallBack({ 
+				type: 'error',
+				message: 'please_complete_your_prechecks',
+				code: 40019
 			});
 			return;
 		}

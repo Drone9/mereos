@@ -21,7 +21,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	window.mereos.newStream = null;
 	const candidateAssessment = getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
-	
+	let publishedScreenTrack = null;
+
 	if (!tabContent) {
 		logger.error('tabContent is not defined or is not a valid DOM element');
 		return;
@@ -133,11 +134,19 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		const session = convertDataIntoParse('session');
 
-		if(window?.mereos?.roomInstance){
-			let screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0]);
-			let screenTrackPublished = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
-			let screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
-			updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+		if (window?.mereos?.roomInstance) {
+			try {
+				let screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0]);
+				publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
+				if(window.mereos?.screenTrackPublished?.track){
+					await window.mereos.roomInstance.localParticipant.unpublishTrack(window.mereos?.screenTrackPublished?.track);
+				}
+            
+				let screenRecordings = [...session.screen_sharing_video_name, publishedScreenTrack.trackSid];
+				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+			} catch (error) {
+				console.error('Error starting screen share:', error);
+			}
 		}
 	};
 

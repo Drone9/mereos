@@ -311,6 +311,14 @@ const createLanguageDropdown = () => {
 				.catch(err => logger.error(err));
       
 			languageDropdown.classList.remove('active');
+			if (typeof window?.mereos?.globalCallback === 'function') {
+				window.mereos.globalCallback({ 
+					type:'success',
+					message: 'language_changed',
+					code:50005, 
+					details:selectedLang.keyword 
+				});
+			}
 			updatePersistData('schoolTheme', { language: selectedLang.keyword });
 		});
 	});

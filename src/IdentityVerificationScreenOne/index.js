@@ -14,6 +14,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		isUploading: false,
 		captureMode: 'take',
 		imageSrc: null,
+		failedAttempts: 0,
 		videoConstraints: {
 			video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
 			width: 350,
@@ -111,6 +112,72 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 							};
 							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 						} else {
+							state.failedAttempts++;
+							
+							if (state.failedAttempts >= 3) {
+								state = {
+									...state,
+									imageSrc: state.imageSrc,
+									msg: {
+										type: 'successful',
+										text: 'detected_face_successfully',
+									},
+								};
+								registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
+							} else {
+								state = {
+									...state,
+									imageSrc: null,
+									captureMode: 'retake',
+									msg: {
+										type: 'unsuccessful',
+										text: 'face_not_detected',
+									},
+								};
+								startWebcam();
+								registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
+							}
+						}
+					} else if (predictions?.length > 1) {
+						state.failedAttempts++;
+						
+						if (state.failedAttempts >= 3) {
+							state = {
+								...state,
+								imageSrc: state.imageSrc,
+								msg: {
+									type: 'successful',
+									text: 'detected_face_successfully',
+								},
+							};
+							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
+						} else {
+							state = {
+								...state,
+								imageSrc: null,
+								captureMode: 'retake',
+								msg: {
+									type: 'unsuccessful',
+									text: 'multiple_face_detected',
+								},
+							};
+							startWebcam();
+							registerEvent({ eventType: 'error', notify: true, eventName: 'multiple_face_detected' });
+						}
+					} else {
+						state.failedAttempts++;
+						
+						if (state.failedAttempts >= 3) {
+							state = {
+								...state,
+								imageSrc: state.imageSrc,
+								msg: {
+									type: 'successful',
+									text: 'detected_face_successfully',
+								},
+							};
+							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
+						} else {
 							state = {
 								...state,
 								imageSrc: null,
@@ -123,30 +190,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 							startWebcam();
 							registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
 						}
-					} else if (predictions?.length > 1) {
-						state = {
-							...state,
-							imageSrc: null,
-							captureMode: 'retake',
-							msg: {
-								type: 'unsuccessful',
-								text: 'multiple_face_detected',
-							},
-						};
-						startWebcam();
-						registerEvent({ eventType: 'error', notify: true, eventName: 'multiple_face_detected' });
-					} else {
-						state = {
-							...state,
-							imageSrc: null,
-							captureMode: 'retake',
-							msg: {
-								type: 'unsuccessful',
-								text: 'face_not_detected',
-							},
-						};
-						startWebcam();
-						registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
 					}
     
 					renderUI();
@@ -154,13 +197,28 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				img.src = state.imageSrc;
 			} catch (error) {
 				logger.error('Error processing the image:', error);
-				state = {
-					...state,
-					msg: {
-						type: 'error',
-						text: 'face_processing_failed',
-					},
-				};
+				
+				state.failedAttempts++;
+				
+				if (state.failedAttempts >= 3) {
+					state = {
+						...state,
+						imageSrc: state.imageSrc,
+						msg: {
+							type: 'successful',
+							text: 'detected_face_successfully',
+						},
+					};
+					registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
+				} else {
+					state = {
+						...state,
+						msg: {
+							type: 'error',
+							text: 'face_processing_failed',
+						},
+					};
+				}
 				renderUI();
 			}
 		}
@@ -306,7 +364,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
         
 		contentHTML += `</div>`;
         
-		// Query message for retake mode
 		if (state.captureMode === 'retake') {
 			contentHTML += `<div class="ivso-query-msg"></div>`;
 		}

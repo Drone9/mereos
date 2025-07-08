@@ -14,7 +14,7 @@ import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
-import { initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
+import { initialSessionData, preChecksSteps } from './src/utils/constant';
 import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, getTimeInSeconds, hideZendeskWidget, logger, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
@@ -193,12 +193,13 @@ async function stop_prechecks(callback) {
 async function start_session(callback) {
 	try {
 		// const secureFeatures = getSecureFeatures();
+		logger.info('in the start',callback);
 		window.mereos.startRecordingCallBack = callback;
-		const tokenData = localStorage.getItem('mereosToken');
-		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
-			localStorage.removeItem('mereosToken');
-			return callback(tokenExpiredError);
-		}
+		// const tokenData = localStorage.getItem('mereosToken');
+		// if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
+		// 	localStorage.removeItem('mereosToken');
+		// 	return callback(tokenExpiredError);
+		// }
 		// const hasRecordScreen = findConfigs(['record_screen'], secureFeatures?.entities).length > 0;
 		// const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
 		// const screenShareStream = !window?.mereos?.newStream;

@@ -193,7 +193,7 @@ async function stop_prechecks(callback) {
 async function start_session(callback) {
 	try {
 		// const secureFeatures = getSecureFeatures();
-		logger.info('in the start',callback);
+		logger.success('in the start');
 		window.mereos.startRecordingCallBack = callback;
 		// const tokenData = localStorage.getItem('mereosToken');
 		// if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
@@ -204,7 +204,7 @@ async function start_session(callback) {
 		// const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
 		// const screenShareStream = !window?.mereos?.newStream;
 		const notCompleted = !window?.mereos?.precheckCompleted;
-		logger.info('notCompleted',notCompleted);
+		logger.error('notCompleted',notCompleted);
 		// const mobileStream = !window?.mereos?.mobileStream;
 
 		if (

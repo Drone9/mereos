@@ -11,7 +11,6 @@ import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenFour = async (tabContent) => {
 	if (tabContent.querySelector('.screen-four-container')) return; 
-	window.userMediaStream = null;	
 	let recordingMode = 'startRecording';
 	let showPlayer = false;
 	let textMessage = 'scan_your_room';
@@ -35,7 +34,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	const handleStartRecording = async (type) => {
 		try {
 			if (type === 'startRecording') {
-				mediaRecorder = new MediaRecorder(window.userMediaStream);
+				mediaRecorder = new MediaRecorder(window.mereos.userMediaStream);
 
 				mediaRecorder.ondataavailable = (event) => {
 					if (event.data.size > 0) {
@@ -84,7 +83,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	const handleStopRecording = async () => {
-		clearInterval(window.recordingDotInterval);
+		clearInterval(window.mereos.recordingDotInterval);
 		clearTimeout(autoStopRecordingTimeout);
 		if (mediaRecorder) {
 			mediaRecorder.stop();
@@ -102,9 +101,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			recordingMode ='startRecording';
 			textMessage = 'scan_your_room';
 			updateUI();
-			if (window.userMediaStream) {
-				window.userMediaStream.getTracks().forEach(track => track.stop());
-				window.userMediaStream = null;
+			if (window.mereos.userMediaStream) {
+				window.mereos.userMediaStream.getTracks().forEach(track => track.stop());
+				window.mereos.userMediaStream = null;
 			}
 			updatePersistData('preChecksSteps', { roomScanningVideo: true });
 			registerEvent({
@@ -210,13 +209,13 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 					dot.src = `${ASSET_URL}/${isRed ? 'white-dot.svg' : 'red-dot.svg'}`;
 					isRed = !isRed;
 				}, 1000);
-				window.recordingDotInterval = toggleDot;
+				window.mereos.recordingDotInterval = toggleDot;
 				const webcam = document.createElement('video');
 				webcam.autoplay = true;
 				webcam.muted = true;
 				webcam.height = 250;
 				webcam.id = 'webcam-recorded-media';
-				webcam.srcObject = window.userMediaStream;
+				webcam.srcObject = window.mereos.userMediaStream;
 
 				recordingBadge.appendChild(dot);
 				recordingBadge.appendChild(document.createTextNode(`${i18next.t('recording')}`));
@@ -247,14 +246,14 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				video: videoConstraints.video,
 			};
 
-			window.userMediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
+			window.mereos.userMediaStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
 			const webcam = document.createElement('video');
 
 			webcam.autoplay = true;
 			webcam.muted = true;
 			webcam.height = 250;
 			webcam.id = 'webcam-recording-media';
-			webcam.srcObject = window.userMediaStream;
+			webcam.srcObject = window.mereos.userMediaStream;
 			headerImgContainer.appendChild(webcam);
 
 			const prevButton = createButton(`${i18next.t('previous_step')}`, 'orange-hollow-btn', prevStep);

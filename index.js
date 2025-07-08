@@ -192,22 +192,24 @@ async function stop_prechecks(callback) {
 
 async function start_session(callback) {
 	try {
-		const secureFeatures = getSecureFeatures();
+		// const secureFeatures = getSecureFeatures();
 		window.mereos.startRecordingCallBack = callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');
 			return callback(tokenExpiredError);
 		}
-		const hasRecordScreen = findConfigs(['record_screen'], secureFeatures?.entities).length > 0;
-		const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
-		const screenShareStream = !window?.mereos?.newStream;
+		// const hasRecordScreen = findConfigs(['record_screen'], secureFeatures?.entities).length > 0;
+		// const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
+		// const screenShareStream = !window?.mereos?.newStream;
 		const notCompleted = !window?.mereos?.precheckCompleted;
-		const mobileStream = !window?.mereos?.mobileStream;
+		// const mobileStream = !window?.mereos?.mobileStream;
 
 		if (
-			(hasRecordScreen && screenShareStream && notCompleted) || 
-			(hasMobileProctoring && notCompleted && !mobileStream)
+			// (hasRecordScreen && screenShareStream &&
+			notCompleted
+		// ) || 
+			// (hasMobileProctoring && notCompleted && !mobileStream)
 		) {
 			updatePersistData('preChecksSteps', { 
 				mobileConnection: false,
@@ -220,7 +222,7 @@ async function start_session(callback) {
 			});
 			return;
 		}
-
+		logger.success('before if condition',notCompleted);
 		if(window.mereos.roomInstance === null && !window.mereos.recordingStart){
 			window.mereos.recordingStart=true;
 			const secureFeatures = getSecureFeatures();
@@ -233,7 +235,7 @@ async function start_session(callback) {
 			if (secureFeatures?.entities?.length > 0) {
 				const mobileRoomSessionId = v4();
 				const newRoomSessionId = v4();
-				
+				logger.success('in the if condition',secureFeatures?.entities);
 
 				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
 					try {

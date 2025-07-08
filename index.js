@@ -225,7 +225,7 @@ async function start_session(callback) {
 		// 	return;
 		// }
 		logger.success('before if condition');
-		if(window.mereos.roomInstance === null && !window.mereos.recordingStart){
+		if(!window.mereos.roomInstance && !window.mereos.recordingStart){
 			window.mereos.recordingStart=true;
 			const secureFeatures = getSecureFeatures();
 			const dateTime = new Date();

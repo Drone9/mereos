@@ -44,10 +44,10 @@ export const startRecording = async () => {
 				}
 				resetSessionData();
 			} else {
-				window.roomInstance=null;
-				window.recordingStart=false;
-				if(window.startRecordingCallBack){
-					window.startRecordingCallBack({ 
+				window.mereos.roomInstance=null;
+				window.mereos.recordingStart=false;
+				if(window.mereos.startRecordingCallBack){
+					window.mereos.startRecordingCallBack({ 
 						type:'error', 
 						message: 'internet_connection_lost_session_cant_resume',
 						code:40006
@@ -60,8 +60,8 @@ export const startRecording = async () => {
 	};
 
 	const resetSessionData = () => {
-		if(window.startRecordingCallBack){
-			window.startRecordingCallBack({ 
+		if(window.mereos.startRecordingCallBack){
+			window.mereos.startRecordingCallBack({ 
 				type:'error',
 				message: 'internet_connection_lost_force_close_your_session',
 				code:40007
@@ -71,13 +71,13 @@ export const startRecording = async () => {
 	};
 
 	const initSocketConnection = () => {
-		if (!window.socket) {
+		if (!window.mereos.socket) {
 			updatePersistData('preChecksSteps', { 
 				mobileConnection: false,
 				screenSharing: false
 			});
-			if(window.startRecordingCallBack){
-				window.startRecordingCallBack({ 
+			if(window.mereos.startRecordingCallBack){
+				window.mereos.startRecordingCallBack({ 
 					type:'error',
 					message: 'mobile_connection_disconnected' ,
 					code:40008
@@ -87,7 +87,7 @@ export const startRecording = async () => {
 			return;
 		}
 
-		window.socket.onmessage = (event) => {
+		window.mereos.socket.onmessage = (event) => {
 			const eventData = JSON.parse(event?.data);
 			switch (eventData?.message?.event || eventData?.event) {
 				case 'MobileRecordingStarted': {
@@ -109,14 +109,14 @@ export const startRecording = async () => {
 							mobileConnection: false,
 							screenSharing: false
 						});
-						if(window.startRecordingCallBack){
-							window.startRecordingCallBack({ 
+						if(window.mereos.startRecordingCallBack){
+							window.mereos.startRecordingCallBack({ 
 								type:'error',
 								message: 'error_on_start_mobile_recording' ,
 								code:40009
 							});
 						}
-						window.recordingStart = false;
+						window.mereos.recordingStart = false;
 						logger.error('error',error);
 					});
 
@@ -130,8 +130,8 @@ export const startRecording = async () => {
 							screenSharing: false
 						});
 						showToast('error','mobile_phone_disconnected');
-						if(window.startRecordingCallBack){
-							window.startRecordingCallBack({ 
+						if(window.mereos.startRecordingCallBack){
+							window.mereos.startRecordingCallBack({ 
 								type:'error',
 								message: 'mobile_phone_disconnected',
 								code:40010
@@ -147,7 +147,7 @@ export const startRecording = async () => {
 			}
 		};
 		
-		window.socket.onerror = (error) => {
+		window.mereos.socket.onerror = (error) => {
 			logger.error('WebSocket error:', error);
 		};
 	};
@@ -157,18 +157,18 @@ export const startRecording = async () => {
 	}
 
 	if (
-		(!window?.newStream || window?.newStream?.getTracks()?.length === 0) &&
+		(!window?.mereos?.newStream || window?.mereos?.newStream?.getTracks()?.length === 0) &&
 		findConfigs(['record_screen'], secureFeatures?.entities)?.length > 0
 	) {		
-		if (window.startRecordingCallBack) {
-			window.startRecordingCallBack({ 
+		if (window.mereos.startRecordingCallBack) {
+			window.mereos.startRecordingCallBack({ 
 				type:'error',
 				message: 'please_share_your_screen' ,
 				code:40011
 			});
 		}
-		window.recordingStart=false;
-		window.precheckCompleted=false;
+		window.mereos.recordingStart=false;
+		window.mereos.precheckCompleted=false;
 		return;
 	}
 
@@ -217,7 +217,7 @@ export const startRecording = async () => {
 			});
 
 			let room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
-			window.roomInstance = room;
+			window.mereos.roomInstance = room;
 
 			updatePersistData('session', { 
 				room_id: room?.sid 
@@ -253,35 +253,35 @@ export const startRecording = async () => {
 			}
 
 			if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
-				if(window?.newStream?.getTracks()[0]){
-					screenTrack = new TwilioVideo.LocalVideoTrack(window?.newStream?.getTracks()[0]);
+				if(window?.mereos?.newStream?.getTracks()[0]){
+					screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0]);
 					let screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
 					screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
 					updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 				}else{
-					if(window.startRecordingCallBack){
-						window.startRecordingCallBack({ 
+					if(window.mereos.startRecordingCallBack){
+						window.mereos.startRecordingCallBack({ 
 							type:'error',
 							message: 'please_share_your_screen',
 							code:40011 
 						});
 					}
-					window.precheckCompleted=false;
-					window.recordingStart = false;
+					window.mereos.precheckCompleted=false;
+					window.mereos.recordingStart = false;
 					return;
 				}
 			}
 			
-			if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-				window.socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
+			if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+				window.mereos.socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
 			}
 
 			const localParticipant = room.localParticipant;
 
 			localParticipant.on('networkQualityLevelChanged', (level) => {
 				if (level <= 2) {
-					if(window.startRecordingCallBack){
-						window.startRecordingCallBack({ 
+					if(window.mereos.startRecordingCallBack){
+						window.mereos.startRecordingCallBack({ 
 							type:'error',
 							message: 'session_is_terminated_due_to_slow_internet_connection',
 							code:40013
@@ -296,8 +296,8 @@ export const startRecording = async () => {
 				const track = publication.track;
 				if (track) {
 					track.on('stopped', () => {
-						if(window.startRecordingCallBack){
-							window.startRecordingCallBack({ 
+						if(window.mereos.startRecordingCallBack){
+							window.mereos.startRecordingCallBack({ 
 								type:'error',
 								message: 'camera_is_stopped',
 								code:40019
@@ -323,13 +323,13 @@ export const startRecording = async () => {
 					});
 					showToast('error','internet_connection_not_working');		
 				}
-				if(window.startRecordingCallBack){
-					window.startRecordingCallBack({ 
+				if(window.mereos.startRecordingCallBack){
+					window.mereos.startRecordingCallBack({ 
 						type:'error',
 						message: 'web_internet_connection_disconnected',
 						code:40014
 					});
-					window.recordingStart = false;
+					window.mereos.recordingStart = false;
 				}
 				setTimeout(async () => {
 					forceClosure();
@@ -339,8 +339,8 @@ export const startRecording = async () => {
 
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_started_successfully', startAt: dateTime });
 			
-			if(window.startRecordingCallBack){
-				window.startRecordingCallBack({ 
+			if(window.mereos.startRecordingCallBack){
+				window.mereos.startRecordingCallBack({ 
 					type:'success',
 					message: 'recording_started_successfully',
 					code:50000
@@ -358,20 +358,20 @@ export const startRecording = async () => {
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});
-			window.recordingStart = false;
+			window.mereos.recordingStart = false;
 		}
 	}else{
 		updatePersistData('session', {
 			sessionStatus:'Attending'
 		});
-		if(window.startRecordingCallBack){
-			window.startRecordingCallBack({ 
+		if(window.mereos.startRecordingCallBack){
+			window.mereos.startRecordingCallBack({ 
 				type:'success',
 				code:50000,
 				message: 'recording_started_successfully' 
 			});
 		}
-		window.recordingStart = true;
+		window.mereos.recordingStart = true;
 	}
 };
 
@@ -794,8 +794,8 @@ function VideoChat(room) {
 					showToast('error',i18next.t('internet_connection_not_working'));					
 				}
 				setTimeout(() => {
-					if(window.startRecordingCallBack){
-						window.startRecordingCallBack({ 
+					if(window.mereos.startRecordingCallBack){
+						window.mereos.startRecordingCallBack({ 
 							type:'error',
 							code:40015,
 							message: 'mobile_internet_connection_disconnected' 
@@ -828,8 +828,8 @@ export const stopAllRecordings = async () => {
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
 
-		if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-			window.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
+		if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+			window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
 		
 		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
@@ -842,8 +842,8 @@ export const stopAllRecordings = async () => {
 			});
 		}
 
-		if(window.mobileStream){
-			window.mobileStream?.getTracks()?.forEach(track => track.stop());
+		if(window.mereos.mobileStream){
+			window.mereos.mobileStream?.getTracks()?.forEach(track => track.stop());
 		}
 
 		if (chatContainer) {
@@ -864,32 +864,32 @@ export const stopAllRecordings = async () => {
 			mediaStream=null;
 		}
 
-		if (window?.newStream) {
-			window?.newStream.getTracks().forEach(track => {
+		if (window?.mereos?.newStream) {
+			window?.mereos?.newStream.getTracks().forEach(track => {
 				track.stop();
 				track.enabled = false;
 			});
 		}
 
-		window.recordingStart=false;
+		window.mereos.recordingStart=false;
 
-		if (window?.roomInstance) {
-			window?.roomInstance.localParticipant.tracks.forEach(publication => {
+		if (window?.mereos?.roomInstance) {
+			window?.mereos?.roomInstance.localParticipant.tracks.forEach(publication => {
 				const track = publication.track;
 				if (track) {
 					track.stop();
 					track.detach().forEach(element => element.remove());
 					track.disable();
-					window?.roomInstance.localParticipant.unpublishTrack(track);
+					window?.mereos?.roomInstance.localParticipant.unpublishTrack(track);
 				}
 			});
-			window.roomInstance.participants.forEach(participant => {
+			window.mereos.roomInstance.participants.forEach(participant => {
 				participant.removeAllListeners();
 			});
 
-			window.roomInstance.removeAllListeners();
-			window.roomInstance.disconnect();
-			window.roomInstance = null;
+			window.mereos.roomInstance.removeAllListeners();
+			window.mereos.roomInstance.disconnect();
+			window.mereos.roomInstance = null;
 		}
 
 		if (mobileRoomInstance) {

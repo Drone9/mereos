@@ -22,36 +22,34 @@ const initSocket = () => {
 		throw new Error('SOCKET_URL is not defined');
 	}
 
-	window.socket = null;
-
 	let finalGroupName = getGroupId();
 
-	window.socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
+	window.mereos.socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
 
-	window.socket.onerror = (error) => {
+	window.mereos.socket.onerror = (error) => {
 		logger.error('WebSocket error:', error);
 	};
 
-	window.socket.onclose = (event) => {
+	window.mereos.socket.onclose = (event) => {
 		logger.warn('WebSocket connection closed:', event.reason);
 	};
 
-	window.socket.onopen = () => {
+	window.mereos.socket.onopen = () => {
 		logger.success('WebSocket connection opened');
 	};
 };
 
 const sendMessage = (message) => {
-	if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-		window.socket.send(message);
+	if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+		window.mereos.socket.send(message);
 	} else {
 		logger.error('WebSocket is not open. Unable to send message');
 	}
 };
 
 const closeSocket = () => {
-	if (window.socket) {
-		window.socket.close();
+	if (window.mereos.socket) {
+		window.mereos.socket.close();
 	} else {
 		logger.error('WebSocket is not initialized');
 	}

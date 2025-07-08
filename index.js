@@ -7,7 +7,7 @@
  * LICENSE file in the root directory of this source tree.
 */
 
-window.openModal = openModal;
+window.mereos = window.mereos || {};
 
 import {  openModal, startSession } from './src/ExamsPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
@@ -131,12 +131,11 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 	}
 }
 
-window.globalCallback = null;
 async function start_prechecks(callback,setting) {
 	try {
-		window.globalCallback = callback;
+		window.mereos.globalCallback = callback;
 		localStorage.setItem('precheckSetting', setting);
-		window.precheckCompleted=false;
+		window.mereos.precheckCompleted=false;
 		startSession();
 		openModal(callback);
 	} catch (error) {
@@ -150,11 +149,9 @@ async function start_prechecks(callback,setting) {
 	}
 }
 
-window.stopPrecheckCallBack = null;
-
 async function stop_prechecks(callback) {
 	try {
-		window.stopPrecheckCallBack = callback;
+		window.mereos.stopPrecheckCallBack = callback;
 		const modal = document.getElementById('precheck-modal');
 		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');
@@ -193,13 +190,10 @@ async function stop_prechecks(callback) {
 	}
 }
 
-window.startRecordingCallBack = null;
-window.recordingStart=false;
-window.roomInstance=null;
 async function start_session(callback) {
 	try {
 		const secureFeatures = getSecureFeatures();
-		window.startRecordingCallBack = callback;
+		window.mereos.startRecordingCallBack = callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');
@@ -207,9 +201,9 @@ async function start_session(callback) {
 		}
 		const hasRecordScreen = findConfigs(['record_screen'], secureFeatures?.entities).length > 0;
 		const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
-		const screenShareStream = !window?.newStream;
-		const notCompleted = !window?.precheckCompleted;
-		const mobileStream = !window?.mobileStream;
+		const screenShareStream = !window?.mereos?.newStream;
+		const notCompleted = !window?.mereos?.precheckCompleted;
+		const mobileStream = !window?.mereos?.mobileStream;
 
 		if (
 			(hasRecordScreen && screenShareStream && notCompleted) || 
@@ -227,8 +221,8 @@ async function start_session(callback) {
 			return;
 		}
 
-		if(window.roomInstance === null && !window.recordingStart){
-			window.recordingStart=true;
+		if(window.mereos.roomInstance === null && !window.mereos.recordingStart){
+			window.mereos.recordingStart=true;
 			const secureFeatures = getSecureFeatures();
 			const dateTime = new Date();
 			
@@ -251,8 +245,8 @@ async function start_session(callback) {
 							mobileRoomSessionId: mobileRoomSessionId,
 						});
 	
-						if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-							window.socket.send(
+						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+							window.mereos.socket.send(
 								JSON.stringify({
 									event: 'twilioToken',
 									message: mobileTwilioToken?.data?.token,
@@ -260,8 +254,8 @@ async function start_session(callback) {
 							);
 						}
 					} catch (err) {
-						if(window.startRecordingCallBack){
-							window.startRecordingCallBack({
+						if(window.mereos.startRecordingCallBack){
+							window.mereos.startRecordingCallBack({
 								type: 'error',
 								message: 'error_in_mobile_proctoring_setup',
 								details: err,
@@ -285,7 +279,7 @@ async function start_session(callback) {
 							});
 						}
 					} catch (err) {
-						window.startRecordingCallBack({
+						window.mereos.startRecordingCallBack({
 							type: 'error',
 							message: 'error_in_web_room_creation',
 							details: err,
@@ -297,7 +291,7 @@ async function start_session(callback) {
 	
 				startRecording();
 			} else {
-				window.startRecordingCallBack({ 
+				window.mereos.startRecordingCallBack({ 
 					type:'success',
 					message: 'recording_started_successfully',
 					code:50000

@@ -341,8 +341,8 @@ export const shareScreenFromContent = () => {
 
 				track.addEventListener('ended', () => {
 					registerEvent({notify: false, eventName: 'screen_shared_stopped', eventType: 'error'});
-					if(window.startRecordingCallBack){
-						window.startRecordingCallBack({ 
+					if(window.mereos.startRecordingCallBack){
+						window.mereos.startRecordingCallBack({ 
 							type:'error',
 							message: 'screen_share_stopped',
 							code:40012
@@ -468,12 +468,12 @@ export const addSectionSessionRecord = async (session) => {
 			resolve(resp);
 		}catch(err){
 			if (err.response?.status === 403) {
-				if(window.globalCallback){
-					window?.globalCallback({type:'error', message: 'error_saving_session_info',code:40018 });
+				if(window.mereos.globalCallback){
+					window?.mereos.globalCallback({type:'error', message: 'error_saving_session_info',code:40018 });
 				}
 			} 
-			if(window.startRecordingCallBack){
-				window?.startRecordingCallBack({type:'error', message: 'error_saving_session_info',code:40018 });
+			if(window.mereos.startRecordingCallBack){
+				window?.mereos.startRecordingCallBack({type:'error', message: 'error_saving_session_info',code:40018 });
 			}
 			_reject(err);
 		}
@@ -667,21 +667,6 @@ export const detectUnfocusOfTab = () => {
 			resolve(false);
 		}
 	});
-};
-
-window.sharedMediaStream = null;
-
-export const getMediaStream = async ({ audio, video }) => {
-	if (window.sharedMediaStream) {
-		return window.sharedMediaStream;
-	}
-	try {
-		window.sharedMediaStream = await navigator.mediaDevices.getUserMedia({ audio: audio, video: video });
-		return window.sharedMediaStream;
-	} catch (error) {
-		logger.error('Error accessing media devices: ', error);
-		throw error;
-	}
 };
 
 export const removeUnfocusListener = () => {
@@ -889,15 +874,15 @@ export const detectPageRefresh = () => {
 
 // ************* Detect Back Button ***************** //
 const detectBackButtonCallback = () => {
-	if (window.startRecordingCallBack) {
-		window.startRecordingCallBack({
+	if (window.mereos.startRecordingCallBack) {
+		window.mereos.startRecordingCallBack({
 			type: 'error',
 			message: 'candidate_clicked_on_browser_back_button' ,
 			code: 40005
 		});
-		window.recordingStart = false;
-		if (window?.socket?.readyState === WebSocket.OPEN) {
-			window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+		window.mereos.recordingStart = false;
+		if (window?.mereos?.socket?.readyState === WebSocket.OPEN) {
+			window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 		}
 	}
 };
@@ -1010,7 +995,7 @@ export const handlePreChecksRedirection = () => {
 			closeModal();
 		}
 	}else{
-		if (window.precheckCompleted && hasFeature('record_screen')) {
+		if (window.mereos.precheckCompleted && hasFeature('record_screen')) {
 			return 'IdentityVerificationScreenFive';
 		}else{
 			localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));

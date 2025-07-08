@@ -17,7 +17,6 @@ import '../assets/css/step5.css';
 import * as TwilioVideo from 'twilio-video';
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
-	window.newStream = null;
 	const candidateAssessment = getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
 	
@@ -44,26 +43,26 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const initSocketConnection = () => {
-		if (!window.socket) {
+		if (!window.mereos.socket) {
 			updatePersistData('preChecksSteps', { 
 				mobileConnection: false,
 				screenSharing: false
 			});
-			window.globalCallback({ type:'error', message: 'mobile_phone_disconnected', code:40017 });
+			window.mereos.globalCallback({ type:'error', message: 'mobile_phone_disconnected', code:40017 });
 			showToast('error','mobile_phone_disconnected');
 			logger.error('Socket not initialized');
 			return;
 		}
 
-		window.socket.onmessage = (event) => {
+		window.mereos.socket.onmessage = (event) => {
 			const eventData = JSON.parse(event?.data);
 
 			switch (eventData?.message?.event || eventData?.event) {
 				case 'violation':
 					if(eventData?.message?.message === 'Violation'){
 						updatePersistData('preChecksSteps', { mobileConnection: false,screenSharing:false });
-						if(window.newStream){
-							window.newStream?.getVideoTracks()[0].stop();
+						if(window.mereos.newStream){
+							window.mereos.newStream?.getVideoTracks()[0].stop();
 						}
 						showTab('MobileProctoring');
 					}
@@ -75,11 +74,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			}
 		};
 		
-		window.socket.onerror = (error) => {
+		window.mereos.socket.onerror = (error) => {
 			logger.error('WebSocket error:',error);
 		};
 
-		window.socket.onclose = () => {
+		window.mereos.socket.onclose = () => {
 			logger.error('WebSocket connection closed');
 		};
 	};
@@ -145,20 +144,20 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const shareScreen = async () => {
 		try {
-			window.newStream = await shareScreenFromContent();
+			window.mereos.newStream = await shareScreenFromContent();
 
 			updatePersistData('session', { screenRecordingStream: location });
 
 			const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 
-			const videoTrack = window.newStream.getVideoTracks()[0];
+			const videoTrack = window.mereos.newStream.getVideoTracks()[0];
 			const trackSettings = videoTrack.getSettings();
 
 			const isScreenShared = isFirefox ? true
 				: trackSettings.displaySurface === 'monitor';
 
 			if (isScreenShared) {
-				stream = window.newStream;
+				stream = window.mereos.newStream;
 				mode = 'startScreenRecording';
 				msg = {
 					type: 'successful',
@@ -188,9 +187,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		const session = convertDataIntoParse('session');
 
-		if(window.roomInstance){
-			let screenTrack = new TwilioVideo.LocalVideoTrack(window?.newStream?.getTracks()[0]);
-			let screenTrackPublished = await window.roomInstance.localParticipant.publishTrack(screenTrack);
+		if(window.mereos.roomInstance){
+			let screenTrack = new TwilioVideo.LocalVideoTrack(window.mereos?.newStream?.getTracks()[0]);
+			let screenTrackPublished = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
 			let screenRecordings = [...session.screen_sharing_video_name, screenTrackPublished.trackSid];
 			updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 		}
@@ -200,8 +199,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		if (stream) {
 			stream.getVideoTracks()[0].stop();
 		}
-		if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-			window.socket?.send(JSON.stringify({ event: 'resetSession' }));
+		if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+			window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 		}
 		updatePersistData('preChecksSteps',{ mobileConnection: false, screenSharing:false, roomScanningVideo:false });
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
@@ -260,7 +259,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	tabContent.innerHTML = '';
 	tabContent.appendChild(container);
 
-	if (!window.newStream) {
+	if (!window.mereos.newStream) {
 		shareScreen();
 	}
 	if(secureFeatures.find(entity => entity.key === 'mobile_proctoring')){

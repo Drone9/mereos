@@ -348,7 +348,10 @@ const openModal = async (callback) => {
 function closeModal() {
 	if (typeof window.mereos.globalCallback === 'function') {
 		window.mereos.precheckCompleted = true;
-		window.mereos.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
+		console.log('precheckCompleted after modal:', window.mereos.precheckCompleted);
+		setTimeout(() => {
+			window.mereos.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
+		}, 100);
 	}
 
 	modal.style.display = 'none';

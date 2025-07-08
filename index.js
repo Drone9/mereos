@@ -203,6 +203,7 @@ async function start_session(callback) {
 		// const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
 		// const screenShareStream = !window?.mereos?.newStream;
 		const notCompleted = !window?.mereos?.precheckCompleted;
+		logger.info('notCompleted',notCompleted);
 		// const mobileStream = !window?.mereos?.mobileStream;
 
 		if (

@@ -178,7 +178,6 @@ export const startRecording = async () => {
 	}
 
 	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
-		logger.success('in the recording');
 		let twilioOptions = {
 			preferredVideoCodecs: 'auto', 
 			bandwidthProfile: { 

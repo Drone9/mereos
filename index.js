@@ -86,7 +86,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 				return callback({
 					type: 'error',
 					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
-					code: 40022,
+					code: 40021,
 					details: error,
 				});
 			}
@@ -108,7 +108,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 					return callback({
 						type: 'error',
 						message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
-						code: 40023,
+						code: 40021,
 						details: error,
 					});
 				}
@@ -134,7 +134,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 		return callback({
 			type: 'error',
 			message: 'error_in_init_function',
-			code: 40024,
+			code: 40022,
 			details: error,
 		});
 	}

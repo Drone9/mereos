@@ -122,7 +122,7 @@ export const aiEventsFeatures = [
 
 export const tokenExpiredError = {
 	type: 'error',
-	code: 40025,
+	code: 40023,
 	message: 'token_expired_login_again_to_perform_this_action'
 };
 

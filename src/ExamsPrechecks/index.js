@@ -528,7 +528,7 @@ export const startSession = async () => {
 			if(e.response?.data?.detail === 'Token not found'){
 				window.mereos.globalCallback({
 					type: 'error',
-					code: 40025,
+					code: 40023,
 					message: 'token_expired_login_again_to_perform_this_action',
 				});
 			}

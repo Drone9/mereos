@@ -4,7 +4,7 @@ import { BASE_URL, CONTENT_TYPE } from './constant';
 const createTokenExpiredError = () => ({
 	type: 'error',
 	message: 'token_expired_login_again_to_perform_this_action',
-	code: 40024,
+	code: 40023,
 	details: 'Authentication token has expired'
 });
 

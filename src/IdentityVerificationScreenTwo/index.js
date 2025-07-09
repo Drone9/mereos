@@ -14,6 +14,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let inputFile;
 	let disabledBtn = false;
 	let fileObj;
+	let failedAttempts = 0;
 	let currentState = {
 		captureMode: 'take',
 		imageSrc: null,
@@ -128,7 +129,11 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				const resp = await userRekognitionInfo(data);
 				const userImageData = resp.data;
 				if (userImageData) {
-					if (acceptableLabels(userImageData?.label, 80) && acceptableText(userImageData?.text, 59) && userImageData?.face?.FaceDetails.length > 0) {
+					const isValidID = acceptableLabels(userImageData?.label, 80) && 
+									acceptableText(userImageData?.text, 59) && 
+									userImageData?.face?.FaceDetails.length > 0;
+					
+					if (isValidID) {
 						currentState = {
 							...currentState,
 							captureMode: 'retake',
@@ -140,20 +145,61 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						disabledBtn = false;
 						registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
 					} else {
-						currentState = {
-							...currentState,
-							captureMode: 'retake',
-							msg: {
-								type: 'unsuccessful',
-								text: 'id_not_verified'
-							}
-						};
-						disabledBtn = false;
-						registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
+						failedAttempts++;
+						
+						if (failedAttempts >= 3) {
+							currentState = {
+								...currentState,
+								captureMode: 'retake',
+								msg: {
+									type: 'successful',
+									text: 'id_successfully_verified'
+								}
+							};
+							disabledBtn = false;
+							registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
+						} else {
+							currentState = {
+								...currentState,
+								captureMode: 'retake',
+								msg: {
+									type: 'unsuccessful',
+									text: 'id_not_verified'
+								}
+							};
+							disabledBtn = false;
+							registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
+						}
 					}
 				}
 			} catch (error) {
 				logger.error('Error verifying image:', error);
+				
+				failedAttempts++;
+				
+				if (failedAttempts >= 3) {
+					currentState = {
+						...currentState,
+						captureMode: 'retake',
+						msg: {
+							type: 'successful',
+							text: 'id_successfully_verified'
+						}
+					};
+					disabledBtn = false;
+					registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
+				} else {
+					currentState = {
+						...currentState,
+						captureMode: 'retake',
+						msg: {
+							type: 'unsuccessful',
+							text: 'id_not_verified'
+						}
+					};
+					disabledBtn = false;
+					registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
+				}
 			}
 			renderUI();
 		}

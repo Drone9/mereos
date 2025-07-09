@@ -2016,7 +2016,25 @@ export const MobileProctoringCss = `.mobile-conection-container {
   display: flex;
   flex-direction: column;
 }
+.button-loader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
+.spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ffffff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 .ivsf-wrapper {
   margin: auto;
   display: flex;
@@ -2429,6 +2447,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	font-size: 14px;
 	margin: 20px auto 0;
 	color: #8D979F;
+  padding-top:13px;
 }
 `;
 

@@ -31,15 +31,113 @@ import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import '../assets/css/start-recording.css';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+import { openModal } from '../ExamsPrechecks';
 
 let aiProcessingInterval = null;
 let aiEvents = [];
 let mediaStream = null;
-let mobileRoomInstance = null;
 const trackStoppedListeners = new Map();
 let forceClosureTriggered = false;
 let incidentCheckInterval = null;
 	
+export const initMobileConnection = () => {
+	const session = convertDataIntoParse('session');
+    
+	if (window.mereos.mobileRoomInstance) {
+		window.mereos.mobileRoomInstance.disconnect();
+		window.mereos.mobileRoomInstance = null;
+	}
+    
+	getCreateRoom({
+		room_name: session?.mobileRoomSessionId,
+		auto_record: false
+	}).then(async (twilioTokens) => {    
+		const twilioRoom = await TwilioVideo.connect(twilioTokens?.data?.token, {
+			audio: false,
+			video: false
+		});
+		window.mereos.mobileRoomInstance = twilioRoom;
+		if(twilioRoom){
+			VideoChat(twilioRoom);
+		}
+	}).catch((error) => {
+		logger.error('Mobile reconnection failed:', error);
+		if(window.mereos.startRecordingCallBack){
+			window.mereos.startRecordingCallBack({ 
+				type:'error',
+				message: 'mobile_connection_failed',
+				code:40016
+			});
+		}
+	});
+};
+
+export const connectSocketConnection = () => {
+	if (!window.mereos?.socket) {
+		updatePersistData('preChecksSteps', { 
+			mobileConnection: false,
+			screenSharing: false
+		});
+		if(window.mereos.startRecordingCallBack){
+			window.mereos.startRecordingCallBack({ 
+				type:'error',
+				message: 'mobile_connection_disconnected' ,
+				code:40008
+			});
+		}
+		logger.error('Socket not initialized');
+		return;
+	}
+
+	window.mereos.socket.onmessage = (event) => {
+		const eventData = JSON.parse(event?.data);
+		switch (eventData?.message?.event || eventData?.event) {
+			case 'MobileRecordingStarted': {
+				initMobileConnection();
+
+				break;
+			}
+
+			case 'violation':
+				if(eventData?.message?.message === 'Violation'){
+					updatePersistData('preChecksSteps', { 
+						mobileConnection: false,
+						screenSharing: false
+					});
+					showToast('error','mobile_phone_disconnected');
+					const moileElement = document.getElementById('remote-video');
+					if(moileElement){
+						moileElement.remove();
+					}
+					if(window.mereos.mobileRoomInstance){
+						window.mereos.mobileRoomInstance.removeAllListeners();
+						window.mereos.mobileRoomInstance.disconnect();
+						window.mereos.mobileRoomInstance = null;
+					}
+					window.mereos.mobileProctoring=true;
+					if(window.mereos.startRecordingCallBack){
+						window.mereos.startRecordingCallBack({ 
+							type:'error',
+							message: 'mobile_phone_disconnected',
+							code:40010
+						});
+					}
+					openModal();
+				}
+				registerEvent({ eventType: 'error', notify: false, eventName:'mobile_phone_disconnected' , eventValue: getDateTime() });
+				break;
+
+			default:
+				logger.success('Unknown event:', eventData?.message);
+				break;
+		}
+	};
+		
+	window.mereos.socket.onerror = (error) => {
+		logger.error('WebSocket error:', error);
+	};
+};
+
 export const startRecording = async () => {	
 	let screenTrack = null;
 	let cameraRecordings = [];
@@ -171,96 +269,9 @@ export const startRecording = async () => {
 	};
 
 	startIncidentMonitoring();
-
-	const initSocketConnection = () => {
-		if (!window.mereos?.socket) {
-			updatePersistData('preChecksSteps', { 
-				mobileConnection: false,
-				screenSharing: false
-			});
-			if(window.mereos.startRecordingCallBack){
-				window.mereos.startRecordingCallBack({ 
-					type:'error',
-					message: 'mobile_connection_disconnected' ,
-					code:40008
-				});
-			}
-			logger.error('Socket not initialized');
-			return;
-		}
-
-		window.mereos.socket.onmessage = (event) => {
-			const eventData = JSON.parse(event?.data);
-			switch (eventData?.message?.event || eventData?.event) {
-				case 'MobileRecordingStarted': {
-					getCreateRoom({
-						room_name: session?.mobileRoomSessionId,
-						auto_record: false
-					}).then(async (twilioTokens) => {	
-						const twilioRoom = await TwilioVideo.connect(twilioTokens?.data?.token, {
-							audio: false,
-							video: false
-						});
-						
-						mobileRoomInstance = twilioRoom;
-						if(mobileRoomInstance){
-							VideoChat(twilioRoom);
-						}
-					}).catch((error)=>{
-						updatePersistData('preChecksSteps', { 
-							mobileConnection: false,
-							screenSharing: false
-						});
-						if(window.mereos.startRecordingCallBack){
-							window.mereos.startRecordingCallBack({ 
-								type:'error',
-								message: 'error_on_start_mobile_recording' ,
-								code:40009
-							});
-						}
-						window.mereos.recordingStart = false;
-						logger.error('error',error);
-					});
-
-					break;
-				}
-
-				case 'violation':
-					if(eventData?.message?.message === 'Violation'){
-						updatePersistData('preChecksSteps', { 
-							mobileConnection: false,
-							screenSharing: false
-						});
-						showToast('error','mobile_phone_disconnected');
-						if(window.mereos.startRecordingCallBack){
-							window.mereos.startRecordingCallBack({ 
-								type:'error',
-								message: 'mobile_phone_disconnected',
-								code:40010
-							});
-						}
-						updatePersistData('preChecksSteps', { 
-							mobileConnection: false,
-							screenSharing: false
-						});
-						window.mereos.precheckCompleted=false;
-					}
-					registerEvent({ eventType: 'error', notify: false, eventName:'mobile_phone_disconnected' , eventValue: getDateTime() });
-					break;
-
-				default:
-					logger.success('Unknown event:', eventData?.message);
-					break;
-			}
-		};
-		
-		window.mereos.socket.onerror = (error) => {
-			logger.error('WebSocket error:', error);
-		};
-	};
 	
 	if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length && window?.mereos?.mobileStream){
-		initSocketConnection();
+		connectSocketConnection();
 	}
 
 	if (
@@ -590,6 +601,7 @@ const setupWebcam = async (mediaStream) => {
 		
 			const remoteVideoRef = document.createElement('div');
 			remoteVideoRef.classList.add('remote-video');
+			remoteVideoRef.id='remote-video';
 		
 			const mediaWrapper = document.createElement('div');
 			mediaWrapper.style.position = 'relative';
@@ -842,7 +854,7 @@ export const cleanupLocalVideo = () => {
 	}
 };
 
-function VideoChat(room) {
+export function VideoChat(room) {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 	let webcamContainer = document.getElementById('webcam-container');
@@ -852,8 +864,7 @@ function VideoChat(room) {
 		webcamContainer.id = 'webcam-container';
 		webcamContainer.className='user-videos-remote';
 
-		if(findConfigs(['camera_view'],secureFeatures?.entities)?.length || 
-      findConfigs(['mobile_proctoring'], secureFeatures?.entities)?.length){
+		if(findConfigs(['camera_view'],secureFeatures?.entities)?.length){
 			document.body.appendChild(webcamContainer);
 		}
 
@@ -899,6 +910,7 @@ function VideoChat(room) {
 	const localVideoRef = document.createElement('div');
 	const remoteVideoRef = document.createElement('div');
 	remoteVideoRef.classList.add('remote-video');
+	remoteVideoRef.id='remote-video';
 	
 	webcamContainer.appendChild(remoteVideoRef); 
 
@@ -975,6 +987,9 @@ function VideoChat(room) {
 						mobileConnection: false,
 						screenSharing: false
 					});
+					updatePersistData('session', {
+						sessionStatus:'Terminated'
+					});
 					showToast('error',i18next.t('mobile_phone_disconnected'));
 				} else {
 					updatePersistData('preChecksSteps', { 
@@ -998,6 +1013,7 @@ function VideoChat(room) {
 			});
 
 			room.on('participantDisconnected', participant => {
+				logger.success('in the participantDisconnected');
 				participant.tracks.forEach(publication => {
 					if (publication.track) {
 						detachTrack(publication.track);
@@ -1052,7 +1068,7 @@ export const stopAllRecordings = async () => {
 
 		updatePersistData('session', {
 			recordingEnded: true,
-			sessionStatus: 'Completed',
+			sessionStatus: session?.sessionStatus === 'Terminated'? 'Terminated':'Completed',
 		});
 
 		cleanupZendeskWidget();
@@ -1109,18 +1125,18 @@ export const stopAllRecordings = async () => {
 			window.mereos.roomInstance = null;
 		}
 
-		if (mobileRoomInstance) {
-			mobileRoomInstance.localParticipant.tracks.forEach(publication => {
+		if (window.mereos.mobileRoomInstance) {
+			window.mereos.mobileRoomInstance.localParticipant.tracks.forEach(publication => {
 				const track = publication.track;
 				if (track) {
 					track.stop();
 					track.detach().forEach(element => element.remove());
 					track.disable();
-					mobileRoomInstance.localParticipant.unpublishTrack(track);
+					window.mereos.mobileRoomInstance.localParticipant.unpublishTrack(track);
 				}
 			});
-			mobileRoomInstance.disconnect();
-			mobileRoomInstance = null;
+			window.mereos.mobileRoomInstance.disconnect();
+			window.mereos.mobileRoomInstance = null;
 		}
 
 		if (aiProcessingInterval) {
@@ -1138,7 +1154,7 @@ export const stopAllRecordings = async () => {
 		
 		const dateTime = new Date();
 		await changeCandidateAssessmentStatus({
-			status: 'Completed',
+			status: session?.sessionStatus === 'Terminated'? 'Terminated':'Completed',
 			id: session?.candidate_assessment
 		});
 

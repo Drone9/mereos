@@ -101,14 +101,14 @@ const initializeLiveChat = () => {
 	}
 
 	document.body.insertAdjacentHTML('beforeend', `
-    <div id="chat-icon-wrapper" class="chat-icon-wrapper" style="position: fixed; bottom: 20px; right: 20px; z-index: 99999999; cursor: grab; width: 50px; height: 50px; user-select: none;">
+    <div id="chat-icon-wrapper" class="chat-icon-wrapper" style="position: fixed; bottom: 20px; right: 20px; z-index: 999999999999999999999; cursor: grab; width: 50px; height: 50px; user-select: none;">
       <img id="chat-icon" class="chat-icon" src="${ASSET_URL}/mereos.svg" alt="Chat Icon" style="width: 100%; height: 100%;">
       <div id="notification-badge" class="notification-badge" style="position: absolute; top: -5px; right: -5px; background-color: #FF4136; border-radius: 50%; width: 12px; height: 12px; display: none; box-shadow: 0 0 0 2px white;"></div>
     </div>
   `);
 
 	document.body.insertAdjacentHTML('beforeend', `
-    <div id="talkjs-container" class="live-chat-container" style="width: 400px; height: 500px; position: fixed; bottom: 100px; right: 20px; z-index: 9999; background-color: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); display: none;"></div>
+    <div id="talkjs-container" class="live-chat-container" style="width: 400px; height: 500px; position: fixed; bottom: 100px; right: 20px; z-index: 999999999999999999999; background-color: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); display: none;"></div>
   `);
 
 	const chatIconWrapper = document.getElementById('chat-icon-wrapper');
@@ -311,6 +311,14 @@ const createLanguageDropdown = () => {
 				.catch(err => logger.error(err));
       
 			languageDropdown.classList.remove('active');
+			if (typeof window?.mereos?.globalCallback === 'function') {
+				window.mereos.globalCallback({ 
+					type:'success',
+					message: 'language_changed',
+					code:50005, 
+					details:selectedLang.keyword 
+				});
+			}
 			updatePersistData('schoolTheme', { language: selectedLang.keyword });
 		});
 	});

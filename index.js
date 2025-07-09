@@ -295,6 +295,7 @@ async function start_session(callback) {
 						updatePersistData('session', {
 							mobileRoomId: resp.data.room_sid,
 							mobileRoomSessionId: mobileRoomSessionId,
+							mobileTwilioToken:mobileTwilioToken?.data?.token
 						});
 	
 						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {

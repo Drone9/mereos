@@ -2,22 +2,20 @@ import Peer from 'peerjs';
 import { v4 } from 'uuid';
 import i18next, { t } from 'i18next';
 import QRCode from 'qrcode';
-
-import { showTab } from '../ExamsPrechecks';
-
+import { closeModal, showTab } from '../ExamsPrechecks';
 import { initSocket } from '../utils/socket';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { shadowRoot } from '../ExamsPrechecks';
-
 import '../assets/css/mobile-proctoring.css';
+import { connectSocketConnection } from '../StartRecording/index.js';
 
 export const MobileProctoring = async (tabContent) => {
-	window.mereos.mobileStream = null;
 	let mobileSteps = ''; 
 	let disabledNextBtn = false; 
 	let checkedVideo = false;
+	let isApiLoading = false;
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
 	const remoteVideoRef = document.createElement('video');
@@ -88,7 +86,7 @@ export const MobileProctoring = async (tabContent) => {
 								remoteVideo.setAttribute('playsinline', true);
 								disabledNextBtn = false;
 								renderUI();
-								setupEventListeners(mobileSteps); // <== Add this!
+								setupEventListeners(mobileSteps);
 							});
 
 							call?.on('close', () => {
@@ -113,10 +111,9 @@ export const MobileProctoring = async (tabContent) => {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
 						showToast('error', 'mobile_phone_disconnected');
-						// updatePersistData('preChecksSteps', { 
-						// 	mobileConnection: false,
-						// 	screenSharing: false
-						// });
+						updatePersistData('session', {
+							sessionStatus:'Terminated'
+						});
 						window.mereos.precheckCompleted=false;
 						if(window.mereos.mobileStream){
 							window.mereos.mobileStream.getTracks().forEach(track => track.stop());
@@ -181,20 +178,81 @@ export const MobileProctoring = async (tabContent) => {
 		}
 	};
 
-	const nextStep = (newStep) => {
-		mobileSteps = newStep;
-		renderUI(); 
-		if (newStep === 'step4') {
-			registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
-			updatePersistData('preChecksSteps', { mobileConnection: true });
-			showTab('IdentityVerificationScreenFive');
-			let container = shadowRoot.getElementById('mobile-proctoring');
-			if(container){
-				container.innerHTML = '';
+	const nextStep = async (newStep) => {
+		try{
+			mobileSteps = newStep;
+			renderUI(); 
+			if (newStep === 'step4') {
+				if(!window.mereos.mobileProctoring){
+					registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
+					updatePersistData('preChecksSteps', { mobileConnection: true });
+					showTab('IdentityVerificationScreenFive');
+					let container = shadowRoot.getElementById('mobile-proctoring');
+					if(container){
+						container.innerHTML = '';
+					}
+					if (remoteVideoRef) {
+						remoteVideoRef.srcObject = null;
+					}
+				}else{
+					const session = convertDataIntoParse('session');
+					
+					isApiLoading = true;
+					disabledNextBtn = true;
+					renderUI();
+					
+					try {
+						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+							window.mereos.socket.send(
+								JSON.stringify({
+									event: 'twilioToken',
+									message: session.mobileTwilioToken,
+								})
+							);
+						}
+						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+							window.mereos.socket.send(
+								JSON.stringify({ 
+									event: 'startRecording', 
+									data: 'Web video recording started' 
+								})
+							);
+						}		
+						connectSocketConnection();		
+						closeModal();
+						if(window.mereos.startRecordingCallBack){
+							window.mereos.startRecordingCallBack({ 
+								type:'success',
+								message: 'mobile_phone_reconnected',
+								code:50006
+							});
+						}
+					} catch (error) {
+						updatePersistData('preChecksSteps', { 
+							mobileConnection: false,
+							screenSharing: false
+						});
+						if(window.mereos.startRecordingCallBack){
+							window.mereos.startRecordingCallBack({ 
+								type:'error',
+								message: 'error_on_start_mobile_recording' ,
+								code:40009
+							});
+						}
+						window.mereos.recordingStart = false;
+						logger.error('error',error);
+					} finally {
+						isApiLoading = false;
+						disabledNextBtn = false;
+						renderUI();
+					}
+				}
 			}
-			if (remoteVideoRef) {
-				remoteVideoRef.srcObject = null;
-			}
+		}catch(error){
+			logger.error('error',error);
+			isApiLoading = false;
+			disabledNextBtn = false;
+			renderUI();
 		}
 	};
 
@@ -332,7 +390,12 @@ export const MobileProctoring = async (tabContent) => {
 						<div class="mobile-btn-container">
 							<button class="orange-hollow-btn" id="previous-btn">${t('previous_step')}</button>
 							<button class="orange-filled-btn" id="next-btn" ${!checkedVideo || disabledNextBtn ? 'disabled' : ''}>
-								${t('next')}
+								${isApiLoading ? `
+									<span class="button-loader">
+										<span class="spinner-small"></span>
+										${t('loading')}...
+									</span>
+								` : t('next')}
 							</button>
 						</div>
 					</div>
@@ -378,8 +441,6 @@ export const MobileProctoring = async (tabContent) => {
 				shadowRoot.getElementById('video-check')?.addEventListener('change', (e) => {
 					checkedVideo = e.target.checked;
 					const nextBtn = shadowRoot.getElementById('next-btn');
-					console.log('disabledNextBtn',disabledNextBtn);
-					console.log('checkedVideo',!checkedVideo);
 					renderUI();
 					if (nextBtn) {
 						nextBtn.disabled = !checkedVideo || disabledNextBtn;

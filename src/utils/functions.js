@@ -733,19 +733,6 @@ export const detectUnfocusOfTab = () => {
 	});
 };
 
-export const getMediaStream = async ({ audio, video }) => {
-	if (window.mereos.sharedMediaStream) {
-		return window.mereos.sharedMediaStream;
-	}
-	try {
-		window.mereos.sharedMediaStream = await navigator.mediaDevices.getUserMedia({ audio: audio, video: video });
-		return window.mereos.sharedMediaStream;
-	} catch (error) {
-		logger.error('Error accessing media devices: ', error);
-		throw error;
-	}
-};
-
 export const removeUnfocusListener = () => {
 	if (visibilityChangeHandler) {
 		document.removeEventListener('visibilitychange', visibilityChangeHandler);

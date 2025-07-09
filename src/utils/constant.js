@@ -45,7 +45,8 @@ export const initialSessionData = {
 	CPUSpeed:null,
 	RAMSpeed:null,
 	room_id:null,
-	quizStartTime:0
+	quizStartTime:0,
+	mobileTwilioToken:null
 };
 
 export const preChecksSteps = {

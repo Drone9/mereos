@@ -163,6 +163,9 @@ export const startRecording = async () => {
 					window.removeEventListener('beforeunload', detectPageRefreshCallback);
 
 					if (!isOnline) {
+						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+							window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
+						}
 						showToast('error', 'signaling_connection_disconnected');
 						addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
 						registerEvent({ 
@@ -178,6 +181,11 @@ export const startRecording = async () => {
 						});
 					} else {
 						showToast('error', 'assessment_closed_due_to_multiple_violation');
+
+						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+							window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
+						}
+
 						await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
 						
 						await registerEvent({ 

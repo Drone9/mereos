@@ -2447,7 +2447,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	font-size: 14px;
 	margin: 20px auto 0;
 	color: #8D979F;
-  padding-top:13px;
+  padding-top:8px;
 }
 `;
 

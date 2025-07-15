@@ -180,10 +180,12 @@ export const MobileProctoring = async (tabContent) => {
 
 	const nextStep = async (newStep) => {
 		try{
+			console.log('in the nextStep');
 			mobileSteps = newStep;
 			renderUI(); 
 			if (newStep === 'step4') {
 				if(!window.mereos.mobileProctoring){
+					logger.success('in the if condition');
 					registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
 					updatePersistData('preChecksSteps', { mobileConnection: true });
 					showTab('IdentityVerificationScreenFive');
@@ -195,6 +197,7 @@ export const MobileProctoring = async (tabContent) => {
 						remoteVideoRef.srcObject = null;
 					}
 				}else{
+					logger.success('in the else condition');
 					const session = convertDataIntoParse('session');
 					
 					isApiLoading = true;
@@ -440,11 +443,9 @@ export const MobileProctoring = async (tabContent) => {
 			default: 
 				shadowRoot.getElementById('video-check')?.addEventListener('change', (e) => {
 					checkedVideo = e.target.checked;
-					const nextBtn = shadowRoot.getElementById('next-btn');
-					renderUI();
-					if (nextBtn) {
-						nextBtn.disabled = !checkedVideo || disabledNextBtn;
-					}
+					setTimeout(() => {
+						renderUI();
+					}, 0);
 				});
 				shadowRoot.getElementById('previous-btn')?.addEventListener('click', () => prevStep());
 				shadowRoot.getElementById('next-btn')?.addEventListener('click', () => nextStep('step4'));

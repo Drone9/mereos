@@ -1151,7 +1151,8 @@ export const stopAllRecordings = async () => {
 			clearInterval(aiProcessingInterval);
 			aiProcessingInterval = null;
 		}
-		
+
+		document.removeEventListener('visibilitychange', ()=> {});
 		document.removeEventListener('beforeunload', detectPageRefreshCallback);
 		window.removeEventListener('beforeunload', detectPageRefreshCallback);
 		window.removeEventListener('popstate', detectBackButtonCallback);

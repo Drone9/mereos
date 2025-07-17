@@ -254,28 +254,32 @@ export const startRecording = async () => {
 		}
 
 		incidentCheckInterval = setInterval(() => {
-		
 			if (forceClosureTriggered) {
 				return;
 			}
-			const session = convertDataIntoParse('session');
-			const { 
-				browserEvents 
-			} = session;
 
+			const session = convertDataIntoParse('session');
+			if (!session || !session.browserEvents) {
+				return;
+			}
+
+			const { browserEvents } = session;
 			const secureFeatures = getSecureFeatures();
 			const incidentLevel = forceClosureIncident(
 				browserEvents,
 				secureFeatures
 			);
-			if (incidentLevel === 'high' && 
-			findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0) {
+
+			if (
+				incidentLevel === 'high' &&
+			findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0
+			) {
 				forceClosureTriggered = true;
 				forceClosure();
 			}
 		}, 2000);
 	};
-
+	
 	startIncidentMonitoring();
 	
 	if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length && window?.mereos?.mobileStream){

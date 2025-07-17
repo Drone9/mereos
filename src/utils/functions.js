@@ -150,6 +150,10 @@ export const checkMicrophone = () => {
 export const registerEvent = async ({ eventName,eventValue }) => {
 	try{
 		const session = convertDataIntoParse('session');
+		if (!session || !session.browserEvents) {
+			return;
+		}
+
 		const { browserEvents } = session;
 
 		if (session?.id) {
@@ -544,6 +548,10 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 	try{
 		const session = convertDataIntoParse('session');
+		if (!session || !session.aiEvents) {
+			return;
+		}
+
 		const { aiEvents } = session;
 		const event = {
 			name: eventName,
@@ -812,7 +820,6 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 			}
 		};
 
-		// Add event listener with high priority
 		document.addEventListener('keydown', handleKeyDown, {capture: true, passive: false});
 		window.addEventListener('keydown', handleKeyDown, {capture: true, passive: false});
 

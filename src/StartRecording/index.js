@@ -1172,7 +1172,7 @@ export const stopAllRecordings = async () => {
 		});
 
 		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
-			await registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
+			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 		}
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'session_completed', startAt: dateTime });

@@ -262,7 +262,7 @@ export const startRecording = async () => {
 			if (!session || !session.browserEvents) {
 				return;
 			}
-
+			logger.error('in the browserEvent error');
 			const { browserEvents } = session;
 			const secureFeatures = getSecureFeatures();
 			const incidentLevel = forceClosureIncident(
@@ -1044,10 +1044,16 @@ export const stopAllRecordings = async () => {
 	try {
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
+
 		if (incidentCheckInterval) {
 			clearInterval(incidentCheckInterval);
 			incidentCheckInterval = null;
 		}
+
+		document.removeEventListener('visibilitychange', ()=> {});
+		document.removeEventListener('beforeunload', detectPageRefreshCallback);
+		window.removeEventListener('beforeunload', detectPageRefreshCallback);
+		window.removeEventListener('popstate', detectBackButtonCallback);
 
 		if(window?.mereos?.mobileStream){
 			window?.mereos?.mobileStream?.getTracks()?.forEach((track) => track.stop());
@@ -1155,11 +1161,6 @@ export const stopAllRecordings = async () => {
 			clearInterval(aiProcessingInterval);
 			aiProcessingInterval = null;
 		}
-
-		document.removeEventListener('visibilitychange', ()=> {});
-		document.removeEventListener('beforeunload', detectPageRefreshCallback);
-		window.removeEventListener('beforeunload', detectPageRefreshCallback);
-		window.removeEventListener('popstate', detectBackButtonCallback);
 
 		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 			unlockBrowserFromContent();

@@ -7,7 +7,7 @@
  * LICENSE file in the root directory of this source tree.
 */
 window.mereos = window.mereos || {};
-import {  openModal, shadowRoot, startSession } from './src/ExamsPrechecks';
+import { initShadowDOM, openModal, startSession } from './src/ExamsPrechecks';
 import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
@@ -154,6 +154,7 @@ async function start_prechecks(callback,setting) {
 		}
 
 		localStorage.setItem('precheckSetting', setting);
+		initShadowDOM();
 		window.mereos.precheckCompleted=false;
 		startSession();
 		openModal(callback);
@@ -172,9 +173,9 @@ async function stop_prechecks(callback) {
 	try {
 		window.mereos.stopPrecheckCallBack = callback;
 		const sessionSetting = localStorage.getItem('precheckSetting');
-		const modal = document.getElementById('precheck-modal');
-		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
-		const chatContainer = document.getElementById('talkjs-container');
+		const modal = window.mereos.shadowRoot.getElementById('precheck-modal');
+		const chatIcons = window.mereos.shadowRoot.querySelectorAll('[id="chat-icon"]');
+		const chatContainer = window.mereos.shadowRoot.getElementById('talkjs-container');
 
 		if (window.mereos.globalStream) {
 			window.mereos.globalStream.getTracks().forEach(track => {
@@ -186,7 +187,7 @@ async function stop_prechecks(callback) {
 			});
 			const videoElements = [
 				...document.querySelectorAll('video'),
-				...shadowRoot.querySelectorAll('video')
+				...window.mereos.shadowRoot.querySelectorAll('video')
 			];
 			
 			videoElements.forEach(video => {

@@ -11,9 +11,7 @@ import {
 	updatePersistData 
 } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { shadowRoot, showTab } from '../ExamsPrechecks';
-
-import '../assets/css/systemDiagnostic.css';
+import { showTab } from '../ExamsPrechecks';
 
 let cameraStream = null;
 let audioStream = null;
@@ -94,7 +92,7 @@ const renderUI = (tab1Content) => {
 
 	tab1Content.innerHTML = html;
 
-	shadowRoot.getElementById('diagnosticContinueBtn')?.addEventListener('click', () => {
+	window.mereos.shadowRoot.getElementById('diagnosticContinueBtn')?.addEventListener('click', () => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 		stopScreenMonitoring();
@@ -130,7 +128,7 @@ const createDiagnosticItemHTML = (id, label) => {
 
 const addDiagnosticItemClickEvents = () => {
 	const handleDiagnosticItemClick = (id, checkFunction) => {
-		const element = shadowRoot.getElementById(`${id}DiagnosticItem`);
+		const element = window.mereos.shadowRoot.getElementById(`${id}DiagnosticItem`);
 		if (!element || id === 'desktop') {
 			return;
 		}
@@ -148,8 +146,8 @@ const addDiagnosticItemClickEvents = () => {
 };
 
 const setElementStatus = (id, status, isSuccess) => {
-	const statusIcon = shadowRoot.getElementById(`${id}StatusIcon`);
-	const statusLoading = shadowRoot.getElementById(`${id}StatusLoading`);
+	const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
+	const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
 	if (!statusIcon || !statusLoading) {
 		return;
 	}
@@ -158,11 +156,11 @@ const setElementStatus = (id, status, isSuccess) => {
 };
 
 const updateContinueButtonState = () => {
-	const renderedItems = shadowRoot.querySelectorAll('.diagnostic-item');
+	const renderedItems = window.mereos.shadowRoot.querySelectorAll('.diagnostic-item');
 
 	const allDiagnosticsPassed = Array.from(renderedItems).every(item => {
 		const itemId = item.id.replace('DiagnosticItem', '');
-		const statusIcon = shadowRoot.getElementById(`${itemId}StatusIcon`);
+		const statusIcon = window.mereos.shadowRoot.getElementById(`${itemId}StatusIcon`);
 		if (!statusIcon) return false;
 
 		const currentIconPathname = new URL(statusIcon.src).pathname;
@@ -171,14 +169,14 @@ const updateContinueButtonState = () => {
 		return currentIconPathname === expectedIconPathname;
 	});
 
-	shadowRoot.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
+	window.mereos.shadowRoot.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 };
 
 const startScreenMonitoring = () => {
 	screenMonitorInterval = setInterval(async () => {
 		try {
 			const isDetected = await detectMultipleScreens();
-			const desktopElement = shadowRoot.getElementById('desktopDiagnosticItem');
+			const desktopElement = window.mereos.shadowRoot.getElementById('desktopDiagnosticItem');
 		
 			if (desktopElement) {
 				setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected);
@@ -286,10 +284,10 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 const updateDiagnosticText = () => {
 	const diagnosticItems = ['webcam', 'microphone', 'location', 'desktop'];
-	let microphoneImg = shadowRoot.getElementById('microphone-img');
+	let microphoneImg = window.mereos.shadowRoot.getElementById('microphone-img');
 
 	diagnosticItems.forEach(item => {
-		const labelElement = shadowRoot.querySelector(`#${item}DiagnosticItem label`);
+		const labelElement = window.mereos.shadowRoot.querySelector(`#${item}DiagnosticItem label`);
 		if (labelElement) {
 			labelElement.textContent = i18next.t(item);
 		}
@@ -299,17 +297,17 @@ const updateDiagnosticText = () => {
 		microphoneImg.src = `${ASSET_URL}/microphone-${i18next.language || 'en'}.svg`;
 	}
 
-	const heading = shadowRoot.querySelector('.heading');
+	const heading = window.mereos.shadowRoot.querySelector('.heading');
 	if (heading) {
 		heading.textContent = i18next.t('system_diagnostics');
 	}
 
-	const description = shadowRoot.querySelector('.description');
+	const description = window.mereos.shadowRoot.querySelector('.description');
 	if (description) {
 		description.textContent = i18next.t('system_diagnostics_msg');
 	}
     
-	const btnText = shadowRoot.querySelector('.orange-filled-btn');
+	const btnText = window.mereos.shadowRoot.querySelector('.orange-filled-btn');
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
 	}

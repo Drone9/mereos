@@ -1,6 +1,5 @@
 import i18next, { t } from 'i18next';
 import { getSecureFeatures } from '../utils/functions';
-import '../assets/css/identityStep.css';
 
 const UNVERIFIED = 'UNVERIFIED';
 const VERIFIED = 'VERIFIED';

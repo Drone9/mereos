@@ -313,6 +313,7 @@ body {
   overflow: auto;
   background-color: rgba(0, 0, 0, 0.5);
 }
+  
 .modal-content {
   display: flex;
   flex-direction: column;
@@ -2493,3 +2494,116 @@ export const spinner = `.spinner {
     }
 }
 `;
+
+export const startRecordingCSS =`
+.local-video-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 120px;
+  height: auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #f0f0f0;
+}
+body{
+  position: relative;
+}
+
+.local-video-container video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.remote-video{
+  display: flex;
+  justify-content: center;
+}
+.remote-video  .video-attached{
+  width: 180px;
+  height: 140px;
+  object-fit: cover;
+}
+
+.user-videos-remote{
+  display: flex;
+  position: absolute;
+  bottom: 10px;
+  column-gap: 10px;
+  row-gap: 9px;
+  flex-direction: column;
+  width: 220px;
+  background-color: #e7ebef;
+  border-radius: 10px;
+  box-shadow: 1px 1px 5px 1px #f1f1f1;
+  z-index: 9999999;
+  left: 10px;
+  max-height:fit-content;
+  padding-bottom:10px;
+}
+
+.user-videos-remote .user-video-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 10px;
+}
+.user-videos-remote .user-video-header .recording-heading{
+  font-size: 12px;
+  margin-bottom: 9px;
+  width: 112px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.recording-badge-container-header {
+    position: absolute;
+    right: 10px;
+    width: 71px;
+    white-space: nowrap;
+    background-color: #e95e5e;
+    border-radius: 5px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    font-size: 9px;
+    column-gap: 0px;
+    padding: 5px 5px;
+    text-transform: lowercase;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.recording-badge-container-header .recording-text{
+  margin: 0;
+  font-size: 10px;
+  width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.user-videos-remote .btn-container{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  column-gap: 11px;
+  padding-bottom: 10px;
+}
+
+.user-videos-remote .btn-container .arrow-icon-btn{
+  border: 2px solid var(--primary-color);
+  padding: 6px;
+  width: 40px;
+  height: auto;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.user-videos-remote .btn-container .arrow-icon-btn .bottom-icon{
+  transform: rotate(180deg);
+}`;

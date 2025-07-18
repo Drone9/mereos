@@ -1,5 +1,4 @@
 import * as TwilioVideo from 'twilio-video';
-import interact from 'interactjs';
 import i18next from 'i18next';
 import { v4 } from 'uuid';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
@@ -12,9 +11,8 @@ import {
 	detectBackButton, 
 	detectBackButtonCallback, 
 	detectPageRefresh, 
-	detectPageRefreshCallback, 
 	findConfigs, 
-	forceClosureIncident, 
+	forceClosure, 
 	getDateTime, 
 	getSecureFeatures, 
 	getTimeInSeconds, 
@@ -29,16 +27,12 @@ import {
 } from '../utils/functions';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
-import '../assets/css/start-recording.css';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
-import { openModal } from '../ExamsPrechecks';
+import { initShadowDOM, openModal } from '../ExamsPrechecks';
 
-let aiProcessingInterval = null;
 let aiEvents = [];
 let mediaStream = null;
 const trackStoppedListeners = new Map();
-let forceClosureTriggered = false;
-let incidentCheckInterval = null;
 	
 export const initMobileConnection = () => {
 	const session = convertDataIntoParse('session');
@@ -74,6 +68,7 @@ export const initMobileConnection = () => {
 
 export const connectSocketConnection = () => {
 	if (!window.mereos?.socket) {
+		logger.success('in the connectSocketConnection');
 		updatePersistData('preChecksSteps', { 
 			mobileConnection: false,
 			screenSharing: false
@@ -100,6 +95,7 @@ export const connectSocketConnection = () => {
 
 			case 'violation':
 				if(eventData?.message?.message === 'Violation'){
+					logger.error('in the violation');
 					updatePersistData('preChecksSteps', { 
 						mobileConnection: false,
 						screenSharing: false
@@ -149,139 +145,11 @@ export const startRecording = async () => {
 
 	detectPageRefresh();
 	detectBackButton();
-
-	const forceClosure = async () => {
-		try {
-			if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
-				try {
-					const isOnline = navigator.onLine;
-					const updatedSession = convertDataIntoParse('session');
-
-					const noop = () => {};
-					document.removeEventListener('visibilitychange', noop);
-					document.removeEventListener('beforeunload', detectPageRefreshCallback);
-					window.removeEventListener('beforeunload', detectPageRefreshCallback);
-
-					if (!isOnline) {
-						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
-							window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
-						}
-						showToast('error', 'signaling_connection_disconnected');
-						addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
-						registerEvent({ 
-							eventType: 'success', 
-							notify: false, 
-							eventName: 'signaling_connection_disconnected', 
-							eventValue: getDateTime() 
-						});
-						window.mereos.startRecordingCallBack({ 
-							type: 'error', 
-							message: 'signaling_connection_disconnected',
-							code: 40006
-						});
-					} else {
-						showToast('error', 'assessment_closed_due_to_multiple_violation');
-
-						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
-							window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
-						}
-
-						await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
-						
-						await registerEvent({ 
-							eventType: 'error', 
-							notify: false, 
-							eventName: 'assessment_closed_due_to_multiple_violation', 
-							eventValue: getDateTime(),
-						});
-
-						window.mereos.startRecordingCallBack({ 
-							type: 'error', 
-							message: 'assessment_closed_due_to_multiple_violation',
-							code: 400010
-						});
-					}
-
-					resetSessionData();
-				} catch (apiError) {
-					logger.error('API error during force closure:', apiError);
-					resetSessionData();
-				}
-			} else {
-				window.mereos.roomInstance = null;
-				window.mereos.recordingStart = false;
-				if (window.mereos.startRecordingCallBack) {
-					window.mereos.startRecordingCallBack({ 
-						type: 'error', 
-						message: 'signaling_connection_disconnected',
-						code: 40006
-					});
-				}
-			}
-		} catch (error) {
-			logger.error('Error in forceClosure:', error);
-			resetSessionData();
-		}
-	};
-
-	const resetSessionData = () => {
-		if (incidentCheckInterval) {
-			clearInterval(incidentCheckInterval);
-			incidentCheckInterval = null;
-		}
 	
-		if (aiProcessingInterval) {
-			clearInterval(aiProcessingInterval);
-			aiProcessingInterval = null;
-		}
-
-		localStorage.clear();
-	
-		forceClosureTriggered = false;
-
-		if (window.mereos.startRecordingCallBack) {
-			window.mereos.startRecordingCallBack({ 
-				type: 'error',
-				message: 'internet_connection_lost_force_close_your_session',
-				code: 40007
-			});
-		}
-	};
-
-	const startIncidentMonitoring = () => {
-		if (incidentCheckInterval) {
-			clearInterval(incidentCheckInterval);
-		}
-
-		incidentCheckInterval = setInterval(() => {
-			if (forceClosureTriggered) {
-				return;
-			}
-
-			const session = convertDataIntoParse('session');
-			if (!session || !session.browserEvents) {
-				return;
-			}
-			logger.error('in the browserEvent error');
-			const { browserEvents } = session;
-			const secureFeatures = getSecureFeatures();
-			const incidentLevel = forceClosureIncident(
-				browserEvents,
-				secureFeatures
-			);
-
-			if (
-				incidentLevel === 'high' &&
-			findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0
-			) {
-				forceClosureTriggered = true;
-				forceClosure();
-			}
-		}, 2000);
-	};
-	
-	startIncidentMonitoring();
-	
+	let libraryDOM = document.getElementById('mereos-library');
+	if(!libraryDOM){
+		initShadowDOM();
+	}
 	if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length && window?.mereos?.mobileStream){
 		connectSocketConnection();
 	}
@@ -493,7 +361,7 @@ export const startRecording = async () => {
 
 			room.on('reconnecting', () => {
 				cleanupLocalVideo();
-				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length){
+				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0){
 					updatePersistData('preChecksSteps', { 
 						mobileConnection: false,
 						screenSharing: false
@@ -573,101 +441,155 @@ const PREDICTION = ['cell phone', 'book'];
 
 const setupWebcam = async (mediaStream) => {
 	return new Promise((resolve, reject) => {
-		try{
+		try {
 			const secureFeatures = getSecureFeatures();
 			if (!i18next.isInitialized) {
 				initializeI18next();
 			}
-			let webcamContainer = document.getElementById('webcam-container');
+            
+			let webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
 			if (!webcamContainer) {
 				webcamContainer = document.createElement('div');
 				webcamContainer.id = 'webcam-container';
-				webcamContainer.className='user-videos-remote';
-				if(findConfigs(['camera_view'],secureFeatures?.entities)?.length){
-					document.body.appendChild(webcamContainer);
+				webcamContainer.className = 'user-videos-remote';
+				if(findConfigs(['camera_view'], secureFeatures?.entities)?.length) {
+					window.mereos.shadowRoot.appendChild(webcamContainer);
 				}
 			}
-		
+        
 			const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-			
+            
 			let videoHeaderContainer = document.createElement('div');
 			videoHeaderContainer.className = 'user-video-header';
-			videoHeaderContainer.id='user-video-header';
-		
+			videoHeaderContainer.id = 'user-video-header';
+        
 			const videoHeading = document.createElement('p');
-			videoHeading.className='recording-heading';
+			videoHeading.className = 'recording-heading';
 			videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
 			const recordingIcon = document.createElement('div');
 			recordingIcon.className = 'recording-badge-container-header';
 			recordingIcon.innerHTML = `
-				<img
-						class='ivsf-recording-dot'
-						src="${ASSET_URL}/white-dot.svg"
-						alt='white-dot'
-				></img>
-				<p class='recording-text'>${i18next.t('recording')}</p>
-			`;
-		
+                <img
+                    class='ivsf-recording-dot'
+                    src="${ASSET_URL}/white-dot.svg"
+                    alt='white-dot'
+                ></img>
+                <p class='recording-text'>${i18next.t('recording')}</p>
+            `;
+        
 			videoHeaderContainer.appendChild(videoHeading);
 			videoHeaderContainer.appendChild(recordingIcon);
-		
+        
 			const remoteVideoRef = document.createElement('div');
 			remoteVideoRef.classList.add('remote-video');
-			remoteVideoRef.id='remote-video';
-		
+			remoteVideoRef.id = 'remote-video';
+        
 			const mediaWrapper = document.createElement('div');
-			mediaWrapper.style.position = 'relative';
-			mediaWrapper.style.marginLeft = 'auto';
-			mediaWrapper.style.marginRight = 'auto';
-			mediaWrapper.style.width = '180px'; 
-			mediaWrapper.style.height = '142px'; 
-			mediaWrapper.style.objectFit = 'cover'; 
-		
+			Object.assign(mediaWrapper.style, {
+				position: 'relative',
+				marginLeft: 'auto',
+				marginRight: 'auto',
+				width: '180px',
+				height: '142px',
+				objectFit: 'cover'
+			});
+        
 			const videoElement = document.createElement('video');
 			videoElement.autoplay = true;
 			videoElement.muted = true;
 			videoElement.srcObject = mediaStream;
-			videoElement.style.position = 'absolute';
-			videoElement.style.width = '100%';
-			videoElement.style.objectFit = 'cover';
-			videoElement.style.height = '100%'; 
-		
+			Object.assign(videoElement.style, {
+				position: 'absolute',
+				width: '100%',
+				objectFit: 'cover',
+				height: '100%'
+			});
+        
 			const canvas = document.createElement('canvas');
 			canvas.id = 'canvas';
-			canvas.style.position = 'absolute'; 
-			canvas.style.left = '0';
-			canvas.style.width = '100%'; 
-			canvas.style.height = '100%'; 
-		
+			Object.assign(canvas.style, {
+				position: 'absolute',
+				left: '0',
+				width: '100%',
+				height: '100%'
+			});
+        
 			webcamContainer.appendChild(videoHeaderContainer);
 			mediaWrapper.appendChild(videoElement);
-			if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
+			if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length) {
 				mediaWrapper.appendChild(canvas);
 			}
-			webcamContainer.appendChild(mediaWrapper); 
-		
+			webcamContainer.appendChild(mediaWrapper);
+        
 			videoElement.addEventListener('loadedmetadata', () => {
 				canvas.width = videoElement.videoWidth;
 				canvas.height = videoElement.videoHeight;
 			});
-		
-			interact(webcamContainer).draggable({
-				listeners: {
-					move(event) {
-						const target = event.target;
-						const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-						const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-		
-						target.style.transform = `translate(${x}px, ${y}px)`;
-		
-						target.setAttribute('data-x', x);
-						target.setAttribute('data-y', y);
-					}
-				}
+
+			let isDragging = false;
+			let startX, startY;
+			let initialX, initialY;
+            
+			Object.assign(webcamContainer.style, {
+				position: 'fixed',
+				top: '20px',
+				right: '20px',
+				zIndex: '9999',
+				cursor: 'move'
 			});
-		
-			resolve ({ videoElement, canvas });
-		}catch(e){
+
+			const handleMouseDown = (e) => {
+				isDragging = true;
+				webcamContainer.style.cursor = 'grabbing';
+                
+				startX = e.clientX;
+				startY = e.clientY;
+                
+				const rect = webcamContainer.getBoundingClientRect();
+				initialX = rect.left;
+				initialY = rect.top;
+                
+				e.preventDefault();
+				e.stopPropagation();
+			};
+
+			const handleMouseMove = (e) => {
+				if (!isDragging) return;
+                
+				const dx = e.clientX - startX;
+				const dy = e.clientY - startY;
+                
+				const newX = initialX + dx;
+				const newY = initialY + dy;
+                
+				webcamContainer.style.left = `${newX}px`;
+				webcamContainer.style.top = `${newY}px`;
+                
+				e.preventDefault();
+				e.stopPropagation();
+			};
+
+			const handleMouseUp = () => {
+				isDragging = false;
+				webcamContainer.style.cursor = 'move';
+			};
+
+			webcamContainer.addEventListener('mousedown', handleMouseDown);
+			document.addEventListener('mousemove', handleMouseMove);
+			document.addEventListener('mouseup', handleMouseUp);
+
+			const cleanupDrag = () => {
+				webcamContainer.removeEventListener('mousedown', handleMouseDown);
+				document.removeEventListener('mousemove', handleMouseMove);
+				document.removeEventListener('mouseup', handleMouseUp);
+			};
+
+			resolve({ 
+				videoElement, 
+				canvas,
+				cleanupDrag
+			});
+		} catch(e) {
 			reject(e);
 		}
 	});
@@ -689,7 +611,7 @@ const handleVideoResize = (predictions, context) => {
 	});
 };
 
-const startAIWebcam = async (room,mediaStream) => {
+const startAIWebcam = async (room, mediaStream) => {
 	try {
 		const secureFeatures = getSecureFeatures();
 		const multiplePeopleFeature = findConfigs(['multiple_people_detection'], secureFeatures?.entities).length > 0;
@@ -707,8 +629,8 @@ const startAIWebcam = async (room,mediaStream) => {
 		if (videoTrackPublications.length === 0) {
 			throw new Error('No video track available from local participant');
 		}
-			
-		const { canvas } = await setupWebcam(mediaStream);
+		
+		const { canvas } = await setupWebcam(mediaStream, window.mereos.shadowRoot);
 		const context = canvas.getContext('2d');
 
 		const processingVideo = document.createElement('video');
@@ -734,7 +656,7 @@ const startAIWebcam = async (room,mediaStream) => {
 			object_detected: null
 		};
 
-		aiProcessingInterval = setInterval(async () => {
+		window.mereos.aiProcessingInterval = setInterval(async () => {
 			try {
 				seconds = seconds + 1;
 				if (processingVideo.readyState !== 4) return;
@@ -825,8 +747,8 @@ const startAIWebcam = async (room,mediaStream) => {
 	} catch (error) {
 		logger.error('Failed to start AI webcam:', error);
     
-		if (aiProcessingInterval) {
-			clearInterval(aiProcessingInterval);
+		if (window.mereos.aiProcessingInterval) {
+			clearInterval(window.mereos.aiProcessingInterval);
 		}
     
 		return { 
@@ -838,9 +760,9 @@ const startAIWebcam = async (room,mediaStream) => {
 };
 
 export const cleanupLocalVideo = () => {
-	const webcamContainer = document.getElementById('webcam-container');
-	const webVideoContainer = document.getElementById('user-video-header');
-	const imgContainer = document.getElementById('chat-icon');
+	const webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
+	const webVideoContainer = window.mereos.shadowRoot.querySelector('#user-video-header');
+	const imgContainer = window.mereos.shadowRoot.querySelector('#chat-icon');
 
 	if(imgContainer){
 		imgContainer.remove();
@@ -869,61 +791,111 @@ export const cleanupLocalVideo = () => {
 export function VideoChat(room) {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
-	let webcamContainer = document.getElementById('webcam-container');
-	let videoHeaderContainer = document.getElementById('user-video-header');
+    
+	let webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
+	let videoHeaderContainer = window.mereos.shadowRoot.querySelector('#user-video-header');
+    
 	if (!webcamContainer) {
 		webcamContainer = document.createElement('div');
 		webcamContainer.id = 'webcam-container';
-		webcamContainer.className='user-videos-remote';
+		webcamContainer.className = 'user-videos-remote';
 
-		if(findConfigs(['camera_view'],secureFeatures?.entities)?.length){
-			document.body.appendChild(webcamContainer);
+		if(findConfigs(['camera_view'], secureFeatures?.entities)?.length){
+			window.mereos.shadowRoot.appendChild(webcamContainer);
 		}
 
-		interact(webcamContainer).draggable({
-			listeners: {
-				move(event) {
-					const target = event.target;
-					const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-					const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-	
-					target.style.transform = `translate(${x}px, ${y}px)`;
-	
-					target.setAttribute('data-x', x);
-					target.setAttribute('data-y', y);
-				}
-			}
+		Object.assign(webcamContainer.style, {
+			position: 'fixed',
+			top: '20px',
+			right: '20px',
+			zIndex: '9999',
+			cursor: 'move'
 		});
+
+		let isDragging = false;
+		let startX, startY;
+		let initialX, initialY;
+
+		const handleMouseDown = (e) => {
+			isDragging = true;
+			webcamContainer.style.cursor = 'grabbing';
+            
+			startX = e.clientX;
+			startY = e.clientY;
+            
+			const rect = webcamContainer.getBoundingClientRect();
+			initialX = rect.left;
+			initialY = rect.top;
+            
+			e.preventDefault();
+			e.stopPropagation();
+		};
+
+		const handleMouseMove = (e) => {
+			if (!isDragging) return;
+            
+			const dx = e.clientX - startX;
+			const dy = e.clientY - startY;
+            
+			const newX = initialX + dx;
+			const newY = initialY + dy;
+            
+			webcamContainer.style.left = `${newX}px`;
+			webcamContainer.style.top = `${newY}px`;
+            
+			e.preventDefault();
+			e.stopPropagation();
+		};
+
+		const handleMouseUp = () => {
+			isDragging = false;
+			webcamContainer.style.cursor = 'move';
+		};
+
+		webcamContainer.addEventListener('mousedown', handleMouseDown);
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
+
+		// Store cleanup function on the element itself
+		webcamContainer.cleanupDrag = () => {
+			webcamContainer.removeEventListener('mousedown', handleMouseDown);
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
 	}
+    
 	if(!videoHeaderContainer){
 		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-	
+    
 		videoHeaderContainer = document.createElement('div');
 		videoHeaderContainer.className = 'user-video-header';
-	
+		videoHeaderContainer.id = 'user-video-header';
+    
 		const videoHeading = document.createElement('p');
-		videoHeading.className='recording-heading';
+		videoHeading.className = 'recording-heading';
 		videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
+        
 		const recordingIcon = document.createElement('div');
 		recordingIcon.className = 'recording-badge-container-header';
 		recordingIcon.innerHTML = `
-			<img
-					class='ivsf-recording-dot'
-					src="${ASSET_URL}/white-dot.svg"
-					alt='white-dot'
-			></img>
-			<p class='recording-text'>${i18next.t('recording')}</p>
-		`;
-	
+            <img
+                    class='ivsf-recording-dot'
+                    src="${ASSET_URL}/white-dot.svg"
+                    alt='white-dot'
+            ></img>
+            <p class='recording-text'>${i18next.t('recording')}</p>
+        `;
+    
 		videoHeaderContainer.appendChild(videoHeading);
 		videoHeaderContainer.appendChild(recordingIcon);
 		webcamContainer.appendChild(videoHeaderContainer);
 	}
+    
 	const localVideoRef = document.createElement('div');
 	const remoteVideoRef = document.createElement('div');
 	remoteVideoRef.classList.add('remote-video');
-	remoteVideoRef.id='remote-video';
-	
+	remoteVideoRef.id = 'remote-video';
+    
 	webcamContainer.appendChild(remoteVideoRef); 
 
 	function attachTrack(track, container) {
@@ -994,7 +966,7 @@ export function VideoChat(room) {
 			});
 
 			room.on('participantReconnecting', () => {
-				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
+				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0) {
 					updatePersistData('preChecksSteps', { 
 						mobileConnection: false,
 						screenSharing: false
@@ -1038,6 +1010,14 @@ export function VideoChat(room) {
 	}
 
 	connectToRoom();
+
+	return {
+		cleanup: () => {
+			if (webcamContainer.cleanupDrag) {
+				webcamContainer.cleanupDrag();
+			}
+		}
+	};
 }
 
 export const stopAllRecordings = async () => {
@@ -1045,27 +1025,22 @@ export const stopAllRecordings = async () => {
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
 
-		if (incidentCheckInterval) {
-			clearInterval(incidentCheckInterval);
-			incidentCheckInterval = null;
-		}
-
-		document.removeEventListener('visibilitychange', ()=> {});
-		document.removeEventListener('beforeunload', detectPageRefreshCallback);
-		window.removeEventListener('beforeunload', detectPageRefreshCallback);
+		document.removeEventListener('visibilitychange', () => {});
+		document.removeEventListener('beforeunload', ()=> {});
+		window.removeEventListener('beforeunload',  ()=> {});
 		window.removeEventListener('popstate', detectBackButtonCallback);
 
 		if(window?.mereos?.mobileStream){
 			window?.mereos?.mobileStream?.getTracks()?.forEach((track) => track.stop());
 		}
-		forceClosureTriggered = false;
+		window.mereos.forceClosureTriggered = false;
 		if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 			window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
 		
-		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
-		const chatContainer = document.getElementById('talkjs-container');
-		const notificationBagde = document.getElementById('notification-badge');
+		const chatIcons = window.mereos.shadowRoot.querySelectorAll('[id="chat-icon"]');
+		const chatContainer = window.mereos.shadowRoot.getElementById('talkjs-container');
+		const notificationBagde = window.mereos.shadowRoot.getElementById('notification-badge');
 
 		if(notificationBagde){
 			notificationBagde.style.display = 'none';
@@ -1157,9 +1132,9 @@ export const stopAllRecordings = async () => {
 			window.mereos.mobileRoomInstance = null;
 		}
 
-		if (aiProcessingInterval) {
-			clearInterval(aiProcessingInterval);
-			aiProcessingInterval = null;
+		if (window.mereos.aiProcessingInterval) {
+			clearInterval(window.mereos.aiProcessingInterval);
+			window.mereos.aiProcessingInterval = null;
 		}
 
 		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){

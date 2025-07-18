@@ -6,7 +6,6 @@ import { showTab } from '../ExamsPrechecks';
 import { findConfigs, getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 
-import '../assets/css/step4.css';
 import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenFour = async (tabContent) => {

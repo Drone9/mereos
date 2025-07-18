@@ -35,6 +35,122 @@ export const dataURIToBlob = (dataURI) => {
 	return new Blob([ia], { type: mimeString });
 };
 
+export const forceClosure = async () => {
+	try {
+		const secureFeatures = getSecureFeatures();
+		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+
+		if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
+			try {
+				const isOnline = navigator.onLine;
+				const updatedSession = convertDataIntoParse('session');
+
+				document.removeEventListener('visibilitychange', () => {});
+				document.removeEventListener('beforeunload', ()=> {});
+				window.removeEventListener('beforeunload',  ()=> {});
+
+				if (!isOnline) {
+					if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+						window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
+					}
+					showToast('error', 'signaling_connection_disconnected');
+					addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+					registerEvent({ 
+						eventType: 'success', 
+						notify: false, 
+						eventName: 'signaling_connection_disconnected', 
+						eventValue: getDateTime() 
+					});
+					window.mereos.startRecordingCallBack({ 
+						type: 'error', 
+						message: 'signaling_connection_disconnected',
+						code: 40006
+					});
+				} else {
+					showToast('error', 'assessment_closed_due_to_multiple_violation');
+
+					if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+						window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
+					}
+
+					await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+						
+					await registerEvent({ 
+						eventType: 'error', 
+						notify: false, 
+						eventName: 'assessment_closed_due_to_multiple_violation', 
+						eventValue: getDateTime(),
+					});
+
+					window.mereos.startRecordingCallBack({ 
+						type: 'error', 
+						message: 'assessment_closed_due_to_multiple_violation',
+						code: 400010
+					});
+				}
+
+				resetSessionData();
+			} catch (apiError) {
+				logger.error('API error during force closure:', apiError);
+				resetSessionData();
+			}
+		} else {
+			window.mereos.roomInstance = null;
+			window.mereos.recordingStart = false;
+			if (window.mereos.startRecordingCallBack) {
+				window.mereos.startRecordingCallBack({ 
+					type: 'error', 
+					message: 'signaling_connection_disconnected',
+					code: 40006
+				});
+			}
+		}
+	} catch (error) {
+		logger.error('Error in forceClosure:', error);
+		resetSessionData();
+	}
+};
+
+export const resetSessionData = () => {
+	if (window.mereos.aiProcessingInterval) {
+		clearInterval(window.mereos.aiProcessingInterval);
+		window.mereos.aiProcessingInterval = null;
+	}
+
+	localStorage.clear();
+	
+	window.mereos.forceClosureTriggered = false;
+
+	if (window.mereos.startRecordingCallBack) {
+		window.mereos.startRecordingCallBack({ 
+			type: 'error',
+			message: 'internet_connection_lost_force_close_your_session',
+			code: 40007
+		});
+	}
+};
+
+export const checkForceClosureViolation = () =>{
+	const session = convertDataIntoParse('session');
+	if (!session || !session.browserEvents) {
+		return;
+	}
+	const { browserEvents } = session;
+	const secureFeatures = getSecureFeatures();
+
+	const incidentLevel = forceClosureIncident(
+		browserEvents,
+		secureFeatures
+	);
+		
+	if (
+		incidentLevel === 'high' &&
+		findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0
+	) {
+		window.mereos.forceClosureTriggered = true;
+		forceClosure();
+	}
+};
 
 export const getTimeInSeconds = ({ isUTC = false, inputDate = new Date() }) => {
 	const currentDate = new Date(inputDate);
@@ -661,6 +777,7 @@ export const disableCopyPasteCut = () => {
 				e.preventDefault();
 				e.stopPropagation();
 				registerEvent({notify: false, eventName: 'copy_paste_cut', eventType: 'error'});
+				checkForceClosureViolation();
 			}, true);
 		});
     
@@ -669,12 +786,14 @@ export const disableCopyPasteCut = () => {
 				e.preventDefault();
 				e.stopPropagation();
 				registerEvent({notify: false, eventName: 'candidate_paste_the_content', eventType: 'error'});
+				checkForceClosureViolation();
 			}
       
 			if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
 				e.preventDefault();
 				e.stopPropagation();
 				registerEvent({notify: false, eventName: 'candidate_copy_the_content', eventType: 'error'});
+				checkForceClosureViolation();
 			}
       
 			if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
@@ -693,10 +812,11 @@ export const disableCopyPasteCut = () => {
 				return Promise.reject('Clipboard operations are disabled');
 			};
 		}
-    
+		
 		resolve(true);
 	});
 };
+
 
 export const restoreRightClick = () => {
 	return new Promise((resolve, _reject) => {
@@ -726,6 +846,7 @@ export const detectUnfocusOfTab = () => {
 				if (document.hidden) {
 					showToast('error', 'moved_away_from_page');
 					registerEvent({ eventType: 'error', notify: false, eventName: 'moved_away_from_page' });
+					checkForceClosureViolation();
 				} else {
 					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });
 				}
@@ -875,17 +996,21 @@ export const exitFullScreen = () => {
 
 // ************* Detect Page Refresh ***************** //
 export const detectPageRefreshCallback = (e) => {
-	e.preventDefault();
-	e.returnValue = '';
+	if(!localStorage.getItem('mereosToken')){
+		return;
+	}
 
 	if (window.mereos?.socket?.readyState === WebSocket.OPEN) {
 		window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 	}
 
-	updatePersistData('preChecksSteps', { 
-		mobileConnection: false,
-		screenSharing: false
-	});
+	const getPreChecksSteps = convertDataIntoParse('preChecksSteps');
+	if(getPreChecksSteps){
+		updatePersistData('preChecksSteps', { 
+			mobileConnection: false,
+			screenSharing: false
+		});
+	}
 
 	registerEvent({ 
 		eventType: 'error', 
@@ -893,6 +1018,9 @@ export const detectPageRefreshCallback = (e) => {
 		eventName: 'candidate_clicked_on_refresh_button',
 		eventValue: getDateTime() 
 	});
+
+	e.preventDefault();
+	e.returnValue = '';
 };
 
 export const detectPageRefresh = () => {
@@ -1433,6 +1561,7 @@ const handleResize = () => {
 
 	if (!isResizing) {
 		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+		checkForceClosureViolation();
 		isResizing = true;
 	}
 

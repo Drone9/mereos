@@ -11,9 +11,7 @@ import {
 	updatePersistData 
 } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { shadowRoot, showTab } from '../ExamsPrechecks';
-
-import '../assets/css/system-reqiurements.css';
+import { showTab } from '../ExamsPrechecks';
 
 const ramGreen = `${ASSET_URL}/ram-icon-green.svg`;
 const cpuGreen = `${ASSET_URL}/cpu-icon-green.svg`;
@@ -94,14 +92,12 @@ const renderUI = (tab1Content) => {
 
 	tab1Content.innerHTML = html;
 
-	// Add event listener for continue button
-	shadowRoot.getElementById('requirementContinueBtn').addEventListener('click', () => {
+	window.mereos.shadowRoot.getElementById('requirementContinueBtn').addEventListener('click', () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_requirement_passed' });
 		updatePersistData('preChecksSteps', { requirementStep: true });
 		showTab('Prevalidationinstruction');
 	});
 
-	// Add diagnostic item click handlers
 	addDiagnosticItemClickHandlers();
 };
 
@@ -122,8 +118,8 @@ const addDiagnosticItemClickHandlers = () => {
 };
 
 const setElementStatus = (id, status, isSuccess) => {
-	const statusIcon = shadowRoot.getElementById(`${id}StatusIcon`);
-	const statusLoading = shadowRoot.getElementById(`${id}StatusLoading`);
+	const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
+	const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
 	if (!statusIcon || !statusLoading) {
 		return;
 	}
@@ -133,7 +129,7 @@ const setElementStatus = (id, status, isSuccess) => {
 };
 
 const handleDiagnosticItemClick = (id, checkFunction) => {
-	const element = shadowRoot.getElementById(`${id}RequirementItem`);
+	const element = window.mereos.shadowRoot.getElementById(`${id}RequirementItem`);
 	if (!element) {
 		return;
 	}
@@ -141,9 +137,9 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 	const profileSettings = candidateAssessment?.settings;
 
 	element.addEventListener('click', async () => {
-		const statusIcon = shadowRoot.getElementById(`${id}StatusIcon`);
-		const statusLoading = shadowRoot.getElementById(`${id}StatusLoading`);
-		const continueButton = shadowRoot.getElementById('requirementContinueBtn');
+		const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
+		const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
+		const continueButton = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
 
 		if (!statusIcon || !statusLoading) {
 			return;
@@ -186,11 +182,11 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 };
 
 const updateContinueButtonState = () => {
-	const renderedItems = shadowRoot.querySelectorAll('.requirement-item');
+	const renderedItems = window.mereos.shadowRoot.querySelectorAll('.requirement-item');
 
 	const allDiagnosticsPassed = Array.from(renderedItems).every(item => {
 		const itemId = item.id.replace('RequirementItem', '');
-		const statusIcon = shadowRoot.getElementById(`${itemId}StatusIcon`);
+		const statusIcon = window.mereos.shadowRoot.getElementById(`${itemId}StatusIcon`);
 		if (!statusIcon) return false;
 
 		const currentIconPathname = new URL(statusIcon.src).pathname;
@@ -199,7 +195,7 @@ const updateContinueButtonState = () => {
 		return currentIconPathname === expectedIconPathname;
 	});
 
-	shadowRoot.getElementById('requirementContinueBtn').disabled = !allDiagnosticsPassed;
+	window.mereos.shadowRoot.getElementById('requirementContinueBtn').disabled = !allDiagnosticsPassed;
 };
 
 export const SystemRequirement = async (tab1Content) => {
@@ -279,22 +275,22 @@ const updateDiagnosticText = () => {
 	const diagnosticItems = ['ram', 'cpu', 'upload_speed', 'download_speed'];
 
 	diagnosticItems.forEach(item => {
-		const labelElement = shadowRoot.querySelector(`#${item}RequirementItem label`);
+		const labelElement = window.mereos.shadowRoot.querySelector(`#${item}RequirementItem label`);
 		if (labelElement) {
 			labelElement.textContent = i18next.t(item);
 		}
 	});
 
-	const heading = shadowRoot.querySelector('.system-requirement-heading');
+	const heading = window.mereos.shadowRoot.querySelector('.system-requirement-heading');
 	if (heading) {
 		heading.textContent = i18next.t('system_requirements');
 	}
 
-	const description = shadowRoot.querySelector('.system-requirement-description');
+	const description = window.mereos.shadowRoot.querySelector('.system-requirement-description');
 	if (description) {
 		description.textContent = i18next.t('system_requirement_checking_msg');
 	}
-	const btnText = shadowRoot.getElementById('requirementContinueBtn');
+	const btnText = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
 	}

@@ -1,7 +1,6 @@
 import i18next from 'i18next';
-import '../assets/css/modal.css';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
-import { examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
+import { examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import 'notyf/notyf.min.css';
 import 'notyf/notyf.min.css';
 import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, systemDiagnosticSteps, preChecksSteps } from '../utils/constant';
@@ -16,68 +15,99 @@ import { IdentityVerificationScreenFour } from '../IdentityVerificationScreenFou
 import { PrevalidationInstructions } from '../PrevalidationInstructions';
 import { ExamPreparation } from '../ExamPreparation';
 import Talk from 'talkjs';
-import interact from 'interactjs';
-import '../assets/css/modal.css';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import { SystemRequirement } from '../SystemRequirement';
 import { stop_prechecks } from '../..';
 
-const modal = document.createElement('div');
-modal.className = 'modal';
-modal.id = 'precheck-modal';
+export const initShadowDOM = () => {
+	if (!document.getElementById('mereos-library')) {
+		const libraryDOM = document.createElement('div');
+		libraryDOM.className = 'mereos-library';
+		libraryDOM.id = 'mereos-library';
 
-export const shadowRoot = modal.attachShadow({ mode: 'closed' });
-const mainStylying = document.createElement('style');
-mainStylying.textContent = `
-	${spinner}
-	${examPreprationCss} 
-	${modalCss} 
-	${systemDiagnosticCss} 
-	${preValidationCss} 
-	${IdentityVerificationScreenOneCss} 
-	${identityStepsCss} 
-	${IdentityVerificationScreenTwoCss} 
-	${IdentityVerificationScreenThreeCss} 
-	${IdentityVerificationScreenFourCss} 
-	${IdentityVerificationScreenFiveCss} 
-	${MobileProctoringCss}
-	${identityCardCss}
-	${systemRequirementCss}`;
+		window.mereos.shadowRoot = libraryDOM.attachShadow({ mode: 'closed' });
 
-shadowRoot.appendChild(mainStylying);
+		const mainStylying = document.createElement('style');
+		mainStylying.textContent = `
+			${spinner}
+			${examPreprationCss} 
+			${modalCss} 
+			${systemDiagnosticCss} 
+			${preValidationCss} 
+			${IdentityVerificationScreenOneCss} 
+			${identityStepsCss} 
+			${IdentityVerificationScreenTwoCss} 
+			${IdentityVerificationScreenThreeCss} 
+			${IdentityVerificationScreenFourCss} 
+			${IdentityVerificationScreenFiveCss} 
+			${MobileProctoringCss}
+			${identityCardCss}
+			${systemRequirementCss}
+			${startRecordingCSS}`;
 
-shadowRoot.innerHTML += `
-  <div class="modal-content">
-    <div class="tabs-container"></div>
-    <div class="tab-contents-wrapper">
-      <div class="tab-content" id="ExamPreparation"></div>
-      <div class="tab-content" id="IdentityCardRequirement"></div>
-      <div class="tab-content" id="runSystemDiagnostics"></div>
-      <div class="tab-content" id="SystemRequirements"></div>
-      <div class="tab-content" id="IdentityVerificationScreenOne"></div>
-      <div class="tab-content" id="IdentityVerificationScreenTwo"></div>
-      <div class="tab-content" id="IdentityVerificationScreenThree"></div>
-      <div class="tab-content" id="IdentityVerificationScreenFour"></div>
-      <div class="tab-content" id="IdentityVerificationScreenFive"></div>
-      <div class="tab-content" id="Prevalidationinstruction"></div>
-      <div class="tab-content" id="MobileProctoring"></div>
-    </div>
-  </div>
-`;
+		window.mereos.shadowRoot.appendChild(mainStylying);
 
-const modalContent = shadowRoot.querySelector('.modal-content');
+		const modal = document.createElement('div');
+		modal.className = 'modal';
+		modal.id = 'precheck-modal';
 
-const ExamPreparationContainer = shadowRoot.querySelector('#ExamPreparation');
-const IdentityCardRequirementContainer = shadowRoot.querySelector('#IdentityCardRequirement');
-const SystemDiagnosticsContainer = shadowRoot.querySelector('#runSystemDiagnostics');
-const SystemRequirementContainer = shadowRoot.querySelector('#SystemRequirements');
-const IdentityVerificationScreenOneContainer = shadowRoot.querySelector('#IdentityVerificationScreenOne');
-const IdentityVerificationScreenTwoConatiner = shadowRoot.querySelector('#IdentityVerificationScreenTwo');
-const IdentityVerificationScreenThreeContainer = shadowRoot.querySelector('#IdentityVerificationScreenThree');
-const IdentityVerificationScreenFourContainer = shadowRoot.querySelector('#IdentityVerificationScreenFour');
-const IdentityVerificationScreenFiveContainer = shadowRoot.querySelector('#IdentityVerificationScreenFive');
-const PrevalidationinstructionContainer = shadowRoot.querySelector('#Prevalidationinstruction');
-const mobileProctingContainer = shadowRoot.querySelector('#MobileProctoring');
+		const modalContent = document.createElement('div');
+		modalContent.className = 'modal-content';
+
+		const tabsContainer = document.createElement('div');
+		tabsContainer.className = 'tabs-container';
+
+		const tabContentsWrapper = document.createElement('div');
+		tabContentsWrapper.className = 'tab-contents-wrapper';
+
+		const tabConfigs = [
+			'ExamPreparation',
+			'IdentityCardRequirement',
+			'runSystemDiagnostics',
+			'SystemRequirements',
+			'IdentityVerificationScreenOne',
+			'IdentityVerificationScreenTwo',
+			'IdentityVerificationScreenThree',
+			'IdentityVerificationScreenFour',
+			'IdentityVerificationScreenFive',
+			'Prevalidationinstruction',
+			'MobileProctoring'
+		];
+
+		tabConfigs.forEach(tabId => {
+			const tabContent = document.createElement('div');
+			tabContent.className = 'tab-content';
+			tabContent.id = tabId;
+			tabContentsWrapper.appendChild(tabContent);
+		});
+
+		modalContent.appendChild(tabsContainer);
+		modalContent.appendChild(tabContentsWrapper);
+		modal.appendChild(modalContent);
+		window.mereos.shadowRoot.appendChild(modal);
+
+		window.mereos = window.mereos || {};
+		window.mereos.dom = {
+			libraryDOM,
+			modal,
+			containers: {
+				ExamPreparation: window.mereos.shadowRoot.querySelector('#ExamPreparation'),
+				IdentityCardRequirement: window.mereos.shadowRoot.querySelector('#IdentityCardRequirement'),
+				SystemDiagnostics: window.mereos.shadowRoot.querySelector('#runSystemDiagnostics'),
+				SystemRequirement: window.mereos.shadowRoot.querySelector('#SystemRequirements'),
+				IdentityVerificationScreenOne: window.mereos.shadowRoot.querySelector('#IdentityVerificationScreenOne'),
+				IdentityVerificationScreenTwo: window.mereos.shadowRoot.querySelector('#IdentityVerificationScreenTwo'),
+				IdentityVerificationScreenThree: window.mereos.shadowRoot.querySelector('#IdentityVerificationScreenThree'),
+				IdentityVerificationScreenFour: window.mereos.shadowRoot.querySelector('#IdentityVerificationScreenFour'),
+				IdentityVerificationScreenFive: window.mereos.shadowRoot.querySelector('#IdentityVerificationScreenFive'),
+				Prevalidationinstruction: window.mereos.shadowRoot.querySelector('#Prevalidationinstruction'),
+				MobileProctoring: window.mereos.shadowRoot.querySelector('#MobileProctoring')
+			}
+		};
+
+		document.body.appendChild(libraryDOM);
+	}
+};
 
 const initializeLiveChat = () => {
 	let unreadCount = 0;
@@ -89,8 +119,8 @@ const initializeLiveChat = () => {
 
 	if (!isLoggedIn || !hasChatBot) return;
 
-	const existingChatIcon = document.getElementById('chat-icon-wrapper');
-	const existingChatContainer = document.getElementById('talkjs-container');
+	const existingChatIcon = window.mereos.shadowRoot.getElementById('chat-icon-wrapper');
+	const existingChatContainer = window.mereos.shadowRoot.getElementById('talkjs-container');
   
 	if (existingChatIcon) {
 		existingChatIcon.style.display = 'block';
@@ -100,78 +130,137 @@ const initializeLiveChat = () => {
 		return;
 	}
 
-	document.body.insertAdjacentHTML('beforeend', `
-    <div id="chat-icon-wrapper" class="chat-icon-wrapper" style="position: fixed; bottom: 20px; right: 20px; z-index: 999999999999999999999; cursor: grab; width: 50px; height: 50px; user-select: none;">
-      <img id="chat-icon" class="chat-icon" src="${ASSET_URL}/mereos.svg" alt="Chat Icon" style="width: 100%; height: 100%;">
-      <div id="notification-badge" class="notification-badge" style="position: absolute; top: -5px; right: -5px; background-color: #FF4136; border-radius: 50%; width: 12px; height: 12px; display: none; box-shadow: 0 0 0 2px white;"></div>
-    </div>
-  `);
+	const chatIconWrapper = document.createElement('div');
+	chatIconWrapper.id = 'chat-icon-wrapper';
+	chatIconWrapper.className = 'chat-icon-wrapper';
+	Object.assign(chatIconWrapper.style, {
+		position: 'fixed',
+		bottom: '20px',
+		right: '20px',
+		zIndex: '999999999999999999999',
+		cursor: 'grab',
+		width: '50px',
+		height: '50px',
+		userSelect: 'none'
+	});
+    
+	const chatIcon = document.createElement('img');
+	chatIcon.id = 'chat-icon';
+	chatIcon.className = 'chat-icon';
+	chatIcon.src = `${ASSET_URL}/mereos.svg`;
+	chatIcon.alt = 'Chat Icon';
+	Object.assign(chatIcon.style, {
+		width: '100%',
+		height: '100%'
+	});
+    
+	const notificationBadge = document.createElement('div');
+	notificationBadge.id = 'notification-badge';
+	notificationBadge.className = 'notification-badge';
+	Object.assign(notificationBadge.style, {
+		position: 'absolute',
+		top: '-5px',
+		right: '-5px',
+		backgroundColor: '#FF4136',
+		borderRadius: '50%',
+		width: '12px',
+		height: '12px',
+		display: 'none',
+		boxShadow: '0 0 0 2px white'
+	});
+    
+	chatIconWrapper.appendChild(chatIcon);
+	chatIconWrapper.appendChild(notificationBadge);
+	window.mereos.shadowRoot.appendChild(chatIconWrapper);
 
-	document.body.insertAdjacentHTML('beforeend', `
-    <div id="talkjs-container" class="live-chat-container" style="width: 400px; height: 500px; position: fixed; bottom: 100px; right: 20px; z-index: 999999999999999999999; background-color: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); display: none;"></div>
-  `);
+	const chatContainer = document.createElement('div');
+	chatContainer.id = 'talkjs-container';
+	chatContainer.className = 'live-chat-container';
+	Object.assign(chatContainer.style, {
+		width: '400px',
+		height: '500px',
+		position: 'fixed',
+		bottom: '100px',
+		right: '20px',
+		zIndex: '999999999999999999999',
+		backgroundColor: 'white',
+		border: '1px solid #ccc',
+		borderRadius: '8px',
+		boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+		display: 'none'
+	});
+	window.mereos.shadowRoot.appendChild(chatContainer);
 
-	const chatIconWrapper = document.getElementById('chat-icon-wrapper');
-	const notificationBadge = document.getElementById('notification-badge');
-	const chatContainer = document.getElementById('talkjs-container');
+	let isDragging = false;
+	let offsetX, offsetY;
+	let originalX, originalY;
+	let containerOffsetX, containerOffsetY;
+	logger.success('originalX',originalX,'originalY',originalY);
 
-	const positions = {
-		icon: { x: 0, y: 0 },
-		container: { x: 0, y: 0 }
+	const handleMouseDown = (e) => {
+		isDragging = true;
+		chatIconWrapper.style.cursor = 'grabbing';
+        
+		const rect = chatIconWrapper.getBoundingClientRect();
+		offsetX = e.clientX - rect.left;
+		offsetY = e.clientY - rect.top;
+        
+		originalX = rect.left;
+		originalY = rect.top;
+        
+		const containerRect = chatContainer.getBoundingClientRect();
+		containerOffsetX = containerRect.left - rect.left;
+		containerOffsetY = containerRect.top - rect.top;
+        
+		e.preventDefault();
 	};
 
-	interact(chatIconWrapper).draggable({
-		cursorChecker: () => 'grabbing',
-		modifiers: [
-			interact.modifiers.restrict({
-				restriction: 'parent',
-				endOnly: false,
-				elementRect: { top: 0, left: 0, bottom: 1, right: 1 }
-			})
-		],
-		listeners: {
-			start() {
-				chatIconWrapper.style.cursor = 'grabbing';
-			},
-			move(event) {
-				positions.icon.x += event.dx;
-				positions.icon.y += event.dy;
-				positions.container.x += event.dx;
-				positions.container.y += event.dy;
+	const handleMouseMove = (e) => {
+		if (!isDragging) return;
+        
+		const x = e.clientX - offsetX;
+		const y = e.clientY - offsetY;
+        
+		chatIconWrapper.style.left = `${x}px`;
+		chatIconWrapper.style.top = `${y}px`;
+        
+		chatContainer.style.left = `${x + containerOffsetX}px`;
+		chatContainer.style.top = `${y + containerOffsetY}px`;
+	};
 
-				chatIconWrapper.style.transform = `translate(${positions.icon.x}px, ${positions.icon.y}px)`;
-				chatContainer.style.transform = `translate(${positions.container.x}px, ${positions.container.y}px)`;
-			},
-			end() {
-				chatIconWrapper.style.cursor = 'grab';
-			}
-		}
-	});
+	const handleMouseUp = () => {
+		isDragging = false;
+		chatIconWrapper.style.cursor = 'grab';
+	};
 
-	interact(chatContainer).draggable({
-		enabled: false
-	});
+	chatIconWrapper.addEventListener('mousedown', handleMouseDown);
+	document.addEventListener('mousemove', handleMouseMove);
+	document.addEventListener('mouseup', handleMouseUp);
+
+	const cleanupDrag = () => {
+		chatIconWrapper.removeEventListener('mousedown', handleMouseDown);
+		document.removeEventListener('mousemove', handleMouseMove);
+		document.removeEventListener('mouseup', handleMouseUp);
+	};
 
 	let clickStartTime = 0;
-	let isDragging = false;
+	let isPotentialClick = false;
 
-	chatIconWrapper.addEventListener('mousedown', (e) => {
-		e.stopPropagation();
+	chatIconWrapper.addEventListener('mousedown', () => {
 		clickStartTime = Date.now();
-		isDragging = false;
+		isPotentialClick = true;
 	});
 
 	chatIconWrapper.addEventListener('mousemove', () => {
 		if (Date.now() - clickStartTime > 50) {
-			isDragging = true;
+			isPotentialClick = false;
 		}
 	});
 
-	chatIconWrapper.addEventListener('click', (e) => {
-		e.stopPropagation();
-		if (!isDragging && Date.now() - clickStartTime < 200) {
+	chatIconWrapper.addEventListener('click', () => {
+		if (isPotentialClick && Date.now() - clickStartTime < 200) {
 			chatContainer.style.display = chatContainer.style.display === 'none' ? 'block' : 'none';
-      
+            
 			if (chatContainer.style.display === 'block') {
 				notificationBadge.style.display = 'none';
 				unreadCount = 0;
@@ -185,7 +274,7 @@ const initializeLiveChat = () => {
 	});
 
 	document.addEventListener('click', (e) => {
-		if (!chatIconWrapper.contains(e.target) && !chatContainer.contains(e.target)) {
+		if (!window.mereos.shadowRoot.contains(e.target)) {
 			chatContainer.style.display = 'none';
 		}
 	});
@@ -222,13 +311,13 @@ const initializeLiveChat = () => {
       
 			session.onMessage(event => {
 				if (event.conversation && event.conversation.id === conversationId && 
-            !event.isByMe &&
-            chatContainer.style.display === 'none') {
+                    !event.isByMe &&
+                    chatContainer.style.display === 'none') {
 					unreadCount++;
 					updateNotificationBadge(unreadCount);
 				}
 			});
-			
+            
 			const chatbox = session.createChatbox();
 			chatbox.select(conversation);
 			chatbox.mount(chatContainer);
@@ -236,14 +325,14 @@ const initializeLiveChat = () => {
 	}
   
 	function updateNotificationBadge(count) {
-		const badge = document.getElementById('notification-badge');
-    
 		if (count > 0) {
-			badge.style.display = 'block';
+			notificationBadge.style.display = 'block';
 		} else {
-			badge.style.display = 'none';
+			notificationBadge.style.display = 'none';
 		}
 	}
+
+	return cleanupDrag;
 };
 
 const navigate = (newTabId) => {
@@ -251,9 +340,12 @@ const navigate = (newTabId) => {
 };
 
 const createLanguageDropdown = () => {
-	const existingHeader = modalContent.querySelector('.header');
-	if (existingHeader) {
-		existingHeader.remove();
+	const modalContent = window.mereos.shadowRoot.querySelector('.modal-content');
+	if(modalContent){
+		const existingHeader = modalContent.querySelector('.header');
+		if (existingHeader) {
+			existingHeader.remove();
+		}
 	}
 
 	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
@@ -325,13 +417,18 @@ const createLanguageDropdown = () => {
 };
 
 const openModal = async (callback) => {
-	if (modal.parentNode) {
-		modal.parentNode.removeChild(modal);
+	if(!window.mereos.dom){
+		return;
 	}
-	document.body.appendChild(modal);
-	
-	modal.style.display = 'block';
-	modal.style.zIndex = '2147483647';
+	if (!document.getElementById('mereos-library')) {
+		initShadowDOM();
+	}
+	const { modal } = window.mereos.dom;
+
+	if(modal){
+		modal.style.display = 'block';
+		modal.style.zIndex = '2147483647';
+	}
 	
 	document.body.classList.add('modal-active');
 
@@ -349,18 +446,23 @@ const openModal = async (callback) => {
 	
 	showTab(activeTab, callback);
 	createLanguageDropdown();
-
-	modal.style.transform = 'translateZ(0)';
+	if(modal){
+		modal.style.transform = 'translateZ(0)';
+	}
 };
 
 function closeModal() {
+	if(!window.mereos.dom){
+		return;
+	}
+	const { modal } = window.mereos.dom;
 	if (typeof window?.mereos?.globalCallback === 'function') {
 		window.mereos.precheckCompleted = true;
 		window.mereos.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
 	}
-
-	modal.style.display = 'block';
-	modal.remove();
+	if(modal){
+		modal.style.display = 'none';
+	}
 
 	if(!getAuthenticationToken()){
 		cleanupZendeskWidget();
@@ -369,14 +471,18 @@ function closeModal() {
 
 const showTab = async (tabId, callback) => {
 	try {
-		console.log('tabId',tabId);
+		if(!window.mereos.dom){
+			return;
+		}
+		const { containers } = window.mereos.dom;
+		console.log('tabId', tabId);
 		initializeI18next();
 		const getSecureFeature = getSecureFeatures();
 		const secureFeatures = getSecureFeature?.entities || [];
 
 		const featureMap = {
 			'ExamPreparation': examPreparationSteps,
-			'IdentityCardRequirement':'verify_id',
+			'IdentityCardRequirement': 'verify_id',
 			'runSystemDiagnostics': systemDiagnosticSteps,
 			'SystemRequirements': SYSTEM_REQUIREMENT_STEP,
 			'Prevalidationinstruction': 'verify_multiple_devices',
@@ -409,16 +515,16 @@ const showTab = async (tabId, callback) => {
 		loadZendeskWidget();
 		updateThemeColor();
 
-		const tabs = shadowRoot.querySelectorAll('.tab');
-		const tabContents = shadowRoot.querySelectorAll('.tab-content');
+		const tabs = window.mereos.shadowRoot.querySelectorAll('.tab');
+		const tabContents = window.mereos.shadowRoot.querySelectorAll('.tab-content');
 
 		tabs.forEach(tab => {
 			tab.classList.remove('active');
-			if (tab.dataset.tab === tabId) {	
+			if (tab.dataset.tab === tabId) {    
 				tab.classList.add('active');
 			}
 		});
-		
+        
 		tabContents.forEach(content => {
 			content.classList.remove('active');
 			if (content.id === tabId) {
@@ -431,67 +537,67 @@ const showTab = async (tabId, callback) => {
 				navigate('IdentityCardRequirement');
 				return;
 			}
-			await ExamPreparation(ExamPreparationContainer);
+			await ExamPreparation(containers.ExamPreparation);
 		} else if (tabId === 'IdentityCardRequirement') {
 			if (!isFeatureAllowed) {
 				navigate('runSystemDiagnostics');
 				return;
 			}
-			await IdentityCardRequirement(IdentityCardRequirementContainer);
+			await IdentityCardRequirement(containers.IdentityCardRequirement);
 		} else if (tabId === 'runSystemDiagnostics') {
 			if (!isFeatureAllowed) {
 				navigate('SystemRequirements');
 				return;
 			}
-			SystemDiagnostics(SystemDiagnosticsContainer);
-		}  else if (tabId === 'SystemRequirements') {
+			SystemDiagnostics(containers.SystemDiagnostics);
+		} else if (tabId === 'SystemRequirements') {
 			if (!isFeatureAllowed) {
 				navigate('Prevalidationinstruction');
 				return;
 			}
-			await SystemRequirement(SystemRequirementContainer);
+			await SystemRequirement(containers.SystemRequirement);
 		} else if (tabId === 'Prevalidationinstruction') {
 			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenOne');
 				return;
 			}
-			await PrevalidationInstructions(PrevalidationinstructionContainer);
+			await PrevalidationInstructions(containers.Prevalidationinstruction);
 		} else if (tabId === 'IdentityVerificationScreenOne') {
 			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenTwo', callback);
 				return;
 			}
-			await IdentityVerificationScreenOne(IdentityVerificationScreenOneContainer, callback);
+			await IdentityVerificationScreenOne(containers.IdentityVerificationScreenOne, callback);
 		} else if (tabId === 'IdentityVerificationScreenTwo') {
 			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenThree');
 				return;
 			}
-			await IdentityVerificationScreenTwo(IdentityVerificationScreenTwoConatiner);
+			await IdentityVerificationScreenTwo(containers.IdentityVerificationScreenTwo);
 		} else if (tabId === 'IdentityVerificationScreenThree') {
 			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenFour');
 				return;
 			}
-			await IdentityVerificationScreenThree(IdentityVerificationScreenThreeContainer);
+			await IdentityVerificationScreenThree(containers.IdentityVerificationScreenThree);
 		} else if (tabId === 'IdentityVerificationScreenFour') {
 			if (!isFeatureAllowed) {
 				navigate('MobileProctoring');
 				return;
 			}
-			await IdentityVerificationScreenFour(IdentityVerificationScreenFourContainer);
+			await IdentityVerificationScreenFour(containers.IdentityVerificationScreenFour);
 		} else if (tabId === 'MobileProctoring') {
 			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenFive');
 				return;
 			}
-			await MobileProctoring(mobileProctingContainer);
+			await MobileProctoring(containers.MobileProctoring);
 		} else if (tabId === 'IdentityVerificationScreenFive') {
 			if (!isFeatureAllowed) {
 				closeModal(callback);
 				return;
 			}
-			await IdentityVerificationScreenFive(IdentityVerificationScreenFiveContainer, callback);
+			await IdentityVerificationScreenFive(containers.IdentityVerificationScreenFive, callback);
 		} else {
 			closeModal(callback);
 			return;
@@ -565,4 +671,4 @@ setInterval(() => {
 	checkToken();
 }, checkInterval);
 
-export { openModal, closeModal, modalContent, showTab };
+export { openModal, closeModal, showTab };

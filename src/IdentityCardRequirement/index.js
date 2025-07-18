@@ -1,8 +1,7 @@
-import '../assets/css/identity-card.css';
 import { logger, registerEvent, updatePersistData } from '../utils/functions';
 import i18next from 'i18next';
 import { ASSET_URL } from '../utils/constant';
-import { shadowRoot, showTab } from '../ExamsPrechecks';
+import { showTab } from '../ExamsPrechecks';
 
 const vectors = [
 	{ name: 'img1', src: `${ASSET_URL}/oc-address.svg`, alt: '' },
@@ -31,7 +30,7 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
     
 	tabContent.innerHTML = '';
 
-	let mobileContainer = shadowRoot?.getElementById('mobile-proctoring');
+	let mobileContainer = window.mereos.shadowRoot?.getElementById('mobile-proctoring');
 	if (mobileContainer) {
 		mobileContainer.innerHTML = '';
 	}
@@ -61,7 +60,7 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
         </div>
     `);
     
-	if (!shadowRoot.getElementById('identity-card-styles')) {
+	if (!window.mereos.shadowRoot.getElementById('identity-card-styles')) {
 		const styleElement = document.createElement('style');
 		styleElement.id = 'identity-card-styles';
 		styleElement.textContent = `
@@ -70,7 +69,7 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 		document.head.appendChild(styleElement);
 	}
     
-	shadowRoot.getElementById('continue-button').addEventListener('click', nextPage);
+	window.mereos.shadowRoot.getElementById('continue-button').addEventListener('click', nextPage);
     
 	const languageChangeHandler = () => {
 		const titleElement = tabContent.querySelector('h1');
@@ -88,7 +87,7 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 };
 
 i18next.on('languageChanged', () => {
-	const activeTab = shadowRoot.querySelector('.tab-content.active');
+	const activeTab = window.mereos.shadowRoot.querySelector('.tab-content.active');
 	if (activeTab && activeTab.id === 'IdentityCardRequirement') {
 		IdentityCardRequirement(activeTab);
 	}

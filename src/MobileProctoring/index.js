@@ -7,8 +7,6 @@ import { initSocket } from '../utils/socket';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { convertDataIntoParse, getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { shadowRoot } from '../ExamsPrechecks';
-import '../assets/css/mobile-proctoring.css';
 import { connectSocketConnection } from '../StartRecording/index.js';
 
 export const MobileProctoring = async (tabContent) => {
@@ -78,7 +76,7 @@ export const MobileProctoring = async (tabContent) => {
 
 						if (peerInstance) { 
 							const call = peerInstance.call(eventData?.message?.message, mediaStream);
-							let remoteVideo = shadowRoot.getElementById('remote-mobile-video-container');
+							let remoteVideo = window.mereos.shadowRoot.getElementById('remote-mobile-video-container');
 				
 							call?.on('stream', (remoteStream) => {
 								remoteVideo.srcObject = remoteStream;
@@ -189,12 +187,20 @@ export const MobileProctoring = async (tabContent) => {
 					registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
 					updatePersistData('preChecksSteps', { mobileConnection: true });
 					showTab('IdentityVerificationScreenFive');
-					let container = shadowRoot.getElementById('mobile-proctoring');
+					let container = window.mereos.shadowRoot.getElementById('mobile-proctoring');
 					if(container){
 						container.innerHTML = '';
 					}
+					if(currentUserVideoRef){
+						currentUserVideoRef.srcObject = null;
+						remoteVideoRef.remove();
+					}
+					if(window.mereos.mobileStream){
+						window.mereos.mobileStream.getTracks().forEach(track => track.stop());
+					}
 					if (remoteVideoRef) {
 						remoteVideoRef.srcObject = null;
+						remoteVideoRef.remove();
 					}
 				}else{
 					logger.success('in the else condition');
@@ -407,13 +413,13 @@ export const MobileProctoring = async (tabContent) => {
 	}
 
 	function setupEventListeners(step) {
-		const downloadCanvas = shadowRoot.getElementById('download-qr-canvas');
-		const tokenCanvas = shadowRoot.getElementById('token-qr-canvas');
+		const downloadCanvas = window.mereos.shadowRoot.getElementById('download-qr-canvas');
+		const tokenCanvas = window.mereos.shadowRoot.getElementById('token-qr-canvas');
 		const socketGroupIds = JSON.parse(localStorage.getItem('socketGroupId'));
 		switch (step) {
 			case '':
-				shadowRoot.getElementById('already-have-app-btn')?.addEventListener('click', () => prevStep('tokenCode'));
-				shadowRoot.getElementById('download-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
+				window.mereos.shadowRoot.getElementById('already-have-app-btn')?.addEventListener('click', () => prevStep('tokenCode'));
+				window.mereos.shadowRoot.getElementById('download-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
 				break;
 				
 			case 'downloadApp':
@@ -422,8 +428,8 @@ export const MobileProctoring = async (tabContent) => {
 						if (error) logger.error('error in QR code', error);
 					});
 				}
-				shadowRoot.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
-				shadowRoot.getElementById('downloaded-app-btn')?.addEventListener('click', () => nextStep('tokenCode'));
+				window.mereos.shadowRoot.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
+				window.mereos.shadowRoot.getElementById('downloaded-app-btn')?.addEventListener('click', () => nextStep('tokenCode'));
 				break;
 				
 			case 'tokenCode':
@@ -436,19 +442,19 @@ export const MobileProctoring = async (tabContent) => {
 						if (error) logger.error('Error in QR code', error);
 					});
 				}
-				shadowRoot.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
-				shadowRoot.getElementById('no-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
+				window.mereos.shadowRoot.getElementById('previous-step-btn')?.addEventListener('click', () => prevStep('previousStep'));
+				window.mereos.shadowRoot.getElementById('no-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
 				break;
 				
 			default: 
-				shadowRoot.getElementById('video-check')?.addEventListener('change', (e) => {
+				window.mereos.shadowRoot.getElementById('video-check')?.addEventListener('change', (e) => {
 					checkedVideo = e.target.checked;
 					setTimeout(() => {
 						renderUI();
 					}, 0);
 				});
-				shadowRoot.getElementById('previous-btn')?.addEventListener('click', () => prevStep());
-				shadowRoot.getElementById('next-btn')?.addEventListener('click', () => nextStep('step4'));
+				window.mereos.shadowRoot.getElementById('previous-btn')?.addEventListener('click', () => prevStep());
+				window.mereos.shadowRoot.getElementById('next-btn')?.addEventListener('click', () => nextStep('step4'));
 				break;
 		}
 	}

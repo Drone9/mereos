@@ -1,12 +1,10 @@
 import i18next from 'i18next';
 
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { shadowRoot, showTab } from '../ExamsPrechecks';
+import { showTab } from '../ExamsPrechecks';
 
 import { dataURIToBlob, logger, registerEvent, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-
-import '../assets/css/step1.css';
 import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
@@ -373,7 +371,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		ivsoContainer.insertAdjacentHTML('beforeend', contentHTML);
         
 		if (state.captureMode !== 'take') {
-			shadowRoot.getElementById('retake-btn').addEventListener('click', () => {
+			window.mereos.shadowRoot.getElementById('retake-btn').addEventListener('click', () => {
 				state = {
 					...state,
 					imageSrc: null,
@@ -394,15 +392,15 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		}
         
 		if (state.captureMode === 'uploaded_photo') {
-			shadowRoot.getElementById('next-btn').addEventListener('click', nextStep);
+			window.mereos.shadowRoot.getElementById('next-btn').addEventListener('click', nextStep);
 		}
         
 		if (state.captureMode === 'take') {
-			shadowRoot.getElementById('take-photo-btn').addEventListener('click', capturePhoto);
+			window.mereos.shadowRoot.getElementById('take-photo-btn').addEventListener('click', capturePhoto);
 		}
         
 		if (state.captureMode === 'retake' && state.msg.type === 'successful') {
-			const uploadBtn = shadowRoot.getElementById('upload-btn');
+			const uploadBtn = window.mereos.shadowRoot.getElementById('upload-btn');
 			if (uploadBtn) {
 				uploadBtn.addEventListener('click', uploadUserCapturedPhoto);
 			}
@@ -424,7 +422,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 	i18next.on('languageChanged', () => {
 		renderUI();
         
-		const msg = shadowRoot.getElementById('success-msg');
+		const msg = window.mereos.shadowRoot.getElementById('success-msg');
 		if (msg && state.msg.text) {
 			msg.textContent = i18next.t(state.msg.text);
 		}

@@ -1,7 +1,6 @@
 import i18next from 'i18next';
 import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger } from '../utils/functions';
-import '../assets/css/prevalidation.css';
-import { shadowRoot, showTab } from '../ExamsPrechecks';
+import { showTab } from '../ExamsPrechecks';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
@@ -102,7 +101,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 			if (window.mereos.globalStream) {
 				window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
 				window.mereos.globalStream = null;
-				const videoElement = shadowRoot.getElementById('myVideo');
+				const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
 				videoElement.srcObject=null;
 			}
 			registerEvent({ eventType: 'success', notify: false, eventName: 'prevalidation_passed' });
@@ -112,8 +111,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		// Function to update continue button state
 		const updateContinueButton = () => {
-			const continueButton = shadowRoot.getElementById('continue-btn');
-			const messageElement = shadowRoot.getElementById('message');
+			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
+			const messageElement = window.mereos.shadowRoot.getElementById('message');
 			
 			if (continueButton && messageElement) {
 				if (permissionDenied) {
@@ -133,7 +132,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const createUIElements = () => {
-			const oldContainer = shadowRoot.querySelector('.ivso-container');
+			const oldContainer = window.mereos.shadowRoot.querySelector('.ivso-container');
 			if (oldContainer) {
 				oldContainer.remove();
 			}
@@ -172,12 +171,12 @@ export const PrevalidationInstructions = async (tabContent) => {
 				</div>
 			`;
 		
-			const oldButton = shadowRoot.getElementById('continue-btn');
+			const oldButton = window.mereos.shadowRoot.getElementById('continue-btn');
 			if (oldButton) {
 				oldButton.removeEventListener('click', nextStep);
 			}
 		
-			const continueButton = shadowRoot.getElementById('continue-btn');
+			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
 			continueButton.addEventListener('click', (e) => {
 				if (permissionDenied) {
 					e.preventDefault();
@@ -188,8 +187,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const updateUI = () => {
-			const cameraDropdown = shadowRoot.getElementById('cameraDropdown');
-			const microphoneDropdown = shadowRoot.getElementById('microphoneDropdown');
+			const cameraDropdown = window.mereos.shadowRoot.getElementById('cameraDropdown');
+			const microphoneDropdown = window.mereos.shadowRoot.getElementById('microphoneDropdown');
 					
 			if (cameraDropdown) {
 				let cameraOptionsHTML = cameras.map(camera => 
@@ -225,10 +224,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 			
 		const startWebcam = async () => {
 			try {
-				const videoContainer = shadowRoot.getElementById('videoContainer');
+				const videoContainer = window.mereos.shadowRoot.getElementById('videoContainer');
 			
 				if (window.mereos.globalStream) {
-					const videoElement = shadowRoot.getElementById('myVideo');
+					const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
 					window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
 					window.mereos.globalStream = null;
 					if(videoElement){
@@ -249,7 +248,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 							<video id="myVideo" class="my-recorded-video" autoplay muted playsinline></video>
 					`);
 											
-				const videoElement = shadowRoot.getElementById('myVideo');
+				const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
 				videoElement.srcObject = window.mereos.globalStream;
 				
 				// Reset permission denied flag on successful stream
@@ -276,15 +275,15 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const handleLanguageChange = () => {
-			shadowRoot.querySelector('.pvi-header-title').textContent = i18next.t('system_diagnostics');
-			shadowRoot.querySelector('.pvi-msg').textContent = i18next.t('initial_system_check_passed');
+			window.mereos.shadowRoot.querySelector('.pvi-header-title').textContent = i18next.t('system_diagnostics');
+			window.mereos.shadowRoot.querySelector('.pvi-msg').textContent = i18next.t('initial_system_check_passed');
 					
-			const continueButton = shadowRoot.getElementById('continue-btn');
+			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
 			if (continueButton) {
 				continueButton.textContent = i18next.t('continue');
 			}
 					
-			const instructionTexts = shadowRoot.querySelectorAll('.pvi-instruction-txt');
+			const instructionTexts = window.mereos.shadowRoot.querySelectorAll('.pvi-instruction-txt');
 			instructionTexts.forEach((element, index) => {
 				if (index < iconData.length) {
 					element.textContent = i18next.t(iconData[index].text);

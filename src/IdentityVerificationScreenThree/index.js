@@ -1,11 +1,9 @@
 import i18next from 'i18next';
 
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { shadowRoot, showTab } from '../ExamsPrechecks';
+import { showTab } from '../ExamsPrechecks';
 
 import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
-
-import '../assets/css/step3.css';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
 	let canvasRef = null;
@@ -36,7 +34,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				const mediaStreamSource = audioContext.createMediaStreamSource(window.mereos.globalStream);
 				mediaStreamSource.connect(analyserNode);
 
-				const canvas = canvasRef || shadowRoot.getElementById('audio-wavesform-canvas');
+				const canvas = canvasRef || window.mereos.shadowRoot.getElementById('audio-wavesform-canvas');
 				const canvasCtx = canvas?.getContext('2d');
 
 				const drawOnCanvas = () => {
@@ -186,7 +184,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			const stepsContainerElement = wrapper.querySelector('.ivst-steps-container');
 			stepsContainerElement.appendChild(stepsContainer);
 			
-			canvasRef = shadowRoot.getElementById('audio-wavesform-canvas');
+			canvasRef = window.mereos.shadowRoot.getElementById('audio-wavesform-canvas');
 		} else {
 			const headerTitle = wrapper.querySelector('.ivst-header-title');
 			if (headerTitle) {
@@ -254,7 +252,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	drawAudioSpikes();
 
 	i18next.on('languageChanged', () => {
-		const msgElement = shadowRoot.getElementById('audio-test-msg');
+		const msgElement = window.mereos.shadowRoot.getElementById('audio-test-msg');
 		if (msgElement && msg.text) {
 			msgElement.textContent = i18next.t(msg.text);
 		}

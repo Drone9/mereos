@@ -1,12 +1,11 @@
 import i18next from 'i18next';
 
-import { shadowRoot, showTab } from '../ExamsPrechecks';
+import { showTab } from '../ExamsPrechecks';
 
 import { acceptableLabels, acceptableText, dataURIToBlob, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 
-import '../assets/css/step2.css';
 import { uploadFileInS3Folder } from '../services/general.services.js';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
@@ -275,13 +274,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (inputFile) inputFile.click();
 	};
 	const setupEventListeners = () => {
-		const uploadEl = shadowRoot.querySelector('#upload-identity-card');
+		const uploadEl = window.mereos.shadowRoot.querySelector('#upload-identity-card');
 		if (uploadEl) {
 			uploadEl.removeEventListener('click', triggerFileUpload);
 			uploadEl.addEventListener('click', triggerFileUpload);
 		}
 
-		shadowRoot.querySelectorAll('.orange-filled-btn, .orange-hollow-btn').forEach(button => {
+		window.mereos.shadowRoot.querySelectorAll('.orange-filled-btn, .orange-hollow-btn').forEach(button => {
 			const action = button.getAttribute('data-action');
 			if (action === 'take-photo') button.addEventListener('click', capturePhoto);
 			if (action === 'restart') button.addEventListener('click', handleRestart);

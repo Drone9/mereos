@@ -13,7 +13,6 @@ import {
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import '../assets/css/step5.css';
 import * as TwilioVideo from 'twilio-video';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {

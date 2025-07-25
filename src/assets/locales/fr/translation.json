@@ -1024,5 +1024,18 @@
 	"microphone_permission_denied": "Autorisation de microphone désactivée",
 	"assessment_closed_due_to_multiple_violation":"Évaluation clôturée en raison de multiples infractions",
 	"signaling_connection_disconnected": "Évaluation fermée en raison d'aucune connexion internet",
-	"enable_camera_microphone_permissions": "Veuillez activer les autorisations de caméra et de microphone pour continuer"
+	"enable_camera_microphone_permissions": "Veuillez activer les autorisations de caméra et de microphone pour continuer",
+	"your_camera_access_has_been_disabled_during_the_session": "Votre accès à la caméra a été désactivé pendant la session. Pour continuer :",
+	"click_the_camera_icon": "Cliquez sur l'icône de la caméra 📹 dans la barre d'adresse de votre navigateur",
+	"select_allow_for_camera_access": "Sélectionnez \"Autoriser\" pour l'accès à la caméra",
+	"click_reconnect_camera_below": "Cliquez sur \"Reconnecter la Caméra\" ci-dessous",
+	"alternative_method": "Méthode Alternative :",
+	"reconnect_camera": "Reconnecter la Caméra",
+	"chrome_edge": "Chrome/Edge :",
+	"settings_camera_steps": "Paramètres → Confidentialité et Sécurité → Paramètres du Site → Caméra",
+	"firefox": "Firefox :",
+	"firefox_camera_steps": "Paramètres → Confidentialité et Sécurité → Autorisations → Caméra",
+	"safari": "Safari :",
+	"safari_camera_step": "Préférences → Sites Web → Caméra",
+	"camera_access_lost": "Accès à la Caméra Perdu"
 }

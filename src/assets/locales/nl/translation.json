@@ -1024,5 +1024,18 @@
 	"microphone_permission_denied": "Microfoontoestemming uitgeschakeld",
 	"assessment_closed_due_to_multiple_violation":"Beoordeling gesloten wegens meerdere overtredingen",
 	"signaling_connection_disconnected": "Beoordeling gesloten vanwege geen internetverbinding",
-	"enable_camera_microphone_permissions": "Schakel camera- en microfoontoestemmingen in om door te gaan"
+	"enable_camera_microphone_permissions": "Schakel camera- en microfoontoestemmingen in om door te gaan",
+	"your_camera_access_has_been_disabled_during_the_session": "Uw cameratoegang is uitgeschakeld tijdens de sessie. Om door te gaan:",
+	"click_the_camera_icon": "Klik op het camerapictogram 📹 in de adresbalk van uw browser",
+	"select_allow_for_camera_access": "Selecteer \"Toestaan\" voor cameratoegang",
+	"click_reconnect_camera_below": "Klik hieronder op \"Camera Opnieuw Verbinden\"",
+	"alternative_method": "Alternatieve Methode:",
+	"reconnect_camera": "Camera Opnieuw Verbinden",
+	"chrome_edge": "Chrome/Edge:",
+	"settings_camera_steps": "Instellingen → Privacy en Beveiliging → Site-instellingen → Camera",
+	"firefox": "Firefox:",
+	"firefox_camera_steps": "Instellingen → Privacy en Beveiliging → Machtigingen → Camera",
+	"safari": "Safari:",
+	"safari_camera_step": "Voorkeuren → Websites → Camera",
+	"camera_access_lost": "Cameratoegang Verloren"
 }

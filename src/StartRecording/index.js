@@ -1038,9 +1038,9 @@ export const stopAllRecordings = async () => {
 			window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
 		
-		const chatIcons = window.mereos.shadowRoot.querySelectorAll('[id="chat-icon"]');
-		const chatContainer = window.mereos.shadowRoot.getElementById('talkjs-container');
-		const notificationBagde = window.mereos.shadowRoot.getElementById('notification-badge');
+		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
+		const chatContainer = document.getElementById('talkjs-container');
+		const notificationBagde = document.getElementById('notification-badge');
 
 		if(notificationBagde){
 			notificationBagde.style.display = 'none';

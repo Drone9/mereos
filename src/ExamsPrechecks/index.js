@@ -18,6 +18,7 @@ import Talk from 'talkjs';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import { SystemRequirement } from '../SystemRequirement';
 import { stop_prechecks } from '../..';
+import interact from 'interactjs';
 
 export const initShadowDOM = () => {
 	if (!document.getElementById('mereos-library')) {
@@ -119,8 +120,8 @@ const initializeLiveChat = () => {
 
 	if (!isLoggedIn || !hasChatBot) return;
 
-	const existingChatIcon = window.mereos.shadowRoot.getElementById('chat-icon-wrapper');
-	const existingChatContainer = window.mereos.shadowRoot.getElementById('talkjs-container');
+	const existingChatIcon = document.getElementById('chat-icon-wrapper');
+	const existingChatContainer = document.getElementById('talkjs-container');
   
 	if (existingChatIcon) {
 		existingChatIcon.style.display = 'block';
@@ -130,137 +131,78 @@ const initializeLiveChat = () => {
 		return;
 	}
 
-	const chatIconWrapper = document.createElement('div');
-	chatIconWrapper.id = 'chat-icon-wrapper';
-	chatIconWrapper.className = 'chat-icon-wrapper';
-	Object.assign(chatIconWrapper.style, {
-		position: 'fixed',
-		bottom: '20px',
-		right: '20px',
-		zIndex: '999999999999999999999',
-		cursor: 'grab',
-		width: '50px',
-		height: '50px',
-		userSelect: 'none'
-	});
-    
-	const chatIcon = document.createElement('img');
-	chatIcon.id = 'chat-icon';
-	chatIcon.className = 'chat-icon';
-	chatIcon.src = `${ASSET_URL}/mereos.svg`;
-	chatIcon.alt = 'Chat Icon';
-	Object.assign(chatIcon.style, {
-		width: '100%',
-		height: '100%'
-	});
-    
-	const notificationBadge = document.createElement('div');
-	notificationBadge.id = 'notification-badge';
-	notificationBadge.className = 'notification-badge';
-	Object.assign(notificationBadge.style, {
-		position: 'absolute',
-		top: '-5px',
-		right: '-5px',
-		backgroundColor: '#FF4136',
-		borderRadius: '50%',
-		width: '12px',
-		height: '12px',
-		display: 'none',
-		boxShadow: '0 0 0 2px white'
-	});
-    
-	chatIconWrapper.appendChild(chatIcon);
-	chatIconWrapper.appendChild(notificationBadge);
-	window.mereos.shadowRoot.appendChild(chatIconWrapper);
+	document.body.insertAdjacentHTML('beforeend', `
+    <div id="chat-icon-wrapper" class="chat-icon-wrapper" style="position: fixed; bottom: 20px; right: 20px; z-index: 999999999999999999999; cursor: grab; width: 50px; height: 50px; user-select: none;">
+      <img id="chat-icon" class="chat-icon" src="${ASSET_URL}/mereos.svg" alt="Chat Icon" style="width: 100%; height: 100%;">
+      <div id="notification-badge" class="notification-badge" style="position: absolute; top: -5px; right: -5px; background-color: #FF4136; border-radius: 50%; width: 12px; height: 12px; display: none; box-shadow: 0 0 0 2px white;"></div>
+    </div>
+  `);
 
-	const chatContainer = document.createElement('div');
-	chatContainer.id = 'talkjs-container';
-	chatContainer.className = 'live-chat-container';
-	Object.assign(chatContainer.style, {
-		width: '400px',
-		height: '500px',
-		position: 'fixed',
-		bottom: '100px',
-		right: '20px',
-		zIndex: '999999999999999999999',
-		backgroundColor: 'white',
-		border: '1px solid #ccc',
-		borderRadius: '8px',
-		boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
-		display: 'none'
-	});
-	window.mereos.shadowRoot.appendChild(chatContainer);
+	document.body.insertAdjacentHTML('beforeend', `
+    <div id="talkjs-container" class="live-chat-container" style="width: 350px; height: 400px; position: fixed; bottom: 100px; right: 20px; z-index: 999999999999999999999; background-color: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); display: none;"></div>
+  `);
 
-	let isDragging = false;
-	let offsetX, offsetY;
-	let originalX, originalY;
-	let containerOffsetX, containerOffsetY;
-	logger.success('originalX',originalX,'originalY',originalY);
+	const chatIconWrapper = document.getElementById('chat-icon-wrapper');
+	const notificationBadge = document.getElementById('notification-badge');
+	const chatContainer = document.getElementById('talkjs-container');
 
-	const handleMouseDown = (e) => {
-		isDragging = true;
-		chatIconWrapper.style.cursor = 'grabbing';
-        
-		const rect = chatIconWrapper.getBoundingClientRect();
-		offsetX = e.clientX - rect.left;
-		offsetY = e.clientY - rect.top;
-        
-		originalX = rect.left;
-		originalY = rect.top;
-        
-		const containerRect = chatContainer.getBoundingClientRect();
-		containerOffsetX = containerRect.left - rect.left;
-		containerOffsetY = containerRect.top - rect.top;
-        
-		e.preventDefault();
+	const positions = {
+		icon: { x: 0, y: 0 },
+		container: { x: 0, y: 0 }
 	};
 
-	const handleMouseMove = (e) => {
-		if (!isDragging) return;
-        
-		const x = e.clientX - offsetX;
-		const y = e.clientY - offsetY;
-        
-		chatIconWrapper.style.left = `${x}px`;
-		chatIconWrapper.style.top = `${y}px`;
-        
-		chatContainer.style.left = `${x + containerOffsetX}px`;
-		chatContainer.style.top = `${y + containerOffsetY}px`;
-	};
+	interact(chatIconWrapper).draggable({
+		cursorChecker: () => 'grabbing',
+		modifiers: [
+			interact.modifiers.restrict({
+				restriction: 'parent',
+				endOnly: false,
+				elementRect: { top: 0, left: 0, bottom: 1, right: 1 }
+			})
+		],
+		listeners: {
+			start() {
+				chatIconWrapper.style.cursor = 'grabbing';
+			},
+			move(event) {
+				positions.icon.x += event.dx;
+				positions.icon.y += event.dy;
+				positions.container.x += event.dx;
+				positions.container.y += event.dy;
 
-	const handleMouseUp = () => {
-		isDragging = false;
-		chatIconWrapper.style.cursor = 'grab';
-	};
+				chatIconWrapper.style.transform = `translate(${positions.icon.x}px, ${positions.icon.y}px)`;
+				chatContainer.style.transform = `translate(${positions.container.x}px, ${positions.container.y}px)`;
+			},
+			end() {
+				chatIconWrapper.style.cursor = 'grab';
+			}
+		}
+	});
 
-	chatIconWrapper.addEventListener('mousedown', handleMouseDown);
-	document.addEventListener('mousemove', handleMouseMove);
-	document.addEventListener('mouseup', handleMouseUp);
-
-	const cleanupDrag = () => {
-		chatIconWrapper.removeEventListener('mousedown', handleMouseDown);
-		document.removeEventListener('mousemove', handleMouseMove);
-		document.removeEventListener('mouseup', handleMouseUp);
-	};
+	interact(chatContainer).draggable({
+		enabled: false
+	});
 
 	let clickStartTime = 0;
-	let isPotentialClick = false;
+	let isDragging = false;
 
-	chatIconWrapper.addEventListener('mousedown', () => {
+	chatIconWrapper.addEventListener('mousedown', (e) => {
+		e.stopPropagation();
 		clickStartTime = Date.now();
-		isPotentialClick = true;
+		isDragging = false;
 	});
 
 	chatIconWrapper.addEventListener('mousemove', () => {
 		if (Date.now() - clickStartTime > 50) {
-			isPotentialClick = false;
+			isDragging = true;
 		}
 	});
 
-	chatIconWrapper.addEventListener('click', () => {
-		if (isPotentialClick && Date.now() - clickStartTime < 200) {
+	chatIconWrapper.addEventListener('click', (e) => {
+		e.stopPropagation();
+		if (!isDragging && Date.now() - clickStartTime < 200) {
 			chatContainer.style.display = chatContainer.style.display === 'none' ? 'block' : 'none';
-            
+      
 			if (chatContainer.style.display === 'block') {
 				notificationBadge.style.display = 'none';
 				unreadCount = 0;
@@ -274,7 +216,7 @@ const initializeLiveChat = () => {
 	});
 
 	document.addEventListener('click', (e) => {
-		if (!window.mereos.shadowRoot.contains(e.target)) {
+		if (!chatIconWrapper.contains(e.target) && !chatContainer.contains(e.target)) {
 			chatContainer.style.display = 'none';
 		}
 	});
@@ -311,13 +253,13 @@ const initializeLiveChat = () => {
       
 			session.onMessage(event => {
 				if (event.conversation && event.conversation.id === conversationId && 
-                    !event.isByMe &&
-                    chatContainer.style.display === 'none') {
+            !event.isByMe &&
+            chatContainer.style.display === 'none') {
 					unreadCount++;
 					updateNotificationBadge(unreadCount);
 				}
 			});
-            
+			
 			const chatbox = session.createChatbox();
 			chatbox.select(conversation);
 			chatbox.mount(chatContainer);
@@ -325,14 +267,14 @@ const initializeLiveChat = () => {
 	}
   
 	function updateNotificationBadge(count) {
+		const badge = document.getElementById('notification-badge');
+    
 		if (count > 0) {
-			notificationBadge.style.display = 'block';
+			badge.style.display = 'block';
 		} else {
-			notificationBadge.style.display = 'none';
+			badge.style.display = 'none';
 		}
 	}
-
-	return cleanupDrag;
 };
 
 const navigate = (newTabId) => {

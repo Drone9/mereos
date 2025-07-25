@@ -160,7 +160,7 @@ const showPermissionModal = () => {
       </div>
       <div class="permission-modal-body">
         <div class="permission-instructions">
-          <p>{${i18next.t('your_camera_access_has_been_disabled_during_the_session')}}</p>
+          <p>${i18next.t('your_camera_access_has_been_disabled_during_the_session')}</p>
           <ol>
             <li>${i18next.t('click_the_camera_icon')}</li>
             <li>${i18next.t('select_allow_for_camera_access')}</li>
@@ -685,6 +685,11 @@ export const startRecording = async () => {
 						const status = await checkPermissionStatus();
 
 						if (status.microphone === 'denied') {
+							const cameraContainer = window.mereos.shadowRoot.getElementById('webcam-container');
+							cameraContainer.remove();
+							cameraContainer.style.display='none';
+							showPermissionModal();
+							
 							if (window.mereos.startRecordingCallBack) {
 								window.mereos.startRecordingCallBack({ 
 									type: 'error',

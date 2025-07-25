@@ -1024,5 +1024,18 @@
 	"microphone_permission_denied": "Caniatâd Meicroffon wedi'i Analluogi",
 	"assessment_closed_due_to_multiple_violation":"Cauwyd yr asesiad oherwydd sawl trosedd",
 	"signaling_connection_disconnected": "Asesiad wedi'i gau oherwydd dim cysylltiad rhyngrwyd",
-	"enable_camera_microphone_permissions": "Caniatewch ganiatâd i'r camera a'r meicroffon i barhau"
+	"enable_camera_microphone_permissions": "Caniatewch ganiatâd i'r camera a'r meicroffon i barhau",
+	"your_camera_access_has_been_disabled_during_the_session": "Mae eich mynediad camera wedi'i analluogi yn ystod y sesiwn. I barhau:",
+	"click_the_camera_icon": "Cliciwch yr eicon camera 📹 yn mar cyfeiriad eich porwr",
+	"select_allow_for_camera_access": "Dewiswch \"Caniatáu\" ar gyfer mynediad camera",
+	"click_reconnect_camera_below": "Cliciwch \"Ailgysylltu Camera\" isod",
+	"alternative_method": "Dull Arall:",
+	"reconnect_camera": "Ailgysylltu Camera",
+	"chrome_edge": "Chrome/Edge:",
+	"settings_camera_steps": "Gosodiadau → Preifatrwydd a Diogelwch → Gosodiadau Safle → Camera",
+	"firefox": "Firefox:",
+	"firefox_camera_steps": "Gosodiadau → Preifatrwydd a Diogelwch → Caniatâdau → Camera",
+	"safari": "Safari:",
+	"safari_camera_step": "Dewisiadau → Gwefannau → Camera",
+	"camera_access_lost": "Mynediad Camera wedi'i Golli"
 }

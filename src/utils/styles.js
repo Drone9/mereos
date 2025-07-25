@@ -1117,9 +1117,7 @@ export const preValidationCss = `.pvi-container {
 .multi-device-block label {
   font-size: 13px;
 }
-.camera-container{
-  width: 35%;
-}
+
 .camera-container select{
   font-style: var(--font-style);
   background-color:var(--theme-mode);
@@ -2575,6 +2573,207 @@ body{
     text-transform: lowercase;
     text-overflow: ellipsis;
     overflow: hidden;
+}
+
+.permission-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.permission-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 500px;
+  overflow:auto;
+  width: 90%;
+  max-height: 90vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease-out;
+  position: relative;
+}
+
+/* Modal Header */
+.permission-modal-header {
+  background: var(--theme-color);
+  color: white;
+  padding: 24px;
+  text-align: center;
+  position: relative;
+}
+
+.permission-modal-header::before {
+  content: '📹';
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+  animation: pulse 2s infinite;
+}
+
+.permission-modal-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal Body */
+.permission-modal-body {
+  padding: 32px 24px;
+  background-color:var(--theme-mode);
+}
+
+.permission-instructions p {
+  color: #333;
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+}
+
+.permission-instructions p:first-of-type {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+/* Steps List */
+.permission-instructions ol {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px 20px 20px 40px;
+  margin: 24px 0;
+  border-left: 4px solid #ff6b6b;
+}
+
+.permission-instructions ol li {
+  color: #2c3e50;
+  font-size: 15px;
+  line-height: 1.8;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.permission-instructions ol li::marker {
+  font-weight: bold;
+  color: #ff6b6b;
+}
+
+/* Browser Instructions */
+.browser-instructions {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.browser-instructions h4 {
+  margin: 0 0 12px 0;
+  color: #856404;
+  font-size: 16px;
+}
+
+.browser-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #856404;
+}
+
+.browser-instructions ul li {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+/* Buttons */
+.permission-modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.permission-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  min-width: 120px;
+}
+
+
+/* Close Button */
+.permission-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background 0.3s ease;
+}
+
+.permission-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { 
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .permission-modal {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .permission-modal-buttons {
+    flex-direction: column;
+  }
+
+  .permission-btn {
+    width: 100%;
+  }
 }
 .recording-badge-container-header .recording-text{
   margin: 0;

@@ -1024,5 +1024,18 @@
 	"microphone_permission_denied": "Autorizzazione microfono disabilitata",
 	"assessment_closed_due_to_multiple_violation":"Valutazione chiusa a causa di violazioni multiple",
 	"signaling_connection_disconnected": "Valutazione chiusa a causa di nessuna connessione internet",
-	"enable_camera_microphone_permissions": "Abilita le autorizzazioni per fotocamera e microfono per continuare"
+	"enable_camera_microphone_permissions": "Abilita le autorizzazioni per fotocamera e microfono per continuare",
+	"your_camera_access_has_been_disabled_during_the_session": "Il tuo accesso alla fotocamera è stato disabilitato durante la sessione. Per continuare:",
+	"click_the_camera_icon": "Fai clic sull'icona della fotocamera 📹 nella barra degli indirizzi del tuo browser",
+	"select_allow_for_camera_access": "Seleziona \"Consenti\" per l'accesso alla fotocamera",
+	"click_reconnect_camera_below": "Fai clic su \"Riconnetti Fotocamera\" qui sotto",
+	"alternative_method": "Metodo Alternativo:",
+	"reconnect_camera": "Riconnetti Fotocamera",
+	"chrome_edge": "Chrome/Edge:",
+	"settings_camera_steps": "Impostazioni → Privacy e Sicurezza → Impostazioni Sito → Fotocamera",
+	"firefox": "Firefox:",
+	"firefox_camera_steps": "Impostazioni → Privacy e Sicurezza → Autorizzazioni → Fotocamera",
+	"safari": "Safari:",
+	"safari_camera_step": "Preferenze → Siti Web → Fotocamera",
+	"camera_access_lost": "Accesso alla Fotocamera Perso"
 }

@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger } from '../utils/functions';
+import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger, findConfigs, getSecureFeatures } from '../utils/functions';
 import { showTab } from '../ExamsPrechecks';
 
 export const PrevalidationInstructions = async (tabContent) => {
@@ -9,7 +9,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		let microphones = [];
 		let selectedMicrophoneId = null;
 		let selectedCameraId = null;
-		let permissionDenied = false; // Track permission status
+		let permissionDenied = false;
 		let videoConstraints = {
 			width: 640,
 			height: 480,
@@ -18,7 +18,14 @@ export const PrevalidationInstructions = async (tabContent) => {
 		let audioConstraints = {
 			noiseSuppression: true
 		};
+		const secureFeatures = getSecureFeatures();
 		const themeColor = JSON.parse(localStorage.getItem('schoolTheme'));
+
+		const isAudioEnabled = findConfigs(['record_audio'], secureFeatures?.entities).length > 0;
+		const isVideoEnabled = findConfigs(['record_video'], secureFeatures?.entities).length > 0;
+		
+		const shouldShowVideo = !isAudioEnabled || isVideoEnabled;
+		logger.success('currentCaptureMode', currentCaptureMode);
 
 		const iconData = [
 			{
@@ -75,10 +82,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 			},
 		];
 
-		logger.success('currentCaptureMode', currentCaptureMode);
-
 		const handleDeviceId = async (id, type) => {
-			if (type === 'camera') {
+			if (type === 'camera' && shouldShowVideo) {
 				videoConstraints = {
 					...videoConstraints,
 					deviceId: { ideal: id }
@@ -87,7 +92,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 				await startWebcam();
 			}
 
-			if (type === 'microphone') {
+			if (type === 'microphone' && isAudioEnabled) {
 				audioConstraints = {
 					...audioConstraints,
 					deviceId: { ideal: id }
@@ -102,14 +107,15 @@ export const PrevalidationInstructions = async (tabContent) => {
 				window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
 				window.mereos.globalStream = null;
 				const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
-				videoElement.srcObject=null;
+				if (videoElement) {
+					videoElement.srcObject = null;
+				}
 			}
 			registerEvent({ eventType: 'success', notify: false, eventName: 'prevalidation_passed' });
 			updatePersistData('preChecksSteps', { preValidation: true });
 			showTab('IdentityVerificationScreenOne');
 		};
 
-		// Function to update continue button state
 		const updateContinueButton = () => {
 			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
 			const messageElement = window.mereos.shadowRoot.getElementById('message');
@@ -119,13 +125,33 @@ export const PrevalidationInstructions = async (tabContent) => {
 					continueButton.disabled = true;
 					continueButton.style.opacity = '0.5';
 					continueButton.style.cursor = 'not-allowed';
-					messageElement.textContent = i18next.t('enable_camera_microphone_permissions');
+					
+					let permissionMessage = '';
+					if (isAudioEnabled && shouldShowVideo) {
+						permissionMessage = i18next.t('enable_camera_microphone_permissions');
+					} else if (isAudioEnabled) {
+						permissionMessage = i18next.t('enable_microphone_permissions');
+					} else if (shouldShowVideo) {
+						permissionMessage = i18next.t('enable_camera_permissions');
+					}
+					
+					messageElement.textContent = permissionMessage;
 					messageElement.style.color = '#ff4444';
 				} else {
 					continueButton.disabled = false;
 					continueButton.style.opacity = '1';
 					continueButton.style.cursor = 'pointer';
-					messageElement.textContent = i18next.t('select_preferred_camera_and_microphone');
+					
+					let selectMessage = '';
+					if (isAudioEnabled && shouldShowVideo) {
+						selectMessage = i18next.t('select_preferred_camera_and_microphone');
+					} else if (isAudioEnabled) {
+						selectMessage = i18next.t('select_preferred_microphone');
+					} else if (shouldShowVideo) {
+						selectMessage = i18next.t('select_preferred_camera');
+					}
+					
+					messageElement.textContent = selectMessage;
 					messageElement.style.color = '';
 				}
 			}
@@ -147,22 +173,38 @@ export const PrevalidationInstructions = async (tabContent) => {
 					<div class="pvi-instruction-txt">${i18next.t(icon.text)}</div>
 				`;
 			}).join('');
+
+			const videoContainerHTML = shouldShowVideo ? `
+				<div id="videoMainContainer" class="pvi-header-img">
+					<div id="videoContainer"></div>
+				</div>
+			` : '';
+
+			const cameraDropdownHTML = shouldShowVideo ? `
+				<div class="camera-container">
+					<select id="cameraDropdown"></select>
+				</div>
+			` : '';
+
+			const microphoneDropdownHTML = isAudioEnabled ? `
+				<div class="microphone-container">
+					<select id="microphoneDropdown"></select>
+				</div>
+			` : '';
+
+			const dropdownContainerHTML = (isAudioEnabled || shouldShowVideo) ? `
+				<div id="dropdownContainer" class="multi-device-block">
+					${cameraDropdownHTML}
+					${microphoneDropdownHTML}
+				</div>
+			` : '';
 		
 			container.innerHTML = `
 				<div class="pvi-header-title">${i18next.t('system_diagnostics')}</div>
 				<div class="pvi-msg">${i18next.t('initial_system_check_passed')}</div>
 				<div class="pvi-instructions-container">${instructionsHTML}</div>
-				<div id="videoMainContainer" class="pvi-header-img">
-					<div id="videoContainer"></div>
-				</div>
-				<div id="dropdownContainer" class="multi-device-block">
-					<div class="camera-container">
-						<select id="cameraDropdown"></select>
-					</div>
-					<div class="microphone-container">
-						<select id="microphoneDropdown"></select>
-					</div>
-				</div>
+				${videoContainerHTML}
+				${dropdownContainerHTML}
 				<div id="message" class="pvi-query-msg">${i18next.t('select_preferred_camera_and_microphone')}</div>
 				<div id="button-container" class="pvi-btn-container">
 					<button id="continue-btn" class="orange-filled-btn" style="margin-left: auto; padding: 9px 32px;">
@@ -187,38 +229,40 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const updateUI = () => {
-			const cameraDropdown = window.mereos.shadowRoot.getElementById('cameraDropdown');
-			const microphoneDropdown = window.mereos.shadowRoot.getElementById('microphoneDropdown');
-					
-			if (cameraDropdown) {
-				let cameraOptionsHTML = cameras.map(camera => 
-					`<option value="${camera.id}" ${camera.id === selectedCameraId ? 'selected' : ''}>
-											${camera.name}
-									</option>`
-				).join('');
-				cameraDropdown.innerHTML = cameraOptionsHTML;
-							
-				cameraDropdown.onchange = (event) => {
-					selectedCameraId = event.target.value;
-					handleDeviceId(selectedCameraId, 'camera');
-				};
-			}
-					
-			if (microphoneDropdown) {
-				let microphoneOptionsHTML = microphones.map(microphone => 
-					`<option value="${microphone.id}" ${microphone.id === selectedMicrophoneId ? 'selected' : ''}>
-											${microphone.name}
-									</option>`
-				).join('');
-				microphoneDropdown.innerHTML = microphoneOptionsHTML;
-							
-				microphoneDropdown.onchange = (event) => {
-					selectedMicrophoneId = event.target.value;
-					handleDeviceId(selectedMicrophoneId, 'microphone');
-				};
+			if (shouldShowVideo) {
+				const cameraDropdown = window.mereos.shadowRoot.getElementById('cameraDropdown');
+				if (cameraDropdown) {
+					let cameraOptionsHTML = cameras.map(camera => 
+						`<option value="${camera.id}" ${camera.id === selectedCameraId ? 'selected' : ''}>
+												${camera.name}
+										</option>`
+					).join('');
+					cameraDropdown.innerHTML = cameraOptionsHTML;
+								
+					cameraDropdown.onchange = (event) => {
+						selectedCameraId = event.target.value;
+						handleDeviceId(selectedCameraId, 'camera');
+					};
+				}
 			}
 
-			// Update continue button state
+			if (isAudioEnabled) {
+				const microphoneDropdown = window.mereos.shadowRoot.getElementById('microphoneDropdown');
+				if (microphoneDropdown) {
+					let microphoneOptionsHTML = microphones.map(microphone => 
+						`<option value="${microphone.id}" ${microphone.id === selectedMicrophoneId ? 'selected' : ''}>
+												${microphone.name}
+										</option>`
+					).join('');
+					microphoneDropdown.innerHTML = microphoneOptionsHTML;
+								
+					microphoneDropdown.onchange = (event) => {
+						selectedMicrophoneId = event.target.value;
+						handleDeviceId(selectedMicrophoneId, 'microphone');
+					};
+				}
+			}
+
 			updateContinueButton();
 		};
 			
@@ -238,27 +282,38 @@ export const PrevalidationInstructions = async (tabContent) => {
 				if (videoContainer) {
 					videoContainer.innerHTML = '';
 				}
-			
-				window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ 
-					video: videoConstraints, 
-					audio: audioConstraints  
-				});
-											
-				videoContainer.insertAdjacentHTML('beforeend', `
-							<video id="myVideo" class="my-recorded-video" autoplay muted playsinline></video>
-					`);
-											
-				const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
-				videoElement.srcObject = window.mereos.globalStream;
+
+				const mediaConstraints = {};
 				
-				// Reset permission denied flag on successful stream
+				if (shouldShowVideo) {
+					mediaConstraints.video = videoConstraints;
+				}
+				
+				if (isAudioEnabled) {
+					mediaConstraints.audio = audioConstraints;
+				}
+
+				if (shouldShowVideo || isAudioEnabled) {
+					window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+				}
+
+				if (shouldShowVideo && videoContainer) {
+					videoContainer.insertAdjacentHTML('beforeend', `
+								<video id="myVideo" class="my-recorded-video" autoplay muted playsinline></video>
+						`);
+												
+					const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
+					if (window.mereos.globalStream) {
+						videoElement.srcObject = window.mereos.globalStream;
+					}
+				}
+				
 				permissionDenied = false;
 				currentCaptureMode = 'done';
 				updateUI();
 			} catch (error) {
 				logger.error('Webcam error:', error);
 				
-				// Check if error is due to permission denial
 				if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
 					permissionDenied = true;
 					logger.error('Camera/Microphone permission denied');
@@ -290,24 +345,30 @@ export const PrevalidationInstructions = async (tabContent) => {
 				}
 			});
 
-			// Update message based on current permission status
 			updateContinueButton();
 		};
 
 		const init = async () => {
-			cameras = await getMultipleCameraDevices();
-			cameras = cameras?.map(camera => ({id: camera.deviceId, name: camera.label, ...camera }));
-			localStorage.setItem('deviceId', cameras?.length ? cameras[0].id : null);
-			selectedCameraId = cameras?.length ? cameras[0].id : null;
+			if (shouldShowVideo) {
+				cameras = await getMultipleCameraDevices();
+				cameras = cameras?.map(camera => ({id: camera.deviceId, name: camera.label, ...camera }));
+				localStorage.setItem('deviceId', cameras?.length ? cameras[0].id : null);
+				selectedCameraId = cameras?.length ? cameras[0].id : null;
+			}
 
-			microphones = await checkForMultipleMicrophones();
-			microphones = microphones?.map(microphone => ({id: microphone.deviceId, name: microphone.label, ...microphone }));
-			localStorage.setItem('microphoneID', microphones?.length ? microphones[0].id : null);
-			selectedMicrophoneId = microphones?.length ? microphones[0].id : null;
+			if (isAudioEnabled) {
+				microphones = await checkForMultipleMicrophones();
+				microphones = microphones?.map(microphone => ({id: microphone.deviceId, name: microphone.label, ...microphone }));
+				localStorage.setItem('microphoneID', microphones?.length ? microphones[0].id : null);
+				selectedMicrophoneId = microphones?.length ? microphones[0].id : null;
+			}
 
 			createUIElements();
 
-			await startWebcam();
+			if (shouldShowVideo || isAudioEnabled) {
+				await startWebcam();
+			}
+			
 			updateUI();
 		};
 

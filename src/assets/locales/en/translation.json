@@ -1025,5 +1025,18 @@
 	"microphone_permission_denied":"Microphone Permission Disabled",
 	"assessment_closed_due_to_multiple_violation":"Assessment closed due to multiple violation",
 	"signaling_connection_disconnected":"Assessment closed due to No internet connection",
-	"enable_camera_microphone_permissions": "Please enable camera and microphone permissions to continue"
+	"enable_camera_microphone_permissions": "Please enable camera and microphone permissions to continue",
+	"your_camera_access_has_been_disabled_during_the_session":"Your camera access has been disabled during the session. To continue:",
+	"click_the_camera_icon":"Click the camera icon 📹 in your browser's address bar",
+	"select_allow_for_camera_access":"Select \"Allow\" for camera access",
+	"click_reconnect_camera_below":"Click \"Reconnect Camera\" below",
+	"alternative_method":"Alternative Method:",
+	"reconnect_camera":"Reconnect Camera",
+	"chrome_edge":"Chrome/Edge:",
+	"settings_camera_steps":"Settings → Privacy & Security → Site Settings → Camera",
+	"firefox":"Firefox:",
+	"firefox_camera_steps":"Settings → Privacy & Security → Permissions → Camera",
+	"safari":"Safari:",
+	"safari_camera_step":"Preferences → Websites → Camera",
+	"camera_access_lost":"Camera Access Lost"
 }

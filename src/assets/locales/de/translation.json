@@ -1037,5 +1037,10 @@
 	"firefox_camera_steps": "Einstellungen → Datenschutz und Sicherheit → Berechtigungen → Kamera",
 	"safari": "Safari:",
 	"safari_camera_step": "Einstellungen → Websites → Kamera",
-	"camera_access_lost": "Kamerazugriff verloren"
+	"camera_access_lost": "Kamerazugriff verloren",
+	"session_is_terminated": "Ihre Sitzung wurde beendet.",
+  "signaling_connection_reconnected": "Verbindung wiederhergestellt.",
+  "internet_connection_recovered": "Sie sind wieder online.",
+  "reconnecting_signaling_connection": "Wiederverbindung wird versucht...",
+  "internet_connection_lost": "Sie sind offline. Bitte überprüfen Sie Ihre Internetverbindung."
 }

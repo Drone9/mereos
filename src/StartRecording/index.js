@@ -800,6 +800,10 @@ export const startRecording = async () => {
 			
 		} catch (error) {
 			logger.error('error in startRecording',error.message);
+			updatePersistData('session', {
+				sessionStatus:'Terminated'
+			});
+			window.mereos.recordingStart = false;
 			if(window.mereos.startRecordingCallBack){
 				window.mereos.startRecordingCallBack({ 
 					type:'success',
@@ -807,10 +811,6 @@ export const startRecording = async () => {
 					code:50000
 				});
 			}
-			updatePersistData('session', {
-				sessionStatus:'Terminated'
-			});
-			window.mereos.recordingStart = false;
 		}
 	}else{
 		updatePersistData('session', {
@@ -1547,9 +1547,9 @@ export const stopAllRecordings = async () => {
 			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
 		}
 
-		registerEvent({ eventType: 'success', notify: false, eventName: 'session_completed', startAt: dateTime });
+		registerEvent({ eventType: 'success', notify: false, eventName: session?.sessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed', startAt: dateTime });
 		
-		showToast('success', 'session_completed');
+		showToast(session?.sessionStatus === 'Terminated' ? 'error' :'success', session?.sessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed');
 		
 		return 'stop_recording';
 	} catch (e) {

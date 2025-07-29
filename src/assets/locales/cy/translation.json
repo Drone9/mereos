@@ -1037,5 +1037,6 @@
 	"firefox_camera_steps": "Gosodiadau → Preifatrwydd a Diogelwch → Caniatâdau → Camera",
 	"safari": "Safari:",
 	"safari_camera_step": "Dewisiadau → Gwefannau → Camera",
-	"camera_access_lost": "Mynediad Camera wedi'i Golli"
+	"camera_access_lost": "Mynediad Camera wedi'i Golli",
+	"session_is_terminated":"Mae'r sesiwn wedi'i therfynu"
 }

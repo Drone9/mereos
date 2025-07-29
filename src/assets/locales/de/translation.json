@@ -1037,5 +1037,6 @@
 	"firefox_camera_steps": "Einstellungen → Datenschutz und Sicherheit → Berechtigungen → Kamera",
 	"safari": "Safari:",
 	"safari_camera_step": "Einstellungen → Websites → Kamera",
-	"camera_access_lost": "Kamerazugriff verloren"
+	"camera_access_lost": "Kamerazugriff verloren",
+	"session_is_terminated":"Sitzung ist beendet"
 }

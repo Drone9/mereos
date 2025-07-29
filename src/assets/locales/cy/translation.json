@@ -1037,5 +1037,10 @@
 	"firefox_camera_steps": "Gosodiadau → Preifatrwydd a Diogelwch → Caniatâdau → Camera",
 	"safari": "Safari:",
 	"safari_camera_step": "Dewisiadau → Gwefannau → Camera",
-	"camera_access_lost": "Mynediad Camera wedi'i Golli"
+	"camera_access_lost": "Mynediad Camera wedi'i Golli",
+	"session_is_terminated": "Mae eich sesiwn wedi dod i ben.",
+  "signaling_connection_reconnected": "Cysylltiad wedi'i adfer.",
+  "internet_connection_recovered": "Rydych chi'n ôl ar-lein.",
+  "reconnecting_signaling_connection": "Yn ceisio ailgysylltu...",
+  "internet_connection_lost": "Rydych chi all-lein. Gwiriwch eich cysylltiad rhyngrwyd."
 }

@@ -1037,5 +1037,10 @@
 	"firefox_camera_steps": "Impostazioni → Privacy e Sicurezza → Autorizzazioni → Fotocamera",
 	"safari": "Safari:",
 	"safari_camera_step": "Preferenze → Siti Web → Fotocamera",
-	"camera_access_lost": "Accesso alla Fotocamera Perso"
+	"camera_access_lost": "Accesso alla Fotocamera Perso",
+	"session_is_terminated": "La tua sessione è terminata.",
+  "signaling_connection_reconnected": "Connessione ripristinata.",
+  "internet_connection_recovered": "Sei di nuovo online.",
+  "reconnecting_signaling_connection": "Tentativo di riconnessione...",
+  "internet_connection_lost": "Sei offline. Controlla la tua connessione internet."
 }

@@ -2602,7 +2602,6 @@ body{
   position: relative;
 }
 
-/* Modal Header */
 .permission-modal-header {
   background: var(--theme-color);
   color: white;
@@ -2626,7 +2625,6 @@ body{
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Modal Body */
 .permission-modal-body {
   padding: 32px 24px;
   background-color:var(--theme-mode);
@@ -2644,7 +2642,6 @@ body{
   color: var(--text-color);
 }
 
-/* Steps List */
 .permission-instructions ol {
   background: #f8f9fa;
   border-radius: 8px;
@@ -2666,7 +2663,6 @@ body{
   color: #ff6b6b;
 }
 
-/* Browser Instructions */
 .browser-instructions {
   background: #fff3cd;
   border: 1px solid #ffeaa7;
@@ -2692,7 +2688,6 @@ body{
   font-size: 14px;
 }
 
-/* Buttons */
 .permission-modal-buttons {
   display: flex;
   gap: 12px;
@@ -2715,7 +2710,6 @@ body{
 }
 
 
-/* Close Button */
 .permission-modal-close {
   position: absolute;
   top: 16px;

@@ -1037,5 +1037,10 @@
 	"firefox_camera_steps": "Paramètres → Confidentialité et Sécurité → Autorisations → Caméra",
 	"safari": "Safari :",
 	"safari_camera_step": "Préférences → Sites Web → Caméra",
-	"camera_access_lost": "Accès à la Caméra Perdu"
+	"camera_access_lost": "Accès à la Caméra Perdu",
+	"session_is_terminated": "Votre session est terminée.",
+  "signaling_connection_reconnected": "Connexion rétablie.",
+  "internet_connection_recovered": "Vous êtes de nouveau en ligne.",
+  "reconnecting_signaling_connection": "Tentative de reconnexion...",
+  "internet_connection_lost": "Vous êtes hors ligne. Vérifiez votre connexion Internet."
 }

@@ -1038,5 +1038,9 @@
 	"safari": "Safari:",
 	"safari_camera_step": "Voorkeuren → Websites → Camera",
 	"camera_access_lost": "Cameratoegang Verloren",
-	"session_is_terminated":"Sessie is beëindigd"
+	"session_is_terminated": "Je sessie is beëindigd.",
+  "signaling_connection_reconnected": "Verbinding hersteld.",
+  "internet_connection_recovered": "Je bent weer online.",
+  "reconnecting_signaling_connection": "Opnieuw verbinden...",
+  "internet_connection_lost": "Je bent offline. Controleer je internetverbinding."
 }

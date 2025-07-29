@@ -1038,5 +1038,9 @@
 	"safari": "Safari:",
 	"safari_camera_step": "Preferencias → Sitios Web → Cámara",
 	"camera_access_lost": "Acceso a la Cámara Perdido",
-	"session_is_terminated": "Sesión finalizada"
+	"session_is_terminated": "Tu sesión ha finalizado.",
+  "signaling_connection_reconnected": "Conexión restaurada.",
+  "internet_connection_recovered": "Has vuelto a estar en línea.",
+  "reconnecting_signaling_connection": "Intentando reconectar...",
+  "internet_connection_lost": "Estás sin conexión. Verifica tu conexión a internet."
 }

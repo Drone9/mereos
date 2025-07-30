@@ -354,12 +354,25 @@ export const loadZendeskWidget = () => {
 						if (messagingWindow) {
 							messagingWindow.style.setProperty('z-index', '2147483647', 'important');
 						}
+
+						const messagingHeading = document.querySelector('iframe[title="Close message"]');
+						if (messagingHeading) {
+							messagingHeading.style.setProperty('z-index', '2147483647', 'important');
+						}
+
+						const messagingTitle = document.querySelector('iframe[title="Message from company"]');
+						if (messagingTitle) {
+							messagingTitle.style.setProperty('z-index', '2147483647', 'important');
+						}
 						
 						const messagingWindowByName = document.querySelector('iframe[name="Messaging window"]');
 						if (messagingWindowByName) {
 							messagingWindowByName.style.setProperty('z-index', '2147483647', 'important');
 						}
-						
+						const numberOfMessage = document.querySelector('iframe[title="Number of unread messages"]');
+						if (numberOfMessage) {
+							numberOfMessage.style.setProperty('z-index', '2147483647', 'important');
+						}
 						const zendeskSelectors = [
 							'iframe[id*="webWidget"]',
 							'iframe[title*="Chat"]',
@@ -939,51 +952,56 @@ export const preventRightClick = () => {
 
 export const disableCopyPasteCut = () => {
 	return new Promise((resolve, _reject) => {
+		let copyEventRegistered = false; 
+        
 		'cut copy paste'.split(' ').forEach((eventName) => {
 			document.addEventListener(eventName, e => {
 				e.preventDefault();
-				e.stopPropagation();
-				registerEvent({notify: false, eventName: 'copy_paste_cut', eventType: 'error'});
+				e.stopImmediatePropagation(); 
+                
+				if (eventName === 'copy' && !copyEventRegistered) {
+					registerEvent({notify: false, eventName: 'copy_paste_cut', eventType: 'error'});
+					copyEventRegistered = true;
+					setTimeout(() => { copyEventRegistered = false; }, 100);
+				}
+                
 				checkForceClosureViolation();
 			}, true);
 		});
-    
+        
 		document.addEventListener('keydown', e => {
-			if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+			if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'c' || e.key === 'x')) {
 				e.preventDefault();
-				e.stopPropagation();
-				registerEvent({notify: false, eventName: 'candidate_paste_the_content', eventType: 'error'});
+				e.stopImmediatePropagation();
+                
+				if (!copyEventRegistered) {
+					const eventName = 
+									e.key === 'v' ? 'candidate_paste_the_content' :
+										e.key === 'c' ? 'candidate_copy_the_content' :
+											'candidate_cut_the_content';
+                    
+					registerEvent({notify: false, eventName, eventType: 'error'});
+					copyEventRegistered = true;
+					setTimeout(() => { copyEventRegistered = false; }, 100);
+				}
+                
 				checkForceClosureViolation();
-			}
-      
-			if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-				e.preventDefault();
-				e.stopPropagation();
-				registerEvent({notify: false, eventName: 'candidate_copy_the_content', eventType: 'error'});
-				checkForceClosureViolation();
-			}
-      
-			if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
-				e.preventDefault();
-				e.stopPropagation();
-				registerEvent({notify: false, eventName: 'candidate_cut_the_content', eventType: 'error'});
 			}
 		}, true);
-    
+        
 		if (navigator.clipboard) {
 			navigator.clipboard.writeText = function() {
 				return Promise.reject('Clipboard operations are disabled');
 			};
-      
+            
 			navigator.clipboard.readText = function() {
 				return Promise.reject('Clipboard operations are disabled');
 			};
 		}
-		
+        
 		resolve(true);
 	});
 };
-
 
 export const restoreRightClick = () => {
 	return new Promise((resolve, _reject) => {

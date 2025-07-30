@@ -1046,5 +1046,7 @@
 	"select_preferred_microphone": "Seleziona il microfono preferito",
   "select_preferred_camera": "Seleziona la fotocamera preferita",
   "enable_microphone_permissions": "Abilita i permessi del microfono per continuare",
-  "enable_camera_permissions": "Abilita i permessi della fotocamera per continuare"
+  "enable_camera_permissions": "Abilita i permessi della fotocamera per continuare",
+	"check_camera_mic": "Verifica dispositivi",
+  "checking_media_compatibility": "Verifica dei dispositivi prima di procedere. Grazie per la pazienza."
 }

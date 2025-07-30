@@ -1200,6 +1200,9 @@ export const preValidationCss = `.pvi-container {
 .pvi-btn-container {
   margin: 0px 0px 0px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pvi-btn {

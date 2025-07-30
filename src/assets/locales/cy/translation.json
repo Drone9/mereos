@@ -1048,5 +1048,10 @@
   "enable_microphone_permissions": "Galluogwch ganiatâd meicroffon i barhau",
   "enable_camera_permissions": "Galluogwch ganiatâd camera i barhau",
 	"check_camera_mic": "Gwirio Dyfeisiau",
-  "checking_media_compatibility": "Wrthi'n gwirio dyfeisiau cyn parhau. Diolch am eich amynedd."
+  "checking_media_compatibility": "Wrthi'n gwirio dyfeisiau cyn parhau. Diolch am eich amynedd.",
+	"media_check_success": "Mae eich dyfeisiau a ffefrir wedi’u dilysu. Ewch yn eich blaen.",
+  "media_check_audio_failed": "Methu canfod mewnbwn sain. Gwiriwch eich meicroffon.",
+  "media_check_video_failed": "Methu canfod mewnbwn fideo. Gwiriwch eich camera.",
+  "media_check_both_failed": "Gwiriwch eich dyfeisiau.",
+  "media_check_exception": "Methodd gwirio'r dyfeisiau. Rhowch gynnig arall arni."
 }

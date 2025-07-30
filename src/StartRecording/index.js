@@ -1039,8 +1039,14 @@ const startAIWebcam = async (room, mediaStream) => {
 		const personMissingFeature = findConfigs(['person_missing'], secureFeatures?.entities).length > 0;
 		const objectDetectionFeature = findConfigs(['object_detection'], secureFeatures?.entities).length > 0;
 
-		await tf.setBackend('webgl');
-		await tf.ready();
+		try {
+			await tf.setBackend('webgl');
+			await tf.ready();
+		} catch (webglError) {
+			logger.warn('WebGL not supported. Falling back to CPU.', webglError);
+			await tf.setBackend('cpu');
+			await tf.ready();
+		}
     
 		const net = await cocoSsd.load();
     

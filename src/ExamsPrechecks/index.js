@@ -570,7 +570,7 @@ export const startSession = async () => {
 			status: 'Attending',
 			id:session?.candidate_assessment
 		});
-
+		return 'data_saved';
 	} catch (e) {
 		const callBackFunc = () => {
 			if(e.response?.data?.detail === 'Token not found'){

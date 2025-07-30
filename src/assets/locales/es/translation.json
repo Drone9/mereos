@@ -1048,5 +1048,10 @@
   "enable_microphone_permissions": "Por favor, active los permisos del micrófono para continuar",
   "enable_camera_permissions": "Por favor, active los permisos de la cámara para continuar",
 	"check_camera_mic": "Verificar dispositivos",
-  "checking_media_compatibility": "Verificando dispositivos antes de continuar. Gracias por su paciencia."
+  "checking_media_compatibility": "Verificando dispositivos antes de continuar. Gracias por su paciencia.",
+	 "media_check_success": "Tus dispositivos preferidos han sido verificados. Por favor, continúa.",
+  "media_check_audio_failed": "Entrada de audio no detectada. Por favor, revisa tu micrófono.",
+  "media_check_video_failed": "Entrada de video no detectada. Por favor, revisa tu cámara.",
+  "media_check_both_failed": "Por favor, revisa tus dispositivos.",
+  "media_check_exception": "No se pudo verificar los dispositivos. Inténtalo de nuevo."
 }

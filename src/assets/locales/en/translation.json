@@ -1050,5 +1050,9 @@
 	"enable_camera_permissions":"Please enable camera permissions to continue",
 	"check_camera_mic":"Check Devices",
 	"checking_media_compatibility":"Checking devices before proceeding. Thanks for your patience.",
-	"media_check_success":"Media Check Success"
+	"media_check_success":"Your preferred devices are verified. Please continue.",
+	"media_check_audio_failed":"Audio input not detected. Please check your microphone.",
+	"media_check_video_failed":"Video input not detected. Please check your camera.",
+	"media_check_both_failed":"Please check your devices.",
+	"media_check_exception":"Failed to check devices. Please try again."
 }

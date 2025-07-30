@@ -1046,5 +1046,7 @@
 	"select_preferred_microphone": "Dewiswch eich meicroffon dewisol",
   "select_preferred_camera": "Dewiswch eich camera dewisol",
   "enable_microphone_permissions": "Galluogwch ganiatâd meicroffon i barhau",
-  "enable_camera_permissions": "Galluogwch ganiatâd camera i barhau"
+  "enable_camera_permissions": "Galluogwch ganiatâd camera i barhau",
+	"check_camera_mic": "Gwirio Dyfeisiau",
+  "checking_media_compatibility": "Wrthi'n gwirio dyfeisiau cyn parhau. Diolch am eich amynedd."
 }

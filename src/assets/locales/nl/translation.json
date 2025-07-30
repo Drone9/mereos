@@ -1046,5 +1046,7 @@
 	"select_preferred_microphone": "Selecteer uw voorkeursmicrofoon",
   "select_preferred_camera": "Selecteer uw voorkeurscamera",
   "enable_microphone_permissions": "Schakel microfoontoestemmingen in om door te gaan",
-  "enable_camera_permissions": "Schakel cameratoestemmingen in om door te gaan"
+  "enable_camera_permissions": "Schakel cameratoestemmingen in om door te gaan",
+	"check_camera_mic": "Apparaten controleren",
+  "checking_media_compatibility": "Apparaten controleren voordat we verder gaan. Bedankt voor uw geduld."
 }

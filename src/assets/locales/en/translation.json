@@ -1039,9 +1039,13 @@
 	"safari":"Safari:",
 	"safari_camera_step":"Preferences → Websites → Camera",
 	"camera_access_lost":"Camera Access Lost",
-	"session_is_terminated": "Your session has ended.",
+	"session_is_terminated": "Your session has Terminated.",
   "signaling_connection_reconnected": "Connection restored.",
   "internet_connection_recovered": "You're back online.",
   "reconnecting_signaling_connection": "Trying to reconnect...",
-  "internet_connection_lost": "You're offline. Check your internet connection."
+  "internet_connection_lost": "You're offline. Check your internet connection.",
+	"select_preferred_microphone":"Please select your preferred microphone",
+	"select_preferred_camera":"Please select your preferred camera",
+	"enable_microphone_permissions":"Please enable microphone permissions to continue",
+	"enable_camera_permissions":"Please enable camera permissions to continue"
 }

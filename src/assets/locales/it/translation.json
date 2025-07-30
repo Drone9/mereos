@@ -1042,5 +1042,9 @@
   "signaling_connection_reconnected": "Connessione ripristinata.",
   "internet_connection_recovered": "Sei di nuovo online.",
   "reconnecting_signaling_connection": "Tentativo di riconnessione...",
-  "internet_connection_lost": "Sei offline. Controlla la tua connessione internet."
+  "internet_connection_lost": "Sei offline. Controlla la tua connessione internet.",
+	"select_preferred_microphone": "Seleziona il microfono preferito",
+  "select_preferred_camera": "Seleziona la fotocamera preferita",
+  "enable_microphone_permissions": "Abilita i permessi del microfono per continuare",
+  "enable_camera_permissions": "Abilita i permessi della fotocamera per continuare"
 }

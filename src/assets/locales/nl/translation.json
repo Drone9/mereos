@@ -1042,5 +1042,9 @@
   "signaling_connection_reconnected": "Verbinding hersteld.",
   "internet_connection_recovered": "Je bent weer online.",
   "reconnecting_signaling_connection": "Opnieuw verbinden...",
-  "internet_connection_lost": "Je bent offline. Controleer je internetverbinding."
+  "internet_connection_lost": "Je bent offline. Controleer je internetverbinding.",
+	"select_preferred_microphone": "Selecteer uw voorkeursmicrofoon",
+  "select_preferred_camera": "Selecteer uw voorkeurscamera",
+  "enable_microphone_permissions": "Schakel microfoontoestemmingen in om door te gaan",
+  "enable_camera_permissions": "Schakel cameratoestemmingen in om door te gaan"
 }

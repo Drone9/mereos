@@ -1500,6 +1500,11 @@ export const stopAllRecordings = async () => {
 			});
 		}
 
+		if (window.mereos.globalStream) {
+			window.mereos.globalStream.getTracks().forEach(track => track.stop());
+			window.mereos.globalStream = null;
+		}
+
 		if(trackStoppedListeners){
 			trackStoppedListeners.forEach((listener, track) => {
 				track.off('stopped', listener);

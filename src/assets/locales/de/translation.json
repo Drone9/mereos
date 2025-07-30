@@ -1046,5 +1046,7 @@
 	"select_preferred_microphone": "Bitte wählen Sie Ihr bevorzugtes Mikrofon aus",
   "select_preferred_camera": "Bitte wählen Sie Ihre bevorzugte Kamera aus",
   "enable_microphone_permissions": "Bitte aktivieren Sie die Mikrofonberechtigungen, um fortzufahren",
-  "enable_camera_permissions": "Bitte aktivieren Sie die Kameraberechtigungen, um fortzufahren"
+  "enable_camera_permissions": "Bitte aktivieren Sie die Kameraberechtigungen, um fortzufahren",
+	 "check_camera_mic": "Geräte prüfen",
+  "checking_media_compatibility": "Geräte werden vor dem Fortfahren geprüft. Vielen Dank für Ihre Geduld."
 }

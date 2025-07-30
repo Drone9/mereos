@@ -181,6 +181,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	const nextStep = async () => {
 		stopRecording();
 		cleanup();
+		
 		updatePersistData('preChecksSteps', { audioDetection: true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'audio_check_completed', eventValue: getDateTime() });
 		showTab('IdentityVerificationScreenFour');
@@ -189,6 +190,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	const prevStep = () => {
 		stopRecording();
 		cleanup();
+		isRecordingActive = false;
+		canvasRef = null;
 		updatePersistData('preChecksSteps', { audioDetection: false });
 
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
@@ -311,9 +314,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		updateUIText();
 		updateButtons();
 
-		if (canvasRef && !isRecordingActive) {
-			drawAudioSpikes();
-		}
+		drawAudioSpikes();
 	};
 
 	updateUI();

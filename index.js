@@ -156,8 +156,10 @@ async function start_prechecks(callback,setting) {
 		localStorage.setItem('precheckSetting', setting);
 		initShadowDOM();
 		window.mereos.precheckCompleted=false;
-		startSession();
-		openModal(callback);
+		const savedData = await startSession();
+		if(savedData === 'data_saved'){
+			openModal(callback);
+		}
 	} catch (error) {
 		logger.error('Error in start_prechecks:', error);
 		callback({

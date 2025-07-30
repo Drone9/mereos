@@ -334,19 +334,186 @@ export const loadZendeskWidget = () => {
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
 	const hasChatBot = secureFeatures?.some(entity => entity.key === 'chat_bot');
-	let script;
-
+	
 	if (hasChatBot) {
 		if (!document.querySelector('#ze-snippet')) {
-			script = document.createElement('script');
+			const script = document.createElement('script');
 			script.src = 'https://static.zdassets.com/ekr/snippet.js?key=6542e7ef-41de-43ed-bc22-3d429a78ead3';
 			script.async = true;
 			script.id = 'ze-snippet';
+
+			script.onload = () => {
+				setTimeout(() => {
+					const setZendeskZIndex = () => {
+						const launcher = document.querySelector('#launcher');
+						if (launcher) {
+							launcher.style.setProperty('z-index', '2147483647', 'important');
+						}
+						
+						const messagingWindow = document.querySelector('iframe[title="Messaging window"]');
+						if (messagingWindow) {
+							messagingWindow.style.setProperty('z-index', '2147483647', 'important');
+						}
+						
+						const messagingWindowByName = document.querySelector('iframe[name="Messaging window"]');
+						if (messagingWindowByName) {
+							messagingWindowByName.style.setProperty('z-index', '2147483647', 'important');
+						}
+						
+						const zendeskSelectors = [
+							'iframe[id*="webWidget"]',
+							'iframe[title*="Chat"]',
+							'iframe[title*="Help"]',
+							'iframe[title*="Zendesk"]',
+							'iframe[title*="Messaging"]',
+							'iframe[name*="Messaging"]',
+							'div[data-testid="launcher"]',
+							'div[data-testid="widget-container"]',
+							'div[data-testid="chat-widget"]',
+							'div[data-testid="messenger"]',
+							'#webWidget',
+							'#launcher',
+							'.zEWidget-launcher',
+							'.zEWidget-container',
+							'[data-embed="zendesk-chat"]',
+							'[id*="zendesk"]',
+							'[class*="zendesk"]',
+							'[class*="zEWidget"]'
+						];
+						
+						zendeskSelectors.forEach(selector => {
+							const elements = document.querySelectorAll(selector);
+							elements.forEach(element => {
+								if (element) {
+									element.style.setProperty('z-index', '2147483647', 'important');
+									
+									let parent = element.parentElement;
+									while (parent && parent !== document.body) {
+										parent.style.setProperty('z-index', '2147483647', 'important');
+										parent = parent.parentElement;
+									}
+								}
+							});
+						});
+						
+						const allIframes = document.querySelectorAll('iframe');
+						allIframes.forEach(iframe => {
+							const currentZIndex = window.getComputedStyle(iframe).zIndex;
+							const src = iframe.src || '';
+							const title = iframe.title || '';
+							const name = iframe.name || '';
+							
+							if (src.includes('zendesk') || src.includes('zdassets') || 
+								title.toLowerCase().includes('messaging') ||
+								title.toLowerCase().includes('chat') ||
+								name.toLowerCase().includes('messaging') ||
+								currentZIndex === '999999') {
+								iframe.style.setProperty('z-index', '2147483647', 'important');
+							}
+						});
+					};
+					
+					const iframe = document.querySelector('#launcher');
+					
+					if (iframe) {
+						setZendeskZIndex();
+						
+						const setupZIndex = () => {
+							try {
+								const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+								
+								if (iframeDocument && iframeDocument.readyState === 'complete') {
+									const iframeElement = iframeDocument.querySelector('.sc-1w3tvxe-0');
+									
+									if (iframeElement) {
+										iframeElement.style.setProperty('z-index', '2147483647', 'important');
+										
+										let parent = iframeElement.parentElement;
+										while (parent && parent !== iframeDocument.body) {
+											parent.style.setProperty('z-index', '2147483647', 'important');
+											parent = parent.parentElement;
+										}
+									} else {
+										setTimeout(setupZIndex, 200);
+									}
+								} else {
+									setTimeout(setupZIndex, 500);
+								}
+							} catch (error) {
+								console.warn('Cannot access iframe content for z-index setup:', error);
+							}
+						};
+
+						setupZIndex();
+						
+						const observer = new MutationObserver((mutations) => {
+							mutations.forEach((mutation) => {
+								if (mutation.addedNodes.length > 0) {
+									mutation.addedNodes.forEach((node) => {
+										if (node.nodeType === Node.ELEMENT_NODE) {
+											if (node.tagName === 'IFRAME' && 
+												(node.title === 'Messaging window' || 
+												node.name === 'Messaging window' ||
+												node.title?.includes('Messaging') ||
+												node.name?.includes('Messaging'))) {
+												node.style.setProperty('z-index', '2147483647', 'important');
+											}
+											
+											const zendeskIframes = node.querySelectorAll ? 
+												node.querySelectorAll('iframe[title*="Messaging"], iframe[name*="Messaging"], iframe[title*="Chat"]') : [];
+											zendeskIframes.forEach(iframe => {
+												iframe.style.setProperty('z-index', '2147483647', 'important');
+											});
+										}
+									});
+									
+									setTimeout(setZendeskZIndex, 100);
+								}
+							});
+						});
+						
+						observer.observe(document.body, {
+							childList: true,
+							subtree: true,
+							attributes: true,
+							attributeFilter: ['style', 'class', 'id']
+						});
+						
+						setInterval(setZendeskZIndex, 500);
+					}
+					
+				}, 1000);
+			};
+
 			document.body.appendChild(script);
 		}
 		
 		if (window.zE && typeof window.zE === 'function') {
 			window.zE('messenger', 'show');
+			
+			window.zE('messenger:on', 'open', () => {
+				setTimeout(() => {
+					const allZendeskElements = document.querySelectorAll('iframe[id*="webWidget"], iframe[title*="Chat"], iframe[title*="Help"], iframe[title*="Zendesk"], div[data-testid*="widget"], div[data-testid*="chat"], div[data-testid*="messenger"], [id*="zendesk"], [class*="zendesk"], [class*="zEWidget"]');
+					allZendeskElements.forEach(element => {
+						element.style.setProperty('z-index', '2147483647', 'important');
+						
+						let parent = element.parentElement;
+						while (parent && parent !== document.body) {
+							parent.style.setProperty('z-index', '2147483647', 'important');
+							parent = parent.parentElement;
+						}
+					});
+				}, 100);
+			});
+			
+			window.zE('messenger:on', 'close', () => {
+				setTimeout(() => {
+					const launcher = document.querySelector('#launcher');
+					if (launcher) {
+						launcher.style.setProperty('z-index', '2147483647', 'important');
+					}
+				}, 100);
+			});
 		}
 	}
 };

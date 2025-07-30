@@ -369,7 +369,7 @@ const openModal = async (callback) => {
 
 	if(modal){
 		modal.style.display = 'block';
-		modal.style.zIndex = '2147483647';
+		modal.style.zIndex = '214748364';
 	}
 	
 	document.body.classList.add('modal-active');

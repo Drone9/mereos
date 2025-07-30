@@ -183,7 +183,6 @@ export const MobileProctoring = async (tabContent) => {
 			renderUI(); 
 			if (newStep === 'step4') {
 				if(!window.mereos.mobileProctoring){
-					logger.success('in the if condition');
 					registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
 					updatePersistData('preChecksSteps', { mobileConnection: true });
 					showTab('IdentityVerificationScreenFive');
@@ -203,7 +202,6 @@ export const MobileProctoring = async (tabContent) => {
 						remoteVideoRef.remove();
 					}
 				}else{
-					logger.success('in the else condition');
 					const session = convertDataIntoParse('session');
 					
 					isApiLoading = true;
@@ -229,6 +227,7 @@ export const MobileProctoring = async (tabContent) => {
 						}		
 						connectSocketConnection();		
 						closeModal();
+						registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_phone_reconnected', eventValue: getDateTime() });
 						if(window.mereos.startRecordingCallBack){
 							window.mereos.startRecordingCallBack({ 
 								type:'success',

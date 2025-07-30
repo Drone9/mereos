@@ -1042,5 +1042,9 @@
   "signaling_connection_reconnected": "Cysylltiad wedi'i adfer.",
   "internet_connection_recovered": "Rydych chi'n ôl ar-lein.",
   "reconnecting_signaling_connection": "Yn ceisio ailgysylltu...",
-  "internet_connection_lost": "Rydych chi all-lein. Gwiriwch eich cysylltiad rhyngrwyd."
+  "internet_connection_lost": "Rydych chi all-lein. Gwiriwch eich cysylltiad rhyngrwyd.",
+	"select_preferred_microphone": "Dewiswch eich meicroffon dewisol",
+  "select_preferred_camera": "Dewiswch eich camera dewisol",
+  "enable_microphone_permissions": "Galluogwch ganiatâd meicroffon i barhau",
+  "enable_camera_permissions": "Galluogwch ganiatâd camera i barhau"
 }

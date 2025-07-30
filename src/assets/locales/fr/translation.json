@@ -1042,5 +1042,9 @@
   "signaling_connection_reconnected": "Connexion rétablie.",
   "internet_connection_recovered": "Vous êtes de nouveau en ligne.",
   "reconnecting_signaling_connection": "Tentative de reconnexion...",
-  "internet_connection_lost": "Vous êtes hors ligne. Vérifiez votre connexion Internet."
+  "internet_connection_lost": "Vous êtes hors ligne. Vérifiez votre connexion Internet.",
+	"select_preferred_microphone": "Veuillez sélectionner votre microphone préféré",
+  "select_preferred_camera": "Veuillez sélectionner votre caméra préférée",
+  "enable_microphone_permissions": "Veuillez activer les permissions du microphone pour continuer",
+  "enable_camera_permissions": "Veuillez activer les permissions de la caméra pour continuer"
 }

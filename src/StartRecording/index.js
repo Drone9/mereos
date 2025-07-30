@@ -431,13 +431,21 @@ const reconnectCamera = async () => {
 			
 			cameraRecordings.push(newVideoTrackPublication.trackSid);
 			
-			if (secureFeatures?.entities?.filter(entity => aiEventsFeatures?.includes(entity.key))?.length) {
-				await startAIWebcam(room, mediaStream);
-			} else {
-				await setupWebcam(mediaStream);
+			await new Promise(resolve => setTimeout(resolve, 100));
+			
+			const localVideoTrack = Array.from(room.localParticipant.videoTracks.values())
+				.find(publication => publication.trackSid === newVideoTrackPublication.trackSid)?.track;
+			
+			if (localVideoTrack) {
+				const twilioStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
+				
+				if (secureFeatures?.entities?.filter(entity => aiEventsFeatures?.includes(entity.key))?.length) {
+					await startAIWebcam(room, twilioStream);
+				} else {
+					await setupWebcam(twilioStream);
+				}
 			}
 			
-			// Set up stopped listener for the new video track
 			setupTrackStoppedListeners(twilioVideoTrack, 'video');
 			console.log('Video track reconnected with stopped listener');
 		}
@@ -448,7 +456,6 @@ const reconnectCamera = async () => {
 			
 			audioRecordings.push(newAudioTrackPublication.trackSid);
 			
-			// Set up stopped listener for the new audio track
 			setupTrackStoppedListeners(twilioAudioTrack, 'audio');
 			console.log('Audio track reconnected with stopped listener');
 		}
@@ -624,13 +631,31 @@ export const startRecording = async () => {
 			}
 			
 			if(secureFeatures?.entities?.find(entity => entity.key === 'record_video')){
-				mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+				await new Promise((resolve) => {
+					if (room.localParticipant.videoTracks.size > 0) {
+						resolve();
+					} else {
+						const checkTracks = () => {
+							if (room.localParticipant.videoTracks.size > 0) {
+								room.localParticipant.off('trackPublished', checkTracks);
+								resolve();
+							}
+						};
+						room.localParticipant.on('trackPublished', checkTracks);
+					}
+				});
 
-				if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
-					await startAIWebcam(room, mediaStream);
-				}else{
-					await setupWebcam(mediaStream);
-				}
+				const localVideoTrack = Array.from(room.localParticipant.videoTracks.values())[0]?.track;
+				
+				if (localVideoTrack) {
+					const twilioStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
+					
+					if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
+						await startAIWebcam(room, twilioStream);
+					} else {
+						await setupWebcam(twilioStream);
+					}
+				} 
 
 				cameraRecordings = [
 					...session.user_video_name,
@@ -807,7 +832,7 @@ export const startRecording = async () => {
 			if(window.mereos.startRecordingCallBack){
 				window.mereos.startRecordingCallBack({ 
 					type:'success',
-					message: error.message.includes('Permission') ? 'please_allow_camera_or_microphone_permission' : error.message,
+					message: 'please_allow_camera_or_microphone_permission',
 					code:50000
 				});
 			}

@@ -10,6 +10,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	let audioContext;
 	let analyserNode;
 	let disabledBtn = false;
+	let recordingTimer = null;
+	let isRecordingActive = false;
 	let msg = {
 		type: '',
 		text: 'be_loud_clear'
@@ -21,71 +23,105 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 
 	let animationFrameId = null;
 
-	const drawAudioSpikes = async () => {
+	const initializeAudioContext = async () => {
 		try {
-			stopRecording(); 
 			const audioPermission = await navigator.permissions.query({ name: 'microphone' });
 			if (audioPermission.state === 'granted') {
-				window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+				if (!window.mereos.globalStream) {
+					window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+				}
 
-				audioContext = new AudioContext();
-				analyserNode = audioContext.createAnalyser();
-				analyserNode.fftSize = 2048;
-				const mediaStreamSource = audioContext.createMediaStreamSource(window.mereos.globalStream);
-				mediaStreamSource.connect(analyserNode);
-
-				const canvas = canvasRef || window.mereos.shadowRoot.getElementById('audio-wavesform-canvas');
-				const canvasCtx = canvas?.getContext('2d');
-
-				const drawOnCanvas = () => {
-					if (!animationFrameId) { 
-						animationFrameId = requestAnimationFrame(() => {
-							const bufferLength = analyserNode.frequencyBinCount;
-							const frequencyData = new Uint8Array(bufferLength);
-							analyserNode.getByteFrequencyData(frequencyData);
-			
-							canvasCtx?.clearRect(0, 0, canvas.width, canvas.height);
-							canvasCtx.fillStyle = schoolTheme?.theming || '#FF961B';
-							const barWidth = (canvas.width / bufferLength) * 8.5;
-							let barHeight;
-							let x = 0;
-	
-							for (let i = 0; i < bufferLength; i++) {
-								barHeight = frequencyData[i] / 2;
-								canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-								x += barWidth + 1;
-							}
-	
-							animationFrameId = null;
-							drawOnCanvas(); 
-						});
-					}
-				};
-			
-				drawOnCanvas();
+				if (!audioContext || audioContext.state === 'closed') {
+					audioContext = new AudioContext();
+					analyserNode = audioContext.createAnalyser();
+					analyserNode.fftSize = 2048;
+					const mediaStreamSource = audioContext.createMediaStreamSource(window.mereos.globalStream);
+					mediaStreamSource.connect(analyserNode);
+				}
+				return true;
 			} else {
 				throw audioPermission.state;
 			}
 		} catch (error) {
 			logger.error('no_mircophone_detected:', error);
+			return false;
 		}
 	};
 
-	const startRecording = () => {
-		if (!animationFrameId) {
-			drawAudioSpikes();
+	const drawAudioSpikes = async () => {
+		if (!(await initializeAudioContext())) {
+			return;
 		}
 
-		msg.type = ''; 
-		msg.text = 'recording'; 
+		const canvas = canvasRef || window.mereos.shadowRoot.getElementById('audio-wavesform-canvas');
+		if (!canvas) return;
+		
+		const canvasCtx = canvas.getContext('2d');
+		if (!canvasCtx) return;
+
+		const drawOnCanvas = () => {
+			if (!analyserNode) return;
+			
+			const bufferLength = analyserNode.frequencyBinCount;
+			const frequencyData = new Uint8Array(bufferLength);
+			analyserNode.getByteFrequencyData(frequencyData);
+
+			canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+			canvasCtx.fillStyle = schoolTheme?.theming || '#FF961B';
+			const barWidth = (canvas.width / bufferLength) * 8.5;
+			let barHeight;
+			let x = 0;
+
+			for (let i = 0; i < bufferLength; i++) {
+				barHeight = frequencyData[i] / 2;
+				canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+				x += barWidth + 1;
+			}
+
+			if (!animationFrameId) {
+				animationFrameId = requestAnimationFrame(() => {
+					animationFrameId = null;
+					drawOnCanvas();
+				});
+			}
+		};
+
+		drawOnCanvas();
+	};
+
+	const startRecording = async () => {
+		if (isRecordingActive) return;
+
+		if (recordingTimer) {
+			clearInterval(recordingTimer);
+			recordingTimer = null;
+		}
+
+		if (!(await initializeAudioContext())) {
+			msg.type = 'unsuccessful';
+			msg.text = 'audio_test_failed';
+			updateUIText();
+			return;
+		}
+
+		isRecordingActive = true;
+		msg.type = '';
+		msg.text = 'recording';
 		disabledBtn = true;
-		updateUI();
+		updateUIText();
+		updateButtons();
+
+		drawAudioSpikes();
 
 		let counter = 0;
-		const timer = setInterval(() => {
+		recordingTimer = setInterval(() => {
 			try {
 				counter += 1;
 				const profileSettings = getSecureFeature?.settings || [];
+
+				if (!analyserNode) {
+					throw 'analyser_not_available';
+				}
 
 				const bufferLength = analyserNode.frequencyBinCount;
 				const frequencyData = new Uint8Array(bufferLength);
@@ -97,39 +133,53 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				}
 				const rms = Math.sqrt(sumSquares / bufferLength);
 				const requiredLevel = profileSettings?.audio_level || 0.15;
+				
 				if (rms > requiredLevel) {
-					clearInterval(timer);
+					clearInterval(recordingTimer);
+					recordingTimer = null;
+					isRecordingActive = false;
 					disabledBtn = false;
 					msg.type = 'successful';
-					msg.text = 'audio_test_passed'; 
-					updateUI();
+					msg.text = 'audio_test_passed';
+					updateUIText();
+					updateButtons();
 				} else if (counter >= 15) {
-					throw 'error';
+					throw 'timeout';
 				}
 			} catch (err) {
-				clearInterval(timer);
+				clearInterval(recordingTimer);
+				recordingTimer = null;
+				isRecordingActive = false;
 				disabledBtn = false;
 				msg.type = 'unsuccessful';
 				msg.text = 'audio_test_failed';
-				updateUI();
+				updateUIText();
+				updateButtons();
 			}
 		}, 1000);
 	};
 
 	const stopRecording = () => {
+		if (recordingTimer) {
+			clearInterval(recordingTimer);
+			recordingTimer = null;
+		}
+		
 		if (animationFrameId) {
 			cancelAnimationFrame(animationFrameId);
 			animationFrameId = null;
 		}
+		
+		isRecordingActive = false;
+		
 		if (window.mereos.globalStream) {
 			window.mereos.globalStream.getTracks().forEach(track => track.stop());
+			window.mereos.globalStream = null;
 		}
 	};
 
 	const nextStep = async () => {
-		if (window.mereos.globalStream) {
-			window.mereos.globalStream.getAudioTracks().forEach(track => track.stop());
-		}
+		stopRecording();
 		cleanup();
 		updatePersistData('preChecksSteps', { audioDetection: true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'audio_check_completed', eventValue: getDateTime() });
@@ -137,13 +187,14 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 	};
 
 	const prevStep = () => {
+		stopRecording();
 		cleanup();
 		updatePersistData('preChecksSteps', { audioDetection: false });
-	
+
 		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
 		const currentIndex = navHistory.indexOf('IdentityVerificationScreenThree');
 		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
-	
+
 		if (previousPage === 'Prevalidationinstruction') {
 			updatePersistData('preChecksSteps', { preValidation: false });
 		} else if (previousPage === 'IdentityVerificationScreenTwo') {
@@ -151,10 +202,76 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		} else if (previousPage === 'IdentityVerificationScreenOne') {
 			updatePersistData('preChecksSteps', { userPhoto: false });
 		}
-	
+
 		showTab(previousPage);
 	};
-	
+
+	const updateUIText = () => {
+		const wrapper = tabContent.querySelector('.ivst-wrapper');
+		if (!wrapper) return;
+
+		const headerTitle = wrapper.querySelector('.ivst-header-title');
+		if (headerTitle) {
+			headerTitle.textContent = i18next.t('audio_check');
+		}
+
+		const audioText = wrapper.querySelector('.ivst-audio-text');
+		if (audioText) {
+			audioText.textContent = i18next.t('no_point_in_running_leave_in_time');
+		}
+
+		const messageElement = wrapper.querySelector('.audio-test-msg');
+		if (messageElement) {
+			messageElement.textContent = i18next.t(msg.text);
+			messageElement.style.color = msg.type === 'unsuccessful' ? '#E95E5E' : '';
+		}
+	};
+
+	const updateButtons = () => {
+		const wrapper = tabContent.querySelector('.ivst-wrapper');
+		if (!wrapper) return;
+
+		const btnContainer = wrapper.querySelector('.ivst-btn-container');
+		if (!btnContainer) return;
+
+		btnContainer.innerHTML = '';
+
+		if (msg.type === '' || isRecordingActive) {
+			btnContainer.insertAdjacentHTML('beforeend', `
+				<button class="orange-hollow-btn" ${disabledBtn ? 'disabled' : ''}>${i18next.t('previous_step')}</button>
+				<button class="orange-filled-btn" ${disabledBtn ? 'disabled' : ''}>${isRecordingActive ? i18next.t('recording') : i18next.t('record_audio')}</button>
+			`);
+
+			if (!isRecordingActive) {
+				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
+				btnContainer.querySelector('.orange-filled-btn').addEventListener('click', startRecording);
+			}
+		} else if (msg.type === 'unsuccessful') {
+			const prevStepsEntities = ['verify_candidate', 'verify_id'];
+			const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
+
+			if (showPrevButton) {
+				btnContainer.insertAdjacentHTML('beforeend', `
+					<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
+				`);
+				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
+			}
+
+			btnContainer.insertAdjacentHTML('beforeend', `
+				<button class="orange-filled-btn">${i18next.t('re_record_audio')}</button>
+			`);
+			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', startRecording);
+		} else {
+			btnContainer.insertAdjacentHTML('beforeend', `
+				<button class="orange-hollow-btn">${i18next.t('re_record_audio')}</button>
+				<button class="orange-filled-btn">${i18next.t('done')}</button>
+			`);
+
+			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', startRecording);
+			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', nextStep);
+		}
+	};
+
 	const updateUI = () => {
 		let container = tabContent.querySelector('.ivst-container');
 		if (!container) {
@@ -166,7 +283,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 
 		const stepsContainer = document.createElement('div');
 		renderIdentityVerificationSteps(stepsContainer, 3);
-		
+
 		let wrapper = container.querySelector('.ivst-wrapper');
 		if (!wrapper) {
 			container.insertAdjacentHTML('beforeend', `
@@ -179,95 +296,51 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 					<div class="ivst-btn-container"></div>
 				</div>
 			`);
-			
+
 			wrapper = container.querySelector('.ivst-wrapper');
 			const stepsContainerElement = wrapper.querySelector('.ivst-steps-container');
 			stepsContainerElement.appendChild(stepsContainer);
-			
+
 			canvasRef = window.mereos.shadowRoot.getElementById('audio-wavesform-canvas');
 		} else {
-			const headerTitle = wrapper.querySelector('.ivst-header-title');
-			if (headerTitle) {
-				headerTitle.textContent = i18next.t('audio_check');
-			}
-			
-			const audioText = wrapper.querySelector('.ivst-audio-text');
-			if (audioText) {
-				audioText.textContent = i18next.t('no_point_in_running_leave_in_time');
-			}
-			
-			const messageElement = wrapper.querySelector('.audio-test-msg');
-			if (messageElement) {
-				messageElement.textContent = i18next.t(msg.text);
-				messageElement.style.color = msg.type === 'unsuccessful' ? '#E95E5E' : '';
-			}
-			
 			const stepsContainerElement = wrapper.querySelector('.ivst-steps-container');
 			stepsContainerElement.innerHTML = '';
 			stepsContainerElement.appendChild(stepsContainer);
 		}
-		
-		const btnContainer = wrapper.querySelector('.ivst-btn-container');
-		btnContainer.innerHTML = ''; // Clear existing buttons
-		
-		if (msg.type === '') {
-			btnContainer.insertAdjacentHTML('beforeend', `
-				<button class="orange-hollow-btn" ${disabledBtn ? 'disabled' : ''}>${i18next.t('previous_step')}</button>
-				<button class="orange-filled-btn" ${disabledBtn ? 'disabled' : ''}>${i18next.t('record_audio')}</button>
-			`);
-			
-			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
-			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', startRecording);
-		} else if (msg.type === 'unsuccessful') {
-			const prevStepsEntities = ['verify_candidate', 'verify_id'];
-			const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
-			
-			if (showPrevButton) {
-				btnContainer.insertAdjacentHTML('beforeend', `
-					<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
-				`);
-				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
-			}
-			
-			btnContainer.insertAdjacentHTML('beforeend', `
-				<button class="orange-filled-btn">${i18next.t('re_record_audio')}</button>
-			`);
-			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', startRecording);
-		} else {
-			btnContainer.insertAdjacentHTML('beforeend', `
-				<button class="orange-hollow-btn">${i18next.t('re_record_audio')}</button>
-				<button class="orange-filled-btn">${i18next.t('done')}</button>
-			`);
-			
-			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', startRecording);
-			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', nextStep);
-		}
 
-		if (canvasRef) {
+		updateUIText();
+		updateButtons();
+
+		if (canvasRef && !isRecordingActive) {
 			drawAudioSpikes();
 		}
 	};
 
 	updateUI();
-	drawAudioSpikes();
 
 	i18next.on('languageChanged', () => {
-		const msgElement = window.mereos.shadowRoot.getElementById('audio-test-msg');
-		if (msgElement && msg.text) {
-			msgElement.textContent = i18next.t(msg.text);
-		}
-		updateUI();
+		updateUIText();
+		updateButtons();
 	});
 
 	const cleanup = () => {
+		if (recordingTimer) {
+			clearInterval(recordingTimer);
+			recordingTimer = null;
+		}
+		
 		if (window.mereos.globalStream) {
-			window.mereos.globalStream.getTracks().forEach(track => track.stop()); 
+			window.mereos.globalStream.getTracks().forEach(track => track.stop());
+			window.mereos.globalStream = null;
 		}
-		if (audioContext) {
-			audioContext.close(); 
+		
+		if (audioContext && audioContext.state !== 'closed') {
+			audioContext.close();
 		}
+		
 		if (animationFrameId) {
 			cancelAnimationFrame(animationFrameId);
+			animationFrameId = null;
 		}
 
 		if (canvasRef) {
@@ -276,6 +349,8 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				canvasCtx.clearRect(0, 0, canvasRef.width, canvasRef.height);
 			}
 		}
+		
+		isRecordingActive = false;
 	};
 
 	return {

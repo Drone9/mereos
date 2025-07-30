@@ -329,15 +329,21 @@ export const PrevalidationInstructions = async (tabContent) => {
 			}
 		};
 
-		const handleLanguageChange = () => {
-			window.mereos.shadowRoot.querySelector('.pvi-header-title').textContent = i18next.t('system_diagnostics');
-			window.mereos.shadowRoot.querySelector('.pvi-msg').textContent = i18next.t('initial_system_check_passed');
-					
+		const handleLanguageChange = async () => {    
+			const streamExists = window.mereos.globalStream;
+			const streamActive = streamExists && window.mereos.globalStream.active;
+    
+			const headerTitle = window.mereos.shadowRoot.querySelector('.pvi-header-title');
+			const msg = window.mereos.shadowRoot.querySelector('.pvi-msg');
+    
+			if (headerTitle) headerTitle.textContent = i18next.t('system_diagnostics');
+			if (msg) msg.textContent = i18next.t('initial_system_check_passed');
+    
 			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
 			if (continueButton) {
 				continueButton.textContent = i18next.t('continue');
 			}
-					
+    
 			const instructionTexts = window.mereos.shadowRoot.querySelectorAll('.pvi-instruction-txt');
 			instructionTexts.forEach((element, index) => {
 				if (index < iconData.length) {
@@ -345,7 +351,57 @@ export const PrevalidationInstructions = async (tabContent) => {
 				}
 			});
 
-			updateContinueButton();
+			const messageElement = window.mereos.shadowRoot.getElementById('message');
+			if (messageElement) {
+				if (permissionDenied) {
+					let permissionMessage = '';
+					if (isAudioEnabled && shouldShowVideo) {
+						permissionMessage = i18next.t('enable_camera_microphone_permissions');
+					} else if (isAudioEnabled) {
+						permissionMessage = i18next.t('enable_microphone_permissions');
+					} else if (shouldShowVideo) {
+						permissionMessage = i18next.t('enable_camera_permissions');
+					}
+					messageElement.textContent = permissionMessage;
+				} else {
+					let selectMessage = '';
+					if (isAudioEnabled && shouldShowVideo) {
+						selectMessage = i18next.t('select_preferred_camera_and_microphone');
+					} else if (isAudioEnabled) {
+						selectMessage = i18next.t('select_preferred_microphone');
+					} else if (shouldShowVideo) {
+						selectMessage = i18next.t('select_preferred_camera');
+					}
+					messageElement.textContent = selectMessage;
+				}
+			}
+    
+			if (shouldShowVideo) {
+				if (!streamExists || !streamActive) {
+					if (window.mereos.globalStream) {
+						window.mereos.globalStream = null;
+					}
+					await startWebcam();
+				} else {
+					const videoElementAfter = window.mereos.shadowRoot.getElementById('myVideo');
+					const videoContainerAfter = window.mereos.shadowRoot.getElementById('videoContainer');
+            
+					if (videoElementAfter && !videoElementAfter.srcObject) {
+						videoElementAfter.srcObject = window.mereos.globalStream;
+					}
+            
+					if (videoContainerAfter) {
+						videoContainerAfter.style.display = '';
+						videoContainerAfter.style.visibility = 'visible';
+					}
+            
+					const videoMainContainer = window.mereos.shadowRoot.getElementById('videoMainContainer');
+					if (videoMainContainer) {
+						videoMainContainer.style.display = '';
+						videoMainContainer.style.visibility = 'visible';
+					}
+				}
+			}
 		};
 
 		const init = async () => {

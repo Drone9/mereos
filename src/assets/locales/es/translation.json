@@ -1042,5 +1042,9 @@
   "signaling_connection_reconnected": "Conexión restaurada.",
   "internet_connection_recovered": "Has vuelto a estar en línea.",
   "reconnecting_signaling_connection": "Intentando reconectar...",
-  "internet_connection_lost": "Estás sin conexión. Verifica tu conexión a internet."
+  "internet_connection_lost": "Estás sin conexión. Verifica tu conexión a internet.",
+	"select_preferred_microphone": "Por favor, seleccione su micrófono preferido",
+  "select_preferred_camera": "Por favor, seleccione su cámara preferida",
+  "enable_microphone_permissions": "Por favor, active los permisos del micrófono para continuar",
+  "enable_camera_permissions": "Por favor, active los permisos de la cámara para continuar"
 }

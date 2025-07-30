@@ -1048,5 +1048,10 @@
   "enable_microphone_permissions": "Bitte aktivieren Sie die Mikrofonberechtigungen, um fortzufahren",
   "enable_camera_permissions": "Bitte aktivieren Sie die Kameraberechtigungen, um fortzufahren",
 	 "check_camera_mic": "Geräte prüfen",
-  "checking_media_compatibility": "Geräte werden vor dem Fortfahren geprüft. Vielen Dank für Ihre Geduld."
+  "checking_media_compatibility": "Geräte werden vor dem Fortfahren geprüft. Vielen Dank für Ihre Geduld.",
+	 "media_check_success": "Ihre bevorzugten Geräte wurden überprüft. Bitte fahren Sie fort.",
+  "media_check_audio_failed": "Audioeingang nicht erkannt. Bitte überprüfen Sie Ihr Mikrofon.",
+  "media_check_video_failed": "Videoeingang nicht erkannt. Bitte überprüfen Sie Ihre Kamera.",
+  "media_check_both_failed": "Bitte überprüfen Sie Ihre Geräte.",
+  "media_check_exception": "Geräteüberprüfung fehlgeschlagen. Bitte versuchen Sie es erneut."
 }

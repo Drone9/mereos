@@ -128,7 +128,6 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 				code: 50004,
 				details: logonResp.data,
 			});
-			return logonResp.data;
 		}
 	} catch (error) {
 		return callback({

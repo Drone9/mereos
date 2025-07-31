@@ -104,16 +104,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		const nextStep = () => {
 			if (window.mereos.globalStream) {
-				// In PrevalidationInstructions nextStep function, instead of:
 					window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
-
-					// Use this to keep audio tracks alive:
-					window.mereos.globalStream?.getVideoTracks()?.forEach(track => track.stop());
-					// Keep audio tracks for the next screen:
-					const audioTracks = window.mereos.globalStream?.getAudioTracks() || [];
-					if (audioTracks.length > 0) {
-						window.mereos.audioStream = new MediaStream(audioTracks);
-					}
 			}
 			registerEvent({ eventType: 'success', notify: false, eventName: 'prevalidation_passed' });
 			updatePersistData('preChecksSteps', { preValidation: true });
@@ -343,7 +334,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 			updateContinueButton();
 		};
-            
+           
 		const startWebcam = async () => {
 			try {
 				const videoContainer = window.mereos.shadowRoot.getElementById('videoContainer');
@@ -373,6 +364,24 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 				if (shouldShowVideo || isAudioEnabled) {
 					window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+					const tracks = window.mereos.globalStream.getTracks();
+		
+					tracks.forEach(track => {
+						track.addEventListener('ended', () => {
+							logger.warn(`${track.kind} track ended - permission may have been revoked`);
+							permissionDenied = true;
+							const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
+							if (checkButton) {
+								checkButton.disabled = true;
+							}
+							const messageElement = window.mereos.shadowRoot.getElementById('message');
+							if(messageElement){
+								messageElement.textContent = i18next.t('enable_camera_permissions');
+							}
+							updateUI();	
+						});
+					});
+					
 				}
 
 				if (shouldShowVideo && videoContainer) {
@@ -402,7 +411,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 					logger.error('Other webcam error:', error.message);
 					permissionDenied = true;
 				}
-                
+				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
+				if (checkButton) {
+					checkButton.disabled = true;
+				}
 				updateUI();
 			}
 		};

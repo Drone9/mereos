@@ -166,7 +166,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
 				if (checkButton) {
 					checkButton.disabled = true;
-					checkButton.textContent = i18next.t('checking_media_compatibility');
 				}
 
 				const messageElement = window.mereos.shadowRoot.getElementById('message');

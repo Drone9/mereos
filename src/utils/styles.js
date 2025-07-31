@@ -1195,6 +1195,7 @@ export const preValidationCss = `.pvi-container {
   margin: 9px auto 0px;
   cursor: pointer;
   margin-bottom:10px;
+  color: #8D979F;
 }
 
 .pvi-btn-container {

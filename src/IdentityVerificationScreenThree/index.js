@@ -27,17 +27,13 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		try {
 			const audioPermission = await navigator.permissions.query({ name: 'microphone' });
 			if (audioPermission.state === 'granted') {
-				if (!window.mereos.globalStream) {
-					window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-				}
+				window.mereos.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
 
-				if (!audioContext || audioContext.state === 'closed') {
-					audioContext = new AudioContext();
-					analyserNode = audioContext.createAnalyser();
-					analyserNode.fftSize = 2048;
-					const mediaStreamSource = audioContext.createMediaStreamSource(window.mereos.globalStream);
-					mediaStreamSource.connect(analyserNode);
-				}
+				audioContext = new AudioContext();
+				analyserNode = audioContext.createAnalyser();
+				analyserNode.fftSize = 2048;
+				const mediaStreamSource = audioContext.createMediaStreamSource(window.mereos.audioStream);
+				mediaStreamSource.connect(analyserNode);
 				return true;
 			} else {
 				throw audioPermission.state;
@@ -172,9 +168,9 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		
 		isRecordingActive = false;
 		
-		if (window.mereos.globalStream) {
-			window.mereos.globalStream.getTracks().forEach(track => track.stop());
-			window.mereos.globalStream = null;
+		if (window.mereos.audioStream) {
+			window.mereos.audioStream.getTracks().forEach(track => track.stop());
+			window.mereos.audioStream = null;
 		}
 	};
 
@@ -330,9 +326,9 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			recordingTimer = null;
 		}
 		
-		if (window.mereos.globalStream) {
-			window.mereos.globalStream.getTracks().forEach(track => track.stop());
-			window.mereos.globalStream = null;
+		if (window.mereos.audioStream) {
+			window.mereos.audioStream.getTracks().forEach(track => track.stop());
+			window.mereos.audioStream = null;
 		}
 		
 		if (audioContext && audioContext.state !== 'closed') {

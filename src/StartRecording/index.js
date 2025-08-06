@@ -1452,6 +1452,7 @@ export function VideoChat(room) {
 
 export const stopAllRecordings = async () => {
 	try {
+		const dateTime = new Date();
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
 
@@ -1578,7 +1579,6 @@ export const stopAllRecordings = async () => {
 			unlockBrowserFromContent();
 		}
 		
-		const dateTime = new Date();
 		await changeCandidateAssessmentStatus({
 			status: session?.sessionStatus === 'Terminated'? 'Terminated':'Completed',
 			id: session?.candidate_assessment

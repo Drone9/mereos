@@ -12,8 +12,8 @@ import { getRoomSid, getToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
-import { initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, logger, updatePersistData } from './src/utils/functions';
+import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
+import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, logger, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
@@ -24,6 +24,29 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 	try {
 		localStorage.clear();
 		let logonResp;
+
+		const checkMobile = isMobileDevice();
+		if(checkMobile === 'mobile'){
+			return callback({
+				type: 'error',
+				message: 'mobile_devices_are_not_supported_use_desktop',
+				code: 40024,
+			});
+		}
+		const info = detectBrowser();
+		let detectedBrowser = { ...info };	
+
+		if (detectedBrowser?.browser.toLowerCase() === 'chrome' || detectedBrowser?.browser.toLowerCase() === 'edge' || detectedBrowser?.browser.toLowerCase() === 'firefox') {
+			if (detectedBrowser.version && browserMinVersions[detectedBrowser.browser] && detectedBrowser.version < browserMinVersions[detectedBrowser.browser]) {
+				return callback({
+					type: 'error',
+					message: 'your_browser_version_is_not_compatible',
+					code: 40025,
+					details:detectedBrowser
+				});
+			}
+		}
+
 		try {
 			logonResp = await logonSchool(credentials);
 		} catch (error) {

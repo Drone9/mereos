@@ -1668,3 +1668,45 @@ export const handleBackendError = (t, error) => {
 	return { type: 'error', message };
 };
 
+export const detectBrowser = () => {
+	const userAgent = navigator.userAgent.toLowerCase();
+	let browserInfo = { browser: 'Unknown', version: null };
+
+	if (/opr|opera/.test(userAgent)) {
+		browserInfo.browser = 'Opera';
+		browserInfo.version = userAgent.match(/(?:opr|opera)[/\s](\d+)/)?.[1] || null;
+	} else if (/edg/.test(userAgent)) {
+		browserInfo.browser = 'Edge';
+		browserInfo.version = userAgent.match(/edg\/(\d+)/)?.[1] || null;
+	} else if (/firefox/.test(userAgent)) {
+		browserInfo.browser = 'Firefox';
+		browserInfo.version = userAgent.match(/firefox\/(\d+)/)?.[1] || null;
+	} else if (/ucbrowser/.test(userAgent)) {
+		browserInfo.browser = 'UC Browser';
+		browserInfo.version = userAgent.match(/ucbrowser\/(\d+)/)?.[1] || null;
+	} else if (/safari/.test(userAgent) && !/chrome/.test(userAgent) && !/edg/.test(userAgent)) {
+		browserInfo.browser = 'Safari';
+		browserInfo.version = userAgent.match(/version\/(\d+)/)?.[1] || null;
+	} else if (/chrome/.test(userAgent) && !/edg/.test(userAgent) && !/opr/.test(userAgent)) {
+		browserInfo.browser = 'Chrome';
+		browserInfo.version = userAgent.match(/chrome\/(\d+)/)?.[1] || null;
+
+		if (navigator.userAgentData?.brands) {
+			const isBrave = navigator.userAgentData.brands.some((brand) =>
+				brand.brand.toLowerCase().includes('brave')
+			);
+			if (isBrave) {
+				browserInfo.browser = 'Brave';
+			}
+		}
+	}
+
+	return browserInfo;
+};
+
+export const isMobileDevice = () => {
+	const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+	return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase())
+		? 'mobile'
+		: 'desktop';
+};

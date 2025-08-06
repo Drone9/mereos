@@ -65,6 +65,12 @@ export const preChecksSteps = {
 	mobileConnection:false,
 };
 
+export const browserMinVersions = {
+	Chrome: 74,
+	Edge: 79,
+	Firefox: 64,
+};
+
 export const recordingEvents = ['record_screen','record_audio','record_video','mobile_proctoring'];
    
 export const LockDownOptions = [

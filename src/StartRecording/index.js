@@ -1152,15 +1152,18 @@ const startAIWebcam = async (room, mediaStream) => {
 					}
 					else if (activeViolations[key]) {
 						const violation = activeViolations[key];
-						const data = { 
-							eventType: 'success', 
-							notify: true, 
-							eventName: key, 
-							startTime: violation.start_time, 
-							endTime: violation.start_time + violation.time_span
-						};
-            
-						registerAIEvent(data);
+						
+						if (violation.time_span >= 2) {
+							const data = { 
+								eventType: 'success', 
+								notify: true, 
+								eventName: key, 
+								startTime: violation.start_time, 
+								endTime: violation.start_time + violation.time_span
+							};
+				
+							registerAIEvent(data);
+						}
             
 						activeViolations[key] = null;
 					}
@@ -1544,7 +1547,9 @@ export const stopAllRecordings = async () => {
 			window.mereos.roomInstance.participants.forEach(participant => {
 				participant.removeAllListeners();
 			});
-
+			if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
+				registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
+			}
 			window.mereos.roomInstance.removeAllListeners();
 			window.mereos.roomInstance.disconnect();
 			window.mereos.roomInstance = null;
@@ -1578,10 +1583,6 @@ export const stopAllRecordings = async () => {
 			status: session?.sessionStatus === 'Terminated'? 'Terminated':'Completed',
 			id: session?.candidate_assessment
 		});
-
-		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
-			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
-		}
 
 		registerEvent({ eventType: 'success', notify: false, eventName: session?.sessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed', startAt: dateTime });
 		

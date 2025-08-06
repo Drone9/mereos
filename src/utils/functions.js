@@ -130,21 +130,30 @@ export const resetSessionData = () => {
 	}
 };
 
-export const checkForceClosureViolation = () =>{
+export const checkForceClosureViolation = async () =>{
 	const session = convertDataIntoParse('session');
 	if (!session || !session.browserEvents) {
 		return;
 	}
-	const { browserEvents } = session;
+	const { browserEvents,aiEvents,incident_level } = session;
 	const secureFeatures = getSecureFeatures();
 
-	const incidentLevel = forceClosureIncident(
+	const forceClosureIncident = forceClosureIncident(
 		browserEvents,
 		secureFeatures
 	);
-		
+	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+	let incidentLevel = findIncidentLevel(
+		aiEvents,
+		browserEvents, 
+		secureFeatures);
+	if((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high'){
+		await addSectionSessionRecord(session,candidateInviteAssessmentSection);
+		updatePersistData('session', { incident_level: incidentLevel });
+	}
+
 	if (
-		incidentLevel === 'high' &&
+		forceClosureIncident === 'high' &&
 		findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0
 	) {
 		window.mereos.forceClosureTriggered = true;
@@ -281,7 +290,8 @@ export const registerEvent = async ({ eventName,eventValue }) => {
 			};
 
 			updatePersistData('session', { browserEvents:[...browserEvents, event] });
-			return createEvent(event);
+
+			await createEvent(event);
 		}
 	} catch (error) {
 		logger.error('Error in register event', error);
@@ -691,8 +701,9 @@ export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 		if (!session || !session.aiEvents) {
 			return;
 		}
-
-		const { aiEvents } = session;
+		const secureFeatures = getSecureFeatures();
+		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+		const { aiEvents,browserEvents,incident_level } = session;
 		const event = {
 			name: eventName,
 			start_at: startTime,
@@ -704,6 +715,14 @@ export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 
 		updatePersistData('session', { aiEvents:[...aiEvents, event] });
 		await createAiEvent(event);
+		let incidentLevel = findIncidentLevel(
+			aiEvents,
+			browserEvents, 
+			secureFeatures);
+		if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {
+			await addSectionSessionRecord(session,candidateInviteAssessmentSection);
+			updatePersistData('session', { incident_level: incidentLevel });
+		}
 	}catch(e){
 		logger.error('Error in register ai event',e);
 	}

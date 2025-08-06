@@ -1286,7 +1286,6 @@ export function VideoChat(room) {
 		document.addEventListener('mousemove', handleMouseMove);
 		document.addEventListener('mouseup', handleMouseUp);
 
-		// Store cleanup function on the element itself
 		webcamContainer.cleanupDrag = () => {
 			webcamContainer.removeEventListener('mousedown', handleMouseDown);
 			document.removeEventListener('mousemove', handleMouseMove);

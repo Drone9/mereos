@@ -130,6 +130,104 @@ export const resetSessionData = () => {
 	}
 };
 
+export const forceClosureIncident = (
+	browserEvents = [], 
+	profile
+) => {
+	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
+	
+	if (
+		browserIncidentlevel === 'high') {
+		return 'high';
+	} else if (
+		browserIncidentlevel === 'medium') {
+		return 'medium';
+	} else {
+		return 'low';
+	}
+};
+
+export const findIncidentLevel = (
+	aiEvents = [], 
+	browserEvents = [], 
+	profile
+) => {
+	const aiIncidentlevel = findAIIncidentLevel(aiEvents, profile);
+	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
+	
+	if (
+		aiIncidentlevel === 'high' || 
+		browserIncidentlevel === 'high') {
+		return 'high';
+	} else if (
+		aiIncidentlevel === 'medium' || 
+		browserIncidentlevel === 'medium') {
+		return 'medium';
+	} else {
+		return 'low';
+	}
+};
+
+export const findAIIncidentLevel = (aiEvents = [], profile) => {	
+	let result = 'low';
+	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
+	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
+
+	const eventToMetricKeyMap = {
+		'person_missing': 'person_missing',
+		'multiple_people': 'multiple_people',
+		'object_detection': 'object_detection'
+	};
+
+	console.log('aiEvents',aiEvents);
+	console.log('metrics',metrics);
+
+	for (const item of aiEvents) {
+		const difference = item.end_at - item.start_at;
+		const metricKey = eventToMetricKeyMap[item.name] || item.name;
+		const metricThreshold = metrics[metricKey];
+
+		if (metricThreshold && difference >= metricThreshold) {
+			result = 'high';
+			break;
+		} else if (metricThreshold && difference >= metricThreshold / 2) {
+			result = 'medium';
+		}
+	}
+	return result;
+};
+
+export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
+	let result = 'low';
+
+	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
+	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
+
+	let copyPasteCutEvents = browserEvents.filter(item =>
+		['candidate_paste_the_content', 'candidate_copy_the_content','copy_and_paste'].includes(item.name)
+	);
+	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
+	let navigatingAwayEvents = browserEvents.filter(item =>
+		['moved_away_from_page', 'moved_to_another_app', 'moved_to_another_window'].includes(item.name)
+	);
+
+	if (
+		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] ||
+		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] ||
+		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away']
+	) {
+		result = 'high';
+	} else if (
+		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] / 2 ||
+		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] / 2 ||
+		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away'] / 2
+	) {
+		result = 'medium';
+	}
+
+	return result;
+};
+
 export const checkForceClosureViolation = async () =>{
 	const session = convertDataIntoParse('session');
 	if (!session || !session.browserEvents) {
@@ -138,7 +236,7 @@ export const checkForceClosureViolation = async () =>{
 	const { browserEvents,aiEvents,incident_level } = session;
 	const secureFeatures = getSecureFeatures();
 
-	const forceClosureIncident = forceClosureIncident(
+	const forceClosureIncidentResp = forceClosureIncident(
 		browserEvents,
 		secureFeatures
 	);
@@ -153,7 +251,7 @@ export const checkForceClosureViolation = async () =>{
 	}
 
 	if (
-		forceClosureIncident === 'high' &&
+		forceClosureIncidentResp === 'high' &&
 		findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0
 	) {
 		window.mereos.forceClosureTriggered = true;
@@ -1430,104 +1528,6 @@ export const getNetworkUploadSpeed = async () => {
 		console.error(err);
 		return false;
 	}
-};
-
-export const forceClosureIncident = (
-	browserEvents = [], 
-	profile
-) => {
-	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
-	
-	if (
-		browserIncidentlevel === 'high') {
-		return 'high';
-	} else if (
-		browserIncidentlevel === 'medium') {
-		return 'medium';
-	} else {
-		return 'low';
-	}
-};
-
-export const findIncidentLevel = (
-	aiEvents = [], 
-	browserEvents = [], 
-	profile
-) => {
-	const aiIncidentlevel = findAIIncidentLevel(aiEvents, profile);
-	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
-	
-	if (
-		aiIncidentlevel === 'high' || 
-		browserIncidentlevel === 'high') {
-		return 'high';
-	} else if (
-		aiIncidentlevel === 'medium' || 
-		browserIncidentlevel === 'medium') {
-		return 'medium';
-	} else {
-		return 'low';
-	}
-};
-
-export const findAIIncidentLevel = (aiEvents = [], profile) => {	
-	let result = 'low';
-	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
-	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
-
-	const eventToMetricKeyMap = {
-		'person_missing': 'person_missing',
-		'multiple_people': 'multiple_people',
-		'object_detection': 'object_detection'
-	};
-
-	console.log('aiEvents',aiEvents);
-	console.log('metrics',metrics);
-
-	for (const item of aiEvents) {
-		const difference = item.end_at - item.start_at;
-		const metricKey = eventToMetricKeyMap[item.name] || item.name;
-		const metricThreshold = metrics[metricKey];
-
-		if (metricThreshold && difference >= metricThreshold) {
-			result = 'high';
-			break;
-		} else if (metricThreshold && difference >= metricThreshold / 2) {
-			result = 'medium';
-		}
-	}
-	return result;
-};
-
-export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
-	let result = 'low';
-
-	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
-	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
-
-	let copyPasteCutEvents = browserEvents.filter(item =>
-		['candidate_paste_the_content', 'candidate_copy_the_content','copy_and_paste'].includes(item.name)
-	);
-	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
-	let navigatingAwayEvents = browserEvents.filter(item =>
-		['moved_away_from_page', 'moved_to_another_app', 'moved_to_another_window'].includes(item.name)
-	);
-
-	if (
-		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] ||
-		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] ||
-		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away']
-	) {
-		result = 'high';
-	} else if (
-		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] / 2 ||
-		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] / 2 ||
-		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away'] / 2
-	) {
-		result = 'medium';
-	}
-
-	return result;
 };
 
 

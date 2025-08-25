@@ -66,9 +66,9 @@ export const preChecksSteps = {
 };
 
 export const browserMinVersions = {
-	Chrome: 74,
-	Edge: 79,
-	Firefox: 64,
+	Chrome: 90,
+	Edge: 90,
+	Firefox: 100,
 };
 
 export const recordingEvents = ['record_screen','record_audio','record_video','mobile_proctoring'];

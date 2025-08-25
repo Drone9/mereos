@@ -66,7 +66,7 @@ export const preChecksSteps = {
 };
 
 export const browserMinVersions = {
-	Chrome: 80,
+	Chrome: 90,
 	Edge: 90,
 	Firefox: 100,
 };

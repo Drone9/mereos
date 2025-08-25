@@ -16,6 +16,7 @@ import { closeModal, openModal } from '../ExamsPrechecks';
 import { Notyf } from 'notyf';
 import { notifyTokenExpired } from './axios';
 import { stop_prechecks } from '../..';
+import pkg from '../../package.json';
 
 export const dataURIToBlob = (dataURI) => {
 	
@@ -168,33 +169,61 @@ export const findIncidentLevel = (
 	}
 };
 
-export const findAIIncidentLevel = (aiEvents = [], profile) => {	
-	let result = 'low';
-	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
-	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
+export const findAIIncidentLevel = (aiEvents = []) => {	
+	let totalPoints = 0;
 
-	const eventToMetricKeyMap = {
-		'person_missing': 'person_missing',
-		'multiple_people': 'multiple_people',
-		'object_detection': 'object_detection'
-	};
-
-	console.log('aiEvents',aiEvents);
-	console.log('metrics',metrics);
+	console.log('aiEvents', aiEvents);
 
 	for (const item of aiEvents) {
-		const difference = item.end_at - item.start_at;
-		const metricKey = eventToMetricKeyMap[item.name] || item.name;
-		const metricThreshold = metrics[metricKey];
+		const duration = item.end_at - item.start_at;
+		let points = 0;
 
-		if (metricThreshold && difference >= metricThreshold) {
-			result = 'high';
-			break;
-		} else if (metricThreshold && difference >= metricThreshold / 2) {
-			result = 'medium';
+		switch (item.name) {
+			case 'person_missing':
+				if (duration >= 20) {
+					points = 50;
+				} else if (duration >= 5) {
+					points = 15;
+				} else if (duration >= 2) {
+					points = 5;
+				} else if (duration >= 0) {
+					points = 1;
+				}
+				break;
+
+			case 'multiple_people':
+				if (duration >= 5) {
+					points = 50;
+				} else if (duration >= 2) {
+					points = 30;
+				} else if (duration >= 0) {
+					points = 5;
+				}
+				break;
+
+			case 'object_detection':
+				if (duration >= 5) {
+					points = 50;
+				} else if (duration >= 2) {
+					points = 30;
+				} else if (duration >= 0) {
+					points = 5;
+				}
+				break;
 		}
+
+		totalPoints += points;
 	}
-	return result;
+
+	console.log('Total AI Points:', totalPoints);
+
+	if (totalPoints >= 100) {
+		return 'high';
+	} else if (totalPoints >= 50) {
+		return 'medium';
+	} else {
+		return 'low';
+	}
 };
 
 export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
@@ -743,6 +772,7 @@ export const addSectionSessionRecord = async (session) => {
 				session_id: session?.sessionId,
 				archive_id:session?.room_id,
 				location: session?.location,
+				library_version:pkg.version,
 				collected_details: {
 					download_speed: session?.downloadSpeed,
 					upload_speed: session?.uploadSpeed,
@@ -754,7 +784,7 @@ export const addSectionSessionRecord = async (session) => {
 				video_extension: recordings?.data?.filter(recording => session.user_video_name?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.container_format)[0],
 				incident_level: findIncidentLevel(
 					aiEvents,
-					browserEvents, 
+					browserEvents, 	
 					secureFeatures),
 				mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
 				mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],

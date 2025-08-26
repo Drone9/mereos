@@ -96,6 +96,7 @@ const renderUI = (tab1Content) => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 		stopScreenMonitoring();
+		stopLocationMonitoring();
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
 		updatePersistData('preChecksSteps',{ diagnosticStep:true });
@@ -170,6 +171,44 @@ const updateContinueButtonState = () => {
 	});
 
 	window.mereos.shadowRoot.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
+};
+
+let locationMonitorInterval = null;
+
+const startLocationMonitoring = () => {
+	if (locationMonitorInterval) return; // avoid duplicates
+
+	locationMonitorInterval = setInterval(async () => {
+		try {
+			const location = await getLocation();
+
+			setElementStatus('location', { 
+				success: locationGreen, 
+				failure: locationRed 
+			}, !!location);
+
+			if (!location) {
+				registerEvent({ 
+					eventType: 'error', 
+					notify: false, 
+					eventName: 'location_not_working' 
+				});
+			} else {
+				updatePersistData('session', { location });
+			}
+
+			updateContinueButtonState();
+		} catch (error) {
+			logger.error('Error during location monitoring:', error);
+		}
+	}, 5000); // check every 5 seconds (tweak interval as needed)
+};
+
+const stopLocationMonitoring = () => {
+	if (locationMonitorInterval) {
+		clearInterval(locationMonitorInterval);
+		locationMonitorInterval = null;
+	}
 };
 
 const startScreenMonitoring = () => {
@@ -248,6 +287,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 				if (!location) {
 					registerEvent({eventType: 'error', notify: false, eventName: 'location_not_working'});
 				}
+				startLocationMonitoring();
 				return location;
 			}));
 		} else {

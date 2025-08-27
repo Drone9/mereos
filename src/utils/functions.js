@@ -172,8 +172,6 @@ export const findIncidentLevel = (
 export const findAIIncidentLevel = (aiEvents = []) => {	
 	let totalPoints = 0;
 
-	console.log('aiEvents', aiEvents);
-
 	for (const item of aiEvents) {
 		const duration = item.end_at - item.start_at;
 		let points = 0;

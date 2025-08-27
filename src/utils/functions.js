@@ -840,11 +840,11 @@ export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 			created_at: getDateTime(),
 			session_id: session?.id
 		};
-
-		updatePersistData('session', { aiEvents:[...aiEvents, event] });
+		const updatedEvents = [...aiEvents, event];
+		updatePersistData('session', { aiEvents:updatedEvents });
 		await createAiEvent(event);
 		let incidentLevel = findIncidentLevel(
-			aiEvents,
+			updatedEvents,
 			browserEvents, 
 			secureFeatures);
 		if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {

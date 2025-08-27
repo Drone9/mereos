@@ -135,8 +135,12 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		if (window?.mereos?.roomInstance) {
 			try {
-				let screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0]);
-				publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
+				let screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0],{
+					name: 'screen-share'
+				});
+				publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack,{
+					name: 'screen-share'
+				});
 				if(window.mereos?.screenTrackPublished?.track){
 					await window.mereos.roomInstance.localParticipant.unpublishTrack(window.mereos?.screenTrackPublished?.track);
 				}

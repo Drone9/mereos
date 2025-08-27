@@ -172,8 +172,6 @@ export const findIncidentLevel = (
 export const findAIIncidentLevel = (aiEvents = []) => {	
 	let totalPoints = 0;
 
-	console.log('aiEvents', aiEvents);
-
 	for (const item of aiEvents) {
 		const duration = item.end_at - item.start_at;
 		let points = 0;
@@ -840,11 +838,11 @@ export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 			created_at: getDateTime(),
 			session_id: session?.id
 		};
-
-		updatePersistData('session', { aiEvents:[...aiEvents, event] });
+		const updatedEvents = [...aiEvents, event];
+		updatePersistData('session', { aiEvents:updatedEvents });
 		await createAiEvent(event);
 		let incidentLevel = findIncidentLevel(
-			aiEvents,
+			updatedEvents,
 			browserEvents, 
 			secureFeatures);
 		if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {

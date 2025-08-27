@@ -16,6 +16,8 @@ import { showTab } from '../ExamsPrechecks';
 let cameraStream = null;
 let audioStream = null;
 let screenMonitorInterval = null; 
+let locationMonitorInterval = null;
+let locationErrorRegistered = false;
 
 const videoGreen = `${ASSET_URL}/video-camera-green.svg`;
 const microPhoneGreen = `${ASSET_URL}/microphone-green.svg`;
@@ -173,10 +175,8 @@ const updateContinueButtonState = () => {
 	window.mereos.shadowRoot.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
 };
 
-let locationMonitorInterval = null;
-
 const startLocationMonitoring = () => {
-	if (locationMonitorInterval) return; // avoid duplicates
+	if (locationMonitorInterval) return;
 
 	locationMonitorInterval = setInterval(async () => {
 		try {
@@ -188,12 +188,16 @@ const startLocationMonitoring = () => {
 			}, !!location);
 
 			if (!location) {
-				registerEvent({ 
-					eventType: 'error', 
-					notify: false, 
-					eventName: 'location_not_working' 
-				});
+				if (!locationErrorRegistered) {
+					registerEvent({ 
+						eventType: 'error', 
+						notify: false, 
+						eventName: 'location_not_working' 
+					});
+					locationErrorRegistered = true;
+				}
 			} else {
+				locationErrorRegistered = false;
 				updatePersistData('session', { location });
 			}
 
@@ -201,13 +205,14 @@ const startLocationMonitoring = () => {
 		} catch (error) {
 			logger.error('Error during location monitoring:', error);
 		}
-	}, 5000); // check every 5 seconds (tweak interval as needed)
+	}, 2000);
 };
 
 const stopLocationMonitoring = () => {
 	if (locationMonitorInterval) {
 		clearInterval(locationMonitorInterval);
 		locationMonitorInterval = null;
+		locationErrorRegistered = false;
 	}
 };
 
@@ -286,6 +291,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 				setElementStatus('location', { success: locationGreen, failure: locationRed }, location);
 				if (!location) {
 					registerEvent({eventType: 'error', notify: false, eventName: 'location_not_working'});
+					locationErrorRegistered = true;
 				}
 				startLocationMonitoring();
 				return location;

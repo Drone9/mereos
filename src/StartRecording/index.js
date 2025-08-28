@@ -20,6 +20,7 @@ import {
 	logger, 
 	registerAIEvent, 
 	registerEvent, 
+	restoreRightClick, 
 	showToast, 
 	unlockBrowserFromContent, 
 	updatePersistData, 
@@ -273,6 +274,8 @@ const setupTrackStoppedListeners = (track, trackType) => {
 	if (trackType === 'video') {
 		const videoStoppedListener = async () => {
 			try {
+				logger.success('in the stopped',track);
+				showPermissionModal();
 				const stream = await navigator.mediaDevices.getUserMedia({ video: true });
 				stream.getTracks().forEach((t) => t.stop());
 			} catch (error) {
@@ -320,6 +323,7 @@ const setupTrackStoppedListeners = (track, trackType) => {
 	} else if (trackType === 'audio') {
 		const audioStoppedListener = async () => {
 			try {
+				showPermissionModal();
 				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 				stream.getTracks().forEach((t) => t.stop());
 			} catch (error) {
@@ -717,7 +721,7 @@ export const startRecording = async () => {
 
 					registerEvent({ eventType: 'success', notify: false, eventName: 'slow_internet_detected', startAt: dateTime });
 				
-					showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
+					// showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
 				}
 			});
 			
@@ -894,13 +898,13 @@ const setupWebcam = async (mediaStream) => {
 			const recordingIcon = document.createElement('div');
 			recordingIcon.className = 'recording-badge-container-header';
 			recordingIcon.innerHTML = `
-                <img
-                    class='ivsf-recording-dot'
-                    src="${ASSET_URL}/white-dot.svg"
-                    alt='white-dot'
-                ></img>
-                <p class='recording-text'>${i18next.t('recording')}</p>
-            `;
+					<img
+							class='ivsf-recording-dot'
+							src="${ASSET_URL}/white-dot.svg"
+							alt='white-dot'
+					></img>
+					<p class='recording-text'>${i18next.t('recording')}</p>
+			`;
         
 			videoHeaderContainer.appendChild(videoHeading);
 			videoHeaderContainer.appendChild(recordingIcon);
@@ -1463,6 +1467,7 @@ export const stopAllRecordings = async () => {
 		document.removeEventListener('beforeunload', ()=> {});
 		window.removeEventListener('beforeunload',  ()=> {});
 		window.removeEventListener('popstate', detectBackButtonCallback);
+		restoreRightClick();
 
 		if(window?.mereos?.mobileStream){
 			window?.mereos?.mobileStream?.getTracks()?.forEach((track) => track.stop());

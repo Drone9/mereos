@@ -22,6 +22,7 @@ import i18next from 'i18next';
 
 async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
+		logger.success('in the inti');
 		localStorage.clear();
 		let logonResp;
 
@@ -389,6 +390,10 @@ async function start_session(callback) {
 
 async function stop_session(callback) {
 	try {
+		if (window.mereos.checkTokenInterval) {
+			clearInterval(window.mereos.checkTokenInterval);
+			window.mereos.checkTokenInterval = null;
+		}
 		window.mereos.stopRecordingCallBack=callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {

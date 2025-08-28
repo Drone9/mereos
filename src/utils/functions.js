@@ -171,7 +171,7 @@ export const findIncidentLevel = (
 
 export const findAIIncidentLevel = (aiEvents = []) => {	
 	let totalPoints = 0;
-
+	
 	for (const item of aiEvents) {
 		const duration = item.end_at - item.start_at;
 		let points = 0;
@@ -935,11 +935,21 @@ export const lockBrowserFromContent = (entities) => {
 	});
 };
 
+//* ***************** DefaultEvent Callback *********************/
+const handleDefaultEvent = e => {
+	e.preventDefault();
+	e.stopPropagation();
+};
+
 export const preventRightClick = () => {
 	return new Promise((resolve, _reject) => {
 		document.addEventListener('contextmenu', handleDefaultEvent);
 		resolve(true);
 	});
+};
+
+export const restoreRightClick = () => {
+	document.removeEventListener('contextmenu', handleDefaultEvent,false);
 };
 
 export const disableCopyPasteCut = () => {
@@ -991,13 +1001,6 @@ export const disableCopyPasteCut = () => {
 			};
 		}
         
-		resolve(true);
-	});
-};
-
-export const restoreRightClick = () => {
-	return new Promise((resolve, _reject) => {
-		document.removeEventListener('contextmenu', handleDefaultEvent, true);
 		resolve(true);
 	});
 };
@@ -1223,15 +1226,8 @@ export const detectBackButton = () => {
 	window.addEventListener('popstate', detectBackButtonCallback);
 };
 
-//* ***************** DefaultEvent Callback *********************/
-const handleDefaultEvent = e => {
-	e.preventDefault();
-	e.stopPropagation();
-};
-
 //* ***************** Unlock browser from Events */
 export const unlockBrowserFromContent = () => {
-	document.removeEventListener('contextmenu', handleDefaultEvent);
 	window.removeEventListener('beforeunload', detectPageRefreshCallback);
 	window.removeEventListener('popstate', detectBackButtonCallback);
 

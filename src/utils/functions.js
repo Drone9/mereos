@@ -281,6 +281,9 @@ export const checkForceClosureViolation = async () =>{
 		forceClosureIncidentResp === 'high' &&
 		findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0
 	) {
+		updatePersistData('session', {
+			sessionStatus: 'Terminated',
+		});
 		window.mereos.forceClosureTriggered = true;
 		forceClosure();
 	}

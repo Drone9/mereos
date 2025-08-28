@@ -596,7 +596,8 @@ window.addEventListener('storage', (event) => {
 });
 
 function checkToken() {
-	if (!getAuthenticationToken() && !isModalClosed) {
+	const session = convertDataIntoParse('session');
+	if (!getAuthenticationToken() && !isModalClosed && (session?.sessionStatus.toLowerCase() !== 'completed' && session?.sessionStatus.toLowerCase() !== 'terminated')) {
 		closeModalOnce();
 	}
 }
@@ -609,8 +610,10 @@ function closeModalOnce() {
 window.onload = checkToken; 
 
 const checkInterval = 2000;
-setInterval(() => {
-	checkToken();
-}, checkInterval);
+if(window.mereos){
+	window.mereos.checkTokenInterval = setInterval(() => {
+		checkToken();
+	}, checkInterval);
+}
 
 export { openModal, closeModal, showTab };

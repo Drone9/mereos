@@ -389,6 +389,10 @@ async function start_session(callback) {
 
 async function stop_session(callback) {
 	try {
+		if (window.mereos.checkTokenInterval) {
+			clearInterval(window.mereos.checkTokenInterval);
+			window.mereos.checkTokenInterval = null;
+		}
 		window.mereos.stopRecordingCallBack=callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {

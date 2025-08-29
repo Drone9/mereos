@@ -24,3 +24,9 @@ export const deleteEvent = async (id) => {
 		axios.delete(`/section_session/event/?id=${id}`,config)
 	);
 };
+
+export const bulkRegisterEvents = async (data) => {
+	return authenticatedRequest(config => 
+		axios.post(`/sessions/candidate_bulk_events/`,data,config)
+	);
+};

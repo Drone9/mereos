@@ -15,9 +15,12 @@ import {
 	getDateTime, 
 	getSecureFeatures, 
 	getTimeInSeconds, 
+	getTrackDeviceId, 
 	initializeI18next, 
+	isDevicePresent, 
 	lockBrowserFromContent, 
 	logger, 
+	probeExactDevice, 
 	registerAIEvent, 
 	registerEvent, 
 	restoreRightClick, 
@@ -33,7 +36,8 @@ import { initShadowDOM, openModal } from '../ExamsPrechecks';
 
 let aiEvents = [];
 let mediaStream = null;
-const trackStoppedListeners = new Map();
+const trackStoppedListeners = new WeakMap();
+const deviceChangeHandlers = new WeakMap();
 let isMediaError = false;
 let isSignalingError = false;
 
@@ -270,102 +274,113 @@ const cleanupCameraTracks = async (room, trackKind) => {
 	}
 };
 
-const setupTrackStoppedListeners = (track, trackType) => {
-	if (trackType === 'video') {
-		const videoStoppedListener = async () => {
-			try {
-				logger.success('in the stopped',track);
-				showPermissionModal();
-				const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-				stream.getTracks().forEach((t) => t.stop());
-			} catch (error) {
-				console.error('Camera is not accessible anymore', error);
-				
-				const container = window.mereos?.shadowRoot || document;
-				const cameraContainer = container.querySelector('#webcam-container');
-				if (cameraContainer) {
-					cameraContainer.style.display = 'none';
-					cameraContainer.remove();
-				}
+const handleDeviceLost = (kind) => {
+  const container = window.mereos?.shadowRoot || document;
 
-				const userRemoteVideo = container.querySelector('#user-remote-video');
-				if (userRemoteVideo) {
-					userRemoteVideo.style.display = 'none';
-					userRemoteVideo.remove();
-				}
+  const cameraContainer = container.querySelector('#webcam-container');
+  if (cameraContainer) {
+    cameraContainer.style.display = 'none';
+    cameraContainer.remove();
+  }
 
-				showPermissionModal();
+  const userRemoteVideo = container.querySelector('#user-remote-video');
+  if (userRemoteVideo) {
+    userRemoteVideo.style.display = 'none';
+    userRemoteVideo.remove();
+  }
 
-				if (window.mereos.startRecordingCallBack) {
-					window.mereos.startRecordingCallBack({ 
-						type: 'error',
-						message: 'camera_is_stopped',
-						code: 40019
-					});
-				}
+  if (typeof showPermissionModal === 'function') {
+    showPermissionModal();
+  }
 
-				if (typeof registerEvent === 'function') {
-					registerEvent({ 
-						eventType: 'error', 
-						notify: false, 
-						eventName: 'camera_permission_disabled', 
-						eventValue: new Date() 
-					});
-				}
-			}
-		};
+  if (window.mereos?.startRecordingCallBack) {
+    window.mereos.startRecordingCallBack({
+      type: 'error',
+      message: kind === 'video' ? 'camera_is_stopped' : 'microphone_is_stopped',
+      code: 40019,
+    });
+  }
 
-		track.on('stopped', videoStoppedListener);
-		if (typeof trackStoppedListeners !== 'undefined') {
-			trackStoppedListeners.set(track, videoStoppedListener);
-		}
-		
-	} else if (trackType === 'audio') {
-		const audioStoppedListener = async () => {
-			try {
-				showPermissionModal();
-				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-				stream.getTracks().forEach((t) => t.stop());
-			} catch (error) {
-				console.error('Microphone is not accessible anymore', error);
-				const container = window.mereos?.shadowRoot || document;
-				const cameraContainer = container.querySelector('#webcam-container');
-				if (cameraContainer) {
-					cameraContainer.style.display = 'none';
-					cameraContainer.remove();
-				}
+  if (typeof registerEvent === 'function') {
+    registerEvent({
+      eventType: 'error',
+      notify: false,
+      eventName: kind === 'video' ? 'camera_permission_disabled' : 'microphone_permission_denied',
+      eventValue: new Date(),
+    });
+  }
+};
 
-				const userRemoteVideo = container.querySelector('#user-remote-video');
-				if (userRemoteVideo) {
-					userRemoteVideo.style.display = 'none';
-					userRemoteVideo.remove();
-				}
-				showPermissionModal();
+const attachDeviceChangeWatcher = (track) => {
+  const kind = track.kind;
+  const deviceId = getTrackDeviceId(track);
 
-				if (window.mereos.startRecordingCallBack) {
-					window.mereos.startRecordingCallBack({ 
-						type: 'error',
-						message: 'microphone_is_stopped',
-						code: 40019
-					});
-				}
+  const handler = async () => {
+    try {
+      const present = await isDevicePresent(kind, deviceId);
+      if (!present) {
+        logger?.warn?.(`${kind} device removed (devicechange)`, { deviceId });
+        handleDeviceLost(kind);
+      }
+    } catch (e) {
+      console.error('devicechange check failed', e);
+    }
+  };
 
-				if (typeof registerEvent === 'function') {
-					registerEvent({ 
-						eventType: 'error', 
-						notify: false, 
-						eventName: 'microphone_permission_denied', 
-						eventValue: new Date() 
-					});
-				}
-			}
-		};
+  navigator.mediaDevices.addEventListener('devicechange', handler);
+  deviceChangeHandlers.set(track, handler);
+};
 
-		track.on('stopped', audioStoppedListener);
-		if (typeof trackStoppedListeners !== 'undefined') {
-			trackStoppedListeners.set(track, audioStoppedListener);
-		}
-	}
+const detachDeviceChangeWatcher = (track) => {
+  const handler = deviceChangeHandlers.get(track);
+  if (handler) {
+    navigator.mediaDevices.removeEventListener('devicechange', handler);
+    deviceChangeHandlers.delete(track);
+  }
+};
+
+const setupTrackStoppedListeners = (track) => {
+  attachDeviceChangeWatcher(track);
+
+  const stoppedListener = async () => {
+    logger?.success?.(`${track.kind} track 'stopped' fired`);
+
+    const kind = track.kind;
+    const mst = track.mediaStreamTrack;
+    const deviceId = getTrackDeviceId(track);
+
+    try {
+      if (mst && mst.readyState === 'ended') {
+        logger?.warn?.(`${kind} underlying MediaStreamTrack ended`);
+        const present = await isDevicePresent(kind, deviceId);
+        if (!present) {
+          handleDeviceLost(kind);
+          return;
+        }
+      }
+
+      await probeExactDevice(kind, deviceId);
+      handleDeviceLost(kind);
+    } catch (probeError) {
+      logger?.error?.(`Exact-device probe failed for ${kind}`, probeError);
+      handleDeviceLost(kind);
+    } finally {
+      detachDeviceChangeWatcher(track);
+    }
+  };
+
+  track.on('stopped', stoppedListener);
+
+  trackStoppedListeners.set(track, stoppedListener);
+};
+
+const removeStoppedListener = (track) => {
+  const fn = trackStoppedListeners.get(track);
+  if (fn) {
+    try { track.off('stopped', fn); } catch {}
+    trackStoppedListeners.delete(track);
+  }
+  detachDeviceChangeWatcher(track);
 };
 
 const reconnectCamera = async () => {
@@ -510,6 +525,9 @@ const reconnectCamera = async () => {
 			}
 		} else {
 			if (window.mereos.startRecordingCallBack) {
+				updatePersistData('session', {
+					sessionStatus:'Terminated'
+				});
 				window.mereos.startRecordingCallBack({ 
 					type: 'error',
 					message: 'camera_reconnection_failed',
@@ -726,13 +744,17 @@ export const startRecording = async () => {
 			});
 			
 			room.localParticipant.videoTracks.forEach(({ track }) => {
+				logger.success('video track --__',track);
 				if (track && track.kind === 'video') {
+					logger.success('in the video if track --__',track);
 					setupTrackStoppedListeners(track, 'video');
 				}
 			});
 
 			room.localParticipant.audioTracks.forEach(({ track }) => {
+				logger.success('audio track --__',track);
 				if (track && track.kind === 'audio') {
+					logger.success('in the audio if track --__',track);
 					setupTrackStoppedListeners(track, 'audio');
 				}
 			});
@@ -1523,12 +1545,7 @@ export const stopAllRecordings = async () => {
 			window.mereos.globalStream = null;
 		}
 
-		if(trackStoppedListeners){
-			trackStoppedListeners.forEach((listener, track) => {
-				track.off('stopped', listener);
-			});
-			trackStoppedListeners.clear();
-		}
+		removeStoppedListener();
 
 		window.mereos.recordingStart=false;
 

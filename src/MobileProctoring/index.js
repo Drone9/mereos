@@ -412,6 +412,7 @@ export const MobileProctoring = async (tabContent) => {
 	}
 
 	function setupEventListeners(step) {
+		const container = window.mereos.shadowRoot.getElementById('mobile-proctoring');
 		const downloadCanvas = window.mereos.shadowRoot.getElementById('download-qr-canvas');
 		const tokenCanvas = window.mereos.shadowRoot.getElementById('token-qr-canvas');
 		const socketGroupIds = JSON.parse(localStorage.getItem('socketGroupId'));
@@ -445,16 +446,22 @@ export const MobileProctoring = async (tabContent) => {
 				window.mereos.shadowRoot.getElementById('no-app-btn')?.addEventListener('click', () => nextStep('downloadApp'));
 				break;
 				
-			default: 
-				window.mereos.shadowRoot.getElementById('video-check')?.addEventListener('change', (e) => {
+			default: {
+				const videoCheck = container.querySelector('#video-check');
+				const prevBtn = container.querySelector('#previous-btn');
+				const nextBtn = container.querySelector('#next-btn');
+
+				videoCheck?.addEventListener('change', (e) => {
 					checkedVideo = e.target.checked;
 					setTimeout(() => {
 						renderUI();
 					}, 0);
 				});
-				window.mereos.shadowRoot.getElementById('previous-btn')?.addEventListener('click', () => prevStep());
-				window.mereos.shadowRoot.getElementById('next-btn')?.addEventListener('click', () => nextStep('step4'));
+
+				prevBtn?.addEventListener('click', () => prevStep());
+				nextBtn?.addEventListener('click', () => nextStep('step4'));
 				break;
+			}
 		}
 	}
 

@@ -906,7 +906,7 @@ export const retryFailedAIEvents = async () => {
 	}
 
 	try {
-		await bulkRegisterAIEvents({ events:failedAIEvents });
+		await bulkRegisterAIEvents({ ai_events:failedAIEvents });
 		localStorage.removeItem('failedAIEvents');
 	} catch (err) {
 		logger.error('Retry failed for events', err);

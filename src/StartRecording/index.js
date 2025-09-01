@@ -142,7 +142,6 @@ export const connectSocketConnection = () => {
 };
 
 const showPermissionModal = () => {
-	console.log('in the showPermissionModal');
 	let container, existingModal;
   
 	if (window.mereos?.shadowRoot) {
@@ -276,6 +275,7 @@ const cleanupCameraTracks = async (room, trackKind) => {
 
 const handleDeviceLost = (kind) => {
   const container = window.mereos?.shadowRoot || document;
+	const session = convertDataIntoParse('session');
 
   const cameraContainer = container.querySelector('#webcam-container');
   if (cameraContainer) {
@@ -289,7 +289,7 @@ const handleDeviceLost = (kind) => {
     userRemoteVideo.remove();
   }
 
-  if (typeof showPermissionModal === 'function') {
+  if (typeof showPermissionModal === 'function' && session.sessionStatus === 'Attending') {
     showPermissionModal();
   }
 
@@ -301,7 +301,7 @@ const handleDeviceLost = (kind) => {
     });
   }
 
-  if (typeof registerEvent === 'function') {
+  if (typeof registerEvent === 'function' && session.sessionStatus === 'Attending') {
     registerEvent({
       eventType: 'error',
       notify: false,
@@ -314,7 +314,7 @@ const handleDeviceLost = (kind) => {
 const attachDeviceChangeWatcher = (track) => {
   const kind = track.kind;
   const deviceId = getTrackDeviceId(track);
-
+	const session = convertDataIntoParse('session');
   const handler = async () => {
     try {
       const present = await isDevicePresent(kind, deviceId);
@@ -327,7 +327,9 @@ const attachDeviceChangeWatcher = (track) => {
     }
   };
 
-  navigator.mediaDevices.addEventListener('devicechange', handler);
+	if(session.sessionStatus === 'Attending'){
+  	navigator.mediaDevices.addEventListener('devicechange', handler);
+	}
   deviceChangeHandlers.set(track, handler);
 };
 
@@ -341,7 +343,7 @@ const detachDeviceChangeWatcher = (track) => {
 
 const setupTrackStoppedListeners = (track) => {
   attachDeviceChangeWatcher(track);
-
+	const session = convertDataIntoParse('session');
   const stoppedListener = async () => {
     logger?.success?.(`${track.kind} track 'stopped' fired`);
 
@@ -369,7 +371,9 @@ const setupTrackStoppedListeners = (track) => {
     }
   };
 
-  track.on('stopped', stoppedListener);
+	if(session.sessionStatus === 'Attending'){
+  	track.on('stopped', stoppedListener);
+	}
 
   trackStoppedListeners.set(track, stoppedListener);
 };
@@ -466,7 +470,6 @@ const reconnectCamera = async () => {
 			}
 			
 			setupTrackStoppedListeners(twilioVideoTrack, 'video');
-			console.log('Video track reconnected with stopped listener');
 		}
 		
 		if (audioTrack && needsAudio) {
@@ -744,17 +747,13 @@ export const startRecording = async () => {
 			});
 			
 			room.localParticipant.videoTracks.forEach(({ track }) => {
-				logger.success('video track --__',track);
 				if (track && track.kind === 'video') {
-					logger.success('in the video if track --__',track);
 					setupTrackStoppedListeners(track, 'video');
 				}
 			});
 
 			room.localParticipant.audioTracks.forEach(({ track }) => {
-				logger.success('audio track --__',track);
 				if (track && track.kind === 'audio') {
-					logger.success('in the audio if track --__',track);
 					setupTrackStoppedListeners(track, 'audio');
 				}
 			});

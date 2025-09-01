@@ -1836,12 +1836,18 @@ export const isDevicePresent = async (kind, deviceId) => {
 };
 
 export const probeExactDevice = async (kind, deviceId) => {
-	const c =
-		kind === 'video'
-			? { video: deviceId ? { deviceId: { exact: deviceId } } : true }
-			: { audio: deviceId ? { deviceId: { exact: deviceId } } : true };
+	const constraints =
+    kind === 'video' ? { video: deviceId ? { deviceId: { exact: deviceId } } : true } : { audio: deviceId ? { deviceId: { exact: deviceId } } : true };
 
-	const stream = await navigator.mediaDevices.getUserMedia(c);
+	const stream = await navigator.mediaDevices.getUserMedia(constraints);
+	const track = stream.getTracks()[0];
+
+	if (!track || track.readyState === 'ended') {
+		stream.getTracks().forEach(t => t.stop());
+		throw new Error('DeviceUnavailable');
+	}
+
 	stream.getTracks().forEach(t => t.stop());
 	return true;
 };
+

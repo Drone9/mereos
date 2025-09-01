@@ -26,6 +26,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	let blob = null;
 	let mediaRecorder = null;
 	let recordedChunks = [];
+	let cameraAvailable = false;
+	let permissionDenied = false;
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
 	let stopButtonDisabled = true;
@@ -39,9 +41,63 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 	let autoStopRecordingTimeout = null;
 
+	const checkCameraAvailability = async () => {
+		try {
+			if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+				logger.error('MediaDevices API not supported');
+				textMessage = 'camera_not_supported';
+				cameraAvailable = false;
+				return false;
+			}
+
+			const devices = await navigator.mediaDevices.enumerateDevices();
+			const videoDevices = devices.filter(device => device.kind === 'videoinput');
+			
+			if (videoDevices.length === 0) {
+				logger.error('No video input devices found');
+				textMessage = 'camera_access_lost';
+				cameraAvailable = false;
+				return false;
+			}
+
+			const testStream = await navigator.mediaDevices.getUserMedia({ 
+				video: true, 
+				audio: false 
+			});
+			
+			testStream.getTracks().forEach(track => track.stop());
+			cameraAvailable = true;
+			permissionDenied = false;
+			logger.info('Camera is available and accessible');
+			return true;
+
+		} catch (error) {
+			logger.error('Camera availability check failed:', error);
+			cameraAvailable = false;
+			
+			if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+				textMessage = 'camera_permission_denied';
+				permissionDenied = true;
+			} else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+				textMessage = 'no_camera_found';
+			} else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+				textMessage = 'camera_in_use';
+			} else {
+				textMessage = 'camera_access_lost';
+			}
+			return false;
+		}
+	};
+
 	const handleStartRecording = async (type) => {
 		try {
 			if (type === 'startRecording') {
+				const isCameraAvailable = await checkCameraAvailability();
+				if (!isCameraAvailable) {
+					updateUI();
+					return;
+				}
+
 				mediaRecorder = new MediaRecorder(window.mereos.globalStream);
 
 				mediaRecorder.ondataavailable = (event) => {
@@ -78,6 +134,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			}
 		} catch (error) {
 			logger.error('Error accessing media devices:', error);
+			textMessage = 'camera_access_lost';
+			cameraAvailable = false;
+			updateUI();
 		}
 	};
 
@@ -86,6 +145,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		loading = false;
 		recordingMode = 'startRecording';
 		textMessage = 'scan_your_room';
+		cameraAvailable = false;
+		permissionDenied = false;
 		updateUI();
 	};
 
@@ -106,6 +167,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			blob = null;
 			recordingMode = 'startRecording';
 			textMessage = 'scan_your_room';
+			cameraAvailable = false;
+			permissionDenied = false;
 			updateUI();
 			if (window.mereos.globalStream) {
 				window.mereos.globalStream.getTracks().forEach(track => track.stop());
@@ -131,6 +194,8 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		recordingMode = 'startRecording';
 		textMessage = 'scan_your_room';
 		blob = null;
+		cameraAvailable = false;
+		permissionDenied = false;
 		if (window.mereos.globalStream) {
 			window.mereos.globalStream.getTracks().forEach(track => track.stop());
 			window.mereos.globalStream = null;
@@ -171,6 +236,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	const updateUI = async () => {
+		const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? 
+			JSON.parse(localStorage.getItem('schoolTheme')) : {};
+
 		let container = tabContent?.querySelector('.screen-four-container');
 		if (!container) {
 			tabContent.insertAdjacentHTML('beforeend', `
@@ -190,7 +258,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				<div class="ivsf-msg">${i18next.t('workspace_checking_msg')}</div>
 				<div class="steps-container"></div>
 				<div class="ivsf-header-img-container"></div>
-				<div class="ivsf-query-msg" ${textMessage === 'something_went_wrong_please_upload_again' ? 'style="color: #E95E5E;"' : ''}>${i18next.t(textMessage)}</div>
+				<div class="ivsf-query-msg" ${textMessage === 'something_went_wrong_please_upload_again' || textMessage === 'camera_permission_denied' || textMessage === 'no_camera_found' || textMessage === 'camera_in_use' || textMessage === 'camera_access_error' || textMessage === 'camera_not_supported' || textMessage === 'camera_access_lost' ? 'style="color: #E95E5E;"' : ''}>${i18next.t(textMessage)}</div>
 				<div class="ivsf-btn-container"></div>
 			</div>
 		`);
@@ -231,6 +299,28 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		}
 		
 		if (recordingMode === 'startRecording') {
+			const isCameraAvailable = await checkCameraAvailability();
+			logger.success('isCameraAvailable',isCameraAvailable);
+			if (!cameraAvailable) {
+				headerImgContainer.insertAdjacentHTML('beforeend', `
+					<div class="camera-error-container">
+						<img src="${schoolTheme?.mode === 'dark' ? `${ASSET_URL}/camera-icon-white.svg` : `${ASSET_URL}/camera-icon-black.svg`}" alt="camera-error" class="camera-error-icon">
+						<div class="camera-error-message">${i18next.t('camera_access_lost')}</div>
+					</div>
+				`);
+				
+				btnContainer.insertAdjacentHTML('beforeend', `
+					<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
+					${permissionDenied ? 
+		`<button class="orange-filled-btn">${i18next.t('retry_camera')}</button>` :
+		`<button class="orange-filled-btn" disabled>${i18next.t('record_video')}</button>`
+}
+				`);
+				
+				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
+				return;
+			}
+
 			const isAudioEnabled = findConfigs(['record_audio'], secureFeatures).length > 0;
 			const mediaOptions = {
 				audio: isAudioEnabled
@@ -241,22 +331,29 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				video: videoConstraints.video,
 			};
 
-			window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
-			
-			headerImgContainer.insertAdjacentHTML('beforeend', `
-				<video id="webcam-recording-media" autoplay muted height="250"></video>
-			`);
-			
-			const webcam = headerImgContainer.querySelector('#webcam-recording-media');
-			webcam.srcObject = window.mereos.globalStream;
-			
-			btnContainer.insertAdjacentHTML('beforeend', `
-				<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
-				<button class="orange-filled-btn">${i18next.t('record_video')}</button>
-			`);
-			
-			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
-			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', () => handleStartRecording('startRecording'));
+			try {
+				window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
+				
+				headerImgContainer.insertAdjacentHTML('beforeend', `
+					<video id="webcam-recording-media" autoplay muted height="250"></video>
+				`);
+				
+				const webcam = headerImgContainer.querySelector('#webcam-recording-media');
+				webcam.srcObject = window.mereos.globalStream;
+				
+				btnContainer.insertAdjacentHTML('beforeend', `
+					<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
+					<button class="orange-filled-btn">${i18next.t('record_video')}</button>
+				`);
+				
+				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
+				btnContainer.querySelector('.orange-filled-btn').addEventListener('click', () => handleStartRecording('startRecording'));
+			} catch (error) {
+				logger.error('Error getting user media after camera check:', error);
+				cameraAvailable = false;
+				textMessage = 'camera_access_lost';
+				updateUI();
+			}
 		} else if (recordingMode === 'beingRecorded') {
 			const prevStepsEntities = ['verify_candidate', 'verify_id', 'record_audio'];
 			const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
@@ -292,7 +389,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		}
 	};
 
-	handleStartRecording();
+	checkCameraAvailability().then(() => {
+		updateUI();
+	});
 
 	updateUI();
 

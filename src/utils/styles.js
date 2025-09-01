@@ -1852,7 +1852,9 @@ export const IdentityVerificationScreenThreeCss = `.ivst-container {
 export const IdentityVerificationScreenFourCss = `.screen-four-container {
 	margin: auto;
 }
-
+.camera-error-icon{
+  width: 200px;
+}
 .room-scan-wrapper {
 	display: flex;
 	flex-direction: column;

@@ -8,8 +8,8 @@ import {
 } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
-import { createAiEvent } from '../services/ai-event.services';
-import { createEvent } from '../services/event.service';
+import { bulkRegisterAIEvents, createAiEvent } from '../services/ai-event.services';
+import { bulkRegisterEvents, createEvent } from '../services/event.service';
 import { testUploadSpeed } from '../services/general.services';
 import i18next from 'i18next';
 import { closeModal, openModal } from '../ExamsPrechecks';
@@ -400,31 +400,60 @@ export const checkMicrophone = () => {
 	});
 };
 
-export const registerEvent = async ({ eventName,eventValue }) => {
-	try{
+export const registerEvent = async ({ eventName, eventValue }) => {
+	try {
 		const session = convertDataIntoParse('session');
-		if (!session || !session.browserEvents) {
-			return;
-		}
+		const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
+		if (!session || !session.browserEvents) return;
 
 		const { browserEvents } = session;
 
+		if(failedEvents.length > 0){
+			retryFailedEvents();
+		}
+		
 		if (session?.id) {
 			const event = {
 				name: eventName,
 				value: eventValue,
 				session_id: session?.id,
-				start_at: session?.quizStartTime !== 0 ? Math.round((getTimeInSeconds({isUTC: true}) - session?.quizStartTime) / 1000) : 0
+				start_at: session?.quizStartTime !== 0 
+					? Math.round((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) 
+					: 0
 			};
 
-			updatePersistData('session', { browserEvents:[...browserEvents, event] });
+			updatePersistData('session', { browserEvents: [...browserEvents, event] });
 
-			await createEvent(event);
+			try {
+				await createEvent(event);
+			} catch (err) {
+				logger.error('API failed, storing event for retry', err);
+
+				const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
+				localStorage.setItem('failedEvents', JSON.stringify([...failedEvents, event]));
+			}
 		}
 	} catch (error) {
-		logger.error('Error in register event', error);
+		logger.error('Error in registerEvent', error);
 	}
 };
+
+export const retryFailedEvents = async () => {
+	const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
+	if (!failedEvents.length) {
+		return;
+	}
+
+	try {
+		await bulkRegisterEvents({events:failedEvents});
+		localStorage.removeItem('failedEvents');
+	} catch (err) {
+		logger.error('Retry failed for events', err);
+		localStorage.setItem('failedEvents', JSON.stringify(failedEvents));
+	}
+};
+
+window.addEventListener('online', retryFailedEvents);
 
 export const updateThemeColor = () => {
 	const defaultTheme = {
@@ -827,8 +856,13 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 	try{
 		const session = convertDataIntoParse('session');
+		const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
 		if (!session || !session.aiEvents) {
 			return;
+		}
+
+		if(failedAIEvents.length > 0){
+			retryFailedEvents();
 		}
 		const secureFeatures = getSecureFeatures();
 		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
@@ -843,7 +877,15 @@ export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 		};
 		const updatedEvents = [...aiEvents, event];
 		updatePersistData('session', { aiEvents:updatedEvents });
-		await createAiEvent(event);
+
+		try {
+			await createAiEvent(event);
+		} catch (err) {
+			logger.error('API failed, storing event for retry', err);
+
+			const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
+			localStorage.setItem('failedAIEvents', JSON.stringify([...failedAIEvents, event]));
+		}
 		let incidentLevel = findIncidentLevel(
 			updatedEvents,
 			browserEvents, 
@@ -856,6 +898,23 @@ export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 		logger.error('Error in register ai event',e);
 	}
 };
+
+export const retryFailedAIEvents = async () => {
+	const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
+	if (!failedAIEvents.length) {
+		return;
+	}
+
+	try {
+		await bulkRegisterAIEvents({ ai_events:failedAIEvents });
+		localStorage.removeItem('failedAIEvents');
+	} catch (err) {
+		logger.error('Retry failed for events', err);
+		localStorage.setItem('failedAIEvents', JSON.stringify(failedAIEvents));
+	}
+};
+
+window.addEventListener('online', retryFailedAIEvents);
 
 export const lockBrowserFromContent = (entities) => {
 	return new Promise(async (resolve, _reject) => {
@@ -936,20 +995,27 @@ export const lockBrowserFromContent = (entities) => {
 };
 
 //* ***************** DefaultEvent Callback *********************/
-const handleDefaultEvent = e => {
+let rightClickDisabled = false;
+
+const handleDefaultEvent = (e) => {
 	e.preventDefault();
 	e.stopPropagation();
 };
 
 export const preventRightClick = () => {
-	return new Promise((resolve, _reject) => {
+	if (!rightClickDisabled) {
 		document.addEventListener('contextmenu', handleDefaultEvent);
-		resolve(true);
-	});
+		rightClickDisabled = true;
+	}
+	return true;
 };
 
 export const restoreRightClick = () => {
-	document.removeEventListener('contextmenu', handleDefaultEvent,false);
+	if (rightClickDisabled) {
+		document.removeEventListener('contextmenu', handleDefaultEvent);
+		rightClickDisabled = false;
+	}
+	return true;
 };
 
 export const disableCopyPasteCut = () => {
@@ -1736,4 +1802,46 @@ export const isMobileDevice = () => {
 	return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase())
 		? 'mobile'
 		: 'desktop';
+};
+
+
+export const getTrackDeviceId = (track) => {
+	const mst = track?.mediaStreamTrack;
+	if (!mst) return null;
+
+	const settings = typeof mst.getSettings === 'function' ? mst.getSettings() : {};
+	if (settings?.deviceId) return settings.deviceId;
+
+	const constraints = typeof mst.getConstraints === 'function' ? mst.getConstraints() : {};
+	const dev = constraints?.deviceId;
+	if (typeof dev === 'string') return dev;
+	if (dev && typeof dev === 'object' && dev.exact) return dev.exact;
+
+	return null;
+};
+
+export const enumerateByKind = async () => {
+	const devs = await navigator.mediaDevices.enumerateDevices();
+	return {
+		audioinput: devs.filter(d => d.kind === 'audioinput'),
+		videoinput: devs.filter(d => d.kind === 'videoinput'),
+	};
+};
+
+export const isDevicePresent = async (kind, deviceId) => {
+	const byKind = await enumerateByKind();
+	const list = kind === 'audio' ? byKind.audioinput : byKind.videoinput;
+	if (!deviceId) return list.length > 0; 
+	return list.some(d => d.deviceId === deviceId);
+};
+
+export const probeExactDevice = async (kind, deviceId) => {
+	const c =
+		kind === 'video'
+			? { video: deviceId ? { deviceId: { exact: deviceId } } : true }
+			: { audio: deviceId ? { deviceId: { exact: deviceId } } : true };
+
+	const stream = await navigator.mediaDevices.getUserMedia(c);
+	stream.getTracks().forEach(t => t.stop());
+	return true;
 };

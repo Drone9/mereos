@@ -9,7 +9,7 @@ export const checkMediaInputs = () => {
 			const secureFeatures = getSecureFeatures();
 
 			const shouldTestAudio = findConfigs(['record_audio'], secureFeatures.entities).length > 0;
-			const shouldTestVideo = findConfigs(['record_video', 'record_room'], secureFeatures.entities).length > 0;
+			const shouldTestVideo = findConfigs(['record_video', 'record_room', 'verify_id', 'verify_candidate'], secureFeatures.entities).length > 0;
 
 			if (!shouldTestAudio && !shouldTestVideo) {
 				return resolve({

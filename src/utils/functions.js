@@ -832,6 +832,7 @@ export const addSectionSessionRecord = async (session) => {
 				archive_id:session?.room_id,
 				location: session?.location,
 				library_version:pkg.version,
+				mobile_session_id:session.mobileRoomSessionId,
 				collected_details: {
 					download_speed: session?.downloadSpeed,
 					upload_speed: session?.uploadSpeed,

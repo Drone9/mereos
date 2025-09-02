@@ -57,9 +57,7 @@ const createWebSocketConnection = () => {
 		}
 	};
 
-	window.mereos.socket.onclose = (event) => {
-		logger.warn('WebSocket connection closed:', event.reason || 'No reason provided');
-		
+	window.mereos.socket.onclose = (event) => {		
 		if (event.code !== 1000) {
 			attemptReconnect();
 		}
@@ -82,7 +80,6 @@ const attemptReconnect = () => {
 
 	if (reconnectAttempts < maxReconnectAttempts) {
 		reconnectAttempts++;
-		logger.info(`Reconnection attempt ${reconnectAttempts} of ${maxReconnectAttempts}`);
 		
 		reconnectTimer = setTimeout(() => {
 			createWebSocketConnection();
@@ -99,12 +96,10 @@ const initSocket = () => {
 const sendMessage = (message) => {
 	if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 		window.mereos.socket.send(message);
-		logger.success('Message sent successfully');
 	} else {
 		logger.error('WebSocket is not open. Unable to send message');
 		
 		if (!window.mereos.socket || window.mereos.socket.readyState === WebSocket.CLOSED) {
-			logger.info('Attempting to reconnect WebSocket...');
 			createWebSocketConnection();
 		}
 	}
@@ -121,7 +116,6 @@ const closeSocket = () => {
 	if (window.mereos.socket) {
 		window.mereos.socket.close(1000, 'Manual close');
 		window.mereos.socket = null;
-		logger.info('WebSocket connection closed manually');
 	} else {
 		logger.warn('WebSocket is not initialized');
 	}

@@ -44,7 +44,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	const checkCameraAvailability = async () => {
 		try {
 			if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-				logger.error('MediaDevices API not supported');
 				textMessage = 'camera_not_supported';
 				cameraAvailable = false;
 				return false;
@@ -54,7 +53,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			const videoDevices = devices.filter(device => device.kind === 'videoinput');
 			
 			if (videoDevices.length === 0) {
-				logger.error('No video input devices found');
 				textMessage = 'camera_access_lost';
 				cameraAvailable = false;
 				return false;
@@ -68,11 +66,9 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			testStream.getTracks().forEach(track => track.stop());
 			cameraAvailable = true;
 			permissionDenied = false;
-			logger.info('Camera is available and accessible');
 			return true;
 
 		} catch (error) {
-			logger.error('Camera availability check failed:', error);
 			cameraAvailable = false;
 			
 			if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {

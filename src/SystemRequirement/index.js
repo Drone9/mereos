@@ -272,6 +272,7 @@ export const SystemRequirement = async (tab1Content) => {
 };
 
 const updateDiagnosticText = () => {
+	if (!window.mereos || !window.mereos.shadowRoot) return;
 	const diagnosticItems = ['ram', 'cpu', 'upload_speed', 'download_speed'];
 
 	diagnosticItems.forEach(item => {

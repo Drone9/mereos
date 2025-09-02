@@ -329,35 +329,34 @@ export const SystemDiagnostics = async (tab1Content) => {
 };
 
 const updateDiagnosticText = () => {
-	if(window.mereos.shadowRoot){
-		const diagnosticItems = ['webcam', 'microphone', 'location', 'desktop'];
-		let microphoneImg = window.mereos.shadowRoot.getElementById('microphone-img');
+	if (!window.mereos || !window.mereos.shadowRoot) return;
+	const diagnosticItems = ['webcam', 'microphone', 'location', 'desktop'];
+	let microphoneImg = window.mereos.shadowRoot.getElementById('microphone-img');
 
-		diagnosticItems.forEach(item => {
-			const labelElement = window.mereos.shadowRoot.querySelector(`#${item}DiagnosticItem label`);
-			if (labelElement) {
-				labelElement.textContent = i18next.t(item);
-			}
-		});
-
-		if(microphoneImg){
-			microphoneImg.src = `${ASSET_URL}/microphone-${i18next.language || 'en'}.svg`;
+	diagnosticItems.forEach(item => {
+		const labelElement = window.mereos.shadowRoot.querySelector(`#${item}DiagnosticItem label`);
+		if (labelElement) {
+			labelElement.textContent = i18next.t(item);
 		}
+	});
 
-		const heading = window.mereos.shadowRoot.querySelector('.heading');
-		if (heading) {
-			heading.textContent = i18next.t('system_diagnostics');
-		}
+	if(microphoneImg){
+		microphoneImg.src = `${ASSET_URL}/microphone-${i18next.language || 'en'}.svg`;
+	}
 
-		const description = window.mereos.shadowRoot.querySelector('.description');
-		if (description) {
-			description.textContent = i18next.t('system_diagnostics_msg');
-		}
+	const heading = window.mereos.shadowRoot.querySelector('.heading');
+	if (heading) {
+		heading.textContent = i18next.t('system_diagnostics');
+	}
+
+	const description = window.mereos.shadowRoot.querySelector('.description');
+	if (description) {
+		description.textContent = i18next.t('system_diagnostics_msg');
+	}
     
-		const btnText = window.mereos.shadowRoot.querySelector('.orange-filled-btn');
-		if (btnText) {
-			btnText.textContent = i18next.t('continue');
-		}
+	const btnText = window.mereos.shadowRoot.querySelector('.orange-filled-btn');
+	if (btnText) {
+		btnText.textContent = i18next.t('continue');
 	}
 };
 

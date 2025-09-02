@@ -1232,31 +1232,33 @@ const startAIWebcam = async (room, mediaStream) => {
 };
 
 export const cleanupLocalVideo = () => {
-	const webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
-	const webVideoContainer = window.mereos.shadowRoot.querySelector('#user-video-header');
-	const imgContainer = window.mereos.shadowRoot.querySelector('#chat-icon');
+	if(window.mereos.shadowRoot){
+		const webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
+		const webVideoContainer = window.mereos.shadowRoot.querySelector('#user-video-header');
+		const imgContainer = window.mereos.shadowRoot.querySelector('#chat-icon');
 
-	if(imgContainer){
-		imgContainer.remove();
-	}
-	if(webVideoContainer){
-		webVideoContainer.remove();
-	}
-
-	if (webcamContainer) {
-		const videoElement = webcamContainer.querySelector('video');
-		if (videoElement) {
-			videoElement.pause();
-			videoElement.srcObject.getTracks().forEach(track => track.stop());
-			videoElement.srcObject = null;
+		if(imgContainer){
+			imgContainer.remove();
+		}
+		if(webVideoContainer){
+			webVideoContainer.remove();
 		}
 
-		const canvas = webcamContainer.querySelector('canvas');
-		if (canvas) {
-			canvas.remove();
-		}
+		if (webcamContainer) {
+			const videoElement = webcamContainer.querySelector('video');
+			if (videoElement) {
+				videoElement.pause();
+				videoElement.srcObject.getTracks().forEach(track => track.stop());
+				videoElement.srcObject = null;
+			}
 
-		webcamContainer.remove();
+			const canvas = webcamContainer.querySelector('canvas');
+			if (canvas) {
+				canvas.remove();
+			}
+
+			webcamContainer.remove();
+		}
 	}
 };
 

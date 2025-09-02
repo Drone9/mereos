@@ -155,7 +155,7 @@ export const findIncidentLevel = (
 ) => {
 	const aiIncidentlevel = findAIIncidentLevel(aiEvents, profile);
 	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
-	
+
 	if (
 		aiIncidentlevel === 'high' || 
 		browserIncidentlevel === 'high') {
@@ -178,34 +178,36 @@ export const findAIIncidentLevel = (aiEvents = []) => {
 
 		switch (item.name) {
 			case 'person_missing':
-				if (duration >= 20) {
+				if (duration >= 16) {
 					points = 50;
-				} else if (duration >= 5) {
-					points = 15;
-				} else if (duration >= 2) {
-					points = 5;
+				} else if (duration >= 7) {
+					points = 25;
+				} else if (duration >= 4) {
+					points = 3;
 				} else if (duration >= 0) {
 					points = 1;
 				}
 				break;
 
 			case 'multiple_people':
-				if (duration >= 5) {
+				if (duration >= 16) {
 					points = 50;
-				} else if (duration >= 2) {
-					points = 30;
-				} else if (duration >= 0) {
+				} else if (duration >= 7) {
+					points = 25;
+				} else if (duration >= 4) {
 					points = 5;
+				} else if (duration >= 0) {
+					points = 1;
 				}
 				break;
 
 			case 'object_detection':
-				if (duration >= 5) {
+				if (duration >= 11) {
 					points = 50;
-				} else if (duration >= 2) {
-					points = 30;
+				} else if (duration >= 4) {
+					points = 15;
 				} else if (duration >= 0) {
-					points = 5;
+					points = 3;
 				}
 				break;
 		}
@@ -215,17 +217,24 @@ export const findAIIncidentLevel = (aiEvents = []) => {
 
 	console.log('Total AI Points:', totalPoints);
 
-	if (totalPoints >= 100) {
+	if (totalPoints >= 50) {
 		return 'high';
-	} else if (totalPoints >= 50) {
+	} else if (totalPoints >= 24) {
 		return 'medium';
 	} else {
 		return 'low';
 	}
 };
 
+const calculateAwayPoints = (duration) => {
+	if (duration <= 3) return 3;
+	if (duration <= 10) return 25;
+	return 50;
+};
+
 export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
 	let result = 'low';
+	let totalPoints = 0;
 
 	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
 	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
@@ -238,20 +247,36 @@ export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
 		['moved_away_from_page', 'moved_to_another_app', 'moved_to_another_window'].includes(item.name)
 	);
 
+	const awayEvents = browserEvents.filter(item => item.name === 'moved_away_from_page');
+	awayEvents.forEach(event => {
+		const duration = Number(event.value) || 0;
+		const points = calculateAwayPoints(duration);
+		totalPoints += points;
+		
+	});
+
 	if (
-		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] ||
-		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] ||
-		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away']
+		(metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut']) ||
+		(metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized']) ||
+		(metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away'])
 	) {
 		result = 'high';
 	} else if (
-		metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] / 2 ||
-		metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] / 2 ||
-		metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away'] / 2
+		(metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] / 2) ||
+		(metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] / 2) ||
+		(metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away'] / 2)
 	) {
 		result = 'medium';
 	}
 
+	if (totalPoints >= 50) {
+		result = 'high';
+	} else if (totalPoints >= 25) {
+		result = 'medium';
+	} else if (totalPoints > 0 && result === 'low') {
+		result = 'low';
+	}
+	
 	return result;
 };
 
@@ -272,6 +297,7 @@ export const checkForceClosureViolation = async () =>{
 		aiEvents,
 		browserEvents, 
 		secureFeatures);
+
 	if((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high'){
 		await addSectionSessionRecord(session,candidateInviteAssessmentSection);
 		updatePersistData('session', { incident_level: incidentLevel });
@@ -400,35 +426,38 @@ export const checkMicrophone = () => {
 	});
 };
 
-export const registerEvent = async ({ eventName, eventValue }) => {
+export const registerEvent = async ({ eventName, eventValue = null }) => {
 	try {
 		const session = convertDataIntoParse('session');
-		const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
 		if (!session || !session.browserEvents) return;
 
-		const { browserEvents } = session;
-
-		if(failedEvents.length > 0){
+		const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
+		if (failedEvents.length > 0) {
 			retryFailedEvents();
 		}
-		
+
+		const startTime = session?.quizStartTime !== 0 
+			? Math.round((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) 
+			: 0;
+
 		if (session?.id) {
 			const event = {
 				name: eventName,
 				value: eventValue,
-				session_id: session?.id,
-				start_at: session?.quizStartTime !== 0 
-					? Math.round((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) 
-					: 0
+				session_id: session.id,
+				start_at: startTime
 			};
 
-			updatePersistData('session', { browserEvents: [...browserEvents, event] });
+			if (eventValue !== null) {
+				event.end_at = startTime + Number(eventValue);
+			}
+
+			updatePersistData('session', { browserEvents: [...session.browserEvents, event] });
 
 			try {
 				await createEvent(event);
 			} catch (err) {
 				logger.error('API failed, storing event for retry', err);
-
 				const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
 				localStorage.setItem('failedEvents', JSON.stringify([...failedEvents, event]));
 			}
@@ -1084,22 +1113,33 @@ export const detectDualDisplay = () => {
 };
 
 let visibilityChangeHandler;
+let awayStartTime = null;
 
 export const detectUnfocusOfTab = () => {
-	return new Promise(async (resolve, _reject) => {
+	return new Promise((resolve) => {
 		try {
+			removeUnfocusListener();
+
 			visibilityChangeHandler = () => {
 				if (document.hidden) {
-					showToast('error', 'moved_away_from_page');
-					registerEvent({ eventType: 'error', notify: false, eventName: 'moved_away_from_page' });
-					checkForceClosureViolation();
+					awayStartTime = Date.now();
 				} else {
-					registerEvent({ eventType: 'success', notify: false, eventName: 'moved_back_to_page' });
+					if (!awayStartTime) return;
+
+					const durationSec = Math.floor((Date.now() - awayStartTime) / 1000);
+					awayStartTime = null;
+
+					if (durationSec > 0) {
+						registerEvent({ 
+							eventName: 'moved_away_from_page',
+							eventValue: durationSec
+						});
+						checkForceClosureViolation();
+						showToast('error', 'moved_away_from_page');
+					}
 				}
 			};
-
 			document.addEventListener('visibilitychange', visibilityChangeHandler);
-
 			resolve(true);
 		} catch (error) {
 			logger.error('Notification permission error:', error);
@@ -1111,7 +1151,8 @@ export const detectUnfocusOfTab = () => {
 export const removeUnfocusListener = () => {
 	if (visibilityChangeHandler) {
 		document.removeEventListener('visibilitychange', visibilityChangeHandler);
-		visibilityChangeHandler = null; 
+		visibilityChangeHandler = null;
+		awayStartTime = null;
 	}
 };
 

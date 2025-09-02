@@ -90,6 +90,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 				};
 				localStorage.setItem('deviceId', id);
 				await startWebcam();
+		
+				resetMediaCheckUI();
 			}
 
 			if (type === 'microphone' && isAudioEnabled) {
@@ -99,6 +101,32 @@ export const PrevalidationInstructions = async (tabContent) => {
 				};
 				localStorage.setItem('microphoneID', id);
 				await startWebcam();
+		
+				resetMediaCheckUI();
+			}
+		};
+		const resetMediaCheckUI = () => {
+			const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
+			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
+			const messageElement = window.mereos.shadowRoot.getElementById('message');
+	
+			if (checkButton && continueButton) {
+				checkButton.style.display = 'block';
+				checkButton.disabled = false;
+				continueButton.style.display = 'none';
+			}
+	
+			if (messageElement) {
+				let selectMessage = '';
+				if (isAudioEnabled && shouldShowVideo) {
+					selectMessage = i18next.t('select_preferred_camera_and_microphone');
+				} else if (isAudioEnabled) {
+					selectMessage = i18next.t('select_preferred_microphone');
+				} else if (shouldShowVideo) {
+					selectMessage = i18next.t('select_preferred_camera');
+				}
+				messageElement.textContent = selectMessage;
+				messageElement.style.color = '';
 			}
 		};
 
@@ -422,18 +450,18 @@ export const PrevalidationInstructions = async (tabContent) => {
 		const handleLanguageChange = async () => {    
 			const streamExists = window.mereos.globalStream;
 			const streamActive = streamExists && window.mereos.globalStream.active;
-    
+
 			const headerTitle = window.mereos.shadowRoot.querySelector('.pvi-header-title');
 			const msg = window.mereos.shadowRoot.querySelector('.pvi-msg');
-    
+
 			if (headerTitle) headerTitle.textContent = i18next.t('system_diagnostics');
 			if (msg) msg.textContent = i18next.t('initial_system_check_passed');
-    
+
 			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
 			if (continueButton) {
 				continueButton.textContent = i18next.t('continue');
 			}
-            
+        
 			const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
 			if (checkButton) {
 				checkButton.textContent = i18next.t('check_camera_mic');
@@ -448,7 +476,13 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 			const messageElement = window.mereos.shadowRoot.getElementById('message');
 			if (messageElement) {
-				if (permissionDenied) {
+				const checkButtonHidden = checkButton && checkButton.style.display === 'none';
+				const continueButtonVisible = continueButton && continueButton.style.display === 'block';
+        
+				if (checkButtonHidden && continueButtonVisible) {
+					messageElement.textContent = i18next.t('media_check_success');
+					messageElement.style.color = '';
+				} else if (permissionDenied) {
 					let permissionMessage = '';
 					if (isAudioEnabled && shouldShowVideo) {
 						permissionMessage = i18next.t('enable_camera_microphone_permissions');
@@ -458,6 +492,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 						permissionMessage = i18next.t('enable_camera_permissions');
 					}
 					messageElement.textContent = permissionMessage;
+					messageElement.style.color = '#ff4444';
 				} else {
 					let selectMessage = '';
 					if (isAudioEnabled && shouldShowVideo) {
@@ -468,9 +503,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 						selectMessage = i18next.t('select_preferred_camera');
 					}
 					messageElement.textContent = selectMessage;
+					messageElement.style.color = '';
 				}
 			}
-    
+
 			if (shouldShowVideo) {
 				if (!streamExists || !streamActive) {
 					if (window.mereos.globalStream) {
@@ -480,16 +516,16 @@ export const PrevalidationInstructions = async (tabContent) => {
 				} else {
 					const videoElementAfter = window.mereos.shadowRoot.getElementById('myVideo');
 					const videoContainerAfter = window.mereos.shadowRoot.getElementById('videoContainer');
-            
+    
 					if (videoElementAfter && !videoElementAfter.srcObject) {
 						videoElementAfter.srcObject = window.mereos.globalStream;
 					}
-            
+    
 					if (videoContainerAfter) {
 						videoContainerAfter.style.display = '';
 						videoContainerAfter.style.visibility = 'visible';
 					}
-            
+    
 					const videoMainContainer = window.mereos.shadowRoot.getElementById('videoMainContainer');
 					if (videoMainContainer) {
 						videoMainContainer.style.display = '';

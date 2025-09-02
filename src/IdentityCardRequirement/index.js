@@ -87,8 +87,10 @@ export const IdentityCardRequirement = async (tabContent, callback) => {
 };
 
 i18next.on('languageChanged', () => {
-	const activeTab = window.mereos.shadowRoot.querySelector('.tab-content.active');
-	if (activeTab && activeTab.id === 'IdentityCardRequirement') {
-		IdentityCardRequirement(activeTab);
+	if(window.mereos.shadowRoot){
+		const activeTab = window.mereos.shadowRoot.querySelector('.tab-content.active');
+		if (activeTab && activeTab.id === 'IdentityCardRequirement') {
+			IdentityCardRequirement(activeTab);
+		}
 	}
 });

@@ -273,7 +273,7 @@ const cleanupCameraTracks = async (room, trackKind) => {
 	}
 };
 
-const handleDeviceLost = (kind) => {
+const handleDeviceLost = (kind, isUserDisabled = false) => {
   const container = window.mereos?.shadowRoot || document;
 	const session = convertDataIntoParse('session');
 
@@ -302,10 +302,18 @@ const handleDeviceLost = (kind) => {
   }
 
   if (typeof registerEvent === 'function' && session.sessionStatus === 'Attending') {
+    let eventName;
+    
+    if (isUserDisabled) {
+      eventName = kind === 'video' ? 'camera_permission_denied_hardware' : 'camera_permission_denied_hardware';
+    } else {
+      eventName = kind === 'video' ? 'camera_permission_disabled' : 'microphone_permission_denied';
+    }
+    
     registerEvent({
       eventType: 'error',
       notify: false,
-      eventName: kind === 'video' ? 'camera_permission_disabled' : 'microphone_permission_denied',
+      eventName: eventName,
       eventValue: new Date(),
     });
   }
@@ -319,8 +327,7 @@ const attachDeviceChangeWatcher = (track) => {
     try {
       const present = await isDevicePresent(kind, deviceId);
       if (!present) {
-        logger?.warn?.(`${kind} device removed (devicechange)`, { deviceId });
-        handleDeviceLost(kind);
+        handleDeviceLost(kind, false);
       }
     } catch (e) {
       console.error('devicechange check failed', e);
@@ -356,16 +363,20 @@ const setupTrackStoppedListeners = (track) => {
         logger?.warn?.(`${kind} underlying MediaStreamTrack ended`);
         const present = await isDevicePresent(kind, deviceId);
         if (!present) {
-          handleDeviceLost(kind);
+          handleDeviceLost(kind, false);
           return;
         }
       }
 
       await probeExactDevice(kind, deviceId);
-      handleDeviceLost(kind);
+      handleDeviceLost(kind, true);
     } catch (probeError) {
       logger?.error?.(`Exact-device probe failed for ${kind}`, probeError);
-      handleDeviceLost(kind);
+			if(probeError.name === 'NotAllowedError'){
+      	handleDeviceLost(kind, false);
+			}else if (probeError.name === 'NotReadableError'){
+      	handleDeviceLost(kind, true);
+			}
     } finally {
       detachDeviceChangeWatcher(track);
     }
@@ -388,9 +399,7 @@ const removeStoppedListener = (track) => {
 };
 
 const reconnectCamera = async () => {
-	try {
-		hidePermissionModal();
-		
+	try {		
 		if (!window.mereos?.roomInstance) {
 			console.error('No active Twilio room instance found');
 			if (window.mereos.startRecordingCallBack) {
@@ -402,6 +411,8 @@ const reconnectCamera = async () => {
 			}
 			return;
 		}
+		
+		hidePermissionModal();
 		
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
@@ -455,13 +466,13 @@ const reconnectCamera = async () => {
 			cameraRecordings.push(newVideoTrackPublication.trackSid);
 			
 			await new Promise(resolve => setTimeout(resolve, 100));
-			
+			hidePermissionModal();
 			const localVideoTrack = Array.from(room.localParticipant.videoTracks.values())
 				.find(publication => publication.trackSid === newVideoTrackPublication.trackSid)?.track;
 			
 			if (localVideoTrack) {
 				const twilioStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
-				
+				hidePermissionModal();
 				if (secureFeatures?.entities?.filter(entity => aiEventsFeatures?.includes(entity.key))?.length) {
 					await startAIWebcam(room, twilioStream);
 				} else {
@@ -501,6 +512,7 @@ const reconnectCamera = async () => {
 				eventName: 'camera_permission_restored', 
 				eventValue: new Date() 
 			});
+			hidePermissionModal();
 		}
 		
 		if (window.mereos.startRecordingCallBack) {
@@ -510,6 +522,7 @@ const reconnectCamera = async () => {
 				code: 50000
 			});
 		}
+		
 				
 	} catch (error) {
 		console.error('Failed to reconnect camera:', error);

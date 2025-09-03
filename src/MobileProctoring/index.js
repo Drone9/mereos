@@ -51,6 +51,7 @@ export const MobileProctoring = async (tabContent) => {
 
 		window.mereos.socket.onmessage = (event) => {
 			const eventData = JSON.parse(event.data);
+			logger.success('eventData',eventData);
 
 			switch (eventData?.message?.event || eventData?.event) {
 				case 'mobile_connection':
@@ -475,6 +476,17 @@ export const MobileProctoring = async (tabContent) => {
 	};
 
 	initProctoring();
+
+	window.addEventListener('offline', () => {
+		if (window.mereos.socket) {
+			showToast('error','internet_connection_lost');
+			window.mereos.socket.close();
+		}
+	});
+
+	window.addEventListener('online', () => {
+		initProctoring();
+	});
 
 	i18next.on('languageChanged', renderUI);
 };

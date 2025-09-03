@@ -22,6 +22,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const candidateAssessment = getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
 	let publishedScreenTrack = null;
+	let isScreenAlreadyShared = false; // Add flag to track screen sharing status
 
 	if (!tabContent) {
 		logger.error('tabContent is not defined or is not a valid DOM element');
@@ -67,6 +68,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 						if(window.mereos.newStream){
 							window.mereos.newStream?.getVideoTracks()[0].stop();
 						}
+						isScreenAlreadyShared = false; // Reset flag when violation occurs
 						showTab('MobileProctoring');
 					}
 					registerEvent({ eventType: 'error', notify: false, eventName: eventData?.message?.message, eventValue: getDateTime() });
@@ -90,6 +92,20 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	multipleScreensCheck && checkMultipleScreens();
 
 	const shareScreen = async () => {
+		if (isScreenAlreadyShared && window.mereos.newStream && 
+			window.mereos.newStream.getVideoTracks()[0] && 
+			window.mereos.newStream.getVideoTracks()[0].readyState === 'live') {
+			
+			stream = window.mereos.newStream;
+			mode = 'startScreenRecording';
+			msg = {
+				type: 'successful',
+				text: i18next.t('screen_shared_successfully')
+			};
+			updateUI();
+			return;
+		}
+
 		try {
 			window.mereos.newStream = await shareScreenFromContent();
 
@@ -106,18 +122,25 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			if (isScreenShared) {
 				stream = window.mereos.newStream;
 				mode = 'startScreenRecording';
+				isScreenAlreadyShared = true; 
 				msg = {
 					type: 'successful',
 					text: i18next.t('screen_shared_successfully')
 				};
 
+				videoTrack.addEventListener('ended', () => {
+					isScreenAlreadyShared = false;
+				});
+
 			} else {
 				mode = 'rerecordScreen';
+				isScreenAlreadyShared = false;
 				videoTrack.stop();
 				throw new Error(i18next.t('please_share_entire_screen'));
 			}
 		} catch (err) {
 			logger.error('Error during screen sharing:', err.message);
+			isScreenAlreadyShared = false;
 			mode = 'share-screen-again';
 			msg = {
 				type: err?.message === i18next.t('please_share_entire_screen') ? 'share-screen-again' : 'unsuccessful',
@@ -156,6 +179,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		if (stream) {
 			stream.getVideoTracks()[0].stop();
 		}
+		isScreenAlreadyShared = false; 
 		if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 			window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 		}
@@ -271,9 +295,21 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		updateButtons(tabContent.querySelector('.screen-share-container'));
 	};
 
+	if (window.mereos.newStream && 
+		window.mereos.newStream.getVideoTracks()[0] && 
+		window.mereos.newStream.getVideoTracks()[0].readyState === 'live') {
+		isScreenAlreadyShared = true;
+		stream = window.mereos.newStream;
+		mode = 'startScreenRecording';
+		msg = {
+			type: 'successful',
+			text: i18next.t('screen_shared_successfully')
+		};
+	}
+
 	createInitialUI();
 	
-	if (!window.mereos.newStream) {
+	if (!isScreenAlreadyShared) {
 		shareScreen();
 	}
 	

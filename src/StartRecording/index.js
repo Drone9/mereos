@@ -273,7 +273,7 @@ const cleanupCameraTracks = async (room, trackKind) => {
 	}
 };
 
-const handleDeviceLost = (kind, isUserDisabled = false) => {
+const handleDeviceLost = (kind, isUserDisabled = false,track) => {
   const container = window.mereos?.shadowRoot || document;
 	const session = convertDataIntoParse('session');
 
@@ -289,9 +289,10 @@ const handleDeviceLost = (kind, isUserDisabled = false) => {
     userRemoteVideo.remove();
   }
 
-  if (typeof showPermissionModal === 'function' && session.sessionStatus === 'Attending') {
-    showPermissionModal();
-  }
+  if (typeof showPermissionModal === 'function' && 
+    session.sessionStatus === 'Attending' && !track.name.includes('screen-share')) {
+  showPermissionModal();
+	}
 
   if (window.mereos?.startRecordingCallBack) {
     window.mereos.startRecordingCallBack({
@@ -327,7 +328,7 @@ const attachDeviceChangeWatcher = (track) => {
     try {
       const present = await isDevicePresent(kind, deviceId);
       if (!present) {
-        handleDeviceLost(kind, false);
+        handleDeviceLost(kind, false,track);
       }
     } catch (e) {
       console.error('devicechange check failed', e);
@@ -352,7 +353,6 @@ const setupTrackStoppedListeners = (track) => {
   attachDeviceChangeWatcher(track);
 	const session = convertDataIntoParse('session');
   const stoppedListener = async () => {
-    logger?.success?.(`${track.kind} track 'stopped' fired`);
 
     const kind = track.kind;
     const mst = track.mediaStreamTrack;
@@ -360,22 +360,21 @@ const setupTrackStoppedListeners = (track) => {
 
     try {
       if (mst && mst.readyState === 'ended') {
-        logger?.warn?.(`${kind} underlying MediaStreamTrack ended`);
         const present = await isDevicePresent(kind, deviceId);
         if (!present) {
-          handleDeviceLost(kind, false);
+          handleDeviceLost(kind, false,track);
           return;
         }
       }
 
       await probeExactDevice(kind, deviceId);
-      handleDeviceLost(kind, true);
+      handleDeviceLost(kind, true,track);
     } catch (probeError) {
       logger?.error?.(`Exact-device probe failed for ${kind}`, probeError);
 			if(probeError.name === 'NotAllowedError'){
-      	handleDeviceLost(kind, false);
+      	handleDeviceLost(kind, false,track);
 			}else if (probeError.name === 'NotReadableError'){
-      	handleDeviceLost(kind, true);
+      	handleDeviceLost(kind, true,track);
 			}
     } finally {
       detachDeviceChangeWatcher(track);
@@ -716,11 +715,9 @@ export const startRecording = async () => {
 			if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
 				if(window.mereos?.newStream?.getTracks()[0]){
 					screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0],{
-						name: 'screen-share'
+						name: `screen-share ${v4()}`
 					});
-					window.mereos.screenTrackPublished = await room.localParticipant.publishTrack(screenTrack, {
-						name: 'screen-share'
-					});
+					window.mereos.screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
 					screenRecordings = [...session.screen_sharing_video_name, window.mereos.screenTrackPublished.trackSid];
 					updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 				}else{
@@ -1470,7 +1467,6 @@ export function VideoChat(room) {
 			});
 
 			room.on('participantDisconnected', participant => {
-				logger.success('in the participantDisconnected');
 				participant.tracks.forEach(publication => {
 					if (publication.track) {
 						detachTrack(publication.track);

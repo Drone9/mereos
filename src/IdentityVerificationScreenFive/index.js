@@ -68,7 +68,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 						if(window.mereos.newStream){
 							window.mereos.newStream?.getVideoTracks()[0].stop();
 						}
-						isScreenAlreadyShared = false; // Reset flag when violation occurs
+						isScreenAlreadyShared = false; 
 						showTab('MobileProctoring');
 					}
 					registerEvent({ eventType: 'error', notify: false, eventName: eventData?.message?.message, eventValue: getDateTime() });
@@ -159,18 +159,45 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		if (window?.mereos?.roomInstance) {
 			try {
-				let screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0],{
-					name: `screen-share ${v4()}`
-				});
-				publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
-				if(window.mereos?.screenTrackPublished?.track){
-					await window.mereos.roomInstance.localParticipant.unpublishTrack(window.mereos?.screenTrackPublished?.track);
+				const videoTrack = window?.mereos?.newStream
+					?.getVideoTracks()[0];
+
+				if (!videoTrack) {
+					throw new Error('No video track found in screen share stream');
 				}
+
+				if (videoTrack.readyState !== 'live') {
+					throw new Error('Video track is not in live state');
+				}
+
+				let screenTrack;
+				try {
+					screenTrack = new TwilioVideo.LocalVideoTrack(videoTrack, {
+						name: `screen-share-${v4()}`
+					});
+				} catch (trackError) {
+					console.error('Error creating LocalVideoTrack:', trackError);
+					screenTrack = new TwilioVideo.LocalVideoTrack(videoTrack);
+				}
+			
+				if (window.mereos?.screenTrackPublished?.track) {
+					try {
+						await window.mereos.roomInstance.localParticipant.unpublishTrack(window.mereos.screenTrackPublished.track);
+					} catch (unpublishError) {
+						console.error('Error unpublishing existing track:', unpublishError);
+					}
+				}
+
+				publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
+			
+				window.mereos.screenTrackPublished = publishedScreenTrack;
             
-				let screenRecordings = [...session.screen_sharing_video_name, publishedScreenTrack.trackSid];
+				let screenRecordings = [...(session.screen_sharing_video_name || []), publishedScreenTrack.trackSid];
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+
 			} catch (error) {
 				console.error('Error starting screen share:', error);
+				showToast('error', 'screen_share_publish_failed');
 			}
 		}
 	};

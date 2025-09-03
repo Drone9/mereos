@@ -468,6 +468,7 @@ export const registerEvent = async ({ eventName, eventValue = null }) => {
 };
 
 export const retryFailedEvents = async () => {
+	window.removeEventListener('online', retryFailedEvents);
 	const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
 	if (!failedEvents.length) {
 		return;
@@ -930,6 +931,7 @@ export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 };
 
 export const retryFailedAIEvents = async () => {
+	window.removeEventListener('online', retryFailedAIEvents);
 	const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
 	if (!failedAIEvents.length) {
 		return;
@@ -1366,8 +1368,6 @@ export const unlockBrowserFromContent = () => {
 
 	removeUnfocusListener();
 
-	window.removeEventListener('resize', handleResize);
-
 	if (document.fullscreenElement) {
 		document.exitFullscreen();
 	}
@@ -1741,30 +1741,23 @@ export const forceFullScreen = (element = document.documentElement) => {
 
 export const detectWindowResize = () => {
 	return new Promise((resolve, _reject) => {
-		window.addEventListener('resize', handleResize);
+		const handleResizeOnce = () => {
+			if (!isProgrammaticFullscreen) {
+				registerEvent({
+					eventType: 'error',
+					notify: false,
+					eventName: 'candidate_resized_window'
+				});
+				checkForceClosureViolation();
+			}
+
+			// ✅ remove listener after first trigger
+			window.removeEventListener('resize', handleResizeOnce);
+		};
+
+		window.addEventListener('resize', handleResizeOnce);
 		resolve(true);
 	});
-};
-
-let resizeTimeout;
-let isResizing = false;
-
-const handleResize = () => {
-	if (isProgrammaticFullscreen) {
-		return;
-	}
-
-	if (!isResizing) {
-		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
-		checkForceClosureViolation();
-		isResizing = true;
-	}
-
-	clearTimeout(resizeTimeout);
-
-	resizeTimeout = setTimeout(() => {
-		isResizing = false;
-	}, 500);
 };
 
 export const checkPermissionStatus = async () => {

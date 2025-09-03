@@ -7,6 +7,7 @@ let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
 const reconnectDelay = 2000;
 let reconnectTimer = null;
+let messageQueue = [];
 
 const generatePeerId = () => v4();
 
@@ -29,7 +30,7 @@ const getGroupId = () => {
 
 const createWebSocketConnection = () => {
 	if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
-		logger.info('WebSocket is already open. Skipping reconnection.');
+		flushMessageQueue();
 		return;
 	}
 
@@ -38,54 +39,60 @@ const createWebSocketConnection = () => {
 	}
 
 	if (window.mereos.socket) {
-		window.mereos.socket.close();
-		window.mereos.socket = null;
+		try { window.mereos.socket.close(); } catch {}
 	}
 
 	const finalGroupName = getGroupId();
-	logger.info('Attempting to connect to WebSocket...');
 
 	window.mereos.socket = new WebSocket(`${SOCKET_URL}?groupName=${finalGroupName}`);
 
 	window.mereos.socket.onopen = () => {
-		logger.success('WebSocket connection established successfully');
 		reconnectAttempts = 0;
-		
 		if (reconnectTimer) {
 			clearTimeout(reconnectTimer);
 			reconnectTimer = null;
 		}
+		flushMessageQueue();
 	};
 
-	window.mereos.socket.onclose = (event) => {		
+	window.mereos.socket.onclose = (event) => {
 		if (event.code !== 1000) {
 			attemptReconnect();
 		}
 	};
 
 	window.mereos.socket.onerror = (error) => {
-		logger.error('WebSocket error occurred:', error);
+		logger.error('WebSocket error:', error);
 	};
 
 	window.mereos.socket.onmessage = (event) => {
-		logger.info('Message received from server:', event.data);
+		logger.info('Message received:', event.data);
 	};
 };
 
+
 const attemptReconnect = () => {
-	if (reconnectTimer) {
-		clearTimeout(reconnectTimer);
-		reconnectTimer = null;
-	}
+	if (reconnectTimer) clearTimeout(reconnectTimer);
 
 	if (reconnectAttempts < maxReconnectAttempts) {
 		reconnectAttempts++;
-		
 		reconnectTimer = setTimeout(() => {
 			createWebSocketConnection();
 		}, reconnectDelay);
 	} else {
-		logger.error('Max reconnection attempts reached. Could not reconnect.');
+		logger.error('Max reconnection attempts reached.');
+	}
+};
+
+const flushMessageQueue = () => {
+	while (messageQueue.length && isSocketConnected()) {
+		const msg = messageQueue.shift();
+		try {
+			window.mereos.socket.send(msg);
+		} catch (err) {
+			messageQueue.unshift(msg);
+			break;
+		}
 	}
 };
 
@@ -94,14 +101,16 @@ const initSocket = () => {
 };
 
 const sendMessage = (message) => {
-	if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
-		window.mereos.socket.send(message);
-	} else {
-		logger.error('WebSocket is not open. Unable to send message');
-		
-		if (!window.mereos.socket || window.mereos.socket.readyState === WebSocket.CLOSED) {
-			createWebSocketConnection();
+	const payload = typeof message === 'string' ? message : JSON.stringify(message);
+	if (isSocketConnected()) {
+		try {
+			window.mereos.socket.send(payload);
+		} catch (err) {
+			messageQueue.push(payload);
 		}
+	} else {
+		messageQueue.push(payload);
+		createWebSocketConnection();
 	}
 };
 
@@ -144,6 +153,7 @@ const isSocketConnected = () => {
 
 const forceReconnect = () => {
 	reconnectAttempts = 0;
+	localStorage.removeItem('socketGroupId');
 	createWebSocketConnection();
 };
 

@@ -274,23 +274,19 @@ const cleanupCameraTracks = async (room, trackKind) => {
 };
 
 const handleDeviceLost = (kind, isUserDisabled = false,track) => {
-  const container = window.mereos?.shadowRoot || document;
+	if(track.name.includes('screen-share')) return;
+
+	const container = window.mereos?.shadowRoot || document;
 	const session = convertDataIntoParse('session');
 
-  const cameraContainer = container.querySelector('#webcam-container');
-  if (cameraContainer) {
-    cameraContainer.style.display = 'none';
-    cameraContainer.remove();
-  }
-
-  const userRemoteVideo = container.querySelector('#user-remote-video');
+	const userRemoteVideo = container.querySelector('#user-video-element');
   if (userRemoteVideo) {
     userRemoteVideo.style.display = 'none';
     userRemoteVideo.remove();
   }
 
   if (typeof showPermissionModal === 'function' && 
-    session.sessionStatus === 'Attending' && !track.name.includes('screen-share')) {
+    session.sessionStatus === 'Attending') {
   showPermissionModal();
 	}
 
@@ -381,7 +377,7 @@ const setupTrackStoppedListeners = (track) => {
     }
   };
 
-	if(session.sessionStatus === 'Attending'){
+	if(session.sessionStatus === 'Attending' && !track.name.includes('screen-share')){
   	track.on('stopped', stoppedListener);
 	}
 
@@ -715,7 +711,7 @@ export const startRecording = async () => {
 			if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
 				if(window.mereos?.newStream?.getTracks()[0]){
 					screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0],{
-						name: `screen-share ${v4()}`
+						name: `screen-share-${v4()}`
 					});
 					window.mereos.screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
 					screenRecordings = [...session.screen_sharing_video_name, window.mereos.screenTrackPublished.trackSid];
@@ -919,33 +915,41 @@ const setupWebcam = async (mediaStream) => {
         
 			const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
             
-			let videoHeaderContainer = document.createElement('div');
-			videoHeaderContainer.className = 'user-video-header';
-			videoHeaderContainer.id = 'user-video-header';
-        
-			const videoHeading = document.createElement('p');
-			videoHeading.className = 'recording-heading';
-			videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
-			const recordingIcon = document.createElement('div');
-			recordingIcon.className = 'recording-badge-container-header';
-			recordingIcon.innerHTML = `
-					<img
-							class='ivsf-recording-dot'
-							src="${ASSET_URL}/white-dot.svg"
-							alt='white-dot'
-					></img>
-					<p class='recording-text'>${i18next.t('recording')}</p>
-			`;
-        
-			videoHeaderContainer.appendChild(videoHeading);
-			videoHeaderContainer.appendChild(recordingIcon);
+			 let videoHeaderContainer = webcamContainer.querySelector('#user-video-header');
+      if (!videoHeaderContainer) {
+        videoHeaderContainer = document.createElement('div');
+        videoHeaderContainer.className = 'user-video-header';
+        videoHeaderContainer.id = 'user-video-header';
+
+        const videoHeading = document.createElement('p');
+        videoHeading.className = 'recording-heading';
+        videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
+
+        const recordingIcon = document.createElement('div');
+        recordingIcon.className = 'recording-badge-container-header';
+        recordingIcon.innerHTML = `
+          <img
+            class='ivsf-recording-dot'
+            src="${ASSET_URL}/white-dot.svg"
+            alt='white-dot'
+          />
+          <p class='recording-text'>${i18next.t('recording')}</p>
+        `;
+
+        videoHeaderContainer.appendChild(videoHeading);
+        videoHeaderContainer.appendChild(recordingIcon);
+        webcamContainer.appendChild(videoHeaderContainer);
+      }
         
 			const remoteVideoRef = document.createElement('div');
 			remoteVideoRef.classList.add('remote-video');
 			remoteVideoRef.id = 'remote-video';
-        
-			const mediaWrapper = document.createElement('div');
-			Object.assign(mediaWrapper.style, {
+			
+			let mediaWrapper = webcamContainer.querySelector('#user-video-element');
+			if (!mediaWrapper) {
+				mediaWrapper = document.createElement('div');
+				mediaWrapper.id = 'user-video-element';
+				Object.assign(mediaWrapper.style, {
 				position: 'relative',
 				marginLeft: 'auto',
 				marginRight: 'auto',
@@ -953,7 +957,12 @@ const setupWebcam = async (mediaStream) => {
 				height: '142px',
 				objectFit: 'cover'
 			});
-        
+				webcamContainer.appendChild(mediaWrapper);
+			} else {
+				mediaWrapper.innerHTML = '';
+				mediaWrapper.style.display = 'block';
+			}
+			
 			const videoElement = document.createElement('video');
 			videoElement.autoplay = true;
 			videoElement.muted = true;

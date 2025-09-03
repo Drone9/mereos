@@ -22,7 +22,6 @@ import i18next from 'i18next';
 
 async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
-		logger.success('in the inti');
 		localStorage.clear();
 		let logonResp;
 

@@ -14,6 +14,7 @@ import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import * as TwilioVideo from 'twilio-video';
+import { v4 } from 'uuid';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreens;
@@ -136,11 +137,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		if (window?.mereos?.roomInstance) {
 			try {
 				let screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0],{
-					name: 'screen-share'
+					name: `screen-share ${v4()}`
 				});
-				publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack,{
-					name: 'screen-share'
-				});
+				publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
 				if(window.mereos?.screenTrackPublished?.track){
 					await window.mereos.roomInstance.localParticipant.unpublishTrack(window.mereos?.screenTrackPublished?.track);
 				}

@@ -134,7 +134,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 			if (window.mereos.globalStream) {
 					window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
 			}
-			registerEvent({ eventType: 'success', notify: false, eventName: 'prevalidation_passed' });
 			updatePersistData('preChecksSteps', { preValidation: true });
 			showTab('IdentityVerificationScreenOne');
 		};

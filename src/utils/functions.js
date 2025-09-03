@@ -432,7 +432,7 @@ export const registerEvent = async ({ eventName, eventValue = null }) => {
 		if (!session || !session.browserEvents) return;
 
 		const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
-		if (failedEvents.length > 0) {
+		if (failedEvents.length > 0 && navigator.isOnline) {
 			retryFailedEvents();
 		}
 
@@ -891,7 +891,7 @@ export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
 			return;
 		}
 
-		if(failedAIEvents.length > 0){
+		if(failedAIEvents.length > 0 && navigator.isOnline){
 			retryFailedEvents();
 		}
 		const secureFeatures = getSecureFeatures();
@@ -1025,26 +1025,38 @@ export const lockBrowserFromContent = (entities) => {
 };
 
 //* ***************** DefaultEvent Callback *********************/
-let rightClickDisabled = false;
-
+// One stable handler reference
 const handleDefaultEvent = (e) => {
 	e.preventDefault();
 	e.stopPropagation();
 };
 
 export const preventRightClick = () => {
-	if (!rightClickDisabled) {
+	if (typeof window === 'undefined') return false;
+
+	window.mereos = window.mereos || {};
+
+	if (!window.mereos.rightClickDisabled) {
 		document.addEventListener('contextmenu', handleDefaultEvent);
-		rightClickDisabled = true;
+		window.mereos.rightClickDisabled = true;
+		window.mereos.rightClickHandler = handleDefaultEvent;
 	}
 	return true;
 };
 
 export const restoreRightClick = () => {
-	if (rightClickDisabled) {
-		document.removeEventListener('contextmenu', handleDefaultEvent);
-		rightClickDisabled = false;
+	if (typeof window === 'undefined') return false;
+
+	const handler = window.mereos?.rightClickHandler;
+	if (handler) {
+		document.removeEventListener('contextmenu', handler);
 	}
+
+	if (window.mereos) {
+		window.mereos.rightClickDisabled = false;
+		delete window.mereos.rightClickHandler;
+	}
+
 	return true;
 };
 

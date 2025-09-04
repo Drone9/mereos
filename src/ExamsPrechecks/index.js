@@ -366,7 +366,6 @@ const openModal = async (callback) => {
 		initShadowDOM();
 	}
 	const { modal } = window.mereos.dom;
-
 	if(modal){
 		modal.style.display = 'block';
 		modal.style.zIndex = '9999';
@@ -385,7 +384,7 @@ const openModal = async (callback) => {
 	if (preChecksStep === null) {
 		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 	}
-	
+		
 	showTab(activeTab, callback);
 	createLanguageDropdown();
 	if(modal){
@@ -417,7 +416,6 @@ const showTab = async (tabId, callback) => {
 			return;
 		}
 		const { containers } = window.mereos.dom;
-		console.log('tabId', tabId);
 		initializeI18next();
 		const getSecureFeature = getSecureFeatures();
 		const secureFeatures = getSecureFeature?.entities || [];

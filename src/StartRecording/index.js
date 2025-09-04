@@ -75,7 +75,6 @@ export const initMobileConnection = () => {
 
 export const connectSocketConnection = () => {
 	if (!window.mereos?.socket) {
-		logger.success('in the connectSocketConnection');
 		updatePersistData('preChecksSteps', { 
 			mobileConnection: false,
 			screenSharing: false
@@ -102,7 +101,6 @@ export const connectSocketConnection = () => {
 
 			case 'violation':
 				if(eventData?.message?.message === 'Violation'){
-					logger.error('in the violation');
 					updatePersistData('preChecksSteps', { 
 						mobileConnection: false,
 						screenSharing: false

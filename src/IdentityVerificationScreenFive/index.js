@@ -62,35 +62,37 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			logger.error('Socket not initialized');
 			return;
 		}
+		if(!window.mereos.recordingStart){
+			window.mereos.socket.onmessage = (event) => {
+				const eventData = JSON.parse(event?.data);
 
-		window.mereos.socket.onmessage = (event) => {
-			const eventData = JSON.parse(event?.data);
-
-			switch (eventData?.message?.event || eventData?.event) {
-				case 'violation':
-					if(eventData?.message?.message === 'Violation'){
-						updatePersistData('preChecksSteps', { mobileConnection: false, screenSharing: false });
-						if(window.mereos.newStream){
+				switch (eventData?.message?.event || eventData?.event) {
+					case 'violation':
+						if(eventData?.message?.message === 'Violation'){
+							updatePersistData('preChecksSteps', { mobileConnection: false, screenSharing: false });
+							if(window.mereos.newStream){
 							window.mereos.newStream?.getVideoTracks()[0].stop();
+							}
+							isScreenAlreadyShared = false; 
+							showTab('MobileProctoring');
 						}
-						isScreenAlreadyShared = false; 
-						showTab('MobileProctoring');
-					}
-					registerEvent({ eventType: 'error', notify: false, eventName: eventData?.message?.message, eventValue: getDateTime() });
-					break;
+						registerEvent({ eventType: 'error', notify: false, eventName: eventData?.message?.message, eventValue: getDateTime() });
+						break;
 
-				default:
-					break;
-			}
-		};
+					default:
+						break;
+				}
+			};
 		
-		window.mereos.socket.onerror = (error) => {
-			logger.error('WebSocket error:', error);
-		};
+			window.mereos.socket.onerror = (error) => {
+				logger.error('WebSocket error:', error);
+			};
 
-		window.mereos.socket.onclose = () => {
-			logger.error('WebSocket connection closed');
-		};
+			window.mereos.socket.onclose = () => {
+				logger.error('WebSocket connection closed');
+			};
+		}
+		
 	};
 	
 	let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
@@ -164,6 +166,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		if (window?.mereos?.roomInstance) {
 			try {
+				updatePersistData('preChecksSteps', { screenSharing: true });
 				const videoTrack = window?.mereos?.newStream
 					?.getVideoTracks()[0];
 
@@ -196,7 +199,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
 			
 				window.mereos.screenTrackPublished = publishedScreenTrack;
-            
+
 				let screenRecordings = [...(session.screen_sharing_video_name || []), publishedScreenTrack.trackSid];
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 

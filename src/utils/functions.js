@@ -1775,7 +1775,7 @@ const handleResize = () => {
 
 	resizeTimeout = setTimeout(() => {
 		isResizing = false;
-	}, 500);
+	}, 200);
 };
 
 export const checkPermissionStatus = async () => {

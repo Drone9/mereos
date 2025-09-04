@@ -426,16 +426,14 @@ export const checkMicrophone = () => {
 	});
 };
 
-let isRetrying = false;
-
 export const registerEvent = async ({ eventName, eventValue = null }) => {
 	try {
 		const session = convertDataIntoParse('session');
 		if (!session || !session.browserEvents) return;
 
 		const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
-		if (failedEvents.length > 0 && navigator.onLine && !isRetrying) {
-			retryFailedEvents(); // call only once if not retrying
+		if (failedEvents.length > 0 && navigator.onLine && !window.mereos.isRetryEvent) {
+			retryFailedEvents();
 		}
 
 		const startTime = session?.quizStartTime !== 0 
@@ -470,13 +468,13 @@ export const registerEvent = async ({ eventName, eventValue = null }) => {
 };
 
 export const retryFailedEvents = async () => {
-	if (isRetrying) return; // prevent multiple parallel calls
-	isRetrying = true;
+	if (window.mereos.isRetryEvent) return;
+	window.mereos.isRetryEvent = true;
 
 	window.removeEventListener('online', retryFailedEvents);
 	const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
 	if (!failedEvents.length) {
-		isRetrying = false;
+		window.mereos.isRetryEvent = true;
 		return;
 	}
 
@@ -487,7 +485,7 @@ export const retryFailedEvents = async () => {
 		logger.error('Retry failed for events', err);
 		localStorage.setItem('failedEvents', JSON.stringify(failedEvents));
 	} finally {
-		isRetrying = false;
+		window.mereos.isRetryEvent = true;
 	}
 };
 
@@ -893,16 +891,14 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 	return `${year}${_dateBreaker_}${date}${_dateBreaker_}${month}${_differentiator_}${hours}${_timeBreaker_}${minutes}${_timeBreaker_}${seconds}`;
 };
 
-let isRetryingAI = false;
-
 export const registerAIEvent = async ({ eventName, startTime, endTime }) => {
 	try {
 		const session = convertDataIntoParse('session');
 		if (!session || !session.aiEvents) return;
 
 		const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
-		if (failedAIEvents.length > 0 && navigator.onLine && !isRetryingAI) {
-			retryFailedAIEvents(); // call only if not already retrying
+		if (failedAIEvents.length > 0 && navigator.onLine && !window.mereos.isRetryingAIEvent) {
+			retryFailedAIEvents();
 		}
 
 		const secureFeatures = getSecureFeatures();
@@ -940,13 +936,13 @@ export const registerAIEvent = async ({ eventName, startTime, endTime }) => {
 };
 
 export const retryFailedAIEvents = async () => {
-	if (isRetryingAI) return; 
-	isRetryingAI = true;
+	if (window.mereos.isRetryingAIEvent) return; 
+	window.mereos.isRetryingAIEvent = true;
 
 	window.removeEventListener('online', retryFailedAIEvents);
 	const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
 	if (!failedAIEvents.length) {
-		isRetryingAI = false;
+		window.mereos.isRetryingAIEvent = false;
 		return;
 	}
 
@@ -957,7 +953,7 @@ export const retryFailedAIEvents = async () => {
 		logger.error('Retry failed for AI events', err);
 		localStorage.setItem('failedAIEvents', JSON.stringify(failedAIEvents));
 	} finally {
-		isRetryingAI = false;
+		window.mereos.isRetryingAIEvent = false;
 	}
 };
 
@@ -1779,7 +1775,7 @@ const handleResize = () => {
 
 	resizeTimeout = setTimeout(() => {
 		isResizing = false;
-	}, 500);
+	}, 200);
 };
 
 export const checkPermissionStatus = async () => {

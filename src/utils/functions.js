@@ -733,6 +733,7 @@ export const shareScreenFromContent = () => {
 				const track = stream.getVideoTracks()[0];
 
 				track.addEventListener('ended', () => {
+					window.mereos.isScreenShare = false;
 					registerEvent({notify: false, eventName: 'screen_shared_stopped', eventType: 'error'});
 					if(window.mereos.startRecordingCallBack){
 						window.mereos.startRecordingCallBack({ 

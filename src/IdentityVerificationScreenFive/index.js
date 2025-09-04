@@ -17,6 +17,11 @@ import * as TwilioVideo from 'twilio-video';
 import { v4 } from 'uuid';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
+	if(window.mereos.isScreenShare){
+		return;
+	}
+	window.mereos.isScreenShare=true;
+	logger.success('in the IdentityVerificationScreenFive');
 	let multipleScreens;
 	window.mereos.newStream = null;
 	const candidateAssessment = getSecureFeatures();
@@ -91,34 +96,47 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
 	multipleScreensCheck && checkMultipleScreens();
 
-	let isSharingInProgress = false;
-
 	const shareScreen = async () => {
-		if (isSharingInProgress) {
-			logger.warn('Share screen already in progress, skipping duplicate call');
+		if (isScreenAlreadyShared && window.mereos.newStream && 
+			window.mereos.newStream.getVideoTracks()[0] && 
+			window.mereos.newStream.getVideoTracks()[0].readyState === 'live') {
+			
+			stream = window.mereos.newStream;
+			mode = 'startScreenRecording';
+			msg = {
+				type: 'successful',
+				text: i18next.t('screen_shared_successfully')
+			};
+			updateUI();
 			return;
 		}
-		isSharingInProgress = true;
 
 		try {
 			window.mereos.newStream = await shareScreenFromContent();
+
 			updatePersistData('session', { screenRecordingStream: location });
+
+			const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 
 			const videoTrack = window.mereos.newStream.getVideoTracks()[0];
 			const trackSettings = videoTrack.getSettings();
 
-			const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
-			const isScreenShared = isFirefox || trackSettings.displaySurface === 'monitor';
+			const isScreenShared = isFirefox ? true
+				: trackSettings.displaySurface === 'monitor';
 
 			if (isScreenShared) {
 				stream = window.mereos.newStream;
 				mode = 'startScreenRecording';
-				isScreenAlreadyShared = true;
-				msg = { type: 'successful', text: i18next.t('screen_shared_successfully') };
+				isScreenAlreadyShared = true; 
+				msg = {
+					type: 'successful',
+					text: i18next.t('screen_shared_successfully')
+				};
 
 				videoTrack.addEventListener('ended', () => {
 					isScreenAlreadyShared = false;
 				});
+
 			} else {
 				mode = 'rerecordScreen';
 				isScreenAlreadyShared = false;
@@ -133,18 +151,15 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				type: err?.message === i18next.t('please_share_entire_screen') ? 'share-screen-again' : 'unsuccessful',
 				text: err?.message || 'screen_sharing_stopped'
 			};
-		} finally {
-			isSharingInProgress = false; // reset lock
-			updateUI();
 		}
+		updateUI();
 	};
-
 
 	const nextStep = async () => {
 		updatePersistData('preChecksSteps', { screenSharing: true });
 		registerEvent({ eventType: 'success', notify: false, eventName: 'screen_recording_window_shared', eventValue: getDateTime() });
 		showTab('IdentityVerificationScreenSix');
-
+		window.mereos.isScreenShare = false;
 		const session = convertDataIntoParse('session');
 
 		if (window?.mereos?.roomInstance) {
@@ -196,6 +211,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		if (stream) {
 			stream.getVideoTracks()[0].stop();
 		}
+		window.mereos.isScreenShare = false;
 		isScreenAlreadyShared = false; 
 		if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 			window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));

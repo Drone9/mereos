@@ -226,9 +226,19 @@ export const MobileProctoring = async (tabContent) => {
 								})
 							);
 						}		
+						updatePersistData('preChecksSteps', { mobileConnection: true });
+
+						if(window.mereos.mobileStream){
+							window.mereos.mobileStream.getTracks().forEach(track => track.stop());
+						}
+						if (remoteVideoRef) {
+							remoteVideoRef.srcObject = null;
+							remoteVideoRef.remove();
+						}
 						connectSocketConnection();		
 						closeModal();
 						registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_phone_reconnected', eventValue: getDateTime() });
+						
 						if(window.mereos.startRecordingCallBack){
 							window.mereos.startRecordingCallBack({ 
 								type:'success',
@@ -250,6 +260,7 @@ export const MobileProctoring = async (tabContent) => {
 						}
 						window.mereos.recordingStart = false;
 						logger.error('error',error);
+						
 					} finally {
 						isApiLoading = false;
 						disabledNextBtn = false;

@@ -13,7 +13,6 @@ import {
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import * as TwilioVideo from 'twilio-video';
 import { v4 } from 'uuid';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
@@ -26,7 +25,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	window.mereos.newStream = null;
 	const candidateAssessment = getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
-	let publishedScreenTrack = null;
 	let isScreenAlreadyShared = false;
 
 	if (!tabContent) {
@@ -158,55 +156,63 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const nextStep = async () => {
-		updatePersistData('preChecksSteps', { screenSharing: true });
-		registerEvent({ eventType: 'success', notify: false, eventName: 'screen_recording_window_shared', eventValue: getDateTime() });
-		showTab('IdentityVerificationScreenSix');
-		window.mereos.isScreenShare = false;
-		const session = convertDataIntoParse('session');
+		try {
+			updatePersistData('preChecksSteps', { screenSharing: true });
+			registerEvent({
+				eventType: 'success',
+				notify: false,
+				eventName: 'screen_recording_window_shared',
+				eventValue: getDateTime()
+			});
 
-		if (window?.mereos?.roomInstance) {
-			try {
-				updatePersistData('preChecksSteps', { screenSharing: true });
-				const videoTrack = window?.mereos?.newStream
-					?.getVideoTracks()[0];
+			showTab('IdentityVerificationScreenSix');
+			window.mereos.isScreenShare = false;
+
+			const session = convertDataIntoParse('session');
+
+			if (window?.mereos?.roomInstance) {
+				const videoTrack = window?.mereos?.newStream?.getVideoTracks()[0];
 
 				if (!videoTrack) {
 					throw new Error('No video track found in screen share stream');
 				}
-
 				if (videoTrack.readyState !== 'live') {
 					throw new Error('Video track is not in live state');
 				}
 
-				let screenTrack;
-				try {
-					screenTrack = new TwilioVideo.LocalVideoTrack(videoTrack, {
-						name: `screen-share-${v4()}`
-					});
-				} catch (trackError) {
-					console.error('Error creating LocalVideoTrack:', trackError);
-					screenTrack = new TwilioVideo.LocalVideoTrack(videoTrack);
-				}
-			
 				if (window.mereos?.screenTrackPublished?.track) {
 					try {
-						await window.mereos.roomInstance.localParticipant.unpublishTrack(window.mereos.screenTrackPublished.track);
+						await window.mereos.roomInstance.localParticipant.unpublishTrack(
+							window.mereos.screenTrackPublished.track
+						);
 					} catch (unpublishError) {
 						console.error('Error unpublishing existing track:', unpublishError);
 					}
 				}
 
-				publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(screenTrack);
-			
+				let publishedScreenTrack;
+				try {
+					publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(
+						videoTrack,
+						{ name: `screen-share-${v4()}` }
+					);
+				} catch (publishError) {
+					console.error('Error publishing screen track:', publishError);
+					showToast('error', 'screen_share_publish_failed');
+					return;
+				}
+
 				window.mereos.screenTrackPublished = publishedScreenTrack;
 
-				let screenRecordings = [...(session.screen_sharing_video_name || []), publishedScreenTrack.trackSid];
+				let screenRecordings = [
+					...(session.screen_sharing_video_name || []),
+					publishedScreenTrack.trackSid
+				];
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
-
-			} catch (error) {
-				console.error('Error starting screen share:', error);
-				showToast('error', 'screen_share_publish_failed');
 			}
+		} catch (error) {
+			console.error('Error starting screen share:', error);
+			showToast('error', 'screen_share_publish_failed');
 		}
 	};
 

@@ -1431,7 +1431,6 @@ export const handlePreChecksRedirection = () => {
 	const navHistory = localStorage.getItem('navHistory');
 	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
-	logger.success('window.mereos?.mobileStream',!window.mereos?.mobileStream);
 	if(sessionSetting === 'session_resume'){
 		if (!preChecksStep?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
 			return 'ExamPreparation';

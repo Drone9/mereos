@@ -733,6 +733,7 @@ export const shareScreenFromContent = () => {
 				const track = stream.getVideoTracks()[0];
 
 				track.addEventListener('ended', () => {
+					window.mereos.isScreenShare = false;
 					registerEvent({notify: false, eventName: 'screen_shared_stopped', eventType: 'error'});
 					if(window.mereos.startRecordingCallBack){
 						window.mereos.startRecordingCallBack({ 
@@ -1430,6 +1431,7 @@ export const handlePreChecksRedirection = () => {
 	const navHistory = localStorage.getItem('navHistory');
 	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
+	logger.success('window.mereos?.mobileStream',!window.mereos?.mobileStream);
 	if(sessionSetting === 'session_resume'){
 		if (!preChecksStep?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
 			return 'ExamPreparation';

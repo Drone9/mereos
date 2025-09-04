@@ -426,14 +426,16 @@ export const checkMicrophone = () => {
 	});
 };
 
+let isRetrying = false;
+
 export const registerEvent = async ({ eventName, eventValue = null }) => {
 	try {
 		const session = convertDataIntoParse('session');
 		if (!session || !session.browserEvents) return;
 
 		const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
-		if (failedEvents.length > 0 && navigator.isOnline) {
-			retryFailedEvents();
+		if (failedEvents.length > 0 && navigator.onLine && !isRetrying) {
+			retryFailedEvents(); // call only once if not retrying
 		}
 
 		const startTime = session?.quizStartTime !== 0 
@@ -468,18 +470,24 @@ export const registerEvent = async ({ eventName, eventValue = null }) => {
 };
 
 export const retryFailedEvents = async () => {
+	if (isRetrying) return; // prevent multiple parallel calls
+	isRetrying = true;
+
 	window.removeEventListener('online', retryFailedEvents);
 	const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
 	if (!failedEvents.length) {
+		isRetrying = false;
 		return;
 	}
 
 	try {
-		await bulkRegisterEvents({events:failedEvents});
+		await bulkRegisterEvents({ events: failedEvents });
 		localStorage.removeItem('failedEvents');
 	} catch (err) {
 		logger.error('Retry failed for events', err);
 		localStorage.setItem('failedEvents', JSON.stringify(failedEvents));
+	} finally {
+		isRetrying = false;
 	}
 };
 
@@ -884,65 +892,71 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 	return `${year}${_dateBreaker_}${date}${_dateBreaker_}${month}${_differentiator_}${hours}${_timeBreaker_}${minutes}${_timeBreaker_}${seconds}`;
 };
 
-export const registerAIEvent = async ({ eventName, startTime,endTime }) => {
-	try{
+let isRetryingAI = false;
+
+export const registerAIEvent = async ({ eventName, startTime, endTime }) => {
+	try {
 		const session = convertDataIntoParse('session');
+		if (!session || !session.aiEvents) return;
+
 		const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
-		if (!session || !session.aiEvents) {
-			return;
+		if (failedAIEvents.length > 0 && navigator.onLine && !isRetryingAI) {
+			retryFailedAIEvents(); // call only if not already retrying
 		}
 
-		if(failedAIEvents.length > 0 && navigator.isOnline){
-			retryFailedEvents();
-		}
 		const secureFeatures = getSecureFeatures();
 		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-		const { aiEvents,browserEvents,incident_level } = session;
+		const { aiEvents, browserEvents, incident_level } = session;
+
 		const event = {
 			name: eventName,
 			start_at: startTime,
-			end_at:endTime,
+			end_at: endTime,
 			value: eventName,
 			created_at: getDateTime(),
 			session_id: session?.id
 		};
+
 		const updatedEvents = [...aiEvents, event];
-		updatePersistData('session', { aiEvents:updatedEvents });
+		updatePersistData('session', { aiEvents: updatedEvents });
 
 		try {
 			await createAiEvent(event);
 		} catch (err) {
 			logger.error('API failed, storing event for retry', err);
-
 			const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
 			localStorage.setItem('failedAIEvents', JSON.stringify([...failedAIEvents, event]));
 		}
-		let incidentLevel = findIncidentLevel(
-			updatedEvents,
-			browserEvents, 
-			secureFeatures);
+
+		let incidentLevel = findIncidentLevel(updatedEvents, browserEvents, secureFeatures);
 		if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {
-			await addSectionSessionRecord(session,candidateInviteAssessmentSection);
+			await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 			updatePersistData('session', { incident_level: incidentLevel });
 		}
-	}catch(e){
-		logger.error('Error in register ai event',e);
+	} catch (e) {
+		logger.error('Error in registerAIEvent', e);
 	}
 };
 
 export const retryFailedAIEvents = async () => {
+	if (isRetryingAI) return; 
+	isRetryingAI = true;
+
 	window.removeEventListener('online', retryFailedAIEvents);
 	const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
 	if (!failedAIEvents.length) {
+		isRetryingAI = false;
 		return;
 	}
 
 	try {
-		await bulkRegisterAIEvents({ ai_events:failedAIEvents });
+		await bulkRegisterAIEvents({ ai_events: failedAIEvents });
 		localStorage.removeItem('failedAIEvents');
 	} catch (err) {
-		logger.error('Retry failed for events', err);
+		logger.error('Retry failed for AI events', err);
 		localStorage.setItem('failedAIEvents', JSON.stringify(failedAIEvents));
+	} finally {
+		isRetryingAI = false;
 	}
 };
 

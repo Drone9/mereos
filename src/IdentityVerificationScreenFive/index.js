@@ -91,47 +91,34 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
 	multipleScreensCheck && checkMultipleScreens();
 
+	let isSharingInProgress = false;
+
 	const shareScreen = async () => {
-		if (isScreenAlreadyShared && window.mereos.newStream && 
-			window.mereos.newStream.getVideoTracks()[0] && 
-			window.mereos.newStream.getVideoTracks()[0].readyState === 'live') {
-			
-			stream = window.mereos.newStream;
-			mode = 'startScreenRecording';
-			msg = {
-				type: 'successful',
-				text: i18next.t('screen_shared_successfully')
-			};
-			updateUI();
+		if (isSharingInProgress) {
+			logger.warn('Share screen already in progress, skipping duplicate call');
 			return;
 		}
+		isSharingInProgress = true;
 
 		try {
 			window.mereos.newStream = await shareScreenFromContent();
-
 			updatePersistData('session', { screenRecordingStream: location });
-
-			const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 
 			const videoTrack = window.mereos.newStream.getVideoTracks()[0];
 			const trackSettings = videoTrack.getSettings();
 
-			const isScreenShared = isFirefox ? true
-				: trackSettings.displaySurface === 'monitor';
+			const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+			const isScreenShared = isFirefox || trackSettings.displaySurface === 'monitor';
 
 			if (isScreenShared) {
 				stream = window.mereos.newStream;
 				mode = 'startScreenRecording';
-				isScreenAlreadyShared = true; 
-				msg = {
-					type: 'successful',
-					text: i18next.t('screen_shared_successfully')
-				};
+				isScreenAlreadyShared = true;
+				msg = { type: 'successful', text: i18next.t('screen_shared_successfully') };
 
 				videoTrack.addEventListener('ended', () => {
 					isScreenAlreadyShared = false;
 				});
-
 			} else {
 				mode = 'rerecordScreen';
 				isScreenAlreadyShared = false;
@@ -146,9 +133,12 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				type: err?.message === i18next.t('please_share_entire_screen') ? 'share-screen-again' : 'unsuccessful',
 				text: err?.message || 'screen_sharing_stopped'
 			};
+		} finally {
+			isSharingInProgress = false; // reset lock
+			updateUI();
 		}
-		updateUI();
 	};
+
 
 	const nextStep = async () => {
 		updatePersistData('preChecksSteps', { screenSharing: true });

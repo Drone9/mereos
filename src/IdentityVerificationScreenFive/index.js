@@ -22,7 +22,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const candidateAssessment = getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
 	let publishedScreenTrack = null;
-	let isScreenAlreadyShared = false; // Add flag to track screen sharing status
+	let isScreenAlreadyShared = false;
 
 	if (!tabContent) {
 		logger.error('tabContent is not defined or is not a valid DOM element');

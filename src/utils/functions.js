@@ -1741,23 +1741,30 @@ export const forceFullScreen = (element = document.documentElement) => {
 
 export const detectWindowResize = () => {
 	return new Promise((resolve, _reject) => {
-		const handleResizeOnce = () => {
-			if (!isProgrammaticFullscreen) {
-				registerEvent({
-					eventType: 'error',
-					notify: false,
-					eventName: 'candidate_resized_window'
-				});
-				checkForceClosureViolation();
-			}
-
-			// ✅ remove listener after first trigger
-			window.removeEventListener('resize', handleResizeOnce);
-		};
-
-		window.addEventListener('resize', handleResizeOnce);
+		window.addEventListener('resize', handleResize);
 		resolve(true);
 	});
+};
+
+let resizeTimeout;
+let isResizing = false;
+
+const handleResize = () => {
+	if (isProgrammaticFullscreen) {
+		return;
+	}
+
+	if (!isResizing) {
+		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+		checkForceClosureViolation();
+		isResizing = true;
+	}
+
+	clearTimeout(resizeTimeout);
+
+	resizeTimeout = setTimeout(() => {
+		isResizing = false;
+	}, 500);
 };
 
 export const checkPermissionStatus = async () => {

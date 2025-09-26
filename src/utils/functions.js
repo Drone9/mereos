@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { 
 	BASE_URL, 
+	BROWSER_SECURTIY_STEP, 
 	examPreparationSteps, 
 	preChecksSteps, 
 	SYSTEM_REQUIREMENT_STEP, 
@@ -1441,6 +1442,8 @@ export const handlePreChecksRedirection = () => {
 		}
 		else if(!preChecksStep?.userPhoto && hasFeature('verify_candidate')){
 			return 'IdentityVerificationScreenOne';
+		}else if(!preChecksSteps?.browserSecurity && secureFeatures?.filter(entity => BROWSER_SECURTIY_STEP.includes(entity.key))?.length){
+			return 'BrowserSecurity';
 		}else if(!preChecksStep?.identityCardPhoto && hasFeature('verify_id')){
 			return 'IdentityVerificationScreenTwo';
 		}else if(!preChecksStep?.audioDetection && hasFeature('record_audio')){

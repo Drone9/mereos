@@ -1053,5 +1053,10 @@
   "media_check_audio_failed": "Geen audio-invoer gedetecteerd. Controleer je microfoon.",
   "media_check_video_failed": "Geen video-invoer gedetecteerd. Controleer je camera.",
   "media_check_both_failed": "Controleer je apparaten.",
-  "media_check_exception": "Apparaatcontrole mislukt. Probeer het opnieuw."
+  "media_check_exception": "Apparaatcontrole mislukt. Probeer het opnieuw.",
+	"browser_security_check": "Browserbeveiligingscontrole",
+  "browser_security_check_msg": "Zorgt voor een veilige sessie door risicovolle extensies en incognitomodus te detecteren.",
+  "please_disable_your_browser_extensions": "Schakel uw browserextensies uit om door te gaan.",
+  "please_open_incognito_mode_to_continue": "Schakel over naar een privé-/incognitovenster om door te gaan.",
+  "extensions": "Extensies"
 }

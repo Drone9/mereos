@@ -1053,5 +1053,10 @@
   "media_check_audio_failed": "Ingresso audio non rilevato. Controlla il microfono.",
   "media_check_video_failed": "Ingresso video non rilevato. Controlla la fotocamera.",
   "media_check_both_failed": "Controlla i tuoi dispositivi.",
-  "media_check_exception": "Verifica dei dispositivi non riuscita. Riprova."
+  "media_check_exception": "Verifica dei dispositivi non riuscita. Riprova.",
+	"browser_security_check": "Controllo di sicurezza del browser",
+  "browser_security_check_msg": "Garantisce una sessione sicura rilevando estensioni rischiose e la modalità in incognito.",
+  "please_disable_your_browser_extensions": "Disattiva le estensioni del browser per continuare.",
+  "please_open_incognito_mode_to_continue": "Passa a una finestra privata/incognito per continuare.",
+  "extensions": "Estensioni"
 }

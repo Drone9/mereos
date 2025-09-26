@@ -1053,5 +1053,10 @@
   "media_check_audio_failed": "Audioeingang nicht erkannt. Bitte überprüfen Sie Ihr Mikrofon.",
   "media_check_video_failed": "Videoeingang nicht erkannt. Bitte überprüfen Sie Ihre Kamera.",
   "media_check_both_failed": "Bitte überprüfen Sie Ihre Geräte.",
-  "media_check_exception": "Geräteüberprüfung fehlgeschlagen. Bitte versuchen Sie es erneut."
+  "media_check_exception": "Geräteüberprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+	"browser_security_check": "Browser-Sicherheitsprüfung",
+  "browser_security_check_msg": "Sorgt für eine sichere Sitzung, indem riskante Erweiterungen und der Inkognito-Modus erkannt werden.",
+  "please_disable_your_browser_extensions": "Bitte deaktivieren Sie Ihre Browser-Erweiterungen, um fortzufahren.",
+  "please_open_incognito_mode_to_continue": "Bitte wechseln Sie in ein privates/Inkognito-Fenster, um fortzufahren.",
+  "extensions": "Erweiterungen"
 }

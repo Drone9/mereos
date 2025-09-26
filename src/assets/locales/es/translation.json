@@ -1053,5 +1053,10 @@
   "media_check_audio_failed": "Entrada de audio no detectada. Por favor, revisa tu micrófono.",
   "media_check_video_failed": "Entrada de video no detectada. Por favor, revisa tu cámara.",
   "media_check_both_failed": "Por favor, revisa tus dispositivos.",
-  "media_check_exception": "No se pudo verificar los dispositivos. Inténtalo de nuevo."
+  "media_check_exception": "No se pudo verificar los dispositivos. Inténtalo de nuevo.",
+	"browser_security_check": "Comprobación de seguridad del navegador",
+  "browser_security_check_msg": "Garantiza una sesión segura detectando extensiones de riesgo y el modo incógnito.",
+  "please_disable_your_browser_extensions": "Desactive las extensiones de su navegador para continuar.",
+  "please_open_incognito_mode_to_continue": "Cambie a una ventana privada/incógnito para continuar.",
+  "extensions": "Extensiones"
 }

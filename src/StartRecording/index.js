@@ -32,7 +32,7 @@ import {
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
-import { initShadowDOM, openModal } from '../ExamsPrechecks';
+import { initializeLiveChat, initShadowDOM, openModal } from '../ExamsPrechecks';
 
 let aiEvents = [];
 let mediaStream = null;
@@ -574,7 +574,11 @@ export const startRecording = async () => {
 		initShadowDOM();
 		updateThemeColor();
 	}
-	
+	const existingChatIcon = document.getElementById('chat-icon-wrapper');
+	if (!existingChatIcon) {
+		initializeLiveChat();
+	}
+
 	if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length && window?.mereos?.mobileStream){
 		connectSocketConnection();
 	}

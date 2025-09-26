@@ -1,9 +1,9 @@
 import i18next from 'i18next';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
-import { examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
+import { browserSecurityCss, examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import 'notyf/notyf.min.css';
 import 'notyf/notyf.min.css';
-import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, systemDiagnosticSteps, preChecksSteps } from '../utils/constant';
+import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, systemDiagnosticSteps, preChecksSteps, BROWSER_SECURTIY_STEP } from '../utils/constant';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
 import { SystemDiagnostics } from '../SystemDiagnostic';
 import { IdentityVerificationScreenOne } from '../IdentityVerificationScreenOne';
@@ -19,6 +19,7 @@ import { changeCandidateAssessmentStatus } from '../services/candidate-assessmen
 import { SystemRequirement } from '../SystemRequirement';
 import { stop_prechecks } from '../..';
 import interact from 'interactjs';
+import { BrowserSecurity } from '../BrowserSecurity';
 
 export const initShadowDOM = () => {
 	if (!document.getElementById('mereos-library')) {
@@ -44,7 +45,8 @@ export const initShadowDOM = () => {
 			${MobileProctoringCss}
 			${identityCardCss}
 			${systemRequirementCss}
-			${startRecordingCSS}`;
+			${startRecordingCSS}
+			${browserSecurityCss}`;
 
 		window.mereos.shadowRoot.appendChild(mainStylying);
 
@@ -72,7 +74,8 @@ export const initShadowDOM = () => {
 			'IdentityVerificationScreenFour',
 			'IdentityVerificationScreenFive',
 			'Prevalidationinstruction',
-			'MobileProctoring'
+			'MobileProctoring',
+			'BrowserSecurity'
 		];
 
 		tabConfigs.forEach(tabId => {
@@ -96,6 +99,7 @@ export const initShadowDOM = () => {
 				IdentityCardRequirement: window.mereos.shadowRoot.querySelector('#IdentityCardRequirement'),
 				SystemDiagnostics: window.mereos.shadowRoot.querySelector('#runSystemDiagnostics'),
 				SystemRequirement: window.mereos.shadowRoot.querySelector('#SystemRequirements'),
+				BrowserSecurity: window.mereos.shadowRoot.querySelector('#BrowserSecurity'),
 				IdentityVerificationScreenOne: window.mereos.shadowRoot.querySelector('#IdentityVerificationScreenOne'),
 				IdentityVerificationScreenTwo: window.mereos.shadowRoot.querySelector('#IdentityVerificationScreenTwo'),
 				IdentityVerificationScreenThree: window.mereos.shadowRoot.querySelector('#IdentityVerificationScreenThree'),
@@ -110,7 +114,7 @@ export const initShadowDOM = () => {
 	}
 };
 
-const initializeLiveChat = () => {
+export const initializeLiveChat = () => {
 	let unreadCount = 0;
 
 	const isLoggedIn = !!getAuthenticationToken();
@@ -432,6 +436,7 @@ const showTab = async (tabId, callback) => {
 			'IdentityVerificationScreenFour': 'record_room',
 			'MobileProctoring': 'mobile_proctoring',
 			'IdentityVerificationScreenFive': 'record_screen',
+			'BrowserSecurity':BROWSER_SECURTIY_STEP
 		};
 
 		const featureKey = featureMap[tabId];
@@ -496,7 +501,13 @@ const showTab = async (tabId, callback) => {
 				return;
 			}
 			await SystemRequirement(containers.SystemRequirement);
-		} else if (tabId === 'Prevalidationinstruction') {
+		} else if (tabId === 'BrowserSecurity') {
+			if (!isFeatureAllowed) {
+				navigate('Prevalidationinstruction');
+				return;
+			}
+			await BrowserSecurity(containers.BrowserSecurity);
+		}else if (tabId === 'Prevalidationinstruction') {
 			if (!isFeatureAllowed) {
 				navigate('IdentityVerificationScreenOne');
 				return;

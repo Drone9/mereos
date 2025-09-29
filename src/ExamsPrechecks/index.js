@@ -419,6 +419,7 @@ const showTab = async (tabId, callback) => {
 		if(!window.mereos.dom){
 			return;
 		}
+		logger.success('tabId',tabId);
 		const { containers } = window.mereos.dom;
 		initializeI18next();
 		const getSecureFeature = getSecureFeatures();
@@ -497,7 +498,7 @@ const showTab = async (tabId, callback) => {
 			SystemDiagnostics(containers.SystemDiagnostics);
 		} else if (tabId === 'SystemRequirements') {
 			if (!isFeatureAllowed) {
-				navigate('Prevalidationinstruction');
+				navigate('BrowserSecurity');
 				return;
 			}
 			await SystemRequirement(containers.SystemRequirement);

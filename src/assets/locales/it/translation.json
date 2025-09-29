@@ -1058,5 +1058,7 @@
   "browser_security_check_msg": "Garantisce una sessione sicura rilevando estensioni rischiose e la modalità in incognito.",
   "please_disable_your_browser_extensions": "Disattiva le estensioni del browser per continuare.",
   "please_open_incognito_mode_to_continue": "Passa a una finestra privata/incognito per continuare.",
-  "extensions": "Estensioni"
+  "extensions": "Estensioni",
+	"detect_extensions": "Rileva estensioni",
+  "allow_incognito_mode": "Consenti modalità in incognito"
 }

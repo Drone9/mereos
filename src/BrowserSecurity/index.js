@@ -35,10 +35,10 @@ const renderUI = (tabContent) => {
 	let securityItemsHTML = '';
     
 	if (checkExtensions) {
-		securityItemsHTML += createSecurityItemHTML('extensions', i18next.t('extensions'));
+		securityItemsHTML += createSecurityItemHTML('extensions', i18next.t('detect_extensions'));
 	}
 	if (checkIncognitoMode) {
-		securityItemsHTML += createSecurityItemHTML('incognito', i18next.t('incognito_mode'));
+		securityItemsHTML += createSecurityItemHTML('incognito', i18next.t('allow_incognito_mode'));
 	}
 
 	const html = `
@@ -50,8 +50,8 @@ const renderUI = (tabContent) => {
                     <label class="description">${i18next.t('browser_security_check_msg')}</label>
                 </div>
                 <div class="container-prompt">
-                    <img src="${ASSET_URL}/security-${i18next.language || 'en'}.svg" 
-                         alt="" width="400px" class="prompt-image" id="security-img">
+                    <img src="${ASSET_URL}/extension-image.png" 
+                         alt="" width="400px" class="browser-prompt-image" id="security-img">
                 </div>
                 <div class="container-middle">
                     <div class="box-section">
@@ -73,7 +73,7 @@ const renderUI = (tabContent) => {
 window.mereos.shadowRoot.getElementById('securityContinueBtn')?.addEventListener('click', () => {
 	registerEvent({ eventType: 'success', notify: false, eventName: 'browser_security_passed' });
 	updatePersistData('preChecksSteps', { browserSecurity: true });
-	showTab('PrevalidationInstructions');
+	showTab('Prevalidationinstruction');
 });
 
 addSecurityItemClickEvents();
@@ -117,33 +117,56 @@ const addSecurityItemClickEvents = () => {
 };
 
 const setElementStatus = (id, status, isSuccess) => {
-	const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
-	const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
-	if (!statusIcon || !statusLoading) {
-		return;
-	}
-	statusIcon.src = isSuccess ? status.success : status.failure;
-	statusLoading.src = isSuccess ? `${ASSET_URL}/checkmark-rounded-green.png` : `${ASSET_URL}/x-circle.png`;
+    
+    const securityItem = window.mereos?.shadowRoot?.getElementById(`${id}SecurityItem`);
+    const statusIcon = window.mereos?.shadowRoot?.getElementById(`${id}StatusIcon`);
+    const statusLoading = window.mereos?.shadowRoot?.getElementById(`${id}StatusLoading`);
+    
+    if (!securityItem || !statusIcon || !statusLoading) {
+        return;
+    }
+
+    securityItem.dataset.checkCompleted = 'true';
+    securityItem.dataset.checkSuccess = isSuccess.toString();
+    
+    statusIcon.src = isSuccess ? status.success : status.failure;
+    statusLoading.src = isSuccess ? `${ASSET_URL}/checkmark-rounded-green.png` : `${ASSET_URL}/x-circle.png`;
 };
 
-const updateContinueButtonState = () => {
-	const renderedItems = window.mereos.shadowRoot.querySelectorAll('.diagnostic-item');
+const updateContinueButtonState = () => {    
+    if (!window.mereos?.shadowRoot) {
+        return;
+    }
 
-	const allSecurityChecksPassed = Array.from(renderedItems).every(item => {
-		const itemId = item.id.replace('SecurityItem', '');
-		const statusIcon = window.mereos.shadowRoot.getElementById(`${itemId}StatusIcon`);
-		if (!statusIcon) return false;
+    const continueBtn = window.mereos.shadowRoot.getElementById('securityContinueBtn');
+    if (!continueBtn) {
+        return;
+    }
 
-		const currentIconPathname = new URL(statusIcon.src).pathname;
-		const expectedIconPathname = new URL(successIconMap[itemId] || '').pathname;
+    const securityItems = window.mereos.shadowRoot.querySelectorAll('#extensionsSecurityItem, #incognitoSecurityItem');
+    
+    if (securityItems.length === 0) {
+        continueBtn.disabled = false;
+        return;
+    }
 
-		return currentIconPathname === expectedIconPathname;
-	});
+    let allSecurityChecksPassed = true;
+    
+    Array.from(securityItems).forEach(item => {
+        const itemId = item.id;
+        const isCompleted = item.dataset.checkCompleted === 'true';
+        const isSuccess = item.dataset.checkSuccess === 'true';
 
-	window.mereos.shadowRoot.getElementById('securityContinueBtn').disabled = !allSecurityChecksPassed;
+        if (!isCompleted || !isSuccess) {
+            allSecurityChecksPassed = false;
+        } else {
+            logger.success(`✅ ${itemId} passed check`);
+        }
+    });
+
+    continueBtn.disabled = !allSecurityChecksPassed;
 };
 
-// Extension detection function
 const detectExtension = async (extension) => {
 	try {
 		const url = `chrome-extension://${extension.id}/${extension.file}`;
@@ -222,7 +245,6 @@ const checkIncognitoMode = async () => {
 		}
 	} catch (error) {
 		logger.error('Incognito detection failed:', error);
-		// If detection fails, we'll assume it's working to not block the user
 		return true;
 	}
 };
@@ -263,7 +285,9 @@ export const BrowserSecurity = async (tabContent) => {
 		}
 
 		await Promise.all(promises);
-		updateContinueButtonState();
+		setTimeout(() => {
+			updateContinueButtonState();
+		}, 100);
     
 	} catch (error) {
 		logger.error('Error running browser security checks:', error);
@@ -273,19 +297,14 @@ export const BrowserSecurity = async (tabContent) => {
 const updateSecurityText = () => {
 	if (!window.mereos || !window.mereos.shadowRoot) return;
     
-	const securityItems = ['extensions', 'incognito'];
-	let securityImg = window.mereos.shadowRoot.getElementById('security-img');
+	const securityItems = ['detect_extensions', 'allow_incognito_mode'];
 
 	securityItems.forEach(item => {
 		const labelElement = window.mereos.shadowRoot.querySelector(`#${item}SecurityItem label`);
 		if (labelElement) {
-			labelElement.textContent = i18next.t(item === 'incognito' ? 'incognito_mode' : item);
+			labelElement.textContent = i18next.t(item);
 		}
 	});
-
-	if (securityImg) {
-		securityImg.src = `${ASSET_URL}/security-${i18next.language || 'en'}.svg`;
-	}
 
 	const heading = window.mereos.shadowRoot.querySelector('.heading');
 	if (heading) {

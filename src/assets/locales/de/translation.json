@@ -1058,5 +1058,7 @@
   "browser_security_check_msg": "Sorgt für eine sichere Sitzung, indem riskante Erweiterungen und der Inkognito-Modus erkannt werden.",
   "please_disable_your_browser_extensions": "Bitte deaktivieren Sie Ihre Browser-Erweiterungen, um fortzufahren.",
   "please_open_incognito_mode_to_continue": "Bitte wechseln Sie in ein privates/Inkognito-Fenster, um fortzufahren.",
-  "extensions": "Erweiterungen"
+  "extensions": "Erweiterungen",
+	"detect_extensions": "Erweiterungen erkennen",
+  "allow_incognito_mode": "Inkognito-Modus zulassen"
 }

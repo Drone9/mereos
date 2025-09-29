@@ -497,7 +497,7 @@ const showTab = async (tabId, callback) => {
 			SystemDiagnostics(containers.SystemDiagnostics);
 		} else if (tabId === 'SystemRequirements') {
 			if (!isFeatureAllowed) {
-				navigate('Prevalidationinstruction');
+				navigate('BrowserSecurity');
 				return;
 			}
 			await SystemRequirement(containers.SystemRequirement);

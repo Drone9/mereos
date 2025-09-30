@@ -1056,8 +1056,8 @@
   "media_check_exception": "Geräteüberprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.",
 	"browser_security_check": "Browser-Sicherheitsprüfung",
   "browser_security_check_msg": "Sorgt für eine sichere Sitzung, indem riskante Erweiterungen und der Inkognito-Modus erkannt werden.",
-  "please_disable_your_browser_extensions": "Bitte deaktivieren Sie Ihre Browser-Erweiterungen, um fortzufahren.",
-  "please_open_incognito_mode_to_continue": "Bitte wechseln Sie in ein privates/Inkognito-Fenster, um fortzufahren.",
+   "please_disable_your_browser_extensions": "Erweiterungen wurden in Ihrem Browser erkannt. Bitte deaktivieren Sie diese",
+    "please_open_incognito_mode_to_continue": "Diese Prüfung kann nur im Inkognitomodus durchgeführt werden. Bitte wechseln Sie dazu",
   "extensions": "Erweiterungen",
 	"detect_extensions": "Erweiterungen erkennen",
   "allow_incognito_mode": "Inkognito-Modus zulassen"

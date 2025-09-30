@@ -1056,8 +1056,8 @@
   "media_check_exception": "Methodd gwirio'r dyfeisiau. Rhowch gynnig arall arni.",
 	"browser_security_check": "Gwiriad Diogelwch Porwr",
   "browser_security_check_msg": "Yn sicrhau sesiwn ddiogel drwy ganfod estyniadau peryglus a modd cuddio/incognito.",
-  "please_disable_your_browser_extensions": "Analluogwch eich estyniadau porwr i barhau.",
-  "please_open_incognito_mode_to_continue": "Newidiwch i ffenestr breifat/incognito i barhau.",
+  "please_disable_your_browser_extensions": "Canfuwyd estyniadau yn eich porwr. Analluogwch nhw",
+  "please_open_incognito_mode_to_continue": "Dim ond yn y Modd Preifat/Incognito y gellir cymryd yr asesu hwn. Newidiwch iddo",
   "extensions": "Estyniadau",
 	"detect_extensions": "Canfod Estyniadau",
   "allow_incognito_mode": "Caniatáu Modd Preifat"

@@ -26,6 +26,10 @@ const failureIconMap = {
 	incognito: incognitoRed
 };
 
+let detectedExtensionNames = [];
+let extensionError = '';
+let incognitoError = '';
+
 const renderUI = (tabContent) => {
 	const candidateAssessment = getSecureFeatures();
 	const secureFeatures = candidateAssessment?.entities || [];
@@ -50,14 +54,14 @@ const renderUI = (tabContent) => {
                     <label class="description">${i18next.t('browser_security_check_msg')}</label>
                 </div>
                 <div class="container-prompt">
-                    <img src="${ASSET_URL}/extension-image.png" 
-                         alt="" width="400px" class="browser-prompt-image" id="security-img">
+                    <img src="${ASSET_URL}/extension-image.png" alt="" width="400px" class="browser-prompt-image" id="security-img">
                 </div>
                 <div class="container-middle">
                     <div class="box-section">
                         ${securityItemsHTML}
                     </div>
                     <div class="button-section">
+                        <div id="errorMessage" style="color: #c33; margin-bottom: 10px; display: none;font-size: 15px;"></div>
                         <button class="orange-filled-btn" id="securityContinueBtn" disabled>
                             ${i18next.t('continue')}
                         </button>
@@ -70,13 +74,13 @@ const renderUI = (tabContent) => {
 
 	tabContent.innerHTML = html;
 
-window.mereos.shadowRoot.getElementById('securityContinueBtn')?.addEventListener('click', () => {
-	registerEvent({ eventType: 'success', notify: false, eventName: 'browser_security_passed' });
-	updatePersistData('preChecksSteps', { browserSecurity: true });
-	showTab('Prevalidationinstruction');
-});
+	window.mereos.shadowRoot.getElementById('securityContinueBtn')?.addEventListener('click', () => {
+		registerEvent({ eventType: 'success', notify: false, eventName: 'browser_security_passed' });
+		updatePersistData('preChecksSteps', { browserSecurity: true });
+		showTab('Prevalidationinstruction');
+	});
 
-addSecurityItemClickEvents();
+	addSecurityItemClickEvents();
 };
 
 const createSecurityItemHTML = (id, label) => {
@@ -118,53 +122,53 @@ const addSecurityItemClickEvents = () => {
 
 const setElementStatus = (id, status, isSuccess) => {
     
-    const securityItem = window.mereos?.shadowRoot?.getElementById(`${id}SecurityItem`);
-    const statusIcon = window.mereos?.shadowRoot?.getElementById(`${id}StatusIcon`);
-    const statusLoading = window.mereos?.shadowRoot?.getElementById(`${id}StatusLoading`);
+	const securityItem = window.mereos?.shadowRoot?.getElementById(`${id}SecurityItem`);
+	const statusIcon = window.mereos?.shadowRoot?.getElementById(`${id}StatusIcon`);
+	const statusLoading = window.mereos?.shadowRoot?.getElementById(`${id}StatusLoading`);
     
-    if (!securityItem || !statusIcon || !statusLoading) {
-        return;
-    }
+	if (!securityItem || !statusIcon || !statusLoading) {
+		return;
+	}
 
-    securityItem.dataset.checkCompleted = 'true';
-    securityItem.dataset.checkSuccess = isSuccess.toString();
+	securityItem.dataset.checkCompleted = 'true';
+	securityItem.dataset.checkSuccess = isSuccess.toString();
     
-    statusIcon.src = isSuccess ? status.success : status.failure;
-    statusLoading.src = isSuccess ? `${ASSET_URL}/checkmark-rounded-green.png` : `${ASSET_URL}/x-circle.png`;
+	statusIcon.src = isSuccess ? status.success : status.failure;
+	statusLoading.src = isSuccess ? `${ASSET_URL}/checkmark-rounded-green.png` : `${ASSET_URL}/x-circle.png`;
 };
 
 const updateContinueButtonState = () => {    
-    if (!window.mereos?.shadowRoot) {
-        return;
-    }
+	if (!window.mereos?.shadowRoot) {
+		return;
+	}
 
-    const continueBtn = window.mereos.shadowRoot.getElementById('securityContinueBtn');
-    if (!continueBtn) {
-        return;
-    }
+	const continueBtn = window.mereos.shadowRoot.getElementById('securityContinueBtn');
+	if (!continueBtn) {
+		return;
+	}
 
-    const securityItems = window.mereos.shadowRoot.querySelectorAll('#extensionsSecurityItem, #incognitoSecurityItem');
+	const securityItems = window.mereos.shadowRoot.querySelectorAll('#extensionsSecurityItem, #incognitoSecurityItem');
     
-    if (securityItems.length === 0) {
-        continueBtn.disabled = false;
-        return;
-    }
+	if (securityItems.length === 0) {
+		continueBtn.disabled = false;
+		return;
+	}
 
-    let allSecurityChecksPassed = true;
+	let allSecurityChecksPassed = true;
     
-    Array.from(securityItems).forEach(item => {
-        const itemId = item.id;
-        const isCompleted = item.dataset.checkCompleted === 'true';
-        const isSuccess = item.dataset.checkSuccess === 'true';
+	Array.from(securityItems).forEach(item => {
+		const itemId = item.id;
+		const isCompleted = item.dataset.checkCompleted === 'true';
+		const isSuccess = item.dataset.checkSuccess === 'true';
 
-        if (!isCompleted || !isSuccess) {
-            allSecurityChecksPassed = false;
-        } else {
-            logger.success(`✅ ${itemId} passed check`);
-        }
-    });
+		if (!isCompleted || !isSuccess) {
+			allSecurityChecksPassed = false;
+		} else {
+			logger.success(`✅ ${itemId} passed check`);
+		}
+	});
 
-    continueBtn.disabled = !allSecurityChecksPassed;
+	continueBtn.disabled = !allSecurityChecksPassed;
 };
 
 const detectExtension = async (extension) => {
@@ -191,6 +195,35 @@ const detectExtension = async (extension) => {
 	}
 };
 
+const displayErrorMessage = () => {
+	const errorMessageElement = window.mereos?.shadowRoot?.getElementById('errorMessage');
+	if (!errorMessageElement) return;
+
+	let errorText = '';
+
+	if (extensionError) {
+		if (extensionError === 'please_disable_your_browser_extensions' && detectedExtensionNames.length > 0) {
+			if (detectedExtensionNames.length === 1) {
+				errorText = i18next.t('please_disable_your_browser_extensions') + `: ${detectedExtensionNames[0]}`;
+			} else {
+				const extensionNames = detectedExtensionNames.join(', ');
+				errorText = i18next.t('please_disable_your_browser_extensions') + `: ${extensionNames}`;
+			}
+		} else {
+			errorText = i18next.t(extensionError);
+		}
+	} else if (incognitoError) {
+		errorText = i18next.t(incognitoError);
+	}
+
+	if (errorText) {
+		errorMessageElement.textContent = errorText;
+		errorMessageElement.style.display = 'block';
+	} else {
+		errorMessageElement.style.display = 'none';
+	}
+};
+
 const checkExtensions = async () => {
 	try {
 		const extensionArray = Object.entries(EXTENSIONS_LIST || {}).map(([id, data]) => ({
@@ -208,14 +241,22 @@ const checkExtensions = async () => {
 			.map(r => r.value);
 
 		if (detected.length > 0) {
+			detectedExtensionNames = detected.map(ext => ext.name);
+			extensionError = 'please_disable_your_browser_extensions';
+			displayErrorMessage();
 			registerEvent({ eventType: 'error', notify: false, eventName: 'extensions_detected' });
 			showToast('error', i18next.t('please_disable_your_browser_extensions'));
 			return false;
 		} else {
+			extensionError = '';
+			detectedExtensionNames = [];
+			displayErrorMessage();
 			return true;
 		}
 	} catch (error) {
 		logger.error('Extension check failed:', error);
+		extensionError = 'extension_check_failed_please_try_again';
+		displayErrorMessage();
 		registerEvent({ eventType: 'error', notify: false, eventName: 'extension_check_failed' });
 		return false;
 	}
@@ -226,6 +267,8 @@ const checkIncognitoMode = async () => {
 		const { isPrivate, browserName } = await detectIncognito();
 
 		if (!isPrivate) {
+			incognitoError = 'please_open_incognito_mode_to_continue';
+			displayErrorMessage();
 			registerEvent({
 				eventType: 'error',
 				notify: false,
@@ -235,6 +278,8 @@ const checkIncognitoMode = async () => {
 			showToast('error', i18next.t('please_open_incognito_mode_to_continue'));
 			return false;
 		} else {
+			incognitoError = '';
+			displayErrorMessage();
 			registerEvent({
 				eventType: 'success',
 				notify: false,
@@ -297,14 +342,15 @@ export const BrowserSecurity = async (tabContent) => {
 const updateSecurityText = () => {
 	if (!window.mereos || !window.mereos.shadowRoot) return;
     
-	const securityItems = ['detect_extensions', 'allow_incognito_mode'];
+	const extensionLabel = window.mereos.shadowRoot.querySelector('#extensionsSecurityItem label');
+	if (extensionLabel) {
+		extensionLabel.textContent = i18next.t('detect_extensions');
+	}
 
-	securityItems.forEach(item => {
-		const labelElement = window.mereos.shadowRoot.querySelector(`#${item}SecurityItem label`);
-		if (labelElement) {
-			labelElement.textContent = i18next.t(item);
-		}
-	});
+	const incognitoLabel = window.mereos.shadowRoot.querySelector('#incognitoSecurityItem label');
+	if (incognitoLabel) {
+		incognitoLabel.textContent = i18next.t('allow_incognito_mode');
+	}
 
 	const heading = window.mereos.shadowRoot.querySelector('.heading');
 	if (heading) {
@@ -320,6 +366,8 @@ const updateSecurityText = () => {
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
 	}
+
+	displayErrorMessage();
 };
 
 i18next.on('languageChanged', () => {

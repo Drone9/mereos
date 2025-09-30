@@ -1056,8 +1056,8 @@
   "media_check_exception": "Falha ao verificar os dispositivos. Tente novamente.",
 	"browser_security_check": "Verificação de segurança do navegador",
   "browser_security_check_msg": "Garante uma sessão segura detectando extensões arriscadas e o modo anônimo.",
-  "please_disable_your_browser_extensions": "Desative as extensões do navegador para continuar.",
-  "please_open_incognito_mode_to_continue": "Mude para uma janela privada/anônima para continuar.",
+  "please_disable_your_browser_extensions": "Foram detectadas extensões no seu navegador. Por favor, desative-as",
+  "please_open_incognito_mode_to_continue": "Esta avaliação só pode ser feita no modo anônimo. Por favor, mude para ele",
   "extensions": "Extensões",
 	"detect_extensions": "Detectar extensões",
   "allow_incognito_mode": "Permitir modo anônimo"

@@ -1057,8 +1057,8 @@
 	"media_check_exception":"Failed to check devices. Please try again.",
 	"browser_security_check":"Browser Security Check",
 	"browser_security_check_msg":"Ensures a secure session by detecting risky extensions and incognito mode.",
-	"please_disable_your_browser_extensions": "Please disable your browser extensions to continue.",
-	"please_open_incognito_mode_to_continue": "Please switch to a private/incognito window to continue.",
+	"please_disable_your_browser_extensions": "Extensions are detected in your browser. Please disable them",
+  "please_open_incognito_mode_to_continue": "This assessment can only be taken in Incognito Mode. Please switch to it",
 	"extensions":"Extensions",
 	"detect_extensions":"Detect Extensions",
 	"allow_incognito_mode":"Allow Incognito Mode"

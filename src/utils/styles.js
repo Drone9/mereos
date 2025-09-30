@@ -1093,7 +1093,7 @@ export const browserSecurityCss =`.browswer-security-test-screen {
   font-weight: 600;
   font-size: 32px;
   margin-bottom: 0;
-  margin-top: 31px;
+  margin-top: 23px;
   text-align: center;
   color: var(--text-color);
 }
@@ -1106,12 +1106,12 @@ export const browserSecurityCss =`.browswer-security-test-screen {
   font-family: Poppins, sans-serif;
   font-style: var(--font-style);
   font-weight: normal;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 160%;
   text-align: center;
   color: #8D979F;
   width: 650px;
-  margin: 10px auto 10px;
+  margin: 5px auto 5px;
 }
 
 @media (max-width: 720px) {
@@ -1134,7 +1134,7 @@ export const browserSecurityCss =`.browswer-security-test-screen {
 }
 
 .browswer-security-test-screen .container-top {
-  margin: 10px 0;
+  margin: 5px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1144,7 +1144,7 @@ export const browserSecurityCss =`.browswer-security-test-screen {
 .browswer-security-test-screen .container-middle {
   display: flex;
   flex-direction: column;
-  margin: 15px 0 0 0;
+  margin: 10px 0 0 0;
 }
 
 @media (max-width: 720px) {
@@ -1305,7 +1305,7 @@ export const browserSecurityCss =`.browswer-security-test-screen {
   display: flex;
   gap: 15px;
   flex-wrap: wrap;
-  margin-bottom:30px;
+  margin: 0 auto;
 }
 
 @media (max-width: 720px) {
@@ -1318,6 +1318,10 @@ export const browserSecurityCss =`.browswer-security-test-screen {
 .browswer-security-test-screen .button-section {
   display: flex;
   justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  width: 76%;
+  margin: 15px auto 0px auto;
 }
 
 @media (max-width: 720px) {

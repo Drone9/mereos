@@ -1156,7 +1156,7 @@ export const browserSecurityCss =`.browswer-security-test-screen {
 .browswer-security-test-screen .grey-box {
   border: 1px solid #f6f6f9;
   border-radius: 4px;
-  width: 118px;
+  width: 140px;
   height: 100px;
   display: flex;
   position: relative;

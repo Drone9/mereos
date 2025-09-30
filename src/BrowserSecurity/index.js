@@ -5,7 +5,6 @@ import {
 	getSecureFeatures, 
 	logger, 
 	registerEvent, 
-	showToast, 
 	updatePersistData 
 } from '../utils/functions';
 import { ASSET_URL, EXTENSIONS_LIST } from '../utils/constant';
@@ -245,7 +244,6 @@ const checkExtensions = async () => {
 			extensionError = 'please_disable_your_browser_extensions';
 			displayErrorMessage();
 			registerEvent({ eventType: 'error', notify: false, eventName: 'extensions_detected' });
-			showToast('error', i18next.t('please_disable_your_browser_extensions'));
 			return false;
 		} else {
 			extensionError = '';
@@ -275,7 +273,6 @@ const checkIncognitoMode = async () => {
 				eventName: 'standard_browser_mode_detected',
 				details: { browserName }
 			});
-			showToast('error', i18next.t('please_open_incognito_mode_to_continue'));
 			return false;
 		} else {
 			incognitoError = '';

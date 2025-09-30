@@ -1437,13 +1437,13 @@ export const handlePreChecksRedirection = () => {
 			return 'runSystemDiagnostics';
 		} else if(!preChecksStep?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
 			return 'SystemRequirements';
-		} else if(!preChecksStep?.preValidation && hasFeature('verify_multiple_devices')){
+		} else if(!preChecksSteps?.browserSecurity && secureFeatures?.filter(entity => BROWSER_SECURTIY_STEP.includes(entity.key))?.length){
+			return 'BrowserSecurity';
+		}	else if(!preChecksStep?.preValidation && hasFeature('verify_multiple_devices')){
 			return 'Prevalidationinstruction';
 		}
 		else if(!preChecksStep?.userPhoto && hasFeature('verify_candidate')){
 			return 'IdentityVerificationScreenOne';
-		}else if(!preChecksSteps?.browserSecurity && secureFeatures?.filter(entity => BROWSER_SECURTIY_STEP.includes(entity.key))?.length){
-			return 'BrowserSecurity';
 		}else if(!preChecksStep?.identityCardPhoto && hasFeature('verify_id')){
 			return 'IdentityVerificationScreenTwo';
 		}else if(!preChecksStep?.audioDetection && hasFeature('record_audio')){

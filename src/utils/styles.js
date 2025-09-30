@@ -1144,7 +1144,7 @@ export const browserSecurityCss =`.browswer-security-test-screen {
 .browswer-security-test-screen .container-middle {
   display: flex;
   flex-direction: column;
-  margin: 20px 0;
+  margin: 15px 0 0 0;
 }
 
 @media (max-width: 720px) {
@@ -1396,7 +1396,11 @@ export const browserSecurityCss =`.browswer-security-test-screen {
 		transform: scale(0.98); 
 	}
 }
-
+.browser-prompt-image{
+    width: 330px;
+    height: 198px;
+    object-fit: contain;
+}
 .orange-filled-btn {
 	border-style: none;
 	font-size: 1em;

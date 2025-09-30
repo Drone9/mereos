@@ -1058,5 +1058,7 @@
   "browser_security_check_msg": "Garantiza una sesión segura detectando extensiones de riesgo y el modo incógnito.",
   "please_disable_your_browser_extensions": "Desactive las extensiones de su navegador para continuar.",
   "please_open_incognito_mode_to_continue": "Cambie a una ventana privada/incógnito para continuar.",
-  "extensions": "Extensiones"
+  "extensions": "Extensiones",
+	"detect_extensions": "Detectar extensiones",
+  "allow_incognito_mode": "Permitir modo incógnito"
 }

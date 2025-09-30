@@ -95,7 +95,7 @@ const renderUI = (tab1Content) => {
 	window.mereos.shadowRoot.getElementById('requirementContinueBtn').addEventListener('click', () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_requirement_passed' });
 		updatePersistData('preChecksSteps', { requirementStep: true });
-		showTab('Prevalidationinstruction');
+		showTab('BrowserSecurity');
 	});
 
 	addDiagnosticItemClickHandlers();

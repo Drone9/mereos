@@ -1058,5 +1058,7 @@
   "browser_security_check_msg": "Assure une session sécurisée en détectant les extensions à risque et le mode navigation privée.",
   "please_disable_your_browser_extensions": "Veuillez désactiver vos extensions de navigateur pour continuer.",
   "please_open_incognito_mode_to_continue": "Veuillez passer en mode navigation privée/incognito pour continuer.",
-  "extensions": "Extensions"
+  "extensions": "Extensions",
+	"detect_extensions": "Détecter les extensions",
+  "allow_incognito_mode": "Autoriser le mode navigation privée"
 }

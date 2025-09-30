@@ -1056,8 +1056,8 @@
   "media_check_exception": "Apparaatcontrole mislukt. Probeer het opnieuw.",
 	"browser_security_check": "Browserbeveiligingscontrole",
   "browser_security_check_msg": "Zorgt voor een veilige sessie door risicovolle extensies en incognitomodus te detecteren.",
-  "please_disable_your_browser_extensions": "Schakel uw browserextensies uit om door te gaan.",
-  "please_open_incognito_mode_to_continue": "Schakel over naar een privé-/incognitovenster om door te gaan.",
+  "please_disable_your_browser_extensions": "Er zijn extensies in uw browser gedetecteerd. Schakel ze alstublieft uit",
+  "please_open_incognito_mode_to_continue": "Deze toets kan alleen in de incognitomodus worden gemaakt. Schakel ernaar over",
   "extensions": "Extensies",
 	"detect_extensions": "Extensies detecteren",
   "allow_incognito_mode": "Incognitomodus toestaan"

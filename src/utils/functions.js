@@ -981,6 +981,13 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
+				case 'disable_highlight_text': {
+					const disableHightLight = await disableTextHighlighting();
+					if (disableHightLight) {
+						result = {...result, [entity.name]: true};
+					}
+					break;
+				}
 				case 'disable_keyboard_shortcuts': {
 					const disableShortcuts = await preventShortCuts();
 					if (disableShortcuts) {
@@ -1035,6 +1042,29 @@ export const lockBrowserFromContent = (entities) => {
 		}
 
 		resolve(result);
+	});
+};
+
+export const disableTextHighlighting = () => {
+	// CSS approach
+	document.body.style.cssText += `
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  `;
+  
+	// Event listeners
+	document.addEventListener('selectstart', e => e.preventDefault());
+	document.addEventListener('dragstart', e => e.preventDefault());
+	document.addEventListener('contextmenu', e => e.preventDefault());
+  
+	// Disable F12, Ctrl+U, etc. (optional)
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'F12' || 
+        (e.ctrlKey && (e.key === 'u' || e.key === 'U'))) {
+			e.preventDefault();
+		}
 	});
 };
 
@@ -1139,48 +1169,69 @@ export const detectDualDisplay = () => {
 	});
 };
 
-let visibilityChangeHandler;
 let awayStartTime = null;
+let visibilityHandler;
+let blurHandler;
+let focusHandler;
 
 export const detectUnfocusOfTab = () => {
 	return new Promise((resolve) => {
 		try {
 			removeUnfocusListener();
 
-			visibilityChangeHandler = () => {
-				if (document.hidden) {
+			const startAway = () => {
+				if (!awayStartTime) {
 					awayStartTime = Date.now();
-				} else {
-					if (!awayStartTime) return;
-
-					const durationSec = Math.floor((Date.now() - awayStartTime) / 1000);
-					awayStartTime = null;
-
-					if (durationSec > 0) {
-						registerEvent({ 
-							eventName: 'moved_away_from_page',
-							eventValue: durationSec
-						});
-						checkForceClosureViolation();
-						showToast('error', 'moved_away_from_page');
-					}
+					registerEvent({
+						eventType: 'error',
+						notify: true,
+						eventName: 'moved_away_from_page',
+					});
 				}
 			};
-			document.addEventListener('visibilitychange', visibilityChangeHandler);
+
+			const endAway = () => {
+				if (!awayStartTime) return;
+
+				const durationSec = Math.floor((Date.now() - awayStartTime) / 1000);
+				awayStartTime = null;
+
+				registerEvent({
+					eventType: 'info',
+					notify: false,
+					eventName: 'moved_back_to_page',
+					eventValue: durationSec, 
+				});
+			};
+
+			visibilityHandler = () => {
+				if (document.hidden) startAway();
+				else endAway();
+			};
+
+			blurHandler = startAway;
+			focusHandler = endAway;
+
+			document.addEventListener('visibilitychange', visibilityHandler);
+			window.addEventListener('blur', blurHandler);
+			window.addEventListener('focus', focusHandler);
+
 			resolve(true);
-		} catch (error) {
-			logger.error('Notification permission error:', error);
+		} catch (err) {
+			console.error('Error in detectUnfocusOfTab:', err);
 			resolve(false);
 		}
 	});
 };
 
 export const removeUnfocusListener = () => {
-	if (visibilityChangeHandler) {
-		document.removeEventListener('visibilitychange', visibilityChangeHandler);
-		visibilityChangeHandler = null;
-		awayStartTime = null;
+	if (visibilityHandler) {
+		document.removeEventListener('visibilitychange', visibilityHandler);
+		window.removeEventListener('blur', blurHandler);
+		window.removeEventListener('focus', focusHandler);
+		visibilityHandler = blurHandler = focusHandler = null;
 	}
+	awayStartTime = null;
 };
 
 export const preventShortCuts = (allowedFunctionKeys = []) => {
@@ -1364,6 +1415,9 @@ export const detectBackButton = () => {
 export const unlockBrowserFromContent = () => {
 	window.removeEventListener('beforeunload', detectPageRefreshCallback);
 	window.removeEventListener('popstate', detectBackButtonCallback);
+	document.removeEventListener('selectstart', e => e.preventDefault());
+	document.removeEventListener('dragstart', e => e.preventDefault());
+	document.removeEventListener('contextmenu', e => e.preventDefault());
 
 	'cut copy paste'.split(' ').forEach((eventName) => {
 		window.removeEventListener(eventName, handleDefaultEvent);

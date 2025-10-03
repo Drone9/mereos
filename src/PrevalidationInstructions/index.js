@@ -23,7 +23,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		const themeColor = JSON.parse(localStorage.getItem('schoolTheme'));
 
 		const isAudioEnabled = findConfigs(['record_audio'], secureFeatures?.entities).length > 0;
-		const isVideoEnabled = findConfigs(['record_video'], secureFeatures?.entities).length > 0;
+		const isVideoEnabled = findConfigs(['record_video','record_room','verify_candidate','verify_id'], secureFeatures?.entities).length > 0;
 		const shouldShowVideo = !isAudioEnabled || isVideoEnabled;
 		logger.success('currentCaptureMode',currentCaptureMode);
 

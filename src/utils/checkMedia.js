@@ -89,7 +89,7 @@ export const checkMediaInputs = () => {
 						error: errorMessage
 					});
 				}
-			}, 3000);
+			}, 5000);
 		} catch (err) {
 			console.log('Media Check Exception:', err);
 			resolve({

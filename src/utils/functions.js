@@ -940,7 +940,6 @@ export const retryFailedAIEvents = async () => {
 	if (window.mereos.isRetryingAIEvent) return; 
 	window.mereos.isRetryingAIEvent = true;
 
-	window.removeEventListener('online', retryFailedAIEvents);
 	const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
 	if (!failedAIEvents.length) {
 		window.mereos.isRetryingAIEvent = false;
@@ -1195,13 +1194,14 @@ export const detectUnfocusOfTab = () => {
 
 				const durationSec = Math.floor((Date.now() - awayStartTime) / 1000);
 				awayStartTime = null;
-
 				registerEvent({
 					eventType: 'info',
 					notify: false,
 					eventName: 'moved_back_to_page',
 					eventValue: durationSec, 
 				});
+				
+				checkForceClosureViolation();
 			};
 
 			visibilityHandler = () => {

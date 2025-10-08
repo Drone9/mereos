@@ -171,21 +171,27 @@ const updateContinueButtonState = () => {
 };
 
 const detectExtension = async (extension) => {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), 50);
+	
 	try {
 		const url = `chrome-extension://${extension.id}/${extension.file}`;
-		const controller = new AbortController();
 
 		const response = await fetch(url, {
 			method: 'HEAD',
-			signal: controller.signal
+			signal: controller.signal,
+			cache: 'no-store' 
 		});
 
+		clearTimeout(timeoutId);
 		return { 
 			...extension, 
 			detected: true,
 			status: response.status 
 		};
 	} catch (error) {
+		clearTimeout(timeoutId); 
+		controller.abort(); 
 		return { 
 			...extension, 
 			detected: false,
@@ -223,6 +229,41 @@ const displayErrorMessage = () => {
 	}
 };
 
+const detectExtensionsBatch = async (extensions, batchSize = 50) => {
+	const detected = [];
+	const controllers = [];
+	
+	try {
+		for (let i = 0; i < extensions.length; i += batchSize) {
+			const batch = extensions.slice(i, i + batchSize);
+			const results = await Promise.allSettled(
+				batch.map(ext => detectExtension(ext))
+			);
+			
+			const batchDetected = results
+				.filter(r => r.status === 'fulfilled' && r.value.detected)
+				.map(r => r.value);
+			
+			detected.push(...batchDetected);
+			
+			if (detected.length > 0) {
+				break;
+			}
+			
+			await new Promise(resolve => setTimeout(resolve, 0));
+		}
+	} finally {
+		controllers.forEach(ctrl => {
+			try {
+				ctrl.abort();
+			} catch (e) {
+			}
+		});
+	}
+	
+	return detected;
+};
+
 const checkExtensions = async () => {
 	try {
 		const extensionArray = Object.entries(EXTENSIONS_LIST || {}).map(([id, data]) => ({
@@ -231,13 +272,7 @@ const checkExtensions = async () => {
 			file: data.file
 		}));
 
-		const results = await Promise.allSettled(
-			extensionArray.map(ext => detectExtension(ext))
-		);
-
-		const detected = results
-			.filter(r => r.status === 'fulfilled' && r.value.detected)
-			.map(r => r.value);
+		const detected = await detectExtensionsBatch(extensionArray, 50);
 
 		if (detected.length > 0) {
 			detectedExtensionNames = detected.map(ext => ext.name);

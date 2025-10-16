@@ -18,6 +18,7 @@ import {
 	getTrackDeviceId, 
 	initializeI18next, 
 	isDevicePresent, 
+	loadZendeskWidget, 
 	lockBrowserFromContent, 
 	logger, 
 	probeExactDevice, 
@@ -63,6 +64,7 @@ export const initMobileConnection = () => {
 		}
 	}).catch((error) => {
 		logger.error('Mobile reconnection failed:', error);
+		registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_failed',eventValue:error });
 		if(window.mereos.startRecordingCallBack){
 			window.mereos.startRecordingCallBack({ 
 				type:'error',
@@ -579,6 +581,7 @@ export const startRecording = async () => {
 		initializeLiveChat();
 	}
 
+	loadZendeskWidget();
 	if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length && window?.mereos?.mobileStream){
 		connectSocketConnection();
 	}
@@ -587,6 +590,11 @@ export const startRecording = async () => {
 		(!window.mereos?.newStream || window?.mereos?.newStream?.getTracks()?.length === 0) &&
 		findConfigs(['record_screen'], secureFeatures?.entities)?.length > 0
 	) {		
+		await registerEvent({ 
+			eventType: 'error', 
+			notify: false, 
+			eventName: 'screen_recording_not_started', 
+		});
 		if (window.mereos.startRecordingCallBack) {
 			window.mereos.startRecordingCallBack({ 
 				type:'error',
@@ -632,7 +640,6 @@ export const startRecording = async () => {
 		};
 
 		try {
-			const dateTime = new Date();
 			const newRoomSessionId = v4();
 			const newSessionId = session?.sessionId ? session?.sessionId : v4();
 			
@@ -641,10 +648,15 @@ export const startRecording = async () => {
 				sessionId: newSessionId,
 				sessionStatus:'Attending'
 			});
+			let room;
 
-			let room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
+			try{
+			room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
 			window.mereos.roomInstance = room;
-
+			}catch(error){
+				registerEvent({ eventType: 'success', notify: false, eventName: 'room_is_not_creating',eventValue:error });
+			}
+			
 			updatePersistData('session', { 
 				room_id: room?.sid 
 			});
@@ -719,6 +731,11 @@ export const startRecording = async () => {
 					screenRecordings = [...session.screen_sharing_video_name, window.mereos.screenTrackPublished.trackSid];
 					updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 				}else{
+					await registerEvent({ 
+						eventType: 'error', 
+						notify: false, 
+						eventName: 'screen_recording_not_started', 
+					});
 					if(window.mereos.startRecordingCallBack){
 						window.mereos.startRecordingCallBack({ 
 							type:'error',
@@ -748,7 +765,7 @@ export const startRecording = async () => {
 						});
 					}
 
-					registerEvent({ eventType: 'success', notify: false, eventName: 'slow_internet_detected', startAt: dateTime });
+					registerEvent({ eventType: 'success', notify: false, eventName: 'slow_internet_detected' });
 				
 					// showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
 				}
@@ -849,7 +866,6 @@ export const startRecording = async () => {
 				eventType: 'success', 
 				notify: false, 
 				eventName: 'recording_started_successfully', 
-				startAt: dateTime 
 			});
 			
 			if(window.mereos.startRecordingCallBack){
@@ -865,6 +881,7 @@ export const startRecording = async () => {
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});
+			registerEvent({ eventType: 'success', notify: false, eventName: 'camera_or_microphone_permission_is_denied',eventValue:error });
 			window.mereos.recordingStart = false;
 			if(window.mereos.startRecordingCallBack){
 				window.mereos.startRecordingCallBack({ 
@@ -1502,7 +1519,6 @@ export function VideoChat(room) {
 
 export const stopAllRecordings = async () => {
 	try {
-		const dateTime = new Date();
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
 
@@ -1595,7 +1611,7 @@ export const stopAllRecordings = async () => {
 				participant.removeAllListeners();
 			});
 			if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
-				registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully', startAt: dateTime });
+				registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully' });
 			}
 			window.mereos.roomInstance.removeAllListeners();
 			window.mereos.roomInstance.disconnect();
@@ -1630,7 +1646,7 @@ export const stopAllRecordings = async () => {
 			id: session?.candidate_assessment
 		});
 
-		registerEvent({ eventType: 'success', notify: false, eventName: session?.sessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed', startAt: dateTime });
+		registerEvent({ eventType: 'success', notify: false, eventName: session?.sessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed'});
 		
 		showToast(session?.sessionStatus === 'Terminated' ? 'error' :'success', session?.sessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed');
 		

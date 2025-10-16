@@ -427,7 +427,7 @@ export const checkMicrophone = () => {
 	});
 };
 
-export const registerEvent = async ({ eventName, eventValue = null }) => {
+export const registerEvent = async ({ eventName, eventValue = null, duration }) => {
 	try {
 		const session = convertDataIntoParse('session');
 		if (!session || !session.browserEvents) return;
@@ -449,8 +449,8 @@ export const registerEvent = async ({ eventName, eventValue = null }) => {
 				start_at: startTime
 			};
 
-			if (eventValue !== null) {
-				event.end_at = startTime + Number(eventValue);
+			if (duration !== null) {
+				event.end_at = startTime + Number(duration);
 			}
 
 			updatePersistData('session', { browserEvents: [...session.browserEvents, event] });
@@ -1045,7 +1045,6 @@ export const lockBrowserFromContent = (entities) => {
 };
 
 export const disableTextHighlighting = () => {
-	// CSS approach
 	document.body.style.cssText += `
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -1053,12 +1052,9 @@ export const disableTextHighlighting = () => {
     user-select: none;
   `;
   
-	// Event listeners
 	document.addEventListener('selectstart', e => e.preventDefault());
 	document.addEventListener('dragstart', e => e.preventDefault());
-	document.addEventListener('contextmenu', e => e.preventDefault());
   
-	// Disable F12, Ctrl+U, etc. (optional)
 	document.addEventListener('keydown', (e) => {
 		if (e.key === 'F12' || 
         (e.ctrlKey && (e.key === 'u' || e.key === 'U'))) {
@@ -1198,7 +1194,7 @@ export const detectUnfocusOfTab = () => {
 					eventType: 'info',
 					notify: false,
 					eventName: 'moved_back_to_page',
-					eventValue: durationSec, 
+					duration: durationSec, 
 				});
 				
 				checkForceClosureViolation();

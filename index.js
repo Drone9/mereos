@@ -13,7 +13,7 @@ import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, logger, updatePersistData } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, logger, registerEvent, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
@@ -378,6 +378,7 @@ async function start_session(callback) {
 		}
 	} catch (err) {
 		logger.error('there_was_an_error_in_starting_the_session',err);
+		registerEvent({ eventType: 'success', notify: false, eventName: 'error_starting_session',eventValue:err });
 		callback({
 			type: 'error',
 			message: 'error_in_starting_the_session',

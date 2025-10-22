@@ -518,7 +518,7 @@ export const updateThemeColor = () => {
 		? schoolTheme.font
 		: defaultTheme.font;
 
-	const isDarkMode = !!schoolTheme?.mode;
+	const isDarkMode = (schoolTheme?.mode === 'light' || !schoolTheme?.mode) ? false : true;
 
 	const themeToStore = {
 		...schoolTheme,

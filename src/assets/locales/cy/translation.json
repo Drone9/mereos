@@ -1060,5 +1060,8 @@
   "please_open_incognito_mode_to_continue": "Dim ond yn y Modd Preifat/Incognito y gellir cymryd yr asesu hwn. Newidiwch iddo",
   "extensions": "Estyniadau",
 	"detect_extensions": "Canfod Estyniadau",
-  "allow_incognito_mode": "Caniatáu Modd Preifat"
+  "allow_incognito_mode": "Caniatáu Modd Preifat",
+	"media_check_skipped": "Cam Dyfeisiau Cyfryngau wedi’i hepgor",
+  "media_check_bitrate_failed": "Nid yw’r cysylltiad cyfryngau yn sefydlog, ceisiwch eto.",
+  "media_check_all_failed": "Methwyd gwirio’r dyfeisiau. Ceisiwch eto."
 }

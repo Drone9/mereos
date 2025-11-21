@@ -1060,5 +1060,8 @@
   "please_open_incognito_mode_to_continue": "Esta avaliação só pode ser feita no modo anônimo. Por favor, mude para ele",
   "extensions": "Extensões",
 	"detect_extensions": "Detectar extensões",
-  "allow_incognito_mode": "Permitir modo anônimo"
+  "allow_incognito_mode": "Permitir modo anônimo",
+	"media_check_skipped": "Etapa de dispositivos de mídia ignorada",
+  "media_check_bitrate_failed": "A conexão de mídia não está estável, tente novamente.",
+  "media_check_all_failed": "Falha ao verificar os dispositivos. Tente novamente."
 }

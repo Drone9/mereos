@@ -1060,5 +1060,8 @@
   "please_open_incognito_mode_to_continue": "Questa valutazione può essere svolta solo in Modalità in incognito. Passa a essa",
   "extensions": "Estensioni",
 	"detect_extensions": "Rileva estensioni",
-  "allow_incognito_mode": "Consenti modalità in incognito"
+  "allow_incognito_mode": "Consenti modalità in incognito",
+	"media_check_skipped": "Fase dei dispositivi multimediali saltata",
+  "media_check_bitrate_failed": "La connessione multimediale non è stabile, riprova.",
+  "media_check_all_failed": "Impossibile verificare i dispositivi. Riprova."
 }

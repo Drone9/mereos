@@ -1060,5 +1060,8 @@
   "please_open_incognito_mode_to_continue": "Cette évaluation ne peut être effectuée qu’en mode navigation privée. Veuillez y passer",
   "extensions": "Extensions",
 	"detect_extensions": "Détecter les extensions",
-  "allow_incognito_mode": "Autoriser le mode navigation privée"
+  "allow_incognito_mode": "Autoriser le mode navigation privée",
+	"media_check_skipped": "Étape des dispositifs média ignorée",
+  "media_check_bitrate_failed": "La connexion média n’est pas stable, veuillez réessayer.",
+  "media_check_all_failed": "Échec de la vérification des dispositifs. Veuillez réessayer."
 }

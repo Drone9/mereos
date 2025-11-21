@@ -1060,5 +1060,8 @@
   "please_open_incognito_mode_to_continue": "Deze toets kan alleen in de incognitomodus worden gemaakt. Schakel ernaar over",
   "extensions": "Extensies",
 	"detect_extensions": "Extensies detecteren",
-  "allow_incognito_mode": "Incognitomodus toestaan"
+  "allow_incognito_mode": "Incognitomodus toestaan",
+	"media_check_skipped": "Stap voor mediadevices overgeslagen",
+  "media_check_bitrate_failed": "De mediaverbinding is niet stabiel, probeer het opnieuw.",
+  "media_check_all_failed": "Kan apparaten niet controleren. Probeer het opnieuw."
 }

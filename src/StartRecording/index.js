@@ -1114,8 +1114,11 @@ const startAIWebcam = async (room, mediaStream) => {
 			await tf.setBackend('cpu');
 			await tf.ready();
 		}
-    
-		const net = await cocoSsd.load();
+		
+
+		if(!window.mereos.net){
+			window.mereos.net = await cocoSsd.load();
+		}
     
 		const localParticipant = room.localParticipant;
 		const videoTrackPublications = Array.from(localParticipant.videoTracks.values());
@@ -1156,7 +1159,7 @@ const startAIWebcam = async (room, mediaStream) => {
 				if (processingVideo.readyState !== 4) return;
 
 				const image = tf.browser.fromPixels(processingVideo);
-				const predictions = await net.detect(image);
+				const predictions = await window.mereos.net.detect(image);
 				tf.dispose(image);
 
 				context.clearRect(0, 0, canvas.width, canvas.height);

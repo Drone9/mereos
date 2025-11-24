@@ -934,48 +934,54 @@ const setupWebcam = async (mediaStream) => {
         
 			const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
             
-			 let videoHeaderContainer = webcamContainer.querySelector('#user-video-header');
-      if (!videoHeaderContainer) {
-        videoHeaderContainer = document.createElement('div');
-        videoHeaderContainer.className = 'user-video-header';
-        videoHeaderContainer.id = 'user-video-header';
+			let videoHeaderContainer = webcamContainer.querySelector('#user-video-header');
+			if (!videoHeaderContainer) {
+				videoHeaderContainer = document.createElement('div');
+				videoHeaderContainer.className = 'user-video-header';
+				videoHeaderContainer.id = 'user-video-header';
 
-        const videoHeading = document.createElement('p');
-        videoHeading.className = 'recording-heading';
-        videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
+				const videoHeading = document.createElement('p');
+				videoHeading.className = 'recording-heading';
+				videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
 
-        const recordingIcon = document.createElement('div');
-        recordingIcon.className = 'recording-badge-container-header';
-        recordingIcon.innerHTML = `
-          <img
-            class='ivsf-recording-dot'
-            src="${ASSET_URL}/white-dot.svg"
-            alt='white-dot'
-          />
-          <p class='recording-text'>${i18next.t('recording')}</p>
-        `;
+				const recordingIcon = document.createElement('div');
+				recordingIcon.className = 'recording-badge-container-header';
+				recordingIcon.innerHTML = `
+					<img
+						class='ivsf-recording-dot'
+						src="${ASSET_URL}/white-dot.svg"
+						alt='white-dot'
+					/>
+					<p class='recording-text'>${i18next.t('recording')}</p>
+				`;
 
-        videoHeaderContainer.appendChild(videoHeading);
-        videoHeaderContainer.appendChild(recordingIcon);
-        webcamContainer.appendChild(videoHeaderContainer);
-      }
+				videoHeaderContainer.appendChild(videoHeading);
+				videoHeaderContainer.appendChild(recordingIcon);
+				webcamContainer.appendChild(videoHeaderContainer);
+			}
         
 			const remoteVideoRef = document.createElement('div');
 			remoteVideoRef.classList.add('remote-video');
 			remoteVideoRef.id = 'remote-video';
+			
+			let currentWidth = 180;
+			const MIN_WIDTH = 180;
+			const MAX_WIDTH = 600;
 			
 			let mediaWrapper = webcamContainer.querySelector('#user-video-element');
 			if (!mediaWrapper) {
 				mediaWrapper = document.createElement('div');
 				mediaWrapper.id = 'user-video-element';
 				Object.assign(mediaWrapper.style, {
-				position: 'relative',
-				marginLeft: 'auto',
-				marginRight: 'auto',
-				width: '180px',
-				height: '142px',
-				objectFit: 'cover'
-			});
+					position: 'relative',
+					marginLeft: 'auto',
+					marginRight: 'auto',
+					width: `${currentWidth}px`,
+					height: '142px',
+					objectFit: 'cover',
+					transition: 'width 0.3s ease, height 0.3s ease',
+					padding: '10px',
+				});
 				webcamContainer.appendChild(mediaWrapper);
 			} else {
 				mediaWrapper.innerHTML = '';
@@ -1008,6 +1014,77 @@ const setupWebcam = async (mediaStream) => {
 				mediaWrapper.appendChild(canvas);
 			}
 			webcamContainer.appendChild(mediaWrapper);
+			
+			let videoFooterContainer = webcamContainer.querySelector('#user-video-footer');
+			if (!videoFooterContainer && findConfigs(['camera_view'], secureFeatures?.entities)?.length) {
+				videoFooterContainer = document.createElement('div');
+				videoFooterContainer.className = 'user-view-footer';
+				videoFooterContainer.id = 'user-video-footer';
+				Object.assign(videoFooterContainer.style, {
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'center',
+					gap: '8px',
+					padding: '8px',
+					background: 'transparent'
+				});
+
+				const zoomOutBtn = document.createElement('button');
+				zoomOutBtn.className = 'zoom-btns';
+				zoomOutBtn.textContent = '−';
+				Object.assign(zoomOutBtn.style, {
+					padding: '4px 12px',
+					cursor: 'pointer',
+					border: '1px solid #ccc',
+					borderRadius: '4px',
+					background: '#fff',
+					fontSize: '18px',
+					fontWeight: 'bold'
+				});
+
+				const zoomInBtn = document.createElement('button');
+				zoomInBtn.className = 'zoom-btns';
+				zoomInBtn.textContent = '+';
+				Object.assign(zoomInBtn.style, {
+					padding: '4px 12px',
+					cursor: 'pointer',
+					border: '1px solid #ccc',
+					borderRadius: '4px',
+					background: '#fff',
+					fontSize: '18px',
+					fontWeight: 'bold'
+				});
+
+				zoomInBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					if (currentWidth < MAX_WIDTH) {
+						currentWidth = Math.min(currentWidth + 64, MAX_WIDTH);
+						const aspectRatio = 142 / 180;
+						const newHeight = Math.round(currentWidth * aspectRatio);
+						
+						webcamContainer.style.width = `${currentWidth}px`;
+						mediaWrapper.style.width = `${currentWidth}px`;
+						mediaWrapper.style.height = `${newHeight}px`;
+					}
+				});
+
+				zoomOutBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					if (currentWidth > MIN_WIDTH) {
+						currentWidth = Math.max(currentWidth - 64, MIN_WIDTH);
+						const aspectRatio = 142 / 180;
+						const newHeight = Math.round(currentWidth * aspectRatio);
+						
+						webcamContainer.style.width = `${currentWidth}px`;
+						mediaWrapper.style.width = `${currentWidth}px`;
+						mediaWrapper.style.height = `${newHeight}px`;
+					}
+				});
+
+				videoFooterContainer.appendChild(zoomOutBtn);
+				videoFooterContainer.appendChild(zoomInBtn);
+				webcamContainer.appendChild(videoFooterContainer);
+			}
         
 			videoElement.addEventListener('loadedmetadata', () => {
 				canvas.width = videoElement.videoWidth;
@@ -1018,15 +1095,25 @@ const setupWebcam = async (mediaStream) => {
 			let startX, startY;
 			let initialX, initialY;
             
+			const aspectRatio = 142 / 180;
+			const initialHeight = Math.round(currentWidth * aspectRatio);
+			
 			Object.assign(webcamContainer.style, {
 				position: 'fixed',
 				top: '20px',
 				right: '20px',
 				zIndex: '9999',
-				cursor: 'move'
+				cursor: 'move',
+				transition: 'width 0.3s ease, height 0.3s ease',
+				width: `${currentWidth}px`,
+				height: 'auto'
 			});
 
 			const handleMouseDown = (e) => {
+				if (e.target.classList.contains('zoom-btns')) {
+					return;
+				}
+				
 				isDragging = true;
 				webcamContainer.style.cursor = 'grabbing';
                 
@@ -1052,6 +1139,7 @@ const setupWebcam = async (mediaStream) => {
                 
 				webcamContainer.style.left = `${newX}px`;
 				webcamContainer.style.top = `${newY}px`;
+				webcamContainer.style.right = 'auto';
                 
 				e.preventDefault();
 				e.stopPropagation();

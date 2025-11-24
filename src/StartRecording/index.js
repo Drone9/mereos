@@ -41,6 +41,9 @@ const trackStoppedListeners = new WeakMap();
 const deviceChangeHandlers = new WeakMap();
 let isMediaError = false;
 let isSignalingError = false;
+let currentWidth = 180;
+const MIN_WIDTH = 180;
+const MAX_WIDTH = 600;
 
 export const initMobileConnection = () => {
 	const session = convertDataIntoParse('session');
@@ -964,6 +967,7 @@ const setupWebcam = async (mediaStream) => {
 			remoteVideoRef.classList.add('remote-video');
 			remoteVideoRef.id = 'remote-video';
 			
+			// Initialize dimensions
 			let currentWidth = 180;
 			const MIN_WIDTH = 180;
 			const MAX_WIDTH = 600;
@@ -980,7 +984,7 @@ const setupWebcam = async (mediaStream) => {
 					height: '142px',
 					objectFit: 'cover',
 					transition: 'width 0.3s ease, height 0.3s ease',
-					padding: '10px',
+					overflow: 'hidden'
 				});
 				webcamContainer.appendChild(mediaWrapper);
 			} else {
@@ -994,15 +998,18 @@ const setupWebcam = async (mediaStream) => {
 			videoElement.srcObject = mediaStream;
 			Object.assign(videoElement.style, {
 				position: 'absolute',
+				top: '0',
+				left: '0',
 				width: '100%',
-				objectFit: 'cover',
-				height: '100%'
+				height: '100%',
+				objectFit: 'cover'
 			});
         
 			const canvas = document.createElement('canvas');
 			canvas.id = 'canvas';
 			Object.assign(canvas.style, {
 				position: 'absolute',
+				top: '0',
 				left: '0',
 				width: '100%',
 				height: '100%'
@@ -1065,6 +1072,12 @@ const setupWebcam = async (mediaStream) => {
 						webcamContainer.style.width = `${currentWidth}px`;
 						mediaWrapper.style.width = `${currentWidth}px`;
 						mediaWrapper.style.height = `${newHeight}px`;
+						
+						const remoteVideo = webcamContainer.querySelector('#remote-video');
+						if (remoteVideo) {
+							remoteVideo.style.width = `${currentWidth}px`;
+							remoteVideo.style.height = `${newHeight}px`;
+						}
 					}
 				});
 
@@ -1078,6 +1091,12 @@ const setupWebcam = async (mediaStream) => {
 						webcamContainer.style.width = `${currentWidth}px`;
 						mediaWrapper.style.width = `${currentWidth}px`;
 						mediaWrapper.style.height = `${newHeight}px`;
+						
+						const remoteVideo = webcamContainer.querySelector('#remote-video');
+						if (remoteVideo) {
+							remoteVideo.style.width = `${currentWidth}px`;
+							remoteVideo.style.height = `${newHeight}px`;
+						}
 					}
 				});
 
@@ -1382,6 +1401,12 @@ export function VideoChat(room) {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
     
+	let currentWidth = 180;
+	const MIN_WIDTH = 180;
+	const MAX_WIDTH = 600;
+	const aspectRatio = 142 / 180;
+	const initialHeight = Math.round(currentWidth * aspectRatio);
+    
 	let webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
 	let videoHeaderContainer = window.mereos.shadowRoot.querySelector('#user-video-header');
     
@@ -1399,7 +1424,10 @@ export function VideoChat(room) {
 			top: '20px',
 			right: '20px',
 			zIndex: '9999',
-			cursor: 'move'
+			cursor: 'move',
+			transition: 'width 0.3s ease, height 0.3s ease',
+			width: `${currentWidth}px`,
+			height: 'auto'
 		});
 
 		let isDragging = false;
@@ -1407,6 +1435,10 @@ export function VideoChat(room) {
 		let initialX, initialY;
 
 		const handleMouseDown = (e) => {
+			if (e.target.classList.contains('zoom-btns')) {
+				return;
+			}
+			
 			isDragging = true;
 			webcamContainer.style.cursor = 'grabbing';
             
@@ -1432,6 +1464,7 @@ export function VideoChat(room) {
             
 			webcamContainer.style.left = `${newX}px`;
 			webcamContainer.style.top = `${newY}px`;
+			webcamContainer.style.right = 'auto';
             
 			e.preventDefault();
 			e.stopPropagation();
@@ -1480,12 +1513,53 @@ export function VideoChat(room) {
 		webcamContainer.appendChild(videoHeaderContainer);
 	}
     
+	let userVideoElement = window.mereos.shadowRoot.querySelector('#user-video-element');
+	if (!userVideoElement) {
+		userVideoElement = document.createElement('div');
+		userVideoElement.id = 'user-video-element';
+		Object.assign(userVideoElement.style, {
+			position: 'relative',
+			marginLeft: 'auto',
+			marginRight: 'auto',
+			width: `${currentWidth}px`,
+			height: `${initialHeight}px`,
+			objectFit: 'cover',
+			transition: 'width 0.3s ease, height 0.3s ease'
+		});
+		webcamContainer.appendChild(userVideoElement);
+	}
+    
 	const localVideoRef = document.createElement('div');
+	localVideoRef.classList.add('local-video');
+	localVideoRef.id = 'local-video';
+	Object.assign(localVideoRef.style, {
+		width: '100%',
+		height: '100%'
+	});
+	userVideoElement.appendChild(localVideoRef);
+    
+	let videoFooterContainer = window.mereos.shadowRoot.querySelector('#user-video-footer');
+	
 	const remoteVideoRef = document.createElement('div');
 	remoteVideoRef.classList.add('remote-video');
 	remoteVideoRef.id = 'remote-video';
-    
-	webcamContainer.appendChild(remoteVideoRef); 
+	Object.assign(remoteVideoRef.style, {
+		position: 'relative',
+		marginLeft: 'auto',
+		marginRight: 'auto',
+		width: `${currentWidth}px`,
+		height: `${initialHeight}px`,
+		marginTop: '8px',
+		overflow: 'hidden',
+		transition: 'width 0.3s ease, height 0.3s ease',
+		background: '#000'
+	});
+	
+	if (videoFooterContainer) {
+		webcamContainer.insertBefore(remoteVideoRef, videoFooterContainer);
+	} else {
+		webcamContainer.appendChild(remoteVideoRef);
+	}
 
 	function attachTrack(track, container) {
 		if (container && track && track.kind === 'video') {
@@ -1493,6 +1567,27 @@ export function VideoChat(room) {
 				const attachedElement = track?.attach();
 				if (attachedElement) {
 					attachedElement.classList.add('video-attached');
+					
+					const isRemoteVideo = container.id === 'remote-video';
+					
+					if (isRemoteVideo) {
+						Object.assign(attachedElement.style, {
+							width: '100%',
+							height: '100%',
+							objectFit: 'cover',
+							display: 'block'
+						});
+					} else {
+						Object.assign(attachedElement.style, {
+							position: 'absolute',
+							top: '0',
+							left: '0',
+							width: '100%',
+							height: '100%',
+							objectFit: 'cover'
+						});
+					}
+					
 					container.appendChild(attachedElement);
 				}
 			} catch (error) {

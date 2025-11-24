@@ -532,6 +532,7 @@ export const updateThemeColor = () => {
 	document.documentElement.style.setProperty('--theme-mode', isDarkMode ? '#000' : '#fff');
 	document.documentElement.style.setProperty('--text-color', isDarkMode ? '#fff' : '#000');
 	document.documentElement.style.setProperty('--font-style', fontStyle);
+	document.documentElement.style.setProperty('--video-style', isDarkMode ? '#000' : '#e7ebef');
 };
 
 export const loadZendeskWidget = () => {

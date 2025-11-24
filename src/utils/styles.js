@@ -2889,7 +2889,7 @@ body{
   display: flex;
   justify-content: center;
 }
-.remote-video  .video-attached{
+.remote-video .video-attached{
   width: 180px;
   height: 140px;
   object-fit: cover;
@@ -2903,7 +2903,7 @@ body{
   row-gap: 9px;
   flex-direction: column;
   width: 220px;
-  background-color: #e7ebef;
+  background: var(--video-style);
   border-radius: 10px;
   box-shadow: 1px 1px 5px 1px #f1f1f1;
   z-index: 9999999;
@@ -2926,6 +2926,7 @@ body{
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
+  color:var(--text-color);
 }
 
 .recording-badge-container-header {

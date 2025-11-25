@@ -2,6 +2,8 @@ import i18next from 'i18next';
 import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger, findConfigs, getSecureFeatures } from '../utils/functions';
 import { showTab } from '../ExamsPrechecks';
 import { checkMediaInputs } from '../utils/checkMedia';
+import { fetchIceServers } from '../services/twilio.services';
+import * as cocoSsd from '@tensorflow-models/coco-ssd';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
@@ -24,7 +26,16 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		const isAudioEnabled = findConfigs(['record_audio'], secureFeatures?.entities).length > 0;
 		const isVideoEnabled = findConfigs(['record_video','record_room','verify_candidate','verify_id'], secureFeatures?.entities).length > 0;
+		const shouldCheckBitrate = findConfigs(['verify_upload_speed'], secureFeatures?.entities).length > 0;
 		const shouldShowVideo = !isAudioEnabled || isVideoEnabled;
+		
+		// Timer state variables
+		let seconds = 10;
+		let timerVisible = false;
+		let timerInterval = null;
+		let isCheckingMedia = false;
+		logger.success('isCheckingMedia',isCheckingMedia);
+
 		logger.success('currentCaptureMode',currentCaptureMode);
 
 		const iconData = [
@@ -82,6 +93,42 @@ export const PrevalidationInstructions = async (tabContent) => {
 			},
 		];
 
+		const startTimer = () => {
+			seconds = shouldCheckBitrate ? 10 : 5;
+			timerVisible = true;
+			updateTimerDisplay();
+			
+			timerInterval = setInterval(() => {
+				seconds--;
+				updateTimerDisplay();
+				
+				if (seconds <= 0) {
+					stopTimer();
+				}
+			}, 1000);
+		};
+
+		const stopTimer = () => {
+			timerVisible = false;
+			if (timerInterval) {
+				clearInterval(timerInterval);
+				timerInterval = null;
+			}
+			updateTimerDisplay();
+		};
+
+		const updateTimerDisplay = () => {
+			const timerElement = window.mereos.shadowRoot.getElementById('timer-element');
+			if (timerElement) {
+				if (timerVisible && seconds > 0) {
+					timerElement.textContent = `${seconds}s`;
+					timerElement.style.display = 'block';
+				} else {
+					timerElement.style.display = 'none';
+				}
+			}
+		};
+
 		const handleDeviceId = async (id, type) => {
 			if (type === 'camera' && shouldShowVideo) {
 				videoConstraints = {
@@ -105,6 +152,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 				resetMediaCheckUI();
 			}
 		};
+
 		const resetMediaCheckUI = () => {
 			const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
 			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
@@ -128,6 +176,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 				messageElement.textContent = selectMessage;
 				messageElement.style.color = '';
 			}
+
+			// Reset timer state
+			stopTimer();
+			isCheckingMedia = false;
 		};
 
 		const nextStep = () => {
@@ -181,9 +233,15 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		const handleMediaCheck = async () => {
 			try {
+				// Reset states
 				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
+				const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
+				
 				if (checkButton) {
 					checkButton.disabled = true;
+				}
+				if (continueButton) {
+					continueButton.style.display = 'none';
 				}
 
 				const messageElement = window.mereos.shadowRoot.getElementById('message');
@@ -192,7 +250,24 @@ export const PrevalidationInstructions = async (tabContent) => {
 					messageElement.style.color = '';
 				}
 
-				const result = await checkMediaInputs();
+				// Set checking state and start timer
+				isCheckingMedia = true;
+				startTimer();
+
+				let resp = null;
+				if (shouldCheckBitrate) {
+					resp = await fetchIceServers();
+				}
+			
+				if(findConfigs(['object_detection','multiple_people_detection','person_missing'], secureFeatures.entities).length > 0){
+					window.mereos.net = await cocoSsd.load();
+				}
+
+				const result = await checkMediaInputs(shouldCheckBitrate && resp?.data);
+
+				// Stop timer when check is complete
+				stopTimer();
+				isCheckingMedia = false;
 
 				if (result.error) {
 					registerEvent({
@@ -203,6 +278,11 @@ export const PrevalidationInstructions = async (tabContent) => {
 					if (messageElement) {
 						messageElement.textContent = i18next.t(result.error);
 						messageElement.style.color = '#ff4444';
+					}
+
+					// Re-enable check button on error
+					if (checkButton) {
+						checkButton.disabled = false;
 					}
 				} else if (result.message === 'media_check_success') {
 					registerEvent({
@@ -219,13 +299,16 @@ export const PrevalidationInstructions = async (tabContent) => {
 						messageElement.style.color = '';
 					}
                     
-					const continueBtn = window.mereos.shadowRoot.getElementById('continue-btn');
-					if (continueBtn && checkButton) {
-						continueBtn.style.display = 'block';
+					if (continueButton && checkButton) {
+						continueButton.style.display = 'block';
 						checkButton.style.display = 'none';
 					}
 				}
 			} catch (error) {
+				// Stop timer on error
+				stopTimer();
+				isCheckingMedia = false;
+
 				registerEvent({
 					notify: false,
 					eventName: 'media_check_exception',
@@ -294,6 +377,7 @@ export const PrevalidationInstructions = async (tabContent) => {
                 ${videoContainerHTML}
                 ${dropdownContainerHTML}
                 <div id="message" class="pvi-query-msg">${i18next.t('select_preferred_camera_and_microphone')}</div>
+                <div id="timer-element" class="pvi-query-timer" style="display: none;"></div>
                 <div id="button-container" class="pvi-btn-container">
                     <button id="check-btn" class="orange-filled-btn" style="padding: 9px 32px;">
                         ${i18next.t('check_camera_mic')}

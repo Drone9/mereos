@@ -1061,5 +1061,8 @@
   "please_open_incognito_mode_to_continue": "This assessment can only be taken in Incognito Mode. Please switch to it",
 	"extensions":"Extensions",
 	"detect_extensions":"Detect Extensions",
-	"allow_incognito_mode":"Allow Incognito Mode"
+	"allow_incognito_mode":"Allow Incognito Mode",
+  "media_check_skipped":"Media Devices Step Skipped",
+  "media_check_bitrate_failed":"Media connection flow is not stable, please try again.",
+	"media_check_all_failed":"Failed to check devices. Please try again."
 }

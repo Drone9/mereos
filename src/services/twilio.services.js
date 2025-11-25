@@ -33,3 +33,10 @@ export const getCreateRoom = async (data) => {
 		axiosInstance.post('/twilio/candidate_get_create_room/',data,config)
 	);
 };
+
+
+export const fetchIceServers = async () => {
+	return authenticatedRequest(config => 
+		axiosInstance.get('/twilio/fetch_ice_servers/',config)
+	);
+};

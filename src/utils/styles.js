@@ -1442,6 +1442,11 @@ export const preValidationCss = `.pvi-container {
   flex-direction: column;
   margin: auto;
 }
+.pvi-query-timer{
+  color: var(--theme-color);
+  text-align: center;
+  margin-bottom: 5px;
+}
 .ivsf-container{
   margin-top: -15px;
 }
@@ -2870,6 +2875,7 @@ export const startRecordingCSS =`
   overflow: hidden;
   background-color: #f0f0f0;
 }
+  
 body{
   position: relative;
 }
@@ -2883,7 +2889,7 @@ body{
   display: flex;
   justify-content: center;
 }
-.remote-video  .video-attached{
+.remote-video .video-attached{
   width: 180px;
   height: 140px;
   object-fit: cover;
@@ -2897,7 +2903,7 @@ body{
   row-gap: 9px;
   flex-direction: column;
   width: 220px;
-  background-color: #e7ebef;
+  background: var(--video-style);
   border-radius: 10px;
   box-shadow: 1px 1px 5px 1px #f1f1f1;
   z-index: 9999999;
@@ -2920,6 +2926,7 @@ body{
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
+  color:var(--text-color);
 }
 
 .recording-badge-container-header {
@@ -3164,4 +3171,49 @@ body{
 }
 .user-videos-remote .btn-container .arrow-icon-btn .bottom-icon{
   transform: rotate(180deg);
-}`;
+}
+
+/* Footer Styles */
+.webcam-footer-wrapper {
+  flex-shrink: 0;
+  padding: 8px;
+  border-top: 1px solid #d1d9e6;
+}
+
+.user-view-footer {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0;
+}
+
+.zoom-btns {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #ccd5e2;
+  background: white;
+  color: #333;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.zoom-btns:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.zoom-btns:active {
+  background: #e9e9e9;
+}
+
+.zoom-btns:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+`;

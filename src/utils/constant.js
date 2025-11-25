@@ -1,6 +1,6 @@
 export const ASSET_URL = 'https://mereos-corder.s3.eu-west-3.amazonaws.com/library_icons';
 
-export const BASE_URL = 'https://corder-api.mereos-datasafe.com/v1.1.1';
+export const BASE_URL = 'https://corder-api.mereos-datasafe.com/v1.1.2';
 
 export const SOCKET_URL = 'wss://mobile-socket.mereos.eu/websocket/';
 
@@ -144,7 +144,6 @@ export const languages = [
 	{name: 'Dutch', value: 'dutch', src: `${ASSET_URL}/netherlands.svg`, alt: '', keyword: 'nl' },
 	{name: 'Welsh',value:'welsh', src: `${ASSET_URL}/flag-of-whales.png`,alt: '',keyword: 'cy'}
 ];
-
 
 export const EXTENSIONS_LIST = {
 	ghbmnnjooekpmoecnnnilnnbdlolhkhi: {

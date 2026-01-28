@@ -149,65 +149,70 @@ export const forceClosureIncident = (
 	}
 };
 
-export const findIncidentLevel = (
-	aiEvents = [], 
-	browserEvents = [], 
-	profile
-) => {
-	const aiIncidentlevel = findAIIncidentLevel(aiEvents, profile);
-	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
+export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) => {
+	const settingLevel = profile?.settings?.proctoring_behavior?.name;
+	const aiIncidentlevel = findAIIncidentLevel(aiEvents, settingLevel);
+	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, settingLevel);
+	console.log('settingLevel', settingLevel);
 
-	if (
-		aiIncidentlevel === 'high' || 
-		browserIncidentlevel === 'high') {
+	if (aiIncidentlevel === 'high' || browserIncidentlevel === 'high') {
 		return 'high';
-	} else if (
-		aiIncidentlevel === 'medium' || 
-		browserIncidentlevel === 'medium') {
+	} else if (aiIncidentlevel === 'medium' || browserIncidentlevel === 'medium') {
 		return 'medium';
 	} else {
 		return 'low';
 	}
 };
 
-export const findAIIncidentLevel = (aiEvents = []) => {	
+export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {	
 	let totalPoints = 0;
 	
 	for (const item of aiEvents) {
 		const duration = item.end_at - item.start_at;
 		let points = 0;
 
+		let adjustedDuration = duration;
+		if (settingLevel === 'moderate') {
+			adjustedDuration = duration / 2;
+		} else if (settingLevel === 'strict') {
+			if (duration > 0) {
+				points = 50;
+				totalPoints += points;
+				continue; 
+			}
+		}
+
 		switch (item.name) {
 			case 'person_missing':
-				if (duration >= 16) {
+				if (adjustedDuration >= 16) {
 					points = 50;
-				} else if (duration >= 7) {
+				} else if (adjustedDuration >= 7) {
 					points = 25;
-				} else if (duration >= 4) {
+				} else if (adjustedDuration >= 4) {
 					points = 3;
-				} else if (duration >= 0) {
+				} else if (adjustedDuration >= 0) {
 					points = 1;
 				}
 				break;
 
 			case 'multiple_people':
-				if (duration >= 16) {
+				if (adjustedDuration >= 16) {
 					points = 50;
-				} else if (duration >= 7) {
+				} else if (adjustedDuration >= 7) {
 					points = 25;
-				} else if (duration >= 4) {
+				} else if (adjustedDuration >= 4) {
 					points = 5;
-				} else if (duration >= 0) {
+				} else if (adjustedDuration >= 0) {
 					points = 1;
 				}
 				break;
 
 			case 'object_detection':
-				if (duration >= 11) {
+				if (adjustedDuration >= 11) {
 					points = 50;
-				} else if (duration >= 4) {
+				} else if (adjustedDuration >= 4) {
 					points = 15;
-				} else if (duration >= 0) {
+				} else if (adjustedDuration >= 0) {
 					points = 3;
 				}
 				break;
@@ -227,58 +232,75 @@ export const findAIIncidentLevel = (aiEvents = []) => {
 	}
 };
 
-const calculateAwayPoints = (duration) => {
-	if (duration <= 3) return 3;
-	if (duration <= 10) return 25;
-	return 50;
-};
-
-export const findBrowserIncidentLevel = (browserEvents = [], profile) => {
-	let result = 'low';
+export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 	let totalPoints = 0;
 
-	const rawMetrics = profile?.settings?.proctoring_behavior?.metrics || [];
-	const metrics = rawMetrics.reduce((acc, cur) => ({ ...acc, ...cur }), {});
-
 	let copyPasteCutEvents = browserEvents.filter(item =>
-		['candidate_paste_the_content', 'candidate_copy_the_content','copy_and_paste'].includes(item.name)
+		['candidate_paste_the_content', 'candidate_copy_the_content', 'copy_and_paste'].includes(item.name)
 	);
 	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
-	let navigatingAwayEvents = browserEvents.filter(item =>
-		['moved_away_from_page', 'moved_to_another_app', 'moved_to_another_window'].includes(item.name)
-	);
+	const awayEvents = browserEvents.filter(item => item.name === 'moved_back_to_page');
 
-	const awayEvents = browserEvents.filter(item => item.name === 'moved_away_from_page');
-	awayEvents.forEach(event => {
-		const duration = Number(event.value) || 0;
-		const points = calculateAwayPoints(duration);
-		totalPoints += points;
-		
-	});
-
-	if (
-		(metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut']) ||
-		(metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized']) ||
-		(metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away'])
-	) {
-		result = 'high';
-	} else if (
-		(metrics['copy_paste_cut'] > 0 && copyPasteCutEvents.length >= metrics['copy_paste_cut'] / 2) ||
-		(metrics['browser_resized'] > 0 && browserResizedEvents.length >= metrics['browser_resized'] / 2) ||
-		(metrics['navigating_away'] > 0 && navigatingAwayEvents.length >= metrics['navigating_away'] / 2)
-	) {
-		result = 'medium';
-	}
-
-	if (totalPoints >= 50) {
-		result = 'high';
-	} else if (totalPoints >= 25) {
-		result = 'medium';
-	} else if (totalPoints > 0 && result === 'low') {
-		result = 'low';
+	let copyPastePoints = 10;
+	let resizePoints = 10;
+	
+	if (settingLevel === 'strict') {
+		copyPastePoints = 50;
+		resizePoints = 50;
 	}
 	
-	return result;
+	copyPasteCutEvents.forEach(() => {
+		totalPoints += copyPastePoints;
+	});
+
+	browserResizedEvents.forEach(() => {
+		totalPoints += resizePoints;
+	});
+
+	awayEvents.forEach(event => {
+		const duration = Number(event.end_at) || 0;
+
+		if (settingLevel === 'strict') {
+			if (duration > 0) {
+				totalPoints += 50;
+			}
+		} else if (settingLevel === 'moderate') {
+			const adjustedDuration = duration / 2;
+			if (adjustedDuration <= 3) {
+				totalPoints += 3;
+			} else if (adjustedDuration <= 10) {
+				totalPoints += 25;
+			} else {
+				totalPoints += 50;
+			}
+		} else {
+			if (duration <= 3) {
+				totalPoints += 3;
+			} else if (duration <= 10) {
+				totalPoints += 25;
+			} else {
+				totalPoints += 50;
+			}
+		}
+	});
+
+	console.log('Total Browser Points:', totalPoints, 'Setting Level:', settingLevel);
+
+	if (settingLevel === 'moderate') {
+		if (totalPoints >= 25) {
+			return 'high';
+		} else if (totalPoints >= 12.5) {
+			return 'medium';
+		}
+		return 'low';
+	} else {
+		if (totalPoints >= 50) {
+			return 'high';
+		} else if (totalPoints >= 25) {
+			return 'medium';
+		}
+		return 'low';
+	}
 };
 
 export const checkForceClosureViolation = async () =>{
@@ -812,7 +834,7 @@ export const updatePersistData = (key, updates) => {
 };
 
 export const addSectionSessionRecord = async (session) => {
-	return new Promise(async (resolve, _reject) => {
+	return new Promise(async (resolve, reject) => {
 		try{
 			const { 
 				aiEvents, 
@@ -820,13 +842,51 @@ export const addSectionSessionRecord = async (session) => {
 			} = session;
 			const secureFeatures = getSecureFeatures();
 			
-			let recordings;
-			if([...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios].length){
-				const sourceIds = [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios];
-				recordings = sourceIds?.length
-					? await getRecordingSid({'source_id': [...session?.user_video_name, ...session?.user_audio_name, ...session?.screen_sharing_video_name, ...session?.mobileRecordings , ...session?.mobileAudios]})
-					: [];
+			let recordings = { data: [] };
+			let hasRecordings = false;
+			
+			const allRecordings = [
+				...session?.user_video_name || [],
+				...session?.user_audio_name || [], 
+				...session?.screen_sharing_video_name || [],
+				...session?.mobileRecordings || [],
+				...session?.mobileAudios || []
+			];
+			
+			hasRecordings = allRecordings.length > 0;
+			
+			if (hasRecordings) {
+				try {
+					recordings = await getRecordingSid({'source_id': allRecordings});
+					
+					if (!recordings || !recordings.data) {
+						throw new Error('Invalid response from recordings API');
+					}
+				} catch (recordingError) {
+					logger.error('Failed to fetch recording SIDs:', recordingError);
+					recordings = { data: [] };
+					
+					if (window.mereos?.globalCallback) {
+						window.mereos.globalCallback({
+							type: 'warning',
+							message: 'recording_info_unavailable',
+							code: 40019
+						});
+					}
+				}
 			}
+			
+			const filterRecordings = (sourceArray) => {
+				if (!sourceArray || !sourceArray.length || !recordings.data || !recordings.data.length) {
+					return [];
+				}
+				return recordings.data
+					.filter(recording => 
+						sourceArray.find(subrecording => subrecording === recording.source_sid)
+					)
+					.map(recording => recording.media_external_location);
+			};
+			
 			let sectionSessionDetails = {
 				start_time: session?.quizStartTime,
 				submission_time: session?.submissionTime,
@@ -834,15 +894,15 @@ export const addSectionSessionRecord = async (session) => {
 				identity_card: session?.identityCard,
 				room_scan_video: session?.room_scan_video,
 				identity_photo: session?.candidatePhoto,
-				user_video_name: recordings?.data?.filter(recording => session.user_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-				user_audio_name: recordings?.data?.filter(recording => session.user_audio_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-				screen_sharing_video_name: recordings?.data?.filter(recording => session.screen_sharing_video_name.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+				user_video_name: filterRecordings(session?.user_video_name),
+				user_audio_name: filterRecordings(session?.user_audio_name),
+				screen_sharing_video_name: filterRecordings(session?.screen_sharing_video_name),
 				roomscan_recordings: session?.roomScanRecordings,
 				session_id: session?.sessionId,
-				archive_id:session?.room_id,
+				archive_id: session?.room_id,
 				location: session?.location,
-				library_version:pkg.version,
-				mobile_session_id:session.mobileRoomSessionId,
+				library_version: pkg.version,
+				mobile_session_id: session?.mobileRoomSessionId,
 				collected_details: {
 					download_speed: session?.downloadSpeed,
 					upload_speed: session?.uploadSpeed,
@@ -850,34 +910,58 @@ export const addSectionSessionRecord = async (session) => {
 					ram_info: session?.RAMSpeed
 				},
 				status: session?.sessionStatus,
-				video_codec: recordings?.data?.filter(recording => session.user_video_name?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.codec)[0],
-				video_extension: recordings?.data?.filter(recording => session.user_video_name?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.container_format)[0],
+				video_codec: recordings.data?.filter(recording => 
+					session?.user_video_name?.find(subrecording => subrecording === recording.source_sid)
+				)?.map(recording => recording.codec)[0] || null,
+				video_extension: recordings.data?.filter(recording => 
+					session?.user_video_name?.find(subrecording => subrecording === recording.source_sid)
+				)?.map(recording => recording.container_format)[0] || null,
 				incident_level: findIncidentLevel(
 					aiEvents,
 					browserEvents, 	
-					secureFeatures),
-				mobile_audio_name: recordings?.data?.filter(recording => session?.mobileAudios?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
-				mobile_video_name: recordings?.data?.filter(recording => session?.mobileRecordings?.find(subrecording => subrecording === recording.source_sid))?.map(recording => recording.media_external_location) || [],
+					secureFeatures
+				),
+				mobile_audio_name: filterRecordings(session?.mobileAudios),
+				mobile_video_name: filterRecordings(session?.mobileRecordings),
 				conversation_id: localStorage.getItem('conversationId') || '',
-				candidate_assessment: session?.candidate_assessment
+				candidate_assessment: session?.candidate_assessment,
+				recording_fetch_status: hasRecordings ? 
+					(recordings.data.length > 0 ? 'success' : 'failed') : 
+					'not_required'
 			};
 	
 			if (session?.id) {
 				sectionSessionDetails['id'] = session?.id;
 			}
 			
-			const resp = session?.id ? await editSectionSession(sectionSessionDetails) : await addSectionSession(sectionSessionDetails);
+			const resp = session?.id ? 
+				await editSectionSession(sectionSessionDetails) : 
+				await addSectionSession(sectionSessionDetails);
+			
 			resolve(resp);
-		}catch(err){
+			
+		} catch(err) {
+			logger.error('Error in addSectionSessionRecord:', err);
+			
 			if (err.response?.status === 403) {
-				if(window.mereos.globalCallback){
-					window.mereos?.globalCallback({type:'error', message: 'error_saving_session_info',code:40018 });
+				if (window.mereos?.globalCallback) {
+					window.mereos.globalCallback({
+						type: 'error', 
+						message: 'error_saving_session_info',
+						code: 40018 
+					});
 				}
-			} 
-			if(window.mereos.startRecordingCallBack){
-				window.mereos.mereos?.startRecordingCallBack({type:'error', message: 'error_saving_session_info',code:40018 });
 			}
-			_reject(err);
+			
+			if (window.mereos?.startRecordingCallBack) {
+				window.mereos.startRecordingCallBack({
+					type: 'error', 
+					message: 'error_saving_session_info', 
+					code: 40018 
+				});
+			}
+			
+			reject(err);
 		}
 	});
 };
@@ -1028,13 +1112,13 @@ export const lockBrowserFromContent = (entities) => {
 					break;
 				}
 
-				case 'force_full_screen': {
-					const fullScreen = await forceFullScreen();
-					if (fullScreen) {
-						result = {...result, [entity.name]: true};
-					}
-					break;
-				}
+				// case 'force_full_screen': {
+				// 	const fullScreen = await forceFullScreen();
+				// 	if (fullScreen) {
+				// 		result = {...result, [entity.name]: true};
+				// 	}
+				// 	break;
+				// }
 				
 				default:
 					null;
@@ -1169,6 +1253,11 @@ let awayStartTime = null;
 let visibilityHandler;
 let blurHandler;
 let focusHandler;
+let isChatOpen = false; // Add this flag
+
+export const setChatOpenState = (open) => {
+	isChatOpen = open;
+};
 
 export const detectUnfocusOfTab = () => {
 	return new Promise((resolve) => {
@@ -1176,13 +1265,15 @@ export const detectUnfocusOfTab = () => {
 			removeUnfocusListener();
 
 			const startAway = () => {
-				if (!awayStartTime) {
+				if (!awayStartTime && !isChatOpen) { // Check if chat is NOT open
 					awayStartTime = Date.now();
 					registerEvent({
 						eventType: 'error',
 						notify: true,
 						eventName: 'moved_away_from_page',
+						sentryError: false,
 					});
+					showToast('error','moved_away_from_page');
 				}
 			};
 
@@ -1195,18 +1286,25 @@ export const detectUnfocusOfTab = () => {
 					eventType: 'info',
 					notify: false,
 					eventName: 'moved_back_to_page',
-					duration: durationSec, 
+					durations: durationSec, 
+					sentryError: false,
 				});
-				
-				checkForceClosureViolation();
 			};
 
 			visibilityHandler = () => {
-				if (document.hidden) startAway();
-				else endAway();
+				if (document.hidden && !isChatOpen) { // Check if chat is NOT open
+					startAway();
+				} else {
+					endAway();
+				}
 			};
 
-			blurHandler = startAway;
+			blurHandler = () => {
+				if (!isChatOpen) { // Only trigger if chat is NOT open
+					startAway();
+				}
+			};
+
 			focusHandler = endAway;
 
 			document.addEventListener('visibilitychange', visibilityHandler);
@@ -1229,6 +1327,7 @@ export const removeUnfocusListener = () => {
 		visibilityHandler = blurHandler = focusHandler = null;
 	}
 	awayStartTime = null;
+	isChatOpen = false; // Reset the flag
 };
 
 export const preventShortCuts = (allowedFunctionKeys = []) => {

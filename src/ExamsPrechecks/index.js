@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
 import { browserSecurityCss, examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import 'notyf/notyf.min.css';
 import 'notyf/notyf.min.css';
@@ -116,6 +116,8 @@ export const initShadowDOM = () => {
 
 export const initializeLiveChat = () => {
 	let unreadCount = 0;
+	let chatContainer = null;
+	let isChatOpen = false; // Track chat open state
 
 	const isLoggedIn = !!getAuthenticationToken();
 	const getSecureFeature = getSecureFeatures();
@@ -148,7 +150,7 @@ export const initializeLiveChat = () => {
 
 	const chatIconWrapper = document.getElementById('chat-icon-wrapper');
 	const notificationBadge = document.getElementById('notification-badge');
-	const chatContainer = document.getElementById('talkjs-container');
+	chatContainer = document.getElementById('talkjs-container');
 
 	const positions = {
 		icon: { x: 0, y: 0 },
@@ -205,9 +207,14 @@ export const initializeLiveChat = () => {
 	chatIconWrapper.addEventListener('click', (e) => {
 		e.stopPropagation();
 		if (!isDragging && Date.now() - clickStartTime < 200) {
-			chatContainer.style.display = chatContainer.style.display === 'none' ? 'block' : 'none';
+			isChatOpen = chatContainer.style.display === 'none';
+			chatContainer.style.display = isChatOpen ? 'block' : 'none';
+			
+			if (typeof setChatOpenState === 'function') {
+				setChatOpenState(isChatOpen);
+			}
       
-			if (chatContainer.style.display === 'block') {
+			if (isChatOpen) {
 				notificationBadge.style.display = 'none';
 				unreadCount = 0;
 				updateNotificationBadge(0);
@@ -221,9 +228,41 @@ export const initializeLiveChat = () => {
 
 	document.addEventListener('click', (e) => {
 		if (!chatIconWrapper.contains(e.target) && !chatContainer.contains(e.target)) {
-			chatContainer.style.display = 'none';
+			if (chatContainer.style.display === 'block') {
+				isChatOpen = false;
+				chatContainer.style.display = 'none';
+				
+				if (typeof setChatOpenState === 'function') {
+					setChatOpenState(false);
+				}
+			}
 		}
 	});
+
+	const handleDocumentClick = (e) => {
+		if (chatContainer && chatIconWrapper) {
+			if (!chatContainer.contains(e.target) && !chatIconWrapper.contains(e.target)) {
+				if (isChatOpen) {
+					isChatOpen = false;
+					if (typeof setChatOpenState === 'function') {
+						setChatOpenState(false);
+					}
+				}
+			}
+		}
+	};
+
+	document.addEventListener('mousedown', handleDocumentClick);
+
+	const cleanup = () => {
+		if (typeof setChatOpenState === 'function') {
+			setChatOpenState(false);
+		}
+		document.removeEventListener('mousedown', handleDocumentClick);
+	};
+
+	window.addEventListener('beforeunload', cleanup);
+	window.addEventListener('unload', cleanup);
 
 	if (!existingChatContainer) {
 		Talk.ready.then(() => {

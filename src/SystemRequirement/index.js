@@ -83,6 +83,9 @@ const renderUI = (tab1Content) => {
                     ${diagnosticItemsHTML}
                 </div>
                 <div class="button-section">
+                    <button class="orange-hollow-btn" id="requirementRefreshBtn" style="display: none;">
+                        ${i18next.t('refresh')}
+                    </button>
                     <button class="orange-filled-btn" id="requirementContinueBtn" disabled>${i18next.t('continue')}</button>
                 </div>
             </div>
@@ -92,6 +95,12 @@ const renderUI = (tab1Content) => {
 
 	tab1Content.innerHTML = html;
 
+	// Add refresh button click handler
+	window.mereos.shadowRoot.getElementById('requirementRefreshBtn')?.addEventListener('click', async () => {
+		await retryAllFailedRequirements();
+	});
+
+	// Add continue button click handler
 	window.mereos.shadowRoot.getElementById('requirementContinueBtn').addEventListener('click', () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_requirement_passed' });
 		updatePersistData('preChecksSteps', { requirementStep: true });
@@ -140,11 +149,13 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 		const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
 		const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
 		const continueButton = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
+		const refreshButton = window.mereos.shadowRoot.getElementById('requirementRefreshBtn');
 
 		if (!statusIcon || !statusLoading) {
 			return;
 		}
 		continueButton.disabled = true;
+		if (refreshButton) refreshButton.disabled = true;
 		statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
 		statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
 
@@ -178,7 +189,148 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
 		updateContinueButtonState();
+		updateRefreshButtonVisibility();
+		if (refreshButton) refreshButton.disabled = false;
 	});
+};
+
+const retryAllFailedRequirements = async () => {
+	const refreshBtn = window.mereos.shadowRoot.getElementById('requirementRefreshBtn');
+	const continueBtn = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
+	
+	if (refreshBtn && continueBtn) {
+		// Disable buttons during retry
+		refreshBtn.disabled = true;
+		continueBtn.disabled = true;
+		
+		// Show loading state on refresh button
+		const originalText = refreshBtn.textContent;
+		refreshBtn.textContent = i18next.t('retrying');
+		
+		try {
+			const candidateAssessment = await getSecureFeatures();
+			const secureFeatures = candidateAssessment?.entities || [];
+			const profileSettings = candidateAssessment?.settings;
+			
+			// Check which requirements need retry
+			const failedRequirements = getFailedRequirements();
+			
+			const retryPromises = [];
+			
+			if (failedRequirements.includes('ram') && secureFeatures.find(entity => entity.key === 'verify_ram')) {
+				retryPromises.push(retryRequirementItem('ram', getRAMInfo, profileSettings));
+			}
+			
+			if (failedRequirements.includes('cpu') && secureFeatures.find(entity => entity.key === 'verify_cpu')) {
+				retryPromises.push(retryRequirementItem('cpu', getCPUInfo, profileSettings));
+			}
+			
+			if (failedRequirements.includes('upload_speed') && secureFeatures.find(entity => entity.key === 'verify_upload_speed')) {
+				retryPromises.push(retryRequirementItem('upload_speed', getNetworkUploadSpeed, profileSettings));
+			}
+			
+			if (failedRequirements.includes('download_speed') && secureFeatures.find(entity => entity.key === 'verify_download_speed')) {
+				retryPromises.push(retryRequirementItem('download_speed', getNetworkDownloadSpeed, profileSettings));
+			}
+			
+			await Promise.all(retryPromises);
+			
+			// Log retry event
+			registerEvent({ 
+				eventType: 'info', 
+				notify: false, 
+				eventName: 'requirements_retry_attempted' 
+			});
+			
+		} catch (error) {
+			logger.error('Error retrying requirements:', error);
+		} finally {
+			// Restore refresh button state
+			refreshBtn.textContent = originalText;
+			refreshBtn.disabled = false;
+			updateContinueButtonState();
+			updateRefreshButtonVisibility();
+		}
+	}
+};
+
+const retryRequirementItem = async (id, checkFunction, profileSettings) => {
+	const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
+	const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
+	
+	if (!statusIcon || !statusLoading) {
+		return false;
+	}
+	
+	// Reset to loading state
+	statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
+	statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
+	
+	// Perform the check
+	try {
+		const resp = await checkFunction();
+		const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
+		
+		let finalResult;
+		switch (id) {
+			case 'ram':
+				finalResult = Number(ram_info) > profileSettings?.ram_size;
+				break;
+			case 'cpu':
+				finalResult = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
+				break;
+			case 'upload_speed':
+				finalResult = Number(resp?.speedMbps) > profileSettings?.upload_speed;
+				break;
+			case 'download_speed':
+				finalResult = Number(resp?.speedMbps) > profileSettings?.download_speed;
+				break;
+			default:
+				finalResult = false;
+		}
+		
+		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
+		
+		// Log event for retry
+		if (finalResult) {
+			registerEvent({ 
+				eventType: 'success', 
+				notify: false, 
+				eventName: `${id}_requirement_retry_success` 
+			});
+		} else {
+			registerEvent({ 
+				eventType: 'error', 
+				notify: false, 
+				eventName: `${id}_requirement_retry_failed` 
+			});
+		}
+		
+		return finalResult;
+	} catch (error) {
+		logger.error(`Error retrying ${id} requirement:`, error);
+		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, false);
+		return false;
+	}
+};
+
+const getFailedRequirements = () => {
+	const failedItems = [];
+	const requirementItems = ['ram', 'cpu', 'upload_speed', 'download_speed'];
+	
+	requirementItems.forEach(itemId => {
+		const statusIcon = window.mereos.shadowRoot.getElementById(`${itemId}StatusIcon`);
+		if (!statusIcon) return;
+		
+		const currentIconPathname = new URL(statusIcon.src).pathname;
+		const failureIconPathname = new URL(failureIconMap[itemId] || '').pathname;
+		
+		if (currentIconPathname === failureIconPathname) {
+			failedItems.push(itemId);
+		}
+	});
+	
+	return failedItems;
 };
 
 const updateContinueButtonState = () => {
@@ -195,7 +347,24 @@ const updateContinueButtonState = () => {
 		return currentIconPathname === expectedIconPathname;
 	});
 
-	window.mereos.shadowRoot.getElementById('requirementContinueBtn').disabled = !allDiagnosticsPassed;
+	const continueBtn = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
+	if (continueBtn) {
+		continueBtn.disabled = !allDiagnosticsPassed;
+	}
+};
+
+const updateRefreshButtonVisibility = () => {
+	const refreshBtn = window.mereos.shadowRoot.getElementById('requirementRefreshBtn');
+	if (!refreshBtn) return;
+	
+	const failedRequirements = getFailedRequirements();
+	
+	// Show refresh button if there are any failed requirements
+	if (failedRequirements.length > 0) {
+		refreshBtn.style.display = 'block';
+	} else {
+		refreshBtn.style.display = 'none';
+	}
 };
 
 export const SystemRequirement = async (tab1Content) => {
@@ -265,6 +434,7 @@ export const SystemRequirement = async (tab1Content) => {
 		await Promise.all(promises);
 
 		updateContinueButtonState();
+		updateRefreshButtonVisibility();
 
 	} catch (error) {
 		logger.error('Error running diagnostics:', error);
@@ -294,6 +464,11 @@ const updateDiagnosticText = () => {
 	const btnText = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
+	}
+	
+	const refreshBtn = window.mereos.shadowRoot.getElementById('requirementRefreshBtn');
+	if (refreshBtn) {
+		refreshBtn.textContent = i18next.t('refresh');
 	}
 };
 

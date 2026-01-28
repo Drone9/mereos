@@ -85,6 +85,9 @@ const renderUI = (tab1Content) => {
                     ${diagnosticItemsHTML}
                 </div>
                 <div class="button-section">
+                    <button class="orange-hollow-btn" id="diagnosticRefreshBtn" style="display: none;">
+                        ${i18next.t('refresh')}
+                    </button>
                     <button class="orange-filled-btn" id="diagnosticContinueBtn" disabled>${i18next.t('continue')}</button>
                 </div>
             </div>
@@ -94,6 +97,12 @@ const renderUI = (tab1Content) => {
 
 	tab1Content.innerHTML = html;
 
+	// Add refresh button click handler
+	window.mereos.shadowRoot.getElementById('diagnosticRefreshBtn')?.addEventListener('click', async () => {
+		await retryAllFailedDiagnostics();
+	});
+
+	// Add continue button click handler
 	window.mereos.shadowRoot.getElementById('diagnosticContinueBtn')?.addEventListener('click', () => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
@@ -140,12 +149,150 @@ const addDiagnosticItemClickEvents = () => {
 			const result = await checkFunction();
 			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
 			updateContinueButtonState();
+			updateRefreshButtonVisibility();
 		});
 	};
 
 	handleDiagnosticItemClick('webcam', checkCamera);
 	handleDiagnosticItemClick('microphone', checkMicrophone);
 	handleDiagnosticItemClick('location', getLocation);
+};
+
+const retryAllFailedDiagnostics = async () => {
+	const refreshBtn = window.mereos.shadowRoot.getElementById('diagnosticRefreshBtn');
+	const continueBtn = window.mereos.shadowRoot.getElementById('diagnosticContinueBtn');
+	
+	if (refreshBtn && continueBtn) {
+		// Disable buttons during retry
+		refreshBtn.disabled = true;
+		continueBtn.disabled = true;
+		
+		// Show loading state on refresh button
+		refreshBtn.innerHTML = `
+			${i18next.t('retrying')}
+		`;
+		
+		try {
+			const candidateAssessment = getSecureFeatures();
+			const secureFeatures = candidateAssessment?.entities || [];
+			const recordVideo = secureFeatures.some(entity => entity.key === 'record_video' || entity.key === 'record_room');
+			const recordAudio = secureFeatures.some(entity => entity.key === 'record_audio');
+			const trackLocation = secureFeatures.some(entity => entity.key === 'track_location');
+			const multipleScreensCheck = secureFeatures.some(entity => entity.key === 'verify_desktop');
+			
+			const retryPromises = [];
+			
+			const failedDiagnostics = getFailedDiagnostics();
+			
+			if (failedDiagnostics.includes('webcam') && recordVideo) {
+				retryPromises.push(retryDiagnosticItem('webcam', checkCamera));
+			}
+			
+			if (failedDiagnostics.includes('microphone') && recordAudio) {
+				retryPromises.push(retryDiagnosticItem('microphone', checkMicrophone));
+			}
+			
+			if (failedDiagnostics.includes('location') && trackLocation) {
+				retryPromises.push(retryDiagnosticItem('location', getLocation));
+			}
+			
+			if (failedDiagnostics.includes('desktop') && multipleScreensCheck) {
+				retryPromises.push(retryDiagnosticItem('desktop', detectMultipleScreens));
+			}
+			
+			await Promise.all(retryPromises);
+			
+			registerEvent({ 
+				eventType: 'info', 
+				notify: false, 
+				eventName: 'diagnostics_retry_attempted' 
+			});
+			
+		} catch (error) {
+			logger.error('Error retrying diagnostics:', error);
+		} finally {
+			refreshBtn.innerHTML = `
+				${i18next.t('refresh')}
+			`;
+			
+			refreshBtn.disabled = false;
+			updateContinueButtonState();
+			updateRefreshButtonVisibility();
+		}
+	}
+};
+
+const retryDiagnosticItem = async (id) => {
+	const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
+	const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
+	
+	if (!statusIcon || !statusLoading) {
+		return false;
+	}
+	
+	const statusIconMap = {
+		webcam: 'video-camera-light-gray.svg',
+		microphone: 'microphone-light-gray.svg',
+		location: 'location-pin-black.svg',
+		desktop: 'multiple-screen-gray.svg'
+	};
+	statusIcon.src = `${ASSET_URL}/${statusIconMap[id] || 'video-camera-light-gray.svg'}`;
+	statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
+	
+	try {
+		let result;
+		if (id === 'webcam') {
+			result = await checkCamera();
+		} else if (id === 'microphone') {
+			result = await checkMicrophone();
+		} else if (id === 'location') {
+			result = await getLocation();
+		} else if (id === 'desktop') {
+			const isDetected = await detectMultipleScreens();
+			result = !isDetected; 
+		}
+		
+		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
+		
+		if (result) {
+			registerEvent({ 
+				eventType: 'success', 
+				notify: false, 
+				eventName: `${id}_retry_success` 
+			});
+		} else {
+			registerEvent({ 
+				eventType: 'error', 
+				notify: false, 
+				eventName: `${id}_retry_failed` 
+			});
+		}
+		
+		return result;
+	} catch (error) {
+		logger.error(`Error retrying ${id}:`, error);
+		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, false);
+		return false;
+	}
+};
+
+const getFailedDiagnostics = () => {
+	const failedItems = [];
+	const diagnosticItems = ['webcam', 'microphone', 'location', 'desktop'];
+	
+	diagnosticItems.forEach(itemId => {
+		const statusIcon = window.mereos.shadowRoot.getElementById(`${itemId}StatusIcon`);
+		if (!statusIcon) return;
+		
+		const currentIconPathname = new URL(statusIcon.src).pathname;
+		const failureIconPathname = new URL(failureIconMap[itemId] || '').pathname;
+		
+		if (currentIconPathname === failureIconPathname) {
+			failedItems.push(itemId);
+		}
+	});
+	
+	return failedItems;
 };
 
 const setElementStatus = (id, status, isSuccess) => {
@@ -172,7 +319,24 @@ const updateContinueButtonState = () => {
 		return currentIconPathname === expectedIconPathname;
 	});
 
-	window.mereos.shadowRoot.getElementById('diagnosticContinueBtn').disabled = !allDiagnosticsPassed;
+	const continueBtn = window.mereos.shadowRoot.getElementById('diagnosticContinueBtn');
+	if (continueBtn) {
+		continueBtn.disabled = !allDiagnosticsPassed;
+	}
+};
+
+const updateRefreshButtonVisibility = () => {
+	const refreshBtn = window.mereos.shadowRoot.getElementById('diagnosticRefreshBtn');
+	if (!refreshBtn) return;
+	
+	const failedDiagnostics = getFailedDiagnostics();
+	
+	// Show refresh button if there are any failed diagnostics
+	if (failedDiagnostics.length > 0) {
+		refreshBtn.style.display = 'block';
+	} else {
+		refreshBtn.style.display = 'none';
+	}
 };
 
 const startLocationMonitoring = () => {
@@ -202,6 +366,7 @@ const startLocationMonitoring = () => {
 			}
 
 			updateContinueButtonState();
+			updateRefreshButtonVisibility();
 		} catch (error) {
 			logger.error('Error during location monitoring:', error);
 		}
@@ -234,6 +399,7 @@ const startScreenMonitoring = () => {
 				}
 				
 				updateContinueButtonState();
+				updateRefreshButtonVisibility();
 			}
 		} catch (error) {
 			logger.error('Error during screen monitoring:', error);
@@ -319,6 +485,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
 
 		updateContinueButtonState();
+		updateRefreshButtonVisibility();
     
 	} catch (error) {
 		logger.error('Error running diagnostics:', error);
@@ -354,9 +521,16 @@ const updateDiagnosticText = () => {
 		description.textContent = i18next.t('system_diagnostics_msg');
 	}
     
-	const btnText = window.mereos.shadowRoot.querySelector('.orange-filled-btn');
-	if (btnText) {
-		btnText.textContent = i18next.t('continue');
+	const continueBtn = window.mereos.shadowRoot.getElementById('diagnosticContinueBtn');
+	if (continueBtn) {
+		continueBtn.textContent = i18next.t('continue');
+	}
+	
+	const refreshBtn = window.mereos.shadowRoot.getElementById('diagnosticRefreshBtn');
+	if (refreshBtn) {
+		refreshBtn.innerHTML = `
+			${i18next.t('refresh')}
+		`;
 	}
 };
 

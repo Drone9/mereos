@@ -236,13 +236,26 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		btnContainer.innerHTML = '';
 
 		if (msg.type === '' || isRecordingActive) {
-			btnContainer.insertAdjacentHTML('beforeend', `
-				<button class="orange-hollow-btn" ${disabledBtn ? 'disabled' : ''}>${i18next.t('previous_step')}</button>
-				<button class="orange-filled-btn" ${disabledBtn ? 'disabled' : ''}>${isRecordingActive ? i18next.t('recording') : i18next.t('record_audio')}</button>
-			`);
-
-			if (!isRecordingActive) {
-				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
+			// Don't show previous step button when recording is in progress
+			if (isRecordingActive) {
+				btnContainer.insertAdjacentHTML('beforeend', `
+					<button class="orange-filled-btn" disabled>${i18next.t('recording')}</button>
+				`);
+			} else {
+				// Show previous step button only when NOT recording
+				const prevStepsEntities = ['verify_candidate', 'verify_id'];
+				const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
+				
+				if (showPrevButton) {
+					btnContainer.insertAdjacentHTML('beforeend', `
+						<button class="orange-hollow-btn" ${disabledBtn ? 'disabled' : ''}>${i18next.t('previous_step')}</button>
+					`);
+					btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
+				}
+				
+				btnContainer.insertAdjacentHTML('beforeend', `
+					<button class="orange-filled-btn" ${disabledBtn ? 'disabled' : ''}>${i18next.t('record_audio')}</button>
+				`);
 				btnContainer.querySelector('.orange-filled-btn').addEventListener('click', startRecording);
 			}
 		} else if (msg.type === 'unsuccessful') {
@@ -261,12 +274,26 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 			`);
 			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', startRecording);
 		} else {
+			// Audio test passed - show re-record and done buttons
+			const prevStepsEntities = ['verify_candidate', 'verify_id'];
+			const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
+			
+			if (showPrevButton) {
+				btnContainer.insertAdjacentHTML('beforeend', `
+					<button class="orange-hollow-btn">${i18next.t('re_record_audio')}</button>
+				`);
+				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', startRecording);
+			} else {
+				// If no previous step button was showing before, just show re-record as hollow
+				btnContainer.insertAdjacentHTML('beforeend', `
+					<button class="orange-hollow-btn">${i18next.t('re_record_audio')}</button>
+				`);
+				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', startRecording);
+			}
+			
 			btnContainer.insertAdjacentHTML('beforeend', `
-				<button class="orange-hollow-btn">${i18next.t('re_record_audio')}</button>
 				<button class="orange-filled-btn">${i18next.t('done')}</button>
 			`);
-
-			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', startRecording);
 			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', nextStep);
 		}
 	};

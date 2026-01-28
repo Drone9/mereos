@@ -33,7 +33,8 @@ import {
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
-import { initializeLiveChat, initShadowDOM, openModal } from '../ExamsPrechecks';
+import { initShadowDOM, openModal } from '../ExamsPrechecks';
+import { cleanupForceFullscreen, initializeForceFullscreen } from '../utils/fullscreen';
 
 let aiEvents = [];
 let mediaStream = null;
@@ -610,8 +611,19 @@ export const startRecording = async () => {
 		return;
 	}
 
+	const fullscreenRequired = secureFeatures?.entities?.some(entity => entity.key === 'force_full_screen');
+	console.log('fullscreenRequired',fullscreenRequired);
+
 	if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 		await lockBrowserFromContent(secureFeatures?.entities || []);
+	}
+
+	if (fullscreenRequired) {
+    // This will show the modal AND set up monitoring for when user tries to exit
+    const cleanupForceFullscreen = initializeForceFullscreen();
+    
+    // Store cleanup function for later
+    window.mereos.cleanupForceFullscreen = cleanupForceFullscreen;
 	}
 
 	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
@@ -1713,6 +1725,7 @@ export const stopAllRecordings = async () => {
 		window.removeEventListener('beforeunload',  ()=> {});
 		window.removeEventListener('popstate', detectBackButtonCallback);
 		restoreRightClick();
+		cleanupForceFullscreen();
 
 		if(window?.mereos?.mobileStream){
 			window?.mereos?.mobileStream?.getTracks()?.forEach((track) => track.stop());

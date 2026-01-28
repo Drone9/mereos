@@ -23,6 +23,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			type: 'checking',
 			text: 'center_your_face',
 		},
+		isProcessing: false, // Added processing state
 	};
 
 	let videoElement = null;
@@ -62,6 +63,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			...state,
 			captureMode: 'retake',
 			imageSrc: imageSrc,
+			isProcessing: true, // Set processing flag
 			msg: {
 				type: 'checking',
 				text: 'please_wait_we_processing',
@@ -89,6 +91,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				const predictions = resp?.data?.face?.FaceDetails;
     
 				img.onload = async function () {
+					// Reset processing flag when done
+					state.isProcessing = false;
+					
 					if (predictions?.length && predictions.length === 1) {
 						const face = predictions[0];
     
@@ -196,6 +201,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			} catch (error) {
 				logger.error('Error processing the image:', error);
 				
+				// Reset processing flag on error
+				state.isProcessing = false;
 				state.failedAttempts++;
 				
 				if (state.failedAttempts >= 3) {
@@ -267,6 +274,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				...state,
 				captureMode: 'take',
 				imageSrc: null,
+				isProcessing: false,
 				msg: {
 					type: 'checking',
 					text: 'something_went_wrong_please_upload_again',
@@ -313,8 +321,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
       
 		contentHTML += `</div>`;
 
-	
-
 		contentHTML += `<div class="ivso-webcam-container"></div>`;
         
 		if (state.msg.text) {
@@ -327,7 +333,8 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 		contentHTML += `<div class="ivso-btn-container">`;
         
-		if (state.captureMode !== 'take') {
+		// Only show retake button when not processing and in retake mode
+		if (state.captureMode === 'retake' && !state.isProcessing) {
 			contentHTML += `
                 <button class="orange-hollow-btn" id="retake-btn">
                     ${i18next.t('retake_photo')}
@@ -352,7 +359,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		}
         
 		if (state.captureMode === 'retake') {
-			const isDisabled = state.isUploading || state.msg.type !== 'successful' ? 'disabled' : '';
+			const isDisabled = state.isUploading || state.msg.type !== 'successful' || state.isProcessing ? 'disabled' : '';
 			contentHTML += `
                 <button class="orange-filled-btn" id="upload-btn" ${isDisabled}>
                     ${i18next.t('upload')}
@@ -370,13 +377,16 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
         
 		ivsoContainer.insertAdjacentHTML('beforeend', contentHTML);
         
-		if (state.captureMode !== 'take') {
-			window.mereos.shadowRoot.getElementById('retake-btn').addEventListener('click', () => {
+		// Add event listeners only when elements exist
+		const retakeBtn = window.mereos.shadowRoot.getElementById('retake-btn');
+		if (retakeBtn) {
+			retakeBtn.addEventListener('click', () => {
 				state = {
 					...state,
 					imageSrc: null,
 					captureMode: 'take',
 					isUploading: false,
+					isProcessing: false,
 					videoConstraints: {
 						...state.videoConstraints,
 						deviceId: localStorage.getItem('deviceId') || undefined,
@@ -392,19 +402,26 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		}
         
 		if (state.captureMode === 'uploaded_photo') {
-			window.mereos.shadowRoot.getElementById('next-btn').addEventListener('click', nextStep);
+			const nextBtn = window.mereos.shadowRoot.getElementById('next-btn');
+			if (nextBtn) {
+				nextBtn.addEventListener('click', nextStep);
+			}
 		}
         
 		if (state.captureMode === 'take') {
-			window.mereos.shadowRoot.getElementById('take-photo-btn').addEventListener('click', capturePhoto);
+			const takePhotoBtn = window.mereos.shadowRoot.getElementById('take-photo-btn');
+			if (takePhotoBtn) {
+				takePhotoBtn.addEventListener('click', capturePhoto);
+			}
 		}
         
 		if (state.captureMode === 'retake' && state.msg.type === 'successful') {
 			const uploadBtn = window.mereos.shadowRoot.getElementById('upload-btn');
-			if (uploadBtn) {
+			if (uploadBtn && !state.isProcessing) {
 				uploadBtn.addEventListener('click', uploadUserCapturedPhoto);
 			}
 		}
+		
 		const hasActiveTracks = window.mereos.globalStream?.getTracks?.().some(track => track.readyState === 'live');
 		if (!state.imageSrc && (!window.mereos.globalStream || !hasActiveTracks)) {
 			startWebcam();

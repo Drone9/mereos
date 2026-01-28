@@ -499,7 +499,6 @@ export const systemRequirementCss = `
 .system-requirement-test-screen {
   display: flex;
   flex-direction: column;
-  white-space: pre-line;
 }
 
 @media (max-width: 720px) {
@@ -683,6 +682,8 @@ export const systemRequirementCss = `
 .system-requirement-test-screen .button-section {
   display: flex;
   justify-content: center;
+  column-gap:10px;
+  align-items: center;
 }
 
 @media (max-width: 720px) {
@@ -730,7 +731,6 @@ export const systemRequirementCss = `
 export const systemDiagnosticCss =`.system-diagnostic-test-screen {
   display: flex;
   flex-direction: column;
-  white-space: pre-line;
 }
 
 @media (max-width: 720px) {
@@ -967,6 +967,8 @@ export const systemDiagnosticCss =`.system-diagnostic-test-screen {
 .system-diagnostic-test-screen .button-section {
   display: flex;
   justify-content: center;
+  column-gap:10px;
+  align-items: center;
 }
 
 @media (max-width: 720px) {
@@ -1481,14 +1483,16 @@ export const preValidationCss = `.pvi-container {
 .multi-device-block label {
   font-size: 13px;
 }
-
+.camera-container{
+  width:43%;
+}
 .camera-container select{
   font-style: var(--font-style);
   background-color:var(--theme-mode);
   color: var(--text-color);
 }
 .microphone-container{
-  width: 35%;
+  width: 43%;
 }
 .microphone-container select{
   font-style: var(--font-style);

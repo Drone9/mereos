@@ -2,7 +2,7 @@ import i18next from 'i18next';
 
 import { showTab } from '../ExamsPrechecks';
 
-import { acceptableLabels, acceptableText, dataURIToBlob, getSecureFeatures, logger, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, getSecureFeatures, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 
@@ -14,6 +14,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let disabledBtn = false;
 	let fileObj;
 	let failedAttempts = 0;
+	let webcamError = false;
+	let processingPDF = false;
+	let pdfLibLoaded = false;
 	let currentState = {
 		captureMode: 'take',
 		imageSrc: null,
@@ -29,6 +32,50 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		height: 280,
 		facingMode: 'user',
 		deviceId: localStorage.getItem('deviceId') || undefined,
+	};
+
+	const loadPdfJs = () => {
+		if (window.pdfjsLib) {
+			pdfLibLoaded = true;
+			return;
+		}
+
+		const script = document.createElement('script');
+		script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+		script.async = true;
+		script.onload = () => {
+			if (window.pdfjsLib) {
+				window.pdfjsLib.GlobalWorkerOptions.workerSrc = 
+					'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+				pdfLibLoaded = true;
+			}
+		};
+		script.onerror = () => {
+			console.error('Failed to load PDF.js library');
+			registerEvent({
+				eventType: 'error',
+				notify: true,
+				eventName: 'pdf_library_load_error',
+			});
+		};
+		document.head.appendChild(script);
+	};
+
+	loadPdfJs();
+
+	const handleWebcamError = () => {
+		webcamError = true;
+		currentState = {
+			...currentState,
+			captureMode: 'take',
+			msg: { type: 'unsuccessful', text: 'webcam_error' }
+		};
+		renderUI();
+		registerEvent({
+			eventType: 'error',
+			notify: true,
+			eventName: 'webcam_error'
+		});
 	};
 
 	const capturePhoto = () => {
@@ -77,6 +124,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			inputFile.value = '';
 		}
 	
+		webcamError = false;
+		processingPDF = false;
 		currentState = {
 			...currentState,
 			captureMode: 'take',
@@ -88,30 +137,130 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		};
 		renderUI();
 	};
-	
+
+	const extractImageFromPDF = async (file) => {
+		if (!pdfLibLoaded || !window.pdfjsLib) {
+			throw new Error('pdf_library_not_loaded');
+		}
+
+		try {
+			processingPDF = true;
+			currentState = {
+				...currentState,
+				msg: { type: 'checking', text: 'processing_pdf_file' }
+			};
+			renderUI();
+
+			const arrayBuffer = await file.arrayBuffer();
+			const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
+			const pdf = await loadingTask.promise;
+			
+			const page = await pdf.getPage(1);
+			
+			const scale = 2.0;
+			const viewport = page.getViewport({ scale });
+			
+			const canvas = document.createElement('canvas');
+			const context = canvas.getContext('2d');
+			canvas.height = viewport.height;
+			canvas.width = viewport.width;
+			
+			const renderContext = {
+				canvasContext: context,
+				viewport: viewport
+			};
+			await page.render(renderContext).promise;
+			
+			const imageDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+			
+			const imageFile = await dataURLtoFile(imageDataUrl);
+			fileObj = imageFile;
+			
+			processingPDF = false;
+			return imageDataUrl;
+			
+		} catch (error) {
+			console.error('Error extracting image from PDF:', error);
+			processingPDF = false;
+			registerEvent({
+				eventType: 'error',
+				notify: true,
+				eventName: 'pdf_extraction_error'
+			});
+			throw new Error('error_processing_pdf');
+		}
+	};
+
 	const uploadImage = async (event) => {
 		if (event.target.files.length > 0) {
-			fileObj = event.target.files[0];
-			const src = URL.createObjectURL(event.target.files[0]);
-			let imageSrc = await srcToData(src);
-			if (imageSrc) {
-				currentState = {
-					...currentState,
-					imageSrc: imageSrc,
-					msg: {
-						type: 'checking',
-						text: 'id_being_verified'
+			const file = event.target.files[0];
+			const fileType = file.type;
+			
+			try {
+				if (fileType === 'application/pdf') {
+					if (!pdfLibLoaded) {
+						currentState = {
+							...currentState,
+							msg: { type: 'unsuccessful', text: 'loading_pdf_file' }
+						};
+						renderUI();
+						return;
 					}
-				};
-				renderUI();
-				verifyImage();
-			} else {
+
+					const extractedImageSrc = await extractImageFromPDF(file);
+					
+					if (extractedImageSrc) {
+						currentState = {
+							...currentState,
+							imageSrc: extractedImageSrc,
+							msg: { type: 'checking', text: 'id_being_verified' }
+						};
+						renderUI();
+						verifyImage();
+					} else {
+						currentState = {
+							...currentState,
+							captureMode: 'retake',
+							msg: { type: 'unsuccessful', text: 'error_with_uploading_file' }
+						};
+						renderUI();
+					}
+				} else {
+					fileObj = file;
+					const src = URL.createObjectURL(file);
+					let imageSrc = await srcToData(src);
+					
+					if (imageSrc) {
+						currentState = {
+							...currentState,
+							imageSrc: imageSrc,
+							msg: {
+								type: 'checking',
+								text: 'id_being_verified'
+							}
+						};
+						renderUI();
+						verifyImage();
+					} else {
+						currentState = {
+							...currentState,
+							captureMode: 'retake',
+							msg: {
+								type: 'unsuccessful',
+								text: 'error_with_uploading_file'
+							}
+						};
+						renderUI();
+					}
+				}
+			} catch (error) {
+				console.error('Upload error:', error);
 				currentState = {
 					...currentState,
 					captureMode: 'retake',
 					msg: {
 						type: 'unsuccessful',
-						text: 'error_with_uploading_file'
+						text: error.message || 'error_with_uploading_file'
 					}
 				};
 				renderUI();
@@ -122,12 +271,17 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	const verifyImage = async () => {
 		if (currentState.imageSrc) {
 			disabledBtn = true;
+			renderUI();
+			
 			const data = new FormData();
 			data.append('image', fileObj);
 			try {
 				const resp = await userRekognitionInfo(data);
 				const userImageData = resp.data;
-				if (userImageData) {
+				
+				const isFourthTry = failedAttempts >= 3;
+				
+				if (userImageData && !isFourthTry) {
 					const isValidID = acceptableLabels(userImageData?.label, 80) && 
 									acceptableText(userImageData?.text, 59) && 
 									userImageData?.face?.FaceDetails.length > 0;
@@ -146,33 +300,31 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 					} else {
 						failedAttempts++;
 						
-						if (failedAttempts >= 3) {
-							currentState = {
-								...currentState,
-								captureMode: 'retake',
-								msg: {
-									type: 'successful',
-									text: 'id_successfully_verified'
-								}
-							};
-							disabledBtn = false;
-							registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
-						} else {
-							currentState = {
-								...currentState,
-								captureMode: 'retake',
-								msg: {
-									type: 'unsuccessful',
-									text: 'id_not_verified'
-								}
-							};
-							disabledBtn = false;
-							registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
-						}
+						currentState = {
+							...currentState,
+							captureMode: 'retake',
+							msg: {
+								type: 'unsuccessful',
+								text: 'id_not_verified'
+							}
+						};
+						disabledBtn = false;
+						registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
 					}
+				} else if (isFourthTry) {
+					currentState = {
+						...currentState,
+						captureMode: 'retake',
+						msg: {
+							type: 'successful',
+							text: 'id_successfully_verified'
+						}
+					};
+					disabledBtn = false;
+					registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
 				}
 			} catch (error) {
-				logger.error('Error verifying image:', error);
+				console.error('Rekognition API error:', error);
 				
 				failedAttempts++;
 				
@@ -193,11 +345,15 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						captureMode: 'retake',
 						msg: {
 							type: 'unsuccessful',
-							text: 'id_not_verified'
+							text: 'api_verification_failed'
 						}
 					};
 					disabledBtn = false;
-					registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
+					registerEvent({
+						eventType: 'error',
+						notify: false,
+						eventName: 'rekognition_api_failed'
+					});
 				}
 			}
 			renderUI();
@@ -238,7 +394,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				currentState = {
 					...currentState,
 					captureMode: 'uploaded_photo',
-					isUploading: false, // Reset flag
+					isUploading: false,
 					msg: {
 						type: 'waiting',
 						text: 'candidate_id_is_uploaded_successfully'
@@ -308,7 +464,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		if (currentState.imageSrc) {
 			headerImgHTML = `
                 <img src="${currentState.imageSrc}" class="ivst-header-img" alt="captured-image">
-                ${currentState.msg.type !== 'checking' ? 
+                ${currentState.msg.type !== 'checking' && currentState.msg.type !== 'loading' ? 
 		`<img src="${currentState.msg.type === 'unsuccessful' ? 
 			`${ASSET_URL}/close-red.svg` : 
 			`${ASSET_URL}/checkmark-green.svg`}" 
@@ -316,6 +472,17 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                         alt="status-icon">` : 
 		''}
             `;
+		} else if (webcamError) {
+			const theme = JSON.parse(localStorage.getItem('schoolTheme'))?.theming;
+			const isDarkTheme = theme === 'dark';
+			const cameraIcon = isDarkTheme ? 
+				`${ASSET_URL}/no-camera-white.svg` : 
+				`${ASSET_URL}/no-camera.svg`;
+				
+			headerImgHTML = `
+				<img src="${cameraIcon}" class="ivso-broken-camera" alt="broken-camera" 
+					style="width: 300px; height: 300px; opacity: 0.5; margin: auto;">
+			`;
 		} else {
 			headerImgHTML = `
                 <video width="${videoConstraints.width}" height="${videoConstraints.height}" autoplay></video>
@@ -328,17 +495,28 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
                 ${i18next.t(currentState.msg.text)}
             </div>` : '';
 
-		const uploadMsgHTML = !currentState.imageSrc ? 
-			`<div class="ivst-query-msg">
-                ${i18next.t('please_take_picture_or')} <span id="upload-identity-card" class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.
-            </div>` : '';
+		let uploadMsgHTML = '';
+		if (!currentState.imageSrc && !webcamError) {
+			uploadMsgHTML = `
+				<div class="ivst-query-msg">
+					${i18next.t('please_take_picture_or')} <span id="upload-identity-card" class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.
+				</div>
+			`;
+		} else if (!currentState.imageSrc && webcamError) {
+			uploadMsgHTML = `
+				<div class="ivst-query-msg">
+					<span>${i18next.t('webcam_unavailable_please')}</span> 
+					<span id="upload-identity-card" class="ivst-file">${i18next.t('upload_your_identity_document')}</span>.
+				</div>
+			`;
+		}
 
 		let buttonsHTML = '';
 		if (currentState.captureMode === 'take') {
 			buttonsHTML = `
                 ${secureFeatures.find(entity => entity.key === 'verify_candidate') ? 
 		`<button class="orange-hollow-btn" data-action="prev">${i18next.t('previous_step')}</button>` : ''}
-                <button class="orange-filled-btn" data-action="take-photo" ${disabledBtn || !!currentState.imageSrc ? 'disabled' : ''}>
+                <button class="orange-filled-btn" data-action="take-photo" ${disabledBtn || !!currentState.imageSrc || webcamError || processingPDF ? 'disabled' : ''}>
                     ${i18next.t('take_id_photo')}
                 </button>
             `;
@@ -346,7 +524,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			if (currentState.captureMode !== 'uploaded_photo') {
 				buttonsHTML = `
                     <button class="orange-filled-btn" data-action="restart">${i18next.t('retake_id_photo')}</button>
-                    <button class="orange-filled-btn" data-action="upload" ${currentState.msg.type === 'unsuccessful' || currentState.isUploading ? 'disabled' : ''}>
+                    <button class="orange-filled-btn" data-action="upload" ${currentState.msg.type === 'successful' ? '' : 'disabled'}>
                         ${i18next.t('upload')}
                     </button>
                 `;
@@ -376,18 +554,36 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			inputFile = document.createElement('input');
 			inputFile.type = 'file';
 			inputFile.name = 'idCard';
-			inputFile.accept = 'image/*';
+			inputFile.accept = 'image/png,image/jpeg,image/jpg,application/pdf';
 			inputFile.hidden = true;
 			inputFile.addEventListener('change', uploadImage);
 			container.appendChild(inputFile);
 		}
 
-		if (!currentState.imageSrc) {
-			photo = container.querySelector('video');
-			if (photo) {
-				window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-				if (window.mereos.globalStream !== null) {
-					photo.srcObject = window.mereos.globalStream;
+		if (!currentState.imageSrc && !webcamError) {
+			const videoElement = container.querySelector('video');
+			if (videoElement) {
+				try {
+					window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ 
+						video: videoConstraints, 
+						audio: false 
+					});
+					
+					if (window.mereos.globalStream !== null) {
+						videoElement.srcObject = window.mereos.globalStream;
+						photo = videoElement;
+						
+						// Add track ended listener
+						const tracks = window.mereos.globalStream.getTracks();
+						tracks.forEach(track => {
+							track.addEventListener('ended', () => {
+								handleWebcamError();
+							});
+						});
+					}
+				} catch (error) {
+					console.error('Webcam error:', error);
+					handleWebcamError();
 				}
 			}
 		}

@@ -235,13 +235,17 @@ export const PrevalidationInstructions = async (tabContent) => {
 			try {
 				// Reset states
 				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
-				const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
-				
+				const cameraDropdown = window.mereos.shadowRoot.getElementById('cameraDropdown');
+				const microphoneDropdown = window.mereos.shadowRoot.getElementById('microphoneDropdown');
+
+				if(microphoneDropdown){
+					microphoneDropdown.disabled = true;
+				}
+				if(cameraDropdown){
+					cameraDropdown.disabled = true;
+				}
 				if (checkButton) {
 					checkButton.disabled = true;
-				}
-				if (continueButton) {
-					continueButton.style.display = 'none';
 				}
 
 				const messageElement = window.mereos.shadowRoot.getElementById('message');
@@ -298,9 +302,16 @@ export const PrevalidationInstructions = async (tabContent) => {
 						messageElement.textContent = i18next.t(result.message);
 						messageElement.style.color = '';
 					}
-                    
-					if (continueButton && checkButton) {
-						continueButton.style.display = 'block';
+           
+					if(cameraDropdown){
+						cameraDropdown.disabled=false;
+					}
+					if(microphoneDropdown){
+						microphoneDropdown.disabled=false;
+					}
+					const continueBtn = window.mereos.shadowRoot.getElementById('continue-btn');
+					if (continueBtn && checkButton) {
+						continueBtn.style.display = 'block';
 						checkButton.style.display = 'none';
 					}
 				}
@@ -319,7 +330,15 @@ export const PrevalidationInstructions = async (tabContent) => {
 					messageElement.textContent = i18next.t('media_check_exception');
 					messageElement.style.color = '#ff4444';
 				}
-                
+				const cameraDropdown = window.mereos.shadowRoot.getElementById('cameraDropdown');
+				const microphoneDropdown = window.mereos.shadowRoot.getElementById('microphoneDropdown');
+				
+				if(cameraDropdown){
+					cameraDropdown.disabled=false;
+				}
+				if(microphoneDropdown){
+					microphoneDropdown.disabled=false;
+				}
 				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
 				if (checkButton) {
 					checkButton.disabled = false;

@@ -1064,7 +1064,7 @@
 	"media_check_skipped": "Stap voor mediadevices overgeslagen",
   "media_check_bitrate_failed": "De mediaverbinding is niet stabiel, probeer het opnieuw.",
   "media_check_all_failed": "Kan apparaten niet controleren. Probeer het opnieuw.",
-		"retry_camera": "Camera opnieuw proberen",
+	"retry_camera": "Camera opnieuw proberen",
 	"camera_permission_denied": "Cameratoestemming geweigerd",
 	"webcam_unavailable_please": "Camera niet beschikbaar, alstublieft",
 	"api_verification_failed": "ID-verificatieservice tijdelijk niet beschikbaar. Probeer het opnieuw.",
@@ -1081,5 +1081,6 @@
 	"fullscreen_exit_message": "Je hebt de volledig scherm-modus verlaten. Ga terug naar volledig scherm om de beoordeling voort te zetten.",
 	"continue_in_fullscreen": "Doorgaan in volledig scherm",
 	"return_to_fullscreen": "Terug naar volledig scherm",
-	"fullscreen_failed": "Kan niet naar volledig scherm-modus overschakelen. Sta volledig scherm-rechten toe."
+	"fullscreen_failed": "Kan niet naar volledig scherm-modus overschakelen. Sta volledig scherm-rechten toe.",
+	"retrying": "Opnieuw proberen"
 }

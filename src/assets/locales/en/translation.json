@@ -1082,5 +1082,6 @@
   "fullscreen_exit_message": "You have exited full screen mode. Please return to full screen to continue the assessment.",
   "continue_in_fullscreen": "Continue in Full Screen",
   "return_to_fullscreen": "Return to Full Screen",
-  "fullscreen_failed": "Failed to enter full screen mode. Please allow full screen permissions."
+  "fullscreen_failed": "Failed to enter full screen mode. Please allow full screen permissions.",
+	"retrying":"Retrying"
 }

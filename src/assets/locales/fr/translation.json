@@ -1081,5 +1081,6 @@
 	"fullscreen_exit_message": "Vous avez quitté le mode plein écran. Veuillez revenir en plein écran pour continuer l'évaluation.",
 	"continue_in_fullscreen": "Continuer en plein écran",
 	"return_to_fullscreen": "Retour au plein écran",
-	"fullscreen_failed": "Impossible de passer en mode plein écran. Veuillez autoriser les permissions de plein écran."
+	"fullscreen_failed": "Impossible de passer en mode plein écran. Veuillez autoriser les permissions de plein écran.",
+	"retrying": "Nouvel essai"
 }

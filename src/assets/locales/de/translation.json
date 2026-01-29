@@ -1081,5 +1081,6 @@
 	"fullscreen_exit_message": "Sie haben den Vollbildmodus verlassen. Bitte kehren Sie zum Vollbildmodus zurück, um die Bewertung fortzusetzen.",
 	"continue_in_fullscreen": "Im Vollbildmodus fortsetzen",
 	"return_to_fullscreen": "Zum Vollbildmodus zurückkehren",
-	"fullscreen_failed": "Vollbildmodus konnte nicht gestartet werden. Bitte erlauben Sie Vollbildberechtigungen."
+	"fullscreen_failed": "Vollbildmodus konnte nicht gestartet werden. Bitte erlauben Sie Vollbildberechtigungen.",
+	"retrying": "Erneut versuchen"
 }

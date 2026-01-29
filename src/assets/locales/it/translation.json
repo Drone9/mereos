@@ -1081,5 +1081,6 @@
 	"fullscreen_exit_message": "Hai abbandonato la modalità schermo intero. Ritorna in schermo intero per continuare la valutazione.",
 	"continue_in_fullscreen": "Continua in schermo intero",
 	"return_to_fullscreen": "Torna in schermo intero",
-	"fullscreen_failed": "Impossibile attivare la modalità schermo intero. Consenti i permessi schermo intero."
+	"fullscreen_failed": "Impossibile attivare la modalità schermo intero. Consenti i permessi schermo intero.",
+	"retrying": "Riprovando"
 }

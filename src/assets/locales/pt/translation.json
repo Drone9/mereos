@@ -1081,5 +1081,6 @@
 	"fullscreen_exit_message": "Você saiu do modo de tela cheia. Volte para tela cheia para continuar a avaliação.",
 	"continue_in_fullscreen": "Continuar em Tela Cheia",
 	"return_to_fullscreen": "Voltar para Tela Cheia",
-	"fullscreen_failed": "Falha ao entrar no modo de tela cheia. Permita permissões de tela cheia."
+	"fullscreen_failed": "Falha ao entrar no modo de tela cheia. Permita permissões de tela cheia.",
+	"retrying": "Tentando novamente"
 }

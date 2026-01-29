@@ -33,7 +33,7 @@ import {
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
-import { initShadowDOM, openModal } from '../ExamsPrechecks';
+import { initializeLiveChat, initShadowDOM, openModal } from '../ExamsPrechecks';
 import { cleanupForceFullscreen, initializeForceFullscreen } from '../utils/fullscreen';
 
 let aiEvents = [];

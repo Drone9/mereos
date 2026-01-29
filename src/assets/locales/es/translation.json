@@ -1081,5 +1081,6 @@
 	"fullscreen_exit_message": "Ha salido del modo de pantalla completa. Por favor, vuelva a pantalla completa para continuar la evaluación.",
 	"continue_in_fullscreen": "Continuar en pantalla completa",
 	"return_to_fullscreen": "Volver a pantalla completa",
-	"fullscreen_failed": "No se pudo entrar en modo de pantalla completa. Por favor, permita permisos de pantalla completa."
+	"fullscreen_failed": "No se pudo entrar en modo de pantalla completa. Por favor, permita permisos de pantalla completa.",
+	"retrying": "Reintentando"
 }

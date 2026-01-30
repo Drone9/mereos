@@ -2,7 +2,7 @@ import i18next from 'i18next';
 
 import { showTab } from '../ExamsPrechecks';
 
-import { acceptableLabels, acceptableText, dataURIToBlob, getSecureFeatures, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 
@@ -419,11 +419,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const prevStep = () => {
-		updatePersistData('preChecksSteps',{ identityCardPhoto:false });
-		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		const currentIndex = navHistory.indexOf('IdentityVerificationScreenTwo');
-		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
-		showTab(previousPage);
+		const previousRoute = findLastVisitedRoute('IdentityVerificationScreenTwo');
+		const previousStep = findPreviousPrecheckStep('IdentityVerificationScreenTwo');
+		updatePersistData('preChecksSteps',{ [previousStep]:false });
+		showTab(previousRoute);
 	};
 
 	const triggerFileUpload = () => {
@@ -476,12 +475,12 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			const theme = JSON.parse(localStorage.getItem('schoolTheme'))?.theming;
 			const isDarkTheme = theme === 'dark';
 			const cameraIcon = isDarkTheme ? 
-				`${ASSET_URL}/no-camera-white.svg` : 
-				`${ASSET_URL}/no-camera.svg`;
+				`${ASSET_URL}/no-camera.svg`:
+				`${ASSET_URL}/no-camera-white.svg`;
 				
 			headerImgHTML = `
 				<img src="${cameraIcon}" class="ivso-broken-camera" alt="broken-camera" 
-					style="width: 300px; height: 300px; opacity: 0.5; margin: auto;">
+					style="width: 250px; height: 250px; opacity: 0.5; margin: auto;">
 			`;
 		} else {
 			headerImgHTML = `

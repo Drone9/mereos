@@ -130,7 +130,7 @@ export const initializeLiveChat = () => {
 	const existingChatContainer = document.getElementById('talkjs-container');
   
 	if (existingChatIcon) {
-		existingChatIcon.style.display = 'block';
+		existingChatIcon.style.display = 'flex';
 		if (existingChatContainer) {
 			existingChatContainer.style.display = 'none';
 		}
@@ -138,7 +138,7 @@ export const initializeLiveChat = () => {
 	}
 
 	document.body.insertAdjacentHTML('beforeend', `
-    <div id="chat-icon-wrapper" class="chat-icon-wrapper" style="position: fixed; bottom: 20px; right: 20px; z-index: 999999999999999999999; cursor: grab; width: 50px; height: 50px; user-select: none;background: var(--theme-color);padding: 5px;display: flex;border-radius: 50%;justify-content: center;align-items: center;">
+    <div id="chat-icon-wrapper" class="chat-icon-wrapper" style="position: fixed; bottom: 20px; right: 20px; z-index: 999999999999999999999; cursor: grab; width: 50px; height: 50px; user-select: none;background: var(--theme-color);padding: 5px;display: flex;border-radius: 50%;justify-content: center;align-items: center;display:flex">
       <img id="chat-icon" class="chat-icon" src="${ASSET_URL}/live-chat-icon.svg" alt="Chat Icon" style="width: 70%; height: 94%;">
       <div id="notification-badge" class="notification-badge" style="position: absolute; top: -5px; right: -5px; background-color: #FF4136; border-radius: 50%; width: 12px; height: 12px; display: none; box-shadow: 0 0 0 2px white;"></div>
     </div>

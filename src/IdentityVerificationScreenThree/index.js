@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
+import { findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
 	let canvasRef = null;
@@ -188,21 +188,10 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		cleanup();
 		isRecordingActive = false;
 		canvasRef = null;
-		updatePersistData('preChecksSteps', { audioDetection: false });
-
-		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		const currentIndex = navHistory.indexOf('IdentityVerificationScreenThree');
-		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
-
-		if (previousPage === 'Prevalidationinstruction') {
-			updatePersistData('preChecksSteps', { preValidation: false });
-		} else if (previousPage === 'IdentityVerificationScreenTwo') {
-			updatePersistData('preChecksSteps', { identityCardPhoto: false });
-		} else if (previousPage === 'IdentityVerificationScreenOne') {
-			updatePersistData('preChecksSteps', { userPhoto: false });
-		}
-
-		showTab(previousPage);
+		const previousRoute = findLastVisitedRoute('IdentityVerificationScreenThree');
+		const previousStep = findPreviousPrecheckStep('IdentityVerificationScreenThree');
+		updatePersistData('preChecksSteps',{ [previousStep]:false });
+		showTab(previousRoute);
 	};
 
 	const updateUIText = () => {

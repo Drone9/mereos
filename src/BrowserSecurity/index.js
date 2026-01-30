@@ -59,8 +59,11 @@ const renderUI = (tabContent) => {
                     <div class="box-section">
                         ${securityItemsHTML}
                     </div>
+                    <div id="errorMessage" style="color: #c33; margin-top: 15px; display: none;font-size: 15px;"></div>
                     <div class="button-section">
-                        <div id="errorMessage" style="color: #c33; margin-bottom: 10px; display: none;font-size: 15px;"></div>
+                        <button class="orange-hollow-btn" id="securityRefreshBtn" style="display: none;">
+                            ${i18next.t('refresh')}
+                        </button>
                         <button class="orange-filled-btn" id="securityContinueBtn" disabled>
                             ${i18next.t('continue')}
                         </button>
@@ -72,6 +75,10 @@ const renderUI = (tabContent) => {
     `;
 
 	tabContent.innerHTML = html;
+
+	window.mereos.shadowRoot.getElementById('securityRefreshBtn')?.addEventListener('click', async () => {
+		await retryAllFailedSecurityChecks();
+	});
 
 	window.mereos.shadowRoot.getElementById('securityContinueBtn')?.addEventListener('click', () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'browser_security_passed' });
@@ -112,6 +119,7 @@ const addSecurityItemClickEvents = () => {
 			const result = await checkFunction();
 			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
 			updateContinueButtonState();
+			updateRefreshButtonVisibility();
 		});
 	};
 
@@ -168,6 +176,123 @@ const updateContinueButtonState = () => {
 	});
 
 	continueBtn.disabled = !allSecurityChecksPassed;
+};
+
+const retryAllFailedSecurityChecks = async () => {
+	const refreshBtn = window.mereos.shadowRoot.getElementById('securityRefreshBtn');
+	const continueBtn = window.mereos.shadowRoot.getElementById('securityContinueBtn');
+	
+	if (refreshBtn && continueBtn) {
+		refreshBtn.disabled = true;
+		continueBtn.disabled = true;
+		
+		const originalText = refreshBtn.textContent;
+		refreshBtn.textContent = i18next.t('retrying');
+		
+		try {
+			const failedSecurityChecks = getFailedSecurityChecks();
+			
+			const retryPromises = [];
+			
+			if (failedSecurityChecks.includes('extensions')) {
+				retryPromises.push(retrySecurityCheck('extensions', checkExtensions));
+			}
+			
+			if (failedSecurityChecks.includes('incognito')) {
+				retryPromises.push(retrySecurityCheck('incognito', checkIncognitoMode));
+			}
+			
+			await Promise.all(retryPromises);
+			
+			registerEvent({ 
+				eventType: 'info', 
+				notify: false, 
+				eventName: 'security_checks_retry_attempted' 
+			});
+			
+		} catch (error) {
+			logger.error('Error retrying security checks:', error);
+		} finally {
+			refreshBtn.textContent = originalText;
+			refreshBtn.disabled = false;
+			updateContinueButtonState();
+			updateRefreshButtonVisibility();
+		}
+	}
+};
+
+const retrySecurityCheck = async (id, checkFunction) => {
+	const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
+	const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
+	
+	if (!statusIcon || !statusLoading) {
+		return false;
+	}
+	
+	statusIcon.src = `${ASSET_URL}/${id === 'extensions' ? 'extension-gray-icon.svg' : 'incognito-gray.svg'}`;
+	statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
+	
+	try {
+		const result = await checkFunction();
+		
+		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
+		
+		if (result) {
+			registerEvent({ 
+				eventType: 'success', 
+				notify: false, 
+				eventName: `${id}_security_retry_success` 
+			});
+		} else {
+			registerEvent({ 
+				eventType: 'error', 
+				notify: false, 
+				eventName: `${id}_security_retry_failed` 
+			});
+		}
+		
+		return result;
+	} catch (error) {
+		logger.error(`Error retrying ${id} security check:`, error);
+		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, false);
+		return false;
+	}
+};
+
+const getFailedSecurityChecks = () => {
+	const failedItems = [];
+	const securityItems = ['extensions', 'incognito'];
+	
+	securityItems.forEach(itemId => {
+		const statusIcon = window.mereos.shadowRoot.getElementById(`${itemId}StatusIcon`);
+		if (!statusIcon) return;
+		
+		const currentIconPathname = new URL(statusIcon.src).pathname;
+		const failureIconPathname = new URL(failureIconMap[itemId] || '').pathname;
+		
+		if (currentIconPathname === failureIconPathname) {
+			failedItems.push(itemId);
+		}
+	});
+	
+	return failedItems;
+};
+
+const updateRefreshButtonVisibility = () => {
+	const refreshBtn = window.mereos.shadowRoot.getElementById('securityRefreshBtn');
+	const continueBtn = window.mereos.shadowRoot.getElementById('securityContinueBtn');
+	
+	if (!refreshBtn || !continueBtn) return;
+	
+	const failedSecurityChecks = getFailedSecurityChecks();
+	
+	if (failedSecurityChecks.length > 0) {
+		refreshBtn.style.display = 'block';
+		continueBtn.style.display = 'none';
+	} else {
+		refreshBtn.style.display = 'none';
+		continueBtn.style.display = 'block';
+	}
 };
 
 const detectExtension = async (extension) => {
@@ -364,6 +489,7 @@ export const BrowserSecurity = async (tabContent) => {
 		await Promise.all(promises);
 		setTimeout(() => {
 			updateContinueButtonState();
+			updateRefreshButtonVisibility();
 		}, 100);
     
 	} catch (error) {
@@ -397,6 +523,11 @@ const updateSecurityText = () => {
 	const btnText = window.mereos.shadowRoot.querySelector('.orange-filled-btn');
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
+	}
+	
+	const refreshBtn = window.mereos.shadowRoot.getElementById('securityRefreshBtn');
+	if (refreshBtn) {
+		refreshBtn.textContent = i18next.t('refresh');
 	}
 
 	displayErrorMessage();

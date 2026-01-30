@@ -2,6 +2,8 @@ import i18next from 'i18next';
 import { 
 	convertDataIntoParse,
 	detectMultipleScreens, 
+	findLastVisitedRoute, 
+	findPreviousPrecheckStep, 
 	getDateTime, 
 	getSecureFeatures, 
 	logger, 
@@ -225,11 +227,10 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 			window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 		}
-		updatePersistData('preChecksSteps', { mobileConnection: false, screenSharing: false, roomScanningVideo: false });
-		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFive');
-		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
-		showTab(previousPage);
+		const previousRoute = findLastVisitedRoute('IdentityVerificationScreenFive');
+		const previousStep = findPreviousPrecheckStep('IdentityVerificationScreenFive');
+		updatePersistData('preChecksSteps',{ [previousStep]:false });
+		showTab(previousRoute);
 	};
 
 	const updateUI = () => {

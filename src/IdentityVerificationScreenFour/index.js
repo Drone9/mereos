@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { findConfigs, getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
+import { findConfigs, findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 
 import { uploadFileInS3Folder } from '../services/general.services.js';
@@ -198,11 +198,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		}
 		clearInterval(window.mereos.recordingDotInterval);
 		updateUI();
-		updatePersistData('preChecksSteps', { audioDetection: false, roomScanningVideo: false });
-		let navHistory = JSON.parse(localStorage.getItem('navHistory'));
-		const currentIndex = navHistory.indexOf('IdentityVerificationScreenFour');
-		const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
-		showTab(previousPage);
+		const previousRoute = findLastVisitedRoute('IdentityVerificationScreenFour');
+		const previousStep = findPreviousPrecheckStep('IdentityVerificationScreenFour');
+		updatePersistData('preChecksSteps',{ [previousStep]:false });
+		showTab(previousRoute);
 	};
 
 	const uploadUserRoomVideo = async () => {

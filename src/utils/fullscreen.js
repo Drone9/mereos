@@ -1,17 +1,27 @@
 import i18next from 'i18next';
-import { showToast } from './functions';
+import { logger, showToast } from './functions';
 
 export const initializeFullscreenMonitor = () => {
 	if (!document.fullscreenEnabled) {
 		return () => {};
 	}
 
+	let fullscreenCheckInterval = null;
+
 	const handleFullscreenChange = () => {
-		
 		if (!document.fullscreenElement) {
 			setTimeout(() => {
-				if (!window.mereos.forceFullscreenModal?.isOpen) {
-					showForceFullscreenModal({ isInitialWarning: false });
+				if (!document.fullscreenElement && !document.webkitFullscreenElement && 
+					!document.mozFullScreenElement && !document.msFullscreenElement) {
+					
+					if (fullscreenExitCallback) {
+						fullscreenExitCallback();
+					} else {
+						// Fallback: show modal directly if callback not registered
+						if (!window.mereos.forceFullscreenModal?.isOpen) {
+							showForceFullscreenModal({ isInitialWarning: false });
+						}
+					}
 				}
 			}, 100);
 		}
@@ -28,17 +38,11 @@ export const initializeFullscreenMonitor = () => {
 		}
 	};
 
-	const handleVisibilityChange = () => {
-		if (document.hidden && document.fullscreenElement) {
-		}
-	};
-
 	document.addEventListener('fullscreenchange', handleFullscreenChange);
 	document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 	document.addEventListener('mozfullscreenchange', handleFullscreenChange);
 	document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 	document.addEventListener('keydown', handleKeydown);
-	document.addEventListener('visibilitychange', handleVisibilityChange);
 
 	return () => {
 		document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -46,7 +50,11 @@ export const initializeFullscreenMonitor = () => {
 		document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
 		document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
 		document.removeEventListener('keydown', handleKeydown);
-		document.removeEventListener('visibilitychange', handleVisibilityChange);
+		
+		if (fullscreenCheckInterval) {
+			clearInterval(fullscreenCheckInterval);
+		}
+		
 		if (window.mereos.forceFullscreenModal) {
 			window.mereos.forceFullscreenModal.remove();
 			window.mereos.forceFullscreenModal = null;
@@ -85,7 +93,7 @@ export const showForceFullscreenModal = (options = {}) => {
 	const modalContent = document.createElement('div');
 	modalContent.className = 'force-fullscreen-modal';
 	modalContent.style.cssText = `
-		background-color: white;
+		background-color: var(--theme-mode);
 		border-radius: 8px;
 		width: 90%;
 		max-width: 450px;
@@ -112,25 +120,29 @@ export const showForceFullscreenModal = (options = {}) => {
 	title.className = 'force-fullscreen-modal-title';
 	title.style.cssText = `
 		margin: 0 0 16px 0;
-		color: #333;
+		color: var(--text-color);
 		font-size: 20px;
 		font-weight: 600;
+		opacity: 1;
+		visibility: visible;
 	`;
 	title.textContent = isInitialWarning 
-		? i18next.t('fullscreen_required_title')
-		: i18next.t('fullscreen_exit_title');
+		? (i18next.t('fullscreen_required_title') || 'Fullscreen Required')
+		: (i18next.t('fullscreen_exit_title') || 'Fullscreen Exit Detected');
 
 	const message = document.createElement('p');
 	message.className = 'force-fullscreen-modal-message';
 	message.style.cssText = `
 		margin: 0 0 24px 0;
-		color: #666;
+		color: var(--text-color);
 		font-size: 16px;
 		line-height: 1.5;
+		opacity: 1;
+		visibility: visible;
 	`;
 	message.textContent = isInitialWarning
-		? i18next.t('fullscreen_required_message')
-		: i18next.t('fullscreen_exit_message');
+		? (i18next.t('fullscreen_required_message') || 'This assessment requires fullscreen mode for security reasons.')
+		: (i18next.t('fullscreen_exit_message') || 'You have exited fullscreen mode. Please return to fullscreen to continue.');
 
 	const buttonContainer = document.createElement('div');
 	buttonContainer.style.cssText = `
@@ -150,11 +162,13 @@ export const showForceFullscreenModal = (options = {}) => {
 		cursor: pointer;
 		width: 100%;
 		transition: background-color 0.2s;
+		opacity: 1;
+		visibility: visible;
 	`;
-	
+	logger.success('isInitialWarning',isInitialWarning);
 	button.textContent = isInitialWarning
-		? i18next.t('continue_in_fullscreen')
-		: i18next.t('return_to_fullscreen');
+		? (i18next.t('continue_in_fullscreen') || 'Continue in Fullscreen')
+		: (i18next.t('return_to_fullscreen') || 'Return to Fullscreen');
 
 	button.addEventListener('click', async () => {
 		try {
@@ -177,10 +191,35 @@ export const showForceFullscreenModal = (options = {}) => {
 
 	document.body.appendChild(modalContainer);
 
+	const updateModalText = () => {
+		if (title) {
+			title.textContent = isInitialWarning 
+				? i18next.t('fullscreen_required_title')
+				: i18next.t('fullscreen_exit_title');
+		}
+		if (message) {
+			message.textContent = isInitialWarning
+				? i18next.t('fullscreen_required_message')
+				: i18next.t('fullscreen_exit_message');
+		}
+		if (button) {
+			button.textContent = isInitialWarning
+				? i18next.t('continue_in_fullscreen')
+				: i18next.t('return_to_fullscreen');
+		}
+	};
+
+	i18next.on('languageChanged', updateModalText);
+
 	window.mereos.forceFullscreenModal = {
 		element: modalContainer,
 		isOpen: true,
+		title: title,
+		message: message,
+		button: button,
+		updateModalText: updateModalText,
 		remove: () => {
+			i18next.off('languageChanged', updateModalText);
 			if (modalContainer.parentNode) {
 				modalContainer.parentNode.removeChild(modalContainer);
 			}
@@ -188,6 +227,11 @@ export const showForceFullscreenModal = (options = {}) => {
 		}
 	};
 	
+	setTimeout(() => {
+		if (title) title.style.opacity = '1';
+		if (message) message.style.opacity = '1';
+		if (button) button.style.opacity = '1';
+	}, 10);
 };
 
 export const forceFullScreen = () => {
@@ -233,7 +277,6 @@ export const forceFullScreen = () => {
 };
 
 let fullscreenExitCallback = null;
-console.log('fullscreenExitCallback',fullscreenExitCallback);
 export const registerFullscreenExitCallback = (callback) => {
 	fullscreenExitCallback = callback;
 };

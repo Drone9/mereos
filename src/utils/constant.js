@@ -60,8 +60,6 @@ export const preChecksSteps = {
 	audioDetection:false,
 	roomScanningVideo:false,
 	screenSharing:false,
-	examIndication:false,
-	examPrechecks:false,
 	mobileConnection:false,
 	browserSecurity:false,
 };

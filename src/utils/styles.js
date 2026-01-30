@@ -560,7 +560,7 @@ export const systemRequirementCss = `
 
 .system-requirement-test-screen .container-middle {
   display: flex;
-  margin: 20px 0;
+  margin: 45px 0 50px;
 }
 
 @media (max-width: 720px) {
@@ -621,6 +621,10 @@ export const systemRequirementCss = `
   align-items: flex-start;
 }
 
+.system-requirement-test-screen label{
+  font-style:var(--font-style);
+}
+
 .system-requirement-test-screen .grey-box-left img {
   width: 28px;
 }
@@ -641,6 +645,7 @@ export const systemRequirementCss = `
 }
 .system-requirement-test-screen .grey-box-right label{
   color: var(--text-color);
+  font-style: var(--font-style);
 }
 
 .system-requirement-test-screen .grey-box-right img {
@@ -802,7 +807,8 @@ export const systemDiagnosticCss =`.system-diagnostic-test-screen {
     width: 100%;
   }
 }
-
+.system-diagnostic-test-screen label{
+font-style:var(--font-style);}
 .system-diagnostic-test-screen .grey-box {
   border: 1px solid #f6f6f9;
   border-radius: 4px;
@@ -1320,8 +1326,8 @@ export const browserSecurityCss =`.browswer-security-test-screen {
 .browswer-security-test-screen .button-section {
   display: flex;
   justify-content: center;
-  flex-direction: column;
   align-items: center;
+  column-gap:15px;
   width: 76%;
   margin: 15px auto 0px auto;
 }
@@ -1484,7 +1490,6 @@ export const preValidationCss = `.pvi-container {
   font-size: 13px;
 }
 .camera-container{
-  width:43%;
 }
 .camera-container select{
   font-style: var(--font-style);
@@ -1492,7 +1497,6 @@ export const preValidationCss = `.pvi-container {
   color: var(--text-color);
 }
 .microphone-container{
-  width: 43%;
 }
 .microphone-container select{
   font-style: var(--font-style);

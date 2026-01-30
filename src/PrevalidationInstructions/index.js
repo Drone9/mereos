@@ -371,13 +371,13 @@ export const PrevalidationInstructions = async (tabContent) => {
             ` : '';
 
 			const cameraDropdownHTML = shouldShowVideo ? `
-                <div class="camera-container">
+                <div class="camera-container" style=${!isAudioEnabled ? 'width:100%':'width:43%'}>
                     <select id="cameraDropdown"></select>
                 </div>
             ` : '';
 
 			const microphoneDropdownHTML = isAudioEnabled ? `
-                <div class="microphone-container">
+                <div class="microphone-container" style=${!shouldShowVideo ? 'width:100%':'width:43%'}>
                     <select id="microphoneDropdown"></select>
                 </div>
             ` : '';

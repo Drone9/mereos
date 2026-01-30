@@ -95,12 +95,10 @@ const renderUI = (tab1Content) => {
 
 	tab1Content.innerHTML = html;
 
-	// Add refresh button click handler
 	window.mereos.shadowRoot.getElementById('requirementRefreshBtn')?.addEventListener('click', async () => {
 		await retryAllFailedRequirements();
 	});
 
-	// Add continue button click handler
 	window.mereos.shadowRoot.getElementById('requirementContinueBtn').addEventListener('click', () => {
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_requirement_passed' });
 		updatePersistData('preChecksSteps', { requirementStep: true });
@@ -135,6 +133,26 @@ const setElementStatus = (id, status, isSuccess) => {
 
 	statusIcon.src = isSuccess ? status.success : status.failure;
 	statusLoading.src = isSuccess ? `${ASSET_URL}/checkmark-rounded-green.png` : `${ASSET_URL}/x-circle.png`;
+
+	// Remove click event listener if check passed successfully
+	if (isSuccess) {
+		removeDiagnosticItemClickListener(id);
+	}
+};
+
+const removeDiagnosticItemClickListener = (id) => {
+	const element = window.mereos.shadowRoot.getElementById(`${id}RequirementItem`);
+	if (!element) return;
+
+	// Clone the element to remove all event listeners
+	const newElement = element.cloneNode(true);
+	element.parentNode.replaceChild(newElement, element);
+
+	// Update references in the new element
+	const labelElement = newElement.querySelector('label');
+	if (labelElement) {
+		labelElement.textContent = i18next.t(id);
+	}
 };
 
 const handleDiagnosticItemClick = (id, checkFunction) => {
@@ -142,10 +160,17 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 	if (!element) {
 		return;
 	}
+	
+	// Check if element already has success status
+	const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
+	if (statusIcon && statusIcon.src.includes(successIconMap[id].split('/').pop())) {
+		return; // Don't add click listener if already successful
+	}
+
 	const candidateAssessment = getSecureFeatures();
 	const profileSettings = candidateAssessment?.settings;
 
-	element.addEventListener('click', async () => {
+	const clickHandler = async () => {
 		const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
 		const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
 		const continueButton = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
@@ -154,6 +179,12 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 		if (!statusIcon || !statusLoading) {
 			return;
 		}
+		
+		// Check if already in success state
+		if (statusIcon.src.includes(successIconMap[id].split('/').pop())) {
+			return;
+		}
+		
 		continueButton.disabled = true;
 		if (refreshButton) refreshButton.disabled = true;
 		statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
@@ -162,12 +193,12 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 		const resp = await checkFunction();
 
 		const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
-		const isGoodRam = Number(ram_info) > profileSettings?.ram_size;
+		const isGoodRam = Number(ram_info) >= profileSettings?.ram_size;
 
-		const isGoodCpu = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
+		const isGoodCpu = Number(resp?.noOfPrcessor) >= profileSettings?.cpu_size;
 
-		const isGoodUpload = Number(resp?.speedMbps) > profileSettings?.upload_speed;
-		const isGoodDownload = Number(resp?.speedMbps) > profileSettings?.download_speed;
+		const isGoodUpload = Number(resp?.speedMbps) >= profileSettings?.upload_speed;
+		const isGoodDownload = Number(resp?.speedMbps) >= profileSettings?.download_speed;
 
 		let finalResult;
 		switch (id) {
@@ -191,7 +222,12 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 		updateContinueButtonState();
 		updateRefreshButtonVisibility();
 		if (refreshButton) refreshButton.disabled = false;
-	});
+	};
+
+	element.addEventListener('click', clickHandler);
+	
+	// Store reference to the handler for removal
+	element._clickHandler = clickHandler;
 };
 
 const retryAllFailedRequirements = async () => {
@@ -199,11 +235,9 @@ const retryAllFailedRequirements = async () => {
 	const continueBtn = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
 	
 	if (refreshBtn && continueBtn) {
-		// Disable buttons during retry
 		refreshBtn.disabled = true;
 		continueBtn.disabled = true;
 		
-		// Show loading state on refresh button
 		const originalText = refreshBtn.textContent;
 		refreshBtn.textContent = i18next.t('retrying');
 		
@@ -212,7 +246,6 @@ const retryAllFailedRequirements = async () => {
 			const secureFeatures = candidateAssessment?.entities || [];
 			const profileSettings = candidateAssessment?.settings;
 			
-			// Check which requirements need retry
 			const failedRequirements = getFailedRequirements();
 			
 			const retryPromises = [];
@@ -235,7 +268,6 @@ const retryAllFailedRequirements = async () => {
 			
 			await Promise.all(retryPromises);
 			
-			// Log retry event
 			registerEvent({ 
 				eventType: 'info', 
 				notify: false, 
@@ -245,7 +277,6 @@ const retryAllFailedRequirements = async () => {
 		} catch (error) {
 			logger.error('Error retrying requirements:', error);
 		} finally {
-			// Restore refresh button state
 			refreshBtn.textContent = originalText;
 			refreshBtn.disabled = false;
 			updateContinueButtonState();
@@ -262,11 +293,9 @@ const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 		return false;
 	}
 	
-	// Reset to loading state
 	statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
 	statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
 	
-	// Perform the check
 	try {
 		const resp = await checkFunction();
 		const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
@@ -274,16 +303,16 @@ const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 		let finalResult;
 		switch (id) {
 			case 'ram':
-				finalResult = Number(ram_info) > profileSettings?.ram_size;
+				finalResult = Number(ram_info) >= profileSettings?.ram_size;
 				break;
 			case 'cpu':
-				finalResult = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
+				finalResult = Number(resp?.noOfPrcessor) >= profileSettings?.cpu_size;
 				break;
 			case 'upload_speed':
-				finalResult = Number(resp?.speedMbps) > profileSettings?.upload_speed;
+				finalResult = Number(resp?.speedMbps) >= profileSettings?.upload_speed;
 				break;
 			case 'download_speed':
-				finalResult = Number(resp?.speedMbps) > profileSettings?.download_speed;
+				finalResult = Number(resp?.speedMbps) >= profileSettings?.download_speed;
 				break;
 			default:
 				finalResult = false;
@@ -291,7 +320,6 @@ const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 		
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
 		
-		// Log event for retry
 		if (finalResult) {
 			registerEvent({ 
 				eventType: 'success', 
@@ -355,15 +383,18 @@ const updateContinueButtonState = () => {
 
 const updateRefreshButtonVisibility = () => {
 	const refreshBtn = window.mereos.shadowRoot.getElementById('requirementRefreshBtn');
-	if (!refreshBtn) return;
+	const continueBtn = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
+	
+	if (!refreshBtn || !continueBtn) return;
 	
 	const failedRequirements = getFailedRequirements();
 	
-	// Show refresh button if there are any failed requirements
 	if (failedRequirements.length > 0) {
 		refreshBtn.style.display = 'block';
+		continueBtn.style.display = 'none';
 	} else {
 		refreshBtn.style.display = 'none';
+		continueBtn.style.display = 'block';
 	}
 };
 
@@ -390,7 +421,7 @@ export const SystemRequirement = async (tab1Content) => {
 			promises.push(getRAMInfo().then(resp => {
 				updatePersistData('session', { RAMSpeed: resp });
 				const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
-				const isGoodRam = Number(ram_info) > profileSettings?.ram_size;
+				const isGoodRam = Number(ram_info) >= profileSettings?.ram_size;
 				setElementStatus('ram', { success: ramGreen, failure: ramRed }, isGoodRam);
 				return isGoodRam;
 			}));
@@ -401,7 +432,7 @@ export const SystemRequirement = async (tab1Content) => {
 		if (verifyCPU) {
 			promises.push(getCPUInfo().then(resp => {
 				updatePersistData('session', { CPUSpeed: resp });
-				const isGoodCpu = Number(resp?.noOfPrcessor) > profileSettings?.cpu_size;
+				const isGoodCpu = Number(resp?.noOfPrcessor) >= profileSettings?.cpu_size;
 				setElementStatus('cpu', { success: cpuGreen, failure: cpuRed }, isGoodCpu);
 				return isGoodCpu;
 			}));
@@ -412,7 +443,7 @@ export const SystemRequirement = async (tab1Content) => {
 		if (verifyUploadSpeed) {
 			promises.push(getNetworkUploadSpeed().then(network => {
 				updatePersistData('session', { uploadSpeed: network });
-				const isGoodUpload = Number(network.speedMbps) > profileSettings?.upload_speed;
+				const isGoodUpload = Number(network.speedMbps) >= profileSettings?.upload_speed;
 				setElementStatus('upload_speed', { success: uploadSpeedGreen, failure: uploadSpeedRed }, isGoodUpload);
 				return isGoodUpload;
 			}));
@@ -423,7 +454,7 @@ export const SystemRequirement = async (tab1Content) => {
 		if (verifyDownloadSpeed) {
 			promises.push(getNetworkDownloadSpeed().then(network => {
 				updatePersistData('session', { downloadSpeed: network });
-				const isGoodDownload = Number(network.speedMbps) > profileSettings?.download_speed;
+				const isGoodDownload = Number(network.speedMbps) >= profileSettings?.download_speed;
 				setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, isGoodDownload);
 				return isGoodDownload;
 			}));

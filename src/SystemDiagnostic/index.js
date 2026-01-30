@@ -97,12 +97,10 @@ const renderUI = (tab1Content) => {
 
 	tab1Content.innerHTML = html;
 
-	// Add refresh button click handler
 	window.mereos.shadowRoot.getElementById('diagnosticRefreshBtn')?.addEventListener('click', async () => {
 		await retryAllFailedDiagnostics();
 	});
 
-	// Add continue button click handler
 	window.mereos.shadowRoot.getElementById('diagnosticContinueBtn')?.addEventListener('click', () => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
@@ -163,11 +161,9 @@ const retryAllFailedDiagnostics = async () => {
 	const continueBtn = window.mereos.shadowRoot.getElementById('diagnosticContinueBtn');
 	
 	if (refreshBtn && continueBtn) {
-		// Disable buttons during retry
 		refreshBtn.disabled = true;
 		continueBtn.disabled = true;
 		
-		// Show loading state on refresh button
 		refreshBtn.innerHTML = `
 			${i18next.t('retrying')}
 		`;
@@ -327,15 +323,19 @@ const updateContinueButtonState = () => {
 
 const updateRefreshButtonVisibility = () => {
 	const refreshBtn = window.mereos.shadowRoot.getElementById('diagnosticRefreshBtn');
-	if (!refreshBtn) return;
+	const continueBtn = window.mereos.shadowRoot.getElementById('diagnosticContinueBtn');
+	
+	if (!refreshBtn || !continueBtn) return;
 	
 	const failedDiagnostics = getFailedDiagnostics();
 	
 	// Show refresh button if there are any failed diagnostics
 	if (failedDiagnostics.length > 0) {
 		refreshBtn.style.display = 'block';
+		continueBtn.style.display = 'none';
 	} else {
 		refreshBtn.style.display = 'none';
+		continueBtn.style.display = 'block';
 	}
 };
 

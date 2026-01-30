@@ -1382,7 +1382,7 @@ export const cleanupLocalVideo = () => {
 	if(window.mereos.shadowRoot){
 		const webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
 		const webVideoContainer = window.mereos.shadowRoot.querySelector('#user-video-header');
-		const imgContainer = window.mereos.shadowRoot.querySelector('#chat-icon');
+		const imgContainer = document.querySelector('#chat-icon-wrapper');
 
 		if(imgContainer){
 			imgContainer.remove();

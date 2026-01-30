@@ -153,7 +153,6 @@ export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) =>
 	const settingLevel = profile?.settings?.proctoring_behavior?.name;
 	const aiIncidentlevel = findAIIncidentLevel(aiEvents, settingLevel);
 	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, settingLevel);
-	console.log('settingLevel', settingLevel);
 
 	if (aiIncidentlevel === 'high' || browserIncidentlevel === 'high') {
 		return 'high';
@@ -258,7 +257,7 @@ export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 	});
 
 	awayEvents.forEach(event => {
-		const duration = Number(event.end_at) || 0;
+		const duration = Number(event.end_at) - Number(event.start_at);
 
 		if (settingLevel === 'strict') {
 			if (duration > 0) {
@@ -320,6 +319,8 @@ export const checkForceClosureViolation = async () =>{
 		aiEvents,
 		browserEvents, 
 		secureFeatures);
+
+	console.log('incidentLevel',incidentLevel);
 
 	if((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high'){
 		await addSectionSessionRecord(session,candidateInviteAssessmentSection);
@@ -1286,9 +1287,10 @@ export const detectUnfocusOfTab = () => {
 					eventType: 'info',
 					notify: false,
 					eventName: 'moved_back_to_page',
-					durations: durationSec, 
+					duration: durationSec, 
 					sentryError: false,
 				});
+				checkForceClosureViolation();
 			};
 
 			visibilityHandler = () => {
@@ -1914,7 +1916,7 @@ let resizeTimeout;
 let isResizing = false;
 
 const handleResize = () => {
-	if (isProgrammaticFullscreen) {
+	if (isProgrammaticFullscreen || document.fullscreenElement) {
 		return;
 	}
 
@@ -2069,3 +2071,34 @@ export const probeExactDevice = async (kind, deviceId) => {
 	return true;
 };
 
+export const findLastVisitedRoute = (currentRoute) => {
+	let navHistory = JSON.parse(localStorage.getItem('navHistory'));
+	const currentIndex = navHistory.indexOf(currentRoute);
+	const previousPage = currentIndex > 0 ? navHistory[currentIndex - 1] : null;
+	return previousPage;
+};
+
+const routeToPrecheckKey = {
+	ExamPreparation: 'examPreparation',
+	runSystemDiagnostics: 'diagnosticStep',
+	SystemRequirements: 'requirementStep',
+	BrowserSecurity:'browserSecurity',
+	Prevalidationinstruction: 'preValidation',
+
+	IdentityVerificationScreenOne: 'userPhoto',
+	IdentityVerificationScreenTwo: 'identityCardPhoto',
+	IdentityVerificationScreenThree: 'audioDetection',
+	IdentityVerificationScreenFour: 'roomScanningVideo',
+	IdentityVerificationScreenFive: 'screenSharing',
+	IdentityVerificationScreenSix: 'mobileConnection',
+};
+
+export const findPreviousPrecheckStep = (currentRoute) => {
+	const navHistory = JSON.parse(localStorage.getItem('navHistory')) || [];
+	const currentIndex = navHistory.indexOf(currentRoute);
+
+	if (currentIndex <= 0) return null;
+
+	const previousRoute = navHistory[currentIndex - 1];
+	return routeToPrecheckKey[previousRoute] || null;
+};

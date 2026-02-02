@@ -1082,5 +1082,6 @@
 	"continue_in_fullscreen": "Continuar em Tela Cheia",
 	"return_to_fullscreen": "Voltar para Tela Cheia",
 	"fullscreen_failed": "Falha ao entrar no modo de tela cheia. Permita permissões de tela cheia.",
-	"retrying": "Tentando novamente"
+	"retrying": "Tentando novamente",
+	"open_in_new_tab": "Abrir em nova guia"
 }

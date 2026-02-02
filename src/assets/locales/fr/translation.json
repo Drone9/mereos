@@ -1082,5 +1082,6 @@
 	"continue_in_fullscreen": "Continuer en plein écran",
 	"return_to_fullscreen": "Retour au plein écran",
 	"fullscreen_failed": "Impossible de passer en mode plein écran. Veuillez autoriser les permissions de plein écran.",
-	"retrying": "Nouvel essai"
+	"retrying": "Nouvel essai",
+	"open_in_new_tab": "Ouvrir dans un nouvel onglet"
 }

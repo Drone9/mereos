@@ -1083,5 +1083,6 @@
   "continue_in_fullscreen": "Continue in Full Screen",
   "return_to_fullscreen": "Return to Full Screen",
   "fullscreen_failed": "Failed to enter full screen mode. Please allow full screen permissions.",
-	"retrying":"Retrying"
+	"retrying":"Retrying",
+	"open_in_new_tab":"Open in New Tab"
 }

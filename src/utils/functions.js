@@ -1731,6 +1731,14 @@ export const showToast = (type, message) => {
 	}
 };
 
+export const loadNotyfJS = () => {
+	const link = document.createElement('link');
+	link.rel = 'stylesheet';
+	link.href = 'https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css';
+	link.type = 'text/css';
+	document.head.appendChild(link);
+};
+
 export const getRAMInfo = async () => {
 	const memoryInfo = {
 		capacity: 'Unknown',
@@ -2101,4 +2109,29 @@ export const findPreviousPrecheckStep = (currentRoute) => {
 
 	const previousRoute = navHistory[currentIndex - 1];
 	return routeToPrecheckKey[previousRoute] || null;
+};
+
+
+const stepToVideoId = {
+	ExamPreparation: 'Auo67aH9cEo',
+	runSystemDiagnostics: 'aUMnLA_HvVw',
+	SystemRequirements: 'PcDT3YfaLaA',
+	
+	IdentityVerificationScreenOne: '7zYeVZv1ZtQ',
+	IdentityVerificationScreenTwo: 'RbgXRpUnZaM',
+	IdentityVerificationScreenThree: 'NBHQa8y--Mg',
+	IdentityVerificationScreenFive: 'b0avjfaAMjc',
+};
+
+export const getVideoIdForStep = (step) => {
+	return stepToVideoId[step] || null;
+};
+
+export const getCurrentStep = () => {
+	const navHistory = JSON.parse(localStorage.getItem('navHistory')) || [];
+	return navHistory[navHistory.length - 1] || null;
+};
+export const hasHelpVideo = () => {
+	const currentStep = getCurrentStep();
+	return !!stepToVideoId[currentStep];
 };

@@ -1082,5 +1082,6 @@
 	"continue_in_fullscreen": "Continua in schermo intero",
 	"return_to_fullscreen": "Torna in schermo intero",
 	"fullscreen_failed": "Impossibile attivare la modalità schermo intero. Consenti i permessi schermo intero.",
-	"retrying": "Riprovando"
+	"retrying": "Riprovando",
+	"open_in_new_tab": "Apri in nuova scheda"
 }

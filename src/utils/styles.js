@@ -421,7 +421,91 @@ body {
   justify-content: flex-start;
   margin-bottom: 10px;
 }
+.help-container {
+    position: absolute;
+    display: inline-block;
+    margin-bottom: 5px;
+    margin-left: -7px;
+    right: -747px;
+    top: -14px;
+}
 
+.help-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    flex-direction: column;
+}
+.help-btn p {
+    margin: 0 !important;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.help-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    width: 350px;
+    right: 10px;
+    background: var(--theme-mode);
+    border: 1px solid #999;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.help-dropdown-content {
+    padding: 12px;
+}
+
+.help-dropdown h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+.help-btn {
+    .pvi-instruction-img{
+        height: 62px;
+    }
+}
+.video-wrapper {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+.video-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.open-tab-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--theme-mode);
+    border: 1px solid #999;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+    transition: all 0.2s;
+}
 .dropdown {
   position: relative;
   cursor: pointer;
@@ -513,7 +597,7 @@ export const systemRequirementCss = `
   margin-bottom: 0;
   margin-top: 31px;
   text-align: center;
-  margin-top: 25px;
+  margin-top: 40px;
   font-style: var(--font-style);
   color: var(--text-color);
 }

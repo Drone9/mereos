@@ -1082,5 +1082,6 @@
 	"continue_in_fullscreen": "Parhau mewn Sgrin Lawn",
 	"return_to_fullscreen": "Dychwelyd i Sgrin Lawn",
 	"fullscreen_failed": "Methu mynd i mewn i'r modd sgrin llawn. Caniatewch ganiatâd sgrin llawn.",
-	"retrying": "Ailgeisio"
+	"retrying": "Ailgeisio",
+  "open_in_new_tab": "Agor mewn Tab Newydd"
 }

@@ -1082,5 +1082,6 @@
 	"continue_in_fullscreen": "Im Vollbildmodus fortsetzen",
 	"return_to_fullscreen": "Zum Vollbildmodus zurückkehren",
 	"fullscreen_failed": "Vollbildmodus konnte nicht gestartet werden. Bitte erlauben Sie Vollbildberechtigungen.",
-	"retrying": "Erneut versuchen"
+	"retrying": "Erneut versuchen",
+  "open_in_new_tab": "In neuem Tab öffnen"
 }

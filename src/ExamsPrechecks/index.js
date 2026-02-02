@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, handlePreChecksRedirection, initializeI18next, loadZendeskWidget, logger, normalizeLanguage, registerEvent, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getCurrentStep, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfJS, loadZendeskWidget, logger, normalizeLanguage, registerEvent, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
 import { browserSecurityCss, examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import 'notyf/notyf.min.css';
 import 'notyf/notyf.min.css';
@@ -113,6 +113,7 @@ export const initShadowDOM = () => {
 		document.body.appendChild(libraryDOM);
 	}
 };
+
 
 export const initializeLiveChat = () => {
 	let unreadCount = 0;
@@ -322,6 +323,7 @@ export const initializeLiveChat = () => {
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
+	createLanguageDropdown();
 };
 
 const createLanguageDropdown = () => {
@@ -337,6 +339,11 @@ const createLanguageDropdown = () => {
 	const defaultLanguage = schoolTheme?.language || 'en';
 	const filterLanguage = normalizeLanguage(defaultLanguage);
 	let selectedLanguage = languages.find(lang => lang.keyword === filterLanguage.trim());
+
+	const currentStep = getCurrentStep();
+	const videoId = getVideoIdForStep(currentStep);
+	const hasVideo = !!videoId;
+	const themeColor = schoolTheme?.themeColor || '#0087FD';
 
 	const headerHTML = `
     <div class="header">
@@ -355,6 +362,62 @@ const createLanguageDropdown = () => {
           `).join('')}
         </section>
       </section>
+      
+      ${hasVideo ? `
+      <div class="help-container">
+        <button class="help-btn">
+          <svg width="75" height="75" viewBox="0 0 75 75" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g filter="url(#filter0_d_help)">
+              <circle cx="37.5" cy="35.5" r="17.5" fill="${themeColor}"/>
+            </g>
+            <g clip-path="url(#clip0_help)">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M45.6885 38.3593C45.5823 38.6712 45.4581 38.9782 45.3153 39.2794L46.1328 43.3677C46.2248 43.8276 45.8729 44.2593 45.4018 44.2593C45.3929 44.2593 45.3873 44.2598 45.3817 44.2601C45.3224 44.2632 45.262 44.2461 41.1185 43.4269C39.9572 43.9777 38.7119 44.2574 37.4127 44.2592C32.6228 44.2522 28.7285 40.3538 28.7285 35.5624C28.7285 30.6266 32.8589 26.646 37.8304 26.8751L37.8307 26.876C43.6085 27.1556 47.5223 32.8968 45.6612 38.3593H45.6885ZM38.9215 35.4573C38.6807 35.6899 38.4743 35.8893 38.328 36.1538C38.2044 36.3762 38.1581 36.522 38.1581 37.2353H36.7526C36.7526 37.1842 36.7514 37.1286 36.7502 37.0695C36.7425 36.6941 36.7318 36.1738 36.992 35.7166C37.2014 35.3472 37.515 35.0601 37.824 34.7771C38.0732 34.5489 38.3194 34.3234 38.5056 34.0597C38.9458 33.4384 38.6987 32.2725 37.4476 32.2725C36.629 32.2725 36.2275 32.8861 36.0576 33.4077L34.7833 32.8708C35.1309 31.843 36.0653 30.9609 37.4322 30.9609C38.5751 30.9609 39.3551 31.4748 39.7567 32.1268C40.0965 32.679 40.2973 33.7146 39.7721 34.4893C39.4703 34.9272 39.1766 35.2109 38.9215 35.4573ZM37.4476 40.1654C36.907 40.1654 36.4746 39.7359 36.4746 39.199C36.4746 38.6544 36.907 38.2402 37.4476 38.2402C37.9959 38.2402 38.4129 38.6544 38.4129 39.199C38.4052 39.7282 37.9959 40.1654 37.4476 40.1654Z" fill="white"/>
+            </g>
+            <defs>
+              <filter id="filter0_d_help" x="0" y="0" width="75" height="75" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                <feOffset dy="2"/>
+                <feGaussianBlur stdDeviation="10"/>
+                <feColorMatrix type="matrix" values="0 0 0 0 0.898507 0 0 0 0 0.928207 0 0 0 0 0.954167 0 0 0 1 0"/>
+                <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_help"/>
+                <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_help" result="shape"/>
+              </filter>
+              <clipPath id="clip0_help">
+                <rect width="17.7012" height="17.7011" fill="white" transform="translate(28.4473 26.8506)"/>
+              </clipPath>
+            </defs>
+          </svg>
+          <p>${i18next.t('need_help')}</p>
+        </button>
+        <div class="help-dropdown" style="display: none;">
+          <div class="help-dropdown-content">
+            <h3>${i18next.t('need_help')}</h3>
+            <div class="video-wrapper">
+              <div class="video-spinner" style="display: flex; justify-content: center; align-items: center; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--background-color);">
+                <div class="spinner"></div>
+              </div>
+              <iframe
+                class="help-video-iframe"
+                src=""
+                title="Help Video"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+                style="display: none;"
+              ></iframe>
+            </div>
+            <button class="open-tab-btn" type="button">
+              <span>${i18next.t('open_in_new_tab')}</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="display: inline-block; margin-left: 8px; vertical-align: middle;">
+                <path d="M12 8.667V12.667C12 13.0203 11.8595 13.3594 11.6095 13.6095C11.3594 13.8595 11.0203 14 10.667 14H3.33301C2.97967 14 2.64058 13.8595 2.39053 13.6095C2.14048 13.3594 2 13.0203 2 12.667V5.33301C2 4.97967 2.14048 4.64058 2.39053 4.39053C2.64058 4.14048 2.97967 4 3.33301 4H7.33301M10 2H14M14 2V6M14 2L6.66699 9.33301" 
+                      stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      ` : ''}
     </div>
   `;
 
@@ -399,6 +462,82 @@ const createLanguageDropdown = () => {
 			updatePersistData('schoolTheme', { language: selectedLang.keyword });
 		});
 	});
+
+	if (hasVideo) {
+		const helpButton = modalContent.querySelector('.help-btn');
+		const helpDropdown = modalContent.querySelector('.help-dropdown');
+		const helpIframe = modalContent.querySelector('.help-video-iframe');
+		const videoSpinner = modalContent.querySelector('.video-spinner');
+		const openTabButton = modalContent.querySelector('.open-tab-btn');
+		let isHelpDropdownOpen = false;
+		let isVideoLoaded = false;
+
+		helpButton.addEventListener('click', (e) => {
+			e.stopPropagation();
+			isHelpDropdownOpen = !isHelpDropdownOpen;
+			helpDropdown.style.display = isHelpDropdownOpen ? 'block' : 'none';
+			
+			if (isHelpDropdownOpen && !isVideoLoaded) {
+				videoSpinner.style.display = 'flex';
+				helpIframe.style.display = 'none';
+				helpIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+			}
+		});
+
+		helpIframe.addEventListener('load', () => {
+			if (helpIframe.src) {
+				setTimeout(() => {
+					videoSpinner.style.display = 'none';
+					helpIframe.style.display = 'block';
+					isVideoLoaded = true;
+				}, 500);
+			}
+		});
+
+		openTabButton.addEventListener('mousedown', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			e.stopImmediatePropagation();
+			
+			setTimeout(() => {
+				window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank', 'noopener,noreferrer');
+			}, 0);
+		});
+
+		openTabButton.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			e.stopImmediatePropagation();
+			return false;
+		});
+
+		let closeTimeout;
+		const handleOutsideClick = (event) => {
+			const helpContainer = modalContent.querySelector('.help-container');
+			if (helpContainer && !helpContainer.contains(event.target) && isHelpDropdownOpen) {
+				if (closeTimeout) clearTimeout(closeTimeout);
+				
+				closeTimeout = setTimeout(() => {
+					isHelpDropdownOpen = false;
+					helpDropdown.style.display = 'none';
+				}, 10);
+			}
+		};
+
+		document.addEventListener('mousedown', handleOutsideClick, true); // Use capture phase
+
+		helpDropdown.addEventListener('mousedown', (e) => {
+			e.stopPropagation();
+		});
+
+		const cleanup = () => {
+			document.removeEventListener('mousedown', handleOutsideClick, true);
+		};
+
+		if (window.mereos) {
+			window.mereos.cleanupLanguageDropdown = cleanup;
+		}
+	}
 };
 
 const openModal = async (callback) => {
@@ -461,6 +600,7 @@ const showTab = async (tabId, callback) => {
 		logger.success('tabId',tabId);
 		const { containers } = window.mereos.dom;
 		initializeI18next();
+		loadNotyfJS();
 		const getSecureFeature = getSecureFeatures();
 		const secureFeatures = getSecureFeature?.entities || [];
 

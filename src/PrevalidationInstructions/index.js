@@ -245,7 +245,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 					cameraDropdown.disabled = true;
 				}
 				if (checkButton) {
-					checkButton.disabled = true;
+					checkButton.style.display='none';
 				}
 
 				const messageElement = window.mereos.shadowRoot.getElementById('message');
@@ -286,7 +286,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 					// Re-enable check button on error
 					if (checkButton) {
-						checkButton.disabled = false;
+						checkButton.style.display='block';
 					}
 				} else if (result.message === 'media_check_success') {
 					registerEvent({
@@ -341,7 +341,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 				}
 				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
 				if (checkButton) {
-					checkButton.disabled = false;
+					checkButton.style.display='none';
 					checkButton.textContent = i18next.t('check_camera_mic');
 				}
 			}

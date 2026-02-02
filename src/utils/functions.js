@@ -18,6 +18,7 @@ import { Notyf } from 'notyf';
 import { notifyTokenExpired } from './axios';
 import { stop_prechecks } from '../..';
 import pkg from '../../package.json';
+import { detectWindowResize } from './fullscreen';
 
 export const dataURIToBlob = (dataURI) => {
 	
@@ -137,7 +138,6 @@ export const forceClosureIncident = (
 	profile
 ) => {
 	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
-	
 	if (
 		browserIncidentlevel === 'high') {
 		return 'high';
@@ -307,7 +307,7 @@ export const checkForceClosureViolation = async () =>{
 	if (!session || !session.browserEvents) {
 		return;
 	}
-	const { browserEvents,aiEvents,incident_level } = session;
+	const { browserEvents, aiEvents, incident_level } = session;
 	const secureFeatures = getSecureFeatures();
 
 	const forceClosureIncidentResp = forceClosureIncident(
@@ -318,17 +318,16 @@ export const checkForceClosureViolation = async () =>{
 	let incidentLevel = findIncidentLevel(
 		aiEvents,
 		browserEvents, 
-		secureFeatures);
-
-	console.log('incidentLevel',incidentLevel);
+		secureFeatures
+	);
 
 	if((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high'){
 		await addSectionSessionRecord(session,candidateInviteAssessmentSection);
 		updatePersistData('session', { incident_level: incidentLevel });
 	}
-
+	logger.success('before the if',forceClosureIncidentResp);
 	if (
-		forceClosureIncidentResp === 'high' &&
+		incidentLevel === 'high' &&
 		findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0
 	) {
 		updatePersistData('session', {
@@ -1290,6 +1289,7 @@ export const detectUnfocusOfTab = () => {
 					duration: durationSec, 
 					sentryError: false,
 				});
+				logger.success('in the endAway');
 				checkForceClosureViolation();
 			};
 
@@ -1851,96 +1851,6 @@ export const getNetworkUploadSpeed = async () => {
 	}
 };
 
-
-let isFullscreenTransition = false;
-let fullscreenTransitionTimeout;
-let isProgrammaticFullscreen = false;
-
-export const forceFullScreen = (element = document.documentElement) => {
-	try {
-		isFullscreenTransition = true;
-		isProgrammaticFullscreen = true;
-		console.log('isFullscreenTransition',isFullscreenTransition);
-
-		// Clear any pending timeout
-		if (fullscreenTransitionTimeout) {
-			clearTimeout(fullscreenTransitionTimeout);
-		}
-
-		// Attempt to request fullscreen based on the browser
-		if (typeof element.requestFullscreen === 'function') {
-			element.requestFullscreen();
-		} else if (typeof element.webkitRequestFullscreen === 'function') { /* Safari */
-			element.webkitRequestFullscreen();
-		} else if (typeof element.msRequestFullscreen === 'function') { /* IE11 */
-			element.msRequestFullscreen();
-		}
-
-		const whiteBackgroundElement = document.createElement('div');
-		whiteBackgroundElement.style.backgroundColor = 'white';
-		whiteBackgroundElement.style.top = '0';
-		whiteBackgroundElement.style.left = '0';
-		whiteBackgroundElement.style.width = '100%';
-		whiteBackgroundElement.style.height = '100%';
-		whiteBackgroundElement.style.overflow = 'auto';
-		whiteBackgroundElement.style.zIndex = '1000';
-
-		document.body.appendChild(whiteBackgroundElement);
-
-		const handleFullscreenChange = () => {
-			if (!document.fullscreenElement) {
-				// User exited fullscreen
-				if (whiteBackgroundElement && document.body.contains(whiteBackgroundElement)) {
-					document.body.removeChild(whiteBackgroundElement);
-				}
-				document.removeEventListener('fullscreenchange', handleFullscreenChange);
-			}
-		};
-
-		fullscreenTransitionTimeout = setTimeout(() => {
-			isFullscreenTransition = false;
-			isProgrammaticFullscreen = false;
-		}, 1000);
-
-		document.addEventListener('fullscreenchange', handleFullscreenChange);
-
-		return Promise.resolve(true);
-	} catch (error) {
-		isFullscreenTransition = false;
-		isProgrammaticFullscreen = false;
-		console.error('An error occurred while attempting to enter fullscreen:', error);
-		return Promise.resolve(false);
-	}
-};
-
-export const detectWindowResize = () => {
-	return new Promise((resolve, _reject) => {
-		window.addEventListener('resize', handleResize);
-		resolve(true);
-	});
-};
-
-let resizeTimeout;
-let isResizing = false;
-
-const handleResize = () => {
-	if (isProgrammaticFullscreen || document.fullscreenElement) {
-		return;
-	}
-
-	if (!isResizing) {
-		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
-		checkForceClosureViolation();
-		isResizing = true;
-	}
-
-	clearTimeout(resizeTimeout);
-
-	resizeTimeout = setTimeout(() => {
-		isResizing = false;
-	}, 1000);
-};
-
 export const checkPermissionStatus = async () => {
 	const results = {};
 
@@ -1959,7 +1869,6 @@ export const checkPermissionStatus = async () => {
 };
 
 export const handleBackendError = (t, error) => {
-	console.log('error',error);
 	let message = '';
 
 	if (!error) {

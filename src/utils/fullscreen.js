@@ -1,5 +1,10 @@
 import i18next from 'i18next';
-import { logger, showToast } from './functions';
+import { checkForceClosureViolation, logger, registerEvent, showToast } from './functions';
+
+let fullscreenExitCallback = null;
+let isProgrammaticFullscreen = false;
+let resizeTimeout;
+let isResizing = false;
 
 export const initializeFullscreenMonitor = () => {
 	if (!document.fullscreenEnabled) {
@@ -7,9 +12,18 @@ export const initializeFullscreenMonitor = () => {
 	}
 
 	let fullscreenCheckInterval = null;
+	window.mereos.lastFullscreenState = false; // Initialize state tracking
 
 	const handleFullscreenChange = () => {
-		if (!document.fullscreenElement) {
+		const isCurrentlyFullscreen = document.fullscreenElement || 
+									document.webkitFullscreenElement || 
+									document.mozFullScreenElement || 
+									document.msFullscreenElement;
+		
+		// Update state tracking
+		window.mereos.lastFullscreenState = isCurrentlyFullscreen;
+		
+		if (!isCurrentlyFullscreen) {
 			setTimeout(() => {
 				if (!document.fullscreenElement && !document.webkitFullscreenElement && 
 					!document.mozFullScreenElement && !document.msFullscreenElement) {
@@ -17,7 +31,6 @@ export const initializeFullscreenMonitor = () => {
 					if (fullscreenExitCallback) {
 						fullscreenExitCallback();
 					} else {
-						// Fallback: show modal directly if callback not registered
 						if (!window.mereos.forceFullscreenModal?.isOpen) {
 							showForceFullscreenModal({ isInitialWarning: false });
 						}
@@ -59,12 +72,13 @@ export const initializeFullscreenMonitor = () => {
 			window.mereos.forceFullscreenModal.remove();
 			window.mereos.forceFullscreenModal = null;
 		}
+		
+		delete window.mereos.lastFullscreenState;
 	};
 };
 
 export const showForceFullscreenModal = (options = {}) => {
 	const { isInitialWarning = false } = options;
-	
 	
 	if (window.mereos.forceFullscreenModal?.isOpen) {
 		return;
@@ -165,7 +179,7 @@ export const showForceFullscreenModal = (options = {}) => {
 		opacity: 1;
 		visibility: visible;
 	`;
-	logger.success('isInitialWarning',isInitialWarning);
+	logger.success('isInitialWarning', isInitialWarning);
 	button.textContent = isInitialWarning
 		? (i18next.t('continue_in_fullscreen') || 'Continue in Fullscreen')
 		: (i18next.t('return_to_fullscreen') || 'Return to Fullscreen');
@@ -247,6 +261,11 @@ export const forceFullScreen = () => {
 			if (document.fullscreenElement) {
 				document.removeEventListener('fullscreenchange', onFullscreenChange);
 				document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+				isProgrammaticFullscreen = true;
+				// Reset the flag after a short delay to allow normal resize detection
+				setTimeout(() => {
+					isProgrammaticFullscreen = false;
+				}, 1000);
 				resolve();
 			}
 		};
@@ -276,7 +295,42 @@ export const forceFullScreen = () => {
 	});
 };
 
-let fullscreenExitCallback = null;
+const handleResize = () => {
+	if (isProgrammaticFullscreen) {
+		return;
+	}
+
+	const isCurrentlyFullscreen = document.fullscreenElement || 
+								document.webkitFullscreenElement || 
+								document.mozFullScreenElement || 
+								document.msFullscreenElement;
+	
+	if (!window.mereos.lastFullscreenState) {
+		window.mereos.lastFullscreenState = isCurrentlyFullscreen;
+	}
+	
+	if (!isResizing && (isCurrentlyFullscreen || !isCurrentlyFullscreen)) {
+		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
+		checkForceClosureViolation();
+		isResizing = true;
+	}
+	
+	window.mereos.lastFullscreenState = isCurrentlyFullscreen;
+
+	clearTimeout(resizeTimeout);
+
+	resizeTimeout = setTimeout(() => {
+		isResizing = false;
+	}, 1000);
+};
+
+export const detectWindowResize = () => {
+	return new Promise((resolve, _reject) => {
+		window.addEventListener('resize', handleResize);
+		resolve(true);
+	});
+};
+
 export const registerFullscreenExitCallback = (callback) => {
 	fullscreenExitCallback = callback;
 };
@@ -320,4 +374,12 @@ export const cleanupForceFullscreen = () => {
 		window.mereos.forceFullscreenModal.remove();
 		window.mereos.forceFullscreenModal = null;
 	}
+	
+	window.removeEventListener('resize', handleResize);
+	
+	delete window.mereos.lastFullscreenState;
+	
+	isProgrammaticFullscreen = false;
+	isResizing = false;
+	clearTimeout(resizeTimeout);
 };

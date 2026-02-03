@@ -302,6 +302,47 @@ body {
   --font-style: var(--font-style);
 }
 
+.new-spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 214748364;
+  text-align: center;
+}
+
+.new-spinner > div {
+  width: 18px;
+  height: 18px;
+  background-color: white;
+  border-radius: 100%;
+  display: inline-block;
+  animation: sk-bouncedelay 1.4s infinite ease-in-out both;
+}
+
+.new-spinner .bounce1 {
+  animation-delay: -0.32s;
+  background-color: var(--theme-color);;
+}
+
+.new-spinner .bounce2 {
+  animation-delay: -0.16s;
+  background-color: var(--theme-color);;
+}
+
+.new-spinner .bounce3 {
+  animation-delay: -0.16s;
+  background-color: var(--theme-color);;
+}
+
+@keyframes sk-bouncedelay {
+  0%, 80%, 100% {
+      transform: scale(0);
+  }
+  40% {
+      transform: scale(1);
+  }
+}
 .modal {
   display: none;
   position: fixed;

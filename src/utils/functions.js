@@ -2040,6 +2040,7 @@ export const getCurrentStep = () => {
 	const navHistory = JSON.parse(localStorage.getItem('navHistory')) || [];
 	return navHistory[navHistory.length - 1] || null;
 };
+
 export const hasHelpVideo = () => {
 	const currentStep = getCurrentStep();
 	return !!stepToVideoId[currentStep];

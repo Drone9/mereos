@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getCurrentStep, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfJS, loadZendeskWidget, logger, normalizeLanguage, registerEvent, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfJS, loadZendeskWidget, logger, normalizeLanguage, registerEvent, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
 import { browserSecurityCss, examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import 'notyf/notyf.min.css';
 import 'notyf/notyf.min.css';
@@ -323,10 +323,9 @@ export const initializeLiveChat = () => {
 
 const navigate = (newTabId) => {
 	showTab(newTabId);
-	createLanguageDropdown();
 };
 
-const createLanguageDropdown = () => {
+const createLanguageDropdown = (currentStep) => {
 	const modalContent = window.mereos.shadowRoot.querySelector('.modal-content');
 	if(modalContent){
 		const existingHeader = modalContent.querySelector('.header');
@@ -340,10 +339,11 @@ const createLanguageDropdown = () => {
 	const filterLanguage = normalizeLanguage(defaultLanguage);
 	let selectedLanguage = languages.find(lang => lang.keyword === filterLanguage.trim());
 
-	const currentStep = getCurrentStep();
+	console.log('currentStep',currentStep);
 	const videoId = getVideoIdForStep(currentStep);
+	console.log('videoId',videoId);
 	const hasVideo = !!videoId;
-	const themeColor = schoolTheme?.themeColor || '#0087FD';
+	const themeColor = schoolTheme?.theming || '#0087FD';
 
 	const headerHTML = `
     <div class="header">
@@ -394,8 +394,10 @@ const createLanguageDropdown = () => {
           <div class="help-dropdown-content">
             <h3>${i18next.t('need_help')}</h3>
             <div class="video-wrapper">
-              <div class="video-spinner" style="display: flex; justify-content: center; align-items: center; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--background-color);">
-                <div class="spinner"></div>
+              <div class="new-spinner video-spinner">
+								<div class='bounce1'></div>
+								<div class='bounce2'></div>
+								<div class='bounce3'></div>
               </div>
               <iframe
                 class="help-video-iframe"
@@ -472,15 +474,30 @@ const createLanguageDropdown = () => {
 		let isHelpDropdownOpen = false;
 		let isVideoLoaded = false;
 
+		const stopVideo = () => {
+			if (helpIframe.src && helpIframe.contentWindow) {
+				helpIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+			}
+		};
+
 		helpButton.addEventListener('click', (e) => {
 			e.stopPropagation();
 			isHelpDropdownOpen = !isHelpDropdownOpen;
 			helpDropdown.style.display = isHelpDropdownOpen ? 'block' : 'none';
 			
-			if (isHelpDropdownOpen && !isVideoLoaded) {
-				videoSpinner.style.display = 'flex';
-				helpIframe.style.display = 'none';
-				helpIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+			if (isHelpDropdownOpen) {
+				if (!isVideoLoaded) {
+					videoSpinner.style.display = 'flex';
+					helpIframe.style.display = 'none';
+					helpIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+				} else {
+					videoSpinner.style.display = 'flex';
+					helpIframe.style.display = 'none';
+					setTimeout(() => {
+						videoSpinner.style.display = 'none';
+						helpIframe.style.display = 'block';
+					}, 300);
+				}
 			}
 		});
 
@@ -520,6 +537,8 @@ const createLanguageDropdown = () => {
 				closeTimeout = setTimeout(() => {
 					isHelpDropdownOpen = false;
 					helpDropdown.style.display = 'none';
+					// Stop video when closing the dropdown
+					stopVideo();
 				}, 10);
 			}
 		};
@@ -532,6 +551,8 @@ const createLanguageDropdown = () => {
 
 		const cleanup = () => {
 			document.removeEventListener('mousedown', handleOutsideClick, true);
+			// Stop video on cleanup
+			stopVideo();
 		};
 
 		if (window.mereos) {
@@ -568,7 +589,6 @@ const openModal = async (callback) => {
 	}
 		
 	showTab(activeTab, callback);
-	createLanguageDropdown();
 	if(modal){
 		modal.style.transform = 'translateZ(0)';
 	}
@@ -600,7 +620,9 @@ const showTab = async (tabId, callback) => {
 		logger.success('tabId',tabId);
 		const { containers } = window.mereos.dom;
 		initializeI18next();
+		createLanguageDropdown(tabId);
 		loadNotyfJS();
+
 		const getSecureFeature = getSecureFeatures();
 		const secureFeatures = getSecureFeature?.entities || [];
 

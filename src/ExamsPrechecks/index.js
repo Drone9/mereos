@@ -793,7 +793,7 @@ export const startSession = async () => {
 			}
 		};
 		stop_prechecks(callBackFunc);
-		showToast('error',e.response?.data?.detail);
+		showToast('error',e.response?.data?.detail || 'something_went_wrong_please_contact_support');
 		logger.error('Error in start Session', e.response?.data?.detail);
 	}
 };

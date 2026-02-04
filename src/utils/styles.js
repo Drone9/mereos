@@ -881,6 +881,7 @@ export const systemDiagnosticCss =`.system-diagnostic-test-screen {
   margin-top: 31px;
   text-align: center;
   color: var(--text-color);
+  font-style:var(--font-style);
 }
 
 .system-diagnostic-test-screen .container-prompt {

@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
+import { findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerEvent, sentryExceptioMessage, updatePersistData } from '../utils/functions';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
 	let canvasRef = null;
@@ -39,6 +39,7 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				throw audioPermission.state;
 			}
 		} catch (error) {
+			sentryExceptioMessage(error,{type:'error',message:'No mircophone detected'});
 			logger.error('no_mircophone_detected:', error);
 			return false;
 		}

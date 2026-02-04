@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfJS, loadZendeskWidget, logger, normalizeLanguage, registerEvent, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfJS, loadZendeskWidget, logger, normalizeLanguage, registerEvent, sentryExceptioMessage, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
 import { browserSecurityCss, examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import 'notyf/notyf.min.css';
 import 'notyf/notyf.min.css';
@@ -421,7 +421,9 @@ const createLanguageDropdown = (currentStep) => {
     </div>
   `;
 
-	modalContent.insertAdjacentHTML('afterbegin', headerHTML);
+	if(modalContent){
+		modalContent.insertAdjacentHTML('afterbegin', headerHTML);
+	}
 
 	const selectContainer = modalContent.querySelector('.select');
 	const languageDropdown = modalContent.querySelector('.dropdown-content');
@@ -754,6 +756,10 @@ const showTab = async (tabId, callback) => {
 			return;
 		}
 	} catch (e) {
+		sentryExceptioMessage(e,{
+			type: 'error', 
+			message: 'Error in Show Tab', 
+		});
 		logger.error('error in showTab', e);
 	}
 };
@@ -781,6 +787,7 @@ export const startSession = async () => {
 		});
 		return 'data_saved';
 	} catch (e) {
+		sentryExceptioMessage(e);
 		const callBackFunc = () => {
 			if(e.response?.data?.detail === 'Token not found'){
 				window.mereos.globalCallback({

@@ -2,7 +2,7 @@ import i18next from 'i18next';
 
 import { showTab } from '../ExamsPrechecks';
 
-import { acceptableLabels, acceptableText, dataURIToBlob, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, sentryExceptioMessage, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 
@@ -190,6 +190,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				notify: true,
 				eventName: 'pdf_extraction_error'
 			});
+			sentryExceptioMessage(error,{type:'error',message:'PDF extraction error'});
 			throw new Error('error_processing_pdf');
 		}
 	};
@@ -266,6 +267,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						text: error.message || 'error_with_uploading_file'
 					}
 				};
+				
 				renderUI();
 			}
 		}
@@ -328,6 +330,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				}
 			} catch (error) {
 				console.error('Rekognition API error:', error);
+				sentryExceptioMessage(error);
 				
 				failedAttempts++;
 				
@@ -416,6 +419,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 					text: 'something_went_wrong_please_upload_again'
 				}
 			};
+			sentryExceptioMessage(error);
 			registerEvent({eventType: 'success', notify: false, eventName: 'internet_connection_unstable'});
 		}
 		renderUI();
@@ -603,6 +607,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 								});
 							}
 						} catch (error) {
+							sentryExceptioMessage(error,{type:'error',message:'Webcam error in ID card'});
 							console.error('Webcam error:', error);
 							handleWebcamError();
 						}

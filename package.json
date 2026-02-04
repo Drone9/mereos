@@ -27,6 +27,7 @@
     "url": "https://github.com/Drone9/mereos.git"
   },
   "dependencies": {
+    "@sentry/replay": "^7.116.0",
     "@tensorflow-models/coco-ssd": "2.2.3",
     "@tensorflow/tfjs": "4.20.0",
     "@twilio/rtc-diagnostics": "^1.0.1",
@@ -46,6 +47,7 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@sentry/browser": "^10.38.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.4.8",
     "esbuild-jest": "^0.4.0",

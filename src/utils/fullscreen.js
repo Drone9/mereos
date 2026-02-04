@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { checkForceClosureViolation, logger, registerEvent, showToast } from './functions';
+import { checkForceClosureViolation, logger, registerEvent, sentryExceptioMessage, showToast } from './functions';
 
 let fullscreenExitCallback = null;
 let isProgrammaticFullscreen = false;
@@ -108,6 +108,7 @@ export const showForceFullscreenModal = (options = {}) => {
 	modalContent.className = 'force-fullscreen-modal';
 	modalContent.style.cssText = `
 		background-color: var(--theme-mode);
+		z-index:99999999 !important;
 		border-radius: 8px;
 		width: 90%;
 		max-width: 450px;
@@ -192,6 +193,7 @@ export const showForceFullscreenModal = (options = {}) => {
 				window.mereos.forceFullscreenModal.isOpen = false;
 			}
 		} catch (error) {
+			sentryExceptioMessage(error,{type:'error',message:`Full screen failed`});
 			showToast('error', 'fullscreen_failed');
 		}
 	});

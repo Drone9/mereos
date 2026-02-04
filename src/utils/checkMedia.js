@@ -1,5 +1,5 @@
 import { testMediaConnectionBitrate, testAudioInputDevice, AudioInputTest, testVideoInputDevice, VideoInputTest } from '@twilio/rtc-diagnostics';
-import { findConfigs, getSecureFeatures } from './functions';
+import { findConfigs, getSecureFeatures, sentryExceptioMessage } from './functions';
 
 export const checkMediaInputs = (iceServersArray) => {
 	return new Promise(async (resolve) => {
@@ -141,6 +141,7 @@ export const checkMediaInputs = (iceServersArray) => {
 				}
 			}, shouldTestBitrate ? 10000 : 5000);
 		} catch (err) {
+			sentryExceptioMessage(err);
 			console.log('Media Check Exception:', err);
 			resolve({
 				audio: false,

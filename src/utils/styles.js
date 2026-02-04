@@ -487,6 +487,7 @@ body {
     font-weight: 600;
     font-size: 14px;
     color: var(--text-color);
+    font-style:var(--font-style);
 }
 
 .help-dropdown {
@@ -511,6 +512,7 @@ body {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-color);
+    font-style:var(--font-style);
 }
 .help-btn {
     .pvi-instruction-img{
@@ -2308,6 +2310,7 @@ export const IdentityVerificationScreenThreeCss = `.ivst-container {
   font-size: 13px;
   line-height: 19px;
   color: #b7c5d1;
+  font-style:var(--font-style);
 }
 
 .ivst-container .volum-checker {
@@ -2591,6 +2594,7 @@ export const MobileProctoringCss = `.mobile-conection-container {
   font-size: 15px;
   margin-bottom: 0;
   margin-top: 0;
+    font-style:var(--font-style);
 }
 
 .mobile-connection-banner .banner-info-box .desc {
@@ -2614,11 +2618,13 @@ export const MobileProctoringCss = `.mobile-conection-container {
 
 .bottom-desc p {
   width: 884px;
+  font-style:var(--font-style);
 }
 
 .example-text {
   color: #8d979f;
   font-size: 15px;
+  font-style:var(--font-style);
 }
 
 .bottom-desc-remote {
@@ -2628,6 +2634,7 @@ export const MobileProctoringCss = `.mobile-conection-container {
   column-gap: 13px;
   justify-content: center;
   color: #8d979f;
+  font-style:var(--font-style);
 }
 
 .bottom-desc-remote input {
@@ -2637,6 +2644,7 @@ export const MobileProctoringCss = `.mobile-conection-container {
   margin: 0;
   font-size: 15px;
   cursor:pointer;
+  font-style:var(--font-style);
 }
 .qr-code-container {
   display: flex;
@@ -2691,6 +2699,7 @@ export const MobileProctoringCss = `.mobile-conection-container {
   height: 300px;
   border-radius: 5px;
   margin: 30px auto 0px;
+  font-style:var(--font-style);
 }
 
 @media (max-width: 720px) {
@@ -3060,12 +3069,12 @@ body{
 .user-videos-remote .user-video-header .recording-heading{
   font-size: 12px;
   margin-bottom: 9px;
-  width: 112px;
-  white-space: nowrap;
+  width: 96px;
+  white-space: break-spaces;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
-  color:var(--text-color);
+  color: var(--text-color);
 }
 
 .recording-badge-container-header {
@@ -3146,6 +3155,7 @@ body{
   font-size: 16px;
   line-height: 1.6;
   margin: 0 0 20px 0;
+  font-style:var(--font-style);
 }
 
 .permission-instructions p:first-of-type {

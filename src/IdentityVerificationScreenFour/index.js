@@ -28,6 +28,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	let recordedChunks = [];
 	let cameraAvailable = false;
 	let permissionDenied = false;
+	let webcamLoading = false; // Track webcam loading state
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
 	let stopButtonDisabled = true;
@@ -143,6 +144,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		textMessage = 'scan_your_room';
 		cameraAvailable = false;
 		permissionDenied = false;
+		webcamLoading = false;
 		updateUI();
 	};
 
@@ -165,6 +167,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			textMessage = 'scan_your_room';
 			cameraAvailable = false;
 			permissionDenied = false;
+			webcamLoading = false;
 			updateUI();
 			if (window.mereos.globalStream) {
 				window.mereos.globalStream.getTracks().forEach(track => track.stop());
@@ -192,6 +195,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		blob = null;
 		cameraAvailable = false;
 		permissionDenied = false;
+		webcamLoading = false;
 		if (window.mereos.globalStream) {
 			window.mereos.globalStream.getTracks().forEach(track => track.stop());
 			window.mereos.globalStream = null;
@@ -296,11 +300,11 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		if (recordingMode === 'startRecording') {
 			const isCameraAvailable = await checkCameraAvailability();
 			logger.success('isCameraAvailable',isCameraAvailable);
+			
 			if (!cameraAvailable) {
 				headerImgContainer.insertAdjacentHTML('beforeend', `
 					<div class="camera-error-container">
 						<img src="${schoolTheme?.mode === 'dark' ? `${ASSET_URL}/camera-icon-white.svg` : `${ASSET_URL}/camera-icon-black.svg`}" alt="camera-error" class="camera-error-icon">
-						<div class="camera-error-message">${i18next.t('camera_access_lost')}</div>
 					</div>
 				`);
 				
@@ -316,39 +320,99 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				return;
 			}
 
-			const isAudioEnabled = findConfigs(['record_audio'], secureFeatures).length > 0;
-			const mediaOptions = {
-				audio: isAudioEnabled
-					? (localStorage.getItem('microphoneID') !== null
-						? { deviceId: { exact: localStorage.getItem('microphoneID') }}
-						: true)
-					: false,
-				video: videoConstraints.video,
-			};
-
-			try {
-				window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
-				
+			// Show loading spinner while initializing camera
+			if (webcamLoading) {
 				headerImgContainer.insertAdjacentHTML('beforeend', `
-					<video id="webcam-recording-media" autoplay muted height="250"></video>
+					<div class="camera-spinner">
+					<div class="new-spinner">
+						<div class='bounce1'></div>
+						<div class='bounce2'></div>
+						<div class='bounce3'></div>
+					</div>
+					</div>
 				`);
-				
-				const webcam = headerImgContainer.querySelector('#webcam-recording-media');
-				webcam.srcObject = window.mereos.globalStream;
 				
 				btnContainer.insertAdjacentHTML('beforeend', `
 					<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
-					<button class="orange-filled-btn">${i18next.t('record_video')}</button>
+					<button class="orange-filled-btn" disabled>${i18next.t('record_video')}</button>
 				`);
 				
 				btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
-				btnContainer.querySelector('.orange-filled-btn').addEventListener('click', () => handleStartRecording('startRecording'));
-			} catch (error) {
-				logger.error('Error getting user media after camera check:', error);
-				cameraAvailable = false;
-				textMessage = 'camera_access_lost';
-				updateUI();
+				return;
 			}
+
+			// Check if stream already exists
+			const hasActiveTracks = window.mereos.globalStream?.getTracks?.().some(track => track.readyState === 'live');
+			
+			if (!window.mereos.globalStream || !hasActiveTracks) {
+				const isAudioEnabled = findConfigs(['record_audio'], secureFeatures).length > 0;
+				const mediaOptions = {
+					audio: isAudioEnabled
+						? (localStorage.getItem('microphoneID') !== null
+							? { deviceId: { exact: localStorage.getItem('microphoneID') }}
+							: true)
+						: false,
+					video: videoConstraints.video,
+				};
+
+				try {
+					// Set loading and trigger UI update
+					webcamLoading = true;
+					
+					// Use setTimeout to ensure UI updates before async operation
+					setTimeout(async () => {
+						try {
+							window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
+							
+							// Wait for stream to be ready
+							const testVideo = document.createElement('video');
+							testVideo.srcObject = window.mereos.globalStream;
+							
+							await new Promise((resolve) => {
+								testVideo.onloadedmetadata = () => {
+									resolve();
+								};
+							});
+							
+							webcamLoading = false;
+							updateUI();
+						} catch (error) {
+							logger.error('Error getting user media:', error);
+							webcamLoading = false;
+							cameraAvailable = false;
+							textMessage = 'camera_access_lost';
+							updateUI();
+						}
+					}, 100);
+					
+					// Trigger UI update to show spinner
+					updateUI();
+					return;
+				} catch (error) {
+					logger.error('Error setting up camera:', error);
+					webcamLoading = false;
+					cameraAvailable = false;
+					textMessage = 'camera_access_lost';
+					updateUI();
+					return;
+				}
+			}
+
+			// Camera stream is ready, show video
+			headerImgContainer.insertAdjacentHTML('beforeend', `
+				<video id="webcam-recording-media" autoplay muted height="250"></video>
+			`);
+			
+			const webcam = headerImgContainer.querySelector('#webcam-recording-media');
+			webcam.srcObject = window.mereos.globalStream;
+			
+			btnContainer.insertAdjacentHTML('beforeend', `
+				<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>
+				<button class="orange-filled-btn">${i18next.t('record_video')}</button>
+			`);
+			
+			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
+			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', () => handleStartRecording('startRecording'));
 		} else if (recordingMode === 'beingRecorded') {
 			const prevStepsEntities = ['verify_candidate', 'verify_id', 'record_audio'];
 			const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;

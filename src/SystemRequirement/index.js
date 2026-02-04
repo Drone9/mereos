@@ -186,7 +186,10 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 		}
 		
 		continueButton.disabled = true;
-		if (refreshButton) refreshButton.disabled = true;
+		if (refreshButton) {
+			refreshButton.disabled = true;
+			refreshButton.style.display = 'none'; // Hide refresh button during processing
+		}
 		statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
 		statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
 
@@ -236,6 +239,7 @@ const retryAllFailedRequirements = async () => {
 	
 	if (refreshBtn && continueBtn) {
 		refreshBtn.disabled = true;
+		refreshBtn.style.display = 'none'; // Hide refresh button during batch retry processing
 		continueBtn.disabled = true;
 		
 		const originalText = refreshBtn.textContent;

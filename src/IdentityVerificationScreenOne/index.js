@@ -14,6 +14,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		imageSrc: null,
 		failedAttempts: 0,
 		webcamError: false, // Track webcam availability
+		webcamLoading: true, // Track webcam loading state
 		videoConstraints: {
 			video: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
 			width: 350,
@@ -31,6 +32,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 	const handleWebcamError = () => {
 		state.webcamError = true;
+		state.webcamLoading = false;
 		state.msg = {
 			type: 'unsuccessful',
 			text: 'webcam_error'
@@ -45,6 +47,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 	const startWebcam = async () => {
 		try {
+			state.webcamLoading = true;
+			renderUI();
+			
 			videoElement = document.createElement('video');
 			videoElement.width = state.videoConstraints.width;
 			videoElement.height = state.videoConstraints.height;
@@ -52,6 +57,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
             
 			window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
 			videoElement.srcObject = window.mereos.globalStream;
+			
+			// Wait for video to be ready
+			await new Promise((resolve) => {
+				videoElement.onloadedmetadata = () => {
+					resolve();
+				};
+			});
 			
 			// Add track ended listener
 			const tracks = window.mereos.globalStream.getTracks();
@@ -61,6 +73,10 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				});
 			});
             
+			// Reset webcamError and set loading to false when camera starts successfully
+			state.webcamError = false;
+			state.webcamLoading = false;
+			
 			if (tabContent) {
 				const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');
 				if (ivsoWebcamContainer) {
@@ -69,8 +85,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				}
 			}
 			
-			// Reset webcamError if camera starts successfully
-			state.webcamError = false;
+			renderUI();
 		} catch (err) {
 			logger.error('Error accessing webcam:', err);
 			handleWebcamError();
@@ -343,7 +358,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		if (state.imageSrc) {
 			contentHTML += `<img src="${state.imageSrc}" class="ivso-captured-img">`;
 		} else if (state.webcamError) {
-			// Show no camera icon when webcam is unavailable
 			const theme = JSON.parse(localStorage.getItem('schoolTheme'))?.theming;
 			const isDarkTheme = theme === 'dark';
 			const cameraIcon = isDarkTheme ? 
@@ -352,6 +366,16 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				
 			contentHTML += `<img src="${cameraIcon}" class="ivso-broken-camera" alt="broken-camera" 
 				style="width: 250px; height: 250px; opacity: 0.5; margin: auto;">`;
+		} else if (state.webcamLoading) {
+			contentHTML += `
+			<div class="camera-spinner">
+				<div class="new-spinner">
+					<div class='bounce1'></div>
+					<div class='bounce2'></div>
+					<div class='bounce3'></div>
+				</div>
+				</div>
+			`;
 		} else {
 			contentHTML += `<img src="${ASSET_URL}/screen-centered-grid.svg" class="ivso-screen-grid">`;
 		}
@@ -370,7 +394,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 
 		contentHTML += `<div class="ivso-btn-container">`;
         
-		// Only show retake button when not processing and in retake mode
 		if (state.captureMode === 'retake' && !state.isProcessing) {
 			contentHTML += `
                 <button class="orange-hollow-btn" id="retake-btn">
@@ -388,8 +411,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		}
         
 		if (state.captureMode === 'take') {
-			// Disable take photo button if webcam error exists
-			const isDisabled = state.webcamError || state.isProcessing ? 'disabled' : '';
+			const isDisabled = state.webcamError || state.webcamLoading || state.isProcessing ? 'disabled' : '';
 			contentHTML += `
                 <button class="orange-filled-btn" id="take-photo-btn" ${isDisabled}>
                     ${i18next.t('take_photo')}
@@ -427,6 +449,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 					isUploading: false,
 					isProcessing: false,
 					webcamError: false, // Reset webcam error on retake
+					webcamLoading: true, // Set loading state on retake
 					videoConstraints: {
 						...state.videoConstraints,
 						deviceId: localStorage.getItem('deviceId') || undefined,
@@ -450,7 +473,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
         
 		if (state.captureMode === 'take') {
 			const takePhotoBtn = window.mereos.shadowRoot.getElementById('take-photo-btn');
-			if (takePhotoBtn && !state.webcamError) {
+			if (takePhotoBtn && !state.webcamError && !state.webcamLoading) {
 				takePhotoBtn.addEventListener('click', capturePhoto);
 			}
 		}
@@ -463,9 +486,9 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		}
 		
 		const hasActiveTracks = window.mereos.globalStream?.getTracks?.().some(track => track.readyState === 'live');
-		if (!state.imageSrc && !state.webcamError && (!window.mereos.globalStream || !hasActiveTracks)) {
+		if (!state.imageSrc && !state.webcamError && !state.webcamLoading && (!window.mereos.globalStream || !hasActiveTracks)) {
 			startWebcam();
-		} else if (!state.imageSrc && !state.webcamError) {
+		} else if (!state.imageSrc && !state.webcamError && !state.webcamLoading) {
 			const ivsoWebcamContainer = tabContent.querySelector('.ivso-webcam-container');
 			if (ivsoWebcamContainer && videoElement) {
 				ivsoWebcamContainer.appendChild(videoElement);

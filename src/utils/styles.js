@@ -458,19 +458,17 @@ body {
 .header {
   position: absolute;
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  align-items: self-start;
+  justify-content: space-between;
   margin-bottom: 10px;
+  width: 95%;
+  margin-left: 12px;
 }
-.help-container {
+.help-container{
     position: absolute;
-    display: inline-block;
-    margin-bottom: 5px;
-    margin-left: -7px;
-    right: -747px;
-    top: -14px;
+    right: 0;
+    top: -16px;
 }
-
 .help-btn {
     background: none;
     border: none;
@@ -481,6 +479,8 @@ body {
     border-radius: 4px;
     transition: background-color 0.2s;
     flex-direction: column;
+    width: 100%;
+    height: 88px;
 }
 .help-btn p {
     margin: 0 !important;
@@ -534,7 +534,10 @@ body {
     height: 100%;
     border: none;
 }
-
+.camera-spinner{
+  width:350px;
+  height:250px;
+}
 .open-tab-btn {
     width: 100%;
     padding: 10px;
@@ -2153,6 +2156,7 @@ export const IdentityVerificationScreenTwoCss = `
     text-align: center;
     color: #8D979F;
     margin: 6px auto 0px;
+    font-style: var(--font-style);
     max-width: 600px;
 }
 .first-header-msg {
@@ -2244,6 +2248,7 @@ export const IdentityVerificationScreenThreeCss = `.ivst-container {
   margin-top: 14px;
   margin-bottom: 0px;
   text-align: center;
+  font-style: var(--font-style);
 }
 
 .ivst-container .mic-checking-txt {
@@ -2277,6 +2282,7 @@ export const IdentityVerificationScreenThreeCss = `.ivst-container {
   text-align: center;
   color: #8d979f;
   margin: 15px auto 0px;
+  font-style: var(--font-style);
 }
 
 .ivst-container .ivst-instructions-container {

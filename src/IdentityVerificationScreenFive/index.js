@@ -289,7 +289,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		let buttonsHTML = '';
 		
-		if (showPrevButton) {
+		if (showPrevButton && mode === 'startScreenRecording') {
 			buttonsHTML += `<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>`;
 		}
 		
@@ -301,7 +301,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		
 		btnContainer.insertAdjacentHTML('beforeend', buttonsHTML);
 		
-		if (showPrevButton) {
+		if (showPrevButton && mode === 'startScreenRecording') {
 			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
 		}
 		

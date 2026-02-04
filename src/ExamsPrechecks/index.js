@@ -339,12 +339,10 @@ const createLanguageDropdown = (currentStep) => {
 	const filterLanguage = normalizeLanguage(defaultLanguage);
 	let selectedLanguage = languages.find(lang => lang.keyword === filterLanguage.trim());
 
-	console.log('currentStep',currentStep);
 	const videoId = getVideoIdForStep(currentStep);
-	console.log('videoId',videoId);
 	const hasVideo = !!videoId;
-	const themeColor = schoolTheme?.theming || '#0087FD';
-
+	const themeColor = schoolTheme?.theming || '#FF961B';
+	
 	const headerHTML = `
     <div class="header">
       <section class="dropdown">
@@ -808,23 +806,48 @@ window.addEventListener('storage', (event) => {
 
 function checkToken() {
 	const session = convertDataIntoParse('session');
-	if (!getAuthenticationToken() && !isModalClosed && (session?.sessionStatus.toLowerCase() !== 'completed' && session?.sessionStatus.toLowerCase() !== 'terminated')) {
+	
+	if (!getAuthenticationToken() && !isModalClosed && 
+		(session?.sessionStatus.toLowerCase() !== 'completed' && 
+			session?.sessionStatus.toLowerCase() !== 'terminated')) {
 		closeModalOnce();
 	}
 }
 
 function closeModalOnce() {
+	if (isModalClosed) return;
+	
 	isModalClosed = true;
+	
+	if (window.mereos.checkTokenIntervalId) {
+		clearInterval(window.mereos.checkTokenIntervalId);
+		window.mereos.checkTokenIntervalId = null;
+	}
+	
+	if (window.mereos?.checkTokenInterval) {
+		clearInterval(window.mereos.checkTokenInterval);
+		window.mereos.checkTokenInterval = null;
+	}
+	
 	closeModal();
 }
 
-window.onload = checkToken; 
+window.onload = checkToken;
 
 const checkInterval = 2000;
-if(window.mereos){
-	window.mereos.checkTokenInterval = setInterval(() => {
-		checkToken();
-	}, checkInterval);
+
+function initializeWhenReady() {
+	if (window.mereos) {
+		window.mereos.checkTokenIntervalId = setInterval(() => {
+			checkToken();
+		}, checkInterval);
+		
+		window.mereos.checkTokenInterval = window.mereos.checkTokenIntervalId;
+	} else {
+		setTimeout(initializeWhenReady, 100);
+	}
 }
+
+initializeWhenReady();
 
 export { openModal, closeModal, showTab };

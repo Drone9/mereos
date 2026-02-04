@@ -15,6 +15,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let fileObj;
 	let failedAttempts = 0;
 	let webcamError = false;
+	let webcamLoading = true; // Track webcam loading state
 	let processingPDF = false;
 	let pdfLibLoaded = false;
 	let currentState = {
@@ -65,6 +66,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 
 	const handleWebcamError = () => {
 		webcamError = true;
+		webcamLoading = false;
 		currentState = {
 			...currentState,
 			captureMode: 'take',
@@ -125,6 +127,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		}
 	
 		webcamError = false;
+		webcamLoading = true; // Set loading state on restart
 		processingPDF = false;
 		currentState = {
 			...currentState,
@@ -482,6 +485,16 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				<img src="${cameraIcon}" class="ivso-broken-camera" alt="broken-camera" 
 					style="width: 250px; height: 250px; opacity: 0.5; margin: auto;">
 			`;
+		} else if (webcamLoading) {
+			headerImgHTML = `
+			<div class="camera-spinner">
+				<div class="new-spinner">
+					<div class='bounce1'></div>
+					<div class='bounce2'></div>
+					<div class='bounce3'></div>
+				</div>
+			</div>
+			`;
 		} else {
 			headerImgHTML = `
                 <video width="${videoConstraints.width}" height="${videoConstraints.height}" autoplay></video>
@@ -515,7 +528,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			buttonsHTML = `
                 ${secureFeatures.find(entity => entity.key === 'verify_candidate') ? 
 		`<button class="orange-hollow-btn" data-action="prev">${i18next.t('previous_step')}</button>` : ''}
-                <button class="orange-filled-btn" data-action="take-photo" ${disabledBtn || !!currentState.imageSrc || webcamError || processingPDF ? 'disabled' : ''}>
+                <button class="orange-filled-btn" data-action="take-photo" ${disabledBtn || !!currentState.imageSrc || webcamError || webcamLoading || processingPDF ? 'disabled' : ''}>
                     ${i18next.t('take_id_photo')}
                 </button>
             `;
@@ -559,31 +572,48 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			container.appendChild(inputFile);
 		}
 
-		if (!currentState.imageSrc && !webcamError) {
-			const videoElement = container.querySelector('video');
-			if (videoElement) {
-				try {
-					window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ 
-						video: videoConstraints, 
-						audio: false 
-					});
-					
-					if (window.mereos.globalStream !== null) {
-						videoElement.srcObject = window.mereos.globalStream;
-						photo = videoElement;
-						
-						// Add track ended listener
-						const tracks = window.mereos.globalStream.getTracks();
-						tracks.forEach(track => {
-							track.addEventListener('ended', () => {
-								handleWebcamError();
+		if (!currentState.imageSrc && !webcamError && webcamLoading) {
+			const hasActiveTracks = window.mereos.globalStream?.getTracks?.().some(track => track.readyState === 'live');
+			
+			if (!window.mereos.globalStream || !hasActiveTracks) {
+				setTimeout(async () => {
+					const videoElement = container.querySelector('video');
+					if (!videoElement) {
+						try {
+							window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ 
+								video: videoConstraints, 
+								audio: false 
 							});
-						});
+							
+							if (window.mereos.globalStream !== null) {
+								const testVideo = document.createElement('video');
+								testVideo.srcObject = window.mereos.globalStream;
+								
+								testVideo.onloadedmetadata = () => {
+									webcamLoading = false;
+									photo = testVideo;
+									renderUI();
+								};
+								
+								const tracks = window.mereos.globalStream.getTracks();
+								tracks.forEach(track => {
+									track.addEventListener('ended', () => {
+										handleWebcamError();
+									});
+								});
+							}
+						} catch (error) {
+							console.error('Webcam error:', error);
+							handleWebcamError();
+						}
 					}
-				} catch (error) {
-					console.error('Webcam error:', error);
-					handleWebcamError();
-				}
+				}, 100);
+			}
+		} else if (!currentState.imageSrc && !webcamError && !webcamLoading) {
+			const videoElement = container.querySelector('video');
+			if (videoElement && window.mereos.globalStream) {
+				videoElement.srcObject = window.mereos.globalStream;
+				photo = videoElement;
 			}
 		}
 

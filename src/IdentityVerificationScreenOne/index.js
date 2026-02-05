@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { dataURIToBlob, logger, registerEvent, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { dataURIToBlob, logger, registerEvent, sentryExceptioMessage, updatePersistData, userRekognitionInfo } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { uploadFileInS3Folder } from '../services/general.services.js';
 
@@ -87,6 +87,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			
 			renderUI();
 		} catch (err) {
+			sentryExceptioMessage(err,{type:'error',message:'Error accessing webcam'});
 			logger.error('Error accessing webcam:', err);
 			handleWebcamError();
 		}
@@ -241,6 +242,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				};
 				img.src = state.imageSrc;
 			} catch (error) {
+				sentryExceptioMessage(error,{type:'error',message:'Error processing the image'});
 				logger.error('Error processing the image:', error);
 				
 				// Reset processing flag on error
@@ -323,6 +325,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				},
 			};
 			registerEvent({ eventType: 'error', notify: false, eventName: 'internet_connection_unstable' });
+			sentryExceptioMessage(e,{type:'error',message:'Image Upload failed'});
 		} finally {
 			state.isUploading = false;
 			renderUI();

@@ -8,6 +8,7 @@ import {
 	getSecureFeatures, 
 	logger, 
 	registerEvent, 
+	sentryExceptioMessage, 
 	updatePersistData 
 } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
@@ -279,6 +280,7 @@ const retryAllFailedRequirements = async () => {
 			});
 			
 		} catch (error) {
+			sentryExceptioMessage(error,{type:'error',message:`Error retrying requirements`});
 			logger.error('Error retrying requirements:', error);
 		} finally {
 			refreshBtn.textContent = originalText;
@@ -342,6 +344,7 @@ const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 	} catch (error) {
 		logger.error(`Error retrying ${id} requirement:`, error);
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, false);
+		sentryExceptioMessage(error,{type:'error',message:`Error retrying ${id} requirement:`});
 		return false;
 	}
 };
@@ -472,7 +475,8 @@ export const SystemRequirement = async (tab1Content) => {
 		updateRefreshButtonVisibility();
 
 	} catch (error) {
-		logger.error('Error running diagnostics:', error);
+		sentryExceptioMessage(error,{type:'error',message:`Error running system requirement`});
+		logger.error('Error running system requirement:', error);
 	}
 };
 

@@ -8,6 +8,7 @@ import {
 	getSecureFeatures, 
 	logger, 
 	registerEvent, 
+	sentryExceptioMessage, 
 	shareScreenFromContent, 
 	showToast, 
 	updatePersistData
@@ -153,7 +154,12 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				type: err?.message === i18next.t('please_share_entire_screen') ? 'share-screen-again' : 'unsuccessful',
 				text: err?.message || 'screen_sharing_stopped'
 			};
+			sentryExceptioMessage(err,{
+				type: 'error', 
+				message: err?.message, 
+			});
 		}
+		
 		updateUI();
 	};
 
@@ -188,6 +194,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 							window.mereos.screenTrackPublished.track
 						);
 					} catch (unpublishError) {
+						sentryExceptioMessage(unpublishError);
 						console.error('Error unpublishing existing track:', unpublishError);
 					}
 				}
@@ -201,6 +208,10 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				} catch (publishError) {
 					console.error('Error publishing screen track:', publishError);
 					showToast('error', 'screen_share_publish_failed');
+					sentryExceptioMessage(publishError,{
+						type: 'error', 
+						message: 'Error publishing screen track', 
+					});
 					return;
 				}
 
@@ -215,6 +226,10 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		} catch (error) {
 			console.error('Error starting screen share:', error);
 			showToast('error', 'screen_share_publish_failed');
+			sentryExceptioMessage(error,{
+				type: 'error', 
+				message: 'Error starting screen share', 
+			});
 		}
 	};
 

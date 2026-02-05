@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger, findConfigs, getSecureFeatures } from '../utils/functions';
+import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger, findConfigs, getSecureFeatures, sentryExceptioMessage } from '../utils/functions';
 import { showTab } from '../ExamsPrechecks';
 import { checkMediaInputs } from '../utils/checkMedia';
 import { fetchIceServers } from '../services/twilio.services';
@@ -344,6 +344,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 					checkButton.style.display='none';
 					checkButton.textContent = i18next.t('check_camera_mic');
 				}
+				sentryExceptioMessage(error,{type:'error',message:messageElement});
 			}
 		};
 
@@ -545,6 +546,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 				if (checkButton) {
 					checkButton.disabled = true;
 				}
+				sentryExceptioMessage(error,{type:'error',message:error.name });
 				updateUI();
 			}
 		};
@@ -665,6 +667,7 @@ export const PrevalidationInstructions = async (tabContent) => {
             
 		i18next.on('languageChanged', handleLanguageChange);
 	} catch (error) {
+		sentryExceptioMessage(error,{type:'error',message:'Failed to initialize Language'});
 		logger.error('Failed to initialize; error: ' + error);
 	}
 };

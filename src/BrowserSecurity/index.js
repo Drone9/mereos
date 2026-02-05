@@ -5,6 +5,7 @@ import {
 	getSecureFeatures, 
 	logger, 
 	registerEvent, 
+	sentryExceptioMessage, 
 	updatePersistData 
 } from '../utils/functions';
 import { ASSET_URL, EXTENSIONS_LIST } from '../utils/constant';
@@ -211,6 +212,10 @@ const retryAllFailedSecurityChecks = async () => {
 			});
 			
 		} catch (error) {
+			sentryExceptioMessage(error,{
+				type: 'error', 
+				message: 'Error retrying security checks' , 
+			});
 			logger.error('Error retrying security checks:', error);
 		} finally {
 			refreshBtn.textContent = originalText;
@@ -253,6 +258,10 @@ const retrySecurityCheck = async (id, checkFunction) => {
 		
 		return result;
 	} catch (error) {
+		sentryExceptioMessage(error,{
+				type: 'error', 
+				message: `Error retrying ${id} security check:` , 
+		});
 		logger.error(`Error retrying ${id} security check:`, error);
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, false);
 		return false;
@@ -317,6 +326,10 @@ const detectExtension = async (extension) => {
 	} catch (error) {
 		clearTimeout(timeoutId); 
 		controller.abort(); 
+		sentryExceptioMessage(error,{
+				type: 'error', 
+				message: error.name  , 
+		});
 		return { 
 			...extension, 
 			detected: false,
@@ -415,6 +428,10 @@ const checkExtensions = async () => {
 		logger.error('Extension check failed:', error);
 		extensionError = 'extension_check_failed_please_try_again';
 		displayErrorMessage();
+		sentryExceptioMessage(error,{
+				type: 'error', 
+				message: 'Extension check failed please try again', 
+		});
 		registerEvent({ eventType: 'error', notify: false, eventName: 'extension_check_failed' });
 		return false;
 	}
@@ -446,6 +463,10 @@ const checkIncognitoMode = async () => {
 			return true;
 		}
 	} catch (error) {
+		sentryExceptioMessage(error,{
+				type: 'error', 
+				message: 'Incognito detection failed:', 
+		});
 		logger.error('Incognito detection failed:', error);
 		return true;
 	}
@@ -493,6 +514,10 @@ export const BrowserSecurity = async (tabContent) => {
 		}, 100);
     
 	} catch (error) {
+		sentryExceptioMessage(error,{
+				type: 'error', 
+				message: 'Error running browser security checks:', 
+		});
 		logger.error('Error running browser security checks:', error);
 	}
 };

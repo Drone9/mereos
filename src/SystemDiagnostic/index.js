@@ -8,6 +8,7 @@ import {
 	getSecureFeatures, 
 	logger, 
 	registerEvent, 
+	sentryExceptioMessage, 
 	updatePersistData 
 } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
@@ -205,6 +206,7 @@ const retryAllFailedDiagnostics = async () => {
 			});
 			
 		} catch (error) {
+			sentryExceptioMessage(error,{type:'error',message:'Error retrying diagnostics'});
 			logger.error('Error retrying diagnostics:', error);
 		} finally {
 			refreshBtn.innerHTML = `
@@ -267,6 +269,8 @@ const retryDiagnosticItem = async (id) => {
 		return result;
 	} catch (error) {
 		logger.error(`Error retrying ${id}:`, error);
+		sentryExceptioMessage(error,{type:'error',message:`Error retrying ${id}:`});
+
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, false);
 		return false;
 	}
@@ -368,6 +372,7 @@ const startLocationMonitoring = () => {
 			updateContinueButtonState();
 			updateRefreshButtonVisibility();
 		} catch (error) {
+			sentryExceptioMessage(error,{type:'error',message:`Error during location monitoring`});
 			logger.error('Error during location monitoring:', error);
 		}
 	}, 2000);
@@ -402,6 +407,7 @@ const startScreenMonitoring = () => {
 				updateRefreshButtonVisibility();
 			}
 		} catch (error) {
+			sentryExceptioMessage(error,{type:'error',message:`Error during screen monitoring`});
 			logger.error('Error during screen monitoring:', error);
 		}
 	}, 2000);
@@ -488,6 +494,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 		updateRefreshButtonVisibility();
     
 	} catch (error) {
+		sentryExceptioMessage(error,{type:'error',message:`Error running diagnostics`});
 		logger.error('Error running diagnostics:', error);
 	} finally {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());

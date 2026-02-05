@@ -401,6 +401,7 @@ body {
   margin-top: 12px;
   padding-left: 12px;
   padding-bottom: 5px;
+  font-style:var(--font-style);
 }
 
 .flag-icon-img{
@@ -411,6 +412,7 @@ body {
   font-weight: 400 !important;
   cursor: pointer;
   color: var(--text-color);
+  font-style:var(--font-style);
 }
 .close {
   color: #aaa;
@@ -436,6 +438,7 @@ body {
   cursor: pointer;
   padding: 10px;
   display: inline-block;
+  font-style:var(--font-style);
 }
 
 .tab.active {
@@ -487,6 +490,7 @@ body {
     font-weight: 600;
     font-size: 14px;
     color: var(--text-color);
+    font-style:var(--font-style);
 }
 
 .help-dropdown {
@@ -511,6 +515,7 @@ body {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-color);
+    font-style:var(--font-style);
 }
 .help-btn {
     .pvi-instruction-img{
@@ -549,6 +554,7 @@ body {
     font-weight: 500;
     color: var(--text-color);
     transition: all 0.2s;
+    font-style:var(--font-style);
 }
 .dropdown {
   position: relative;
@@ -577,11 +583,13 @@ body {
   max-width: 182px;
   justify-content: space-between;
   z-index: 99999;
+  font-style:var(--font-style);
 }
 .dropdown .select label{
   cursor: pointer;
   font-size: 14px;
   color: var(--text-color);
+  font-style:var(--font-style);
 }
 
 .dropdown .select div {
@@ -617,6 +625,7 @@ body.modal-active applet:not(.modal applet) {
 .dropdown .option {
   padding: 8px 12px;
   cursor: pointer;
+  font-style:var(--font-style);
 }
 
 .dropdown .option:hover {
@@ -879,6 +888,7 @@ export const systemDiagnosticCss =`.system-diagnostic-test-screen {
   margin-top: 31px;
   text-align: center;
   color: var(--text-color);
+  font-style:var(--font-style);
 }
 
 .system-diagnostic-test-screen .container-prompt {
@@ -944,6 +954,7 @@ font-style:var(--font-style);}
   height: 100px;
   display: flex;
   position: relative;
+  font-style:var(--font-style);
 }
 
 @media (max-width: 720px) {
@@ -1083,6 +1094,7 @@ font-style:var(--font-style);}
 .system-diagnostic-test-screen .grey-box-right  label{
   font-size: 16px;
   color: var(--text-color);
+  font-style:var(--font-style);
 }
 
 .system-diagnostic-test-screen .box-section {
@@ -1232,6 +1244,7 @@ export const browserSecurityCss =`.browswer-security-test-screen {
   margin-top: 23px;
   text-align: center;
   color: var(--text-color);
+  font-style:var(--font-style);
 }
 
 .browswer-security-test-screen .container-prompt {
@@ -1435,6 +1448,7 @@ export const browserSecurityCss =`.browswer-security-test-screen {
 .browswer-security-test-screen .grey-box-right  label{
   font-size: 16px;
   color: var(--text-color);
+  font-style:var(--font-style);
 }
 
 .browswer-security-test-screen .box-section {
@@ -1616,6 +1630,7 @@ export const preValidationCss = `.pvi-container {
 
 .multi-device-block label {
   font-size: 13px;
+  font-style:var(--font-style);
 }
 .camera-container{
 }
@@ -2308,6 +2323,7 @@ export const IdentityVerificationScreenThreeCss = `.ivst-container {
   font-size: 13px;
   line-height: 19px;
   color: #b7c5d1;
+  font-style:var(--font-style);
 }
 
 .ivst-container .volum-checker {
@@ -2591,6 +2607,7 @@ export const MobileProctoringCss = `.mobile-conection-container {
   font-size: 15px;
   margin-bottom: 0;
   margin-top: 0;
+    font-style:var(--font-style);
 }
 
 .mobile-connection-banner .banner-info-box .desc {
@@ -2614,11 +2631,13 @@ export const MobileProctoringCss = `.mobile-conection-container {
 
 .bottom-desc p {
   width: 884px;
+  font-style:var(--font-style);
 }
 
 .example-text {
   color: #8d979f;
   font-size: 15px;
+  font-style:var(--font-style);
 }
 
 .bottom-desc-remote {
@@ -2628,6 +2647,7 @@ export const MobileProctoringCss = `.mobile-conection-container {
   column-gap: 13px;
   justify-content: center;
   color: #8d979f;
+  font-style:var(--font-style);
 }
 
 .bottom-desc-remote input {
@@ -2637,6 +2657,7 @@ export const MobileProctoringCss = `.mobile-conection-container {
   margin: 0;
   font-size: 15px;
   cursor:pointer;
+  font-style:var(--font-style);
 }
 .qr-code-container {
   display: flex;
@@ -2691,6 +2712,7 @@ export const MobileProctoringCss = `.mobile-conection-container {
   height: 300px;
   border-radius: 5px;
   margin: 30px auto 0px;
+  font-style:var(--font-style);
 }
 
 @media (max-width: 720px) {
@@ -3060,12 +3082,13 @@ body{
 .user-videos-remote .user-video-header .recording-heading{
   font-size: 12px;
   margin-bottom: 9px;
-  width: 112px;
-  white-space: nowrap;
+  width: 96px;
+  white-space: break-spaces;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
-  color:var(--text-color);
+  color: var(--text-color);
+  font-style:var(--font-style);
 }
 
 .recording-badge-container-header {
@@ -3134,6 +3157,7 @@ body{
   font-size: 24px;
   font-weight: 600;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-style:var(--font-style);
 }
 
 .permission-modal-body {
@@ -3146,6 +3170,7 @@ body{
   font-size: 16px;
   line-height: 1.6;
   margin: 0 0 20px 0;
+  font-style:var(--font-style);
 }
 
 .permission-instructions p:first-of-type {
@@ -3186,6 +3211,7 @@ body{
   margin: 0 0 12px 0;
   color: #856404;
   font-size: 16px;
+  font-style:var(--font-style);
 }
 
 .browser-instructions ul {

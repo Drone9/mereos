@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { findConfigs, findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerEvent, updatePersistData } from '../utils/functions';
+import { findConfigs, findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerEvent, sentryExceptioMessage, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 
 import { uploadFileInS3Folder } from '../services/general.services.js';
@@ -82,6 +82,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			} else {
 				textMessage = 'camera_access_lost';
 			}
+			sentryExceptioMessage(error,{
+				type: 'error', 
+				message: textMessage, 
+			});
 			return false;
 		}
 	};
@@ -133,6 +137,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			logger.error('Error accessing media devices:', error);
 			textMessage = 'camera_access_lost';
 			cameraAvailable = false;
+			sentryExceptioMessage(error,{
+				type: 'error', 
+				message: textMessage, 
+			});
 			updateUI();
 		}
 	};
@@ -183,6 +191,10 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 
 			showTab('MobileProctoring');
 		} catch (error) {
+			sentryExceptioMessage(error,{
+				type: 'error', 
+				message: 'Error navigating to next step:', 
+			});
 			logger.error('Error navigating to next step:', error);
 		}
 	};
@@ -230,6 +242,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			loading = false;
 			textMessage = 'something_went_wrong_please_upload_again';
 			recordingMode = 'stopRecording';
+			sentryExceptioMessage(error);
 			updateUI();
 		}
 	};
@@ -381,6 +394,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 							webcamLoading = false;
 							cameraAvailable = false;
 							textMessage = 'camera_access_lost';
+							sentryExceptioMessage(error,{type:'error',message:textMessage});
 							updateUI();
 						}
 					}, 100);
@@ -393,6 +407,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 					webcamLoading = false;
 					cameraAvailable = false;
 					textMessage = 'camera_access_lost';
+					sentryExceptioMessage(error,{type:'error',message:textMessage});
 					updateUI();
 					return;
 				}

@@ -13,12 +13,16 @@ import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, logger, registerEvent, updatePersistData } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, logger, registerEvent, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import 'notyf/notyf.min.css';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 import i18next from 'i18next';
+import { initSentry } from './src/utils/sentry';
+import * as Sentry from '@sentry/browser';
+
+initSentry('production');
 
 async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
@@ -50,6 +54,11 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 		try {
 			logonResp = await logonSchool(credentials);
 		} catch (error) {
+			sentryExceptioMessage(error,{
+				type: 'error',
+				message: 'Error in logon school',
+				code: 40020,
+			});
 			return callback({
 				type: 'error',
 				message: 'error_in_logon_school',
@@ -69,6 +78,11 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			try {
 				resp = await createCandidate(candidateData);
 			} catch (error) {
+				sentryExceptioMessage(error,{
+					type: 'error',
+					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
+					code: 40021,
+				});
 				const message = handleBackendError(i18next.t,error?.response?.data?.message);
 				localStorage.removeItem('mereosToken');
 				return callback({
@@ -106,6 +120,12 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			} catch (error) {
 				const message = handleBackendError(i18next.t,error?.response?.data?.message);
 				localStorage.removeItem('mereosToken');
+				sentryExceptioMessage(error,{
+					type: 'error',
+					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
+					code: 40021,
+					details: error,
+				});
 				return callback({
 					type: 'error',
 					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
@@ -128,6 +148,12 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 				} catch (error) {
 					const message = handleBackendError(i18next.t,error?.response?.data?.message);
 					localStorage.removeItem('mereosToken');
+					sentryExceptioMessage(error,{
+						type: 'error',
+						message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
+						code: 40021,
+						details: error,
+					});
 					return callback({
 						type: 'error',
 						message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
@@ -135,6 +161,9 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 						details: error,
 					});
 				}
+
+				logger.success('resp?.data?.id',resp?.data);
+				Sentry.setUser({ id: resp?.data?.id, email: resp?.data?.email,name: resp?.data?.name });
 
 				updatePersistData('session', {
 					candidate_assessment: candidateAssessmentResp?.data?.id,
@@ -153,6 +182,12 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			});
 		}
 	} catch (error) {
+		sentryExceptioMessage(error,{
+			type: 'error',
+			message: 'Error in init function',
+			code: 40022,
+			details: error,
+		});
 		return callback({
 			type: 'error',
 			message: 'error_in_init_function',
@@ -184,6 +219,12 @@ async function start_prechecks(callback,setting) {
 		}
 	} catch (error) {
 		logger.error('Error in start_prechecks:', error);
+		sentryExceptioMessage(error,{
+			type: 'error',
+			message: 'Error in prechecks setup',
+			code:40000,
+			details: error,
+		});
 		callback({
 			type: 'error',
 			message: 'error_in_prechecks_setup',
@@ -251,6 +292,12 @@ async function stop_prechecks(callback) {
 			code: 50002
 		});
 	} catch (error) {
+		sentryExceptioMessage(error,{
+			type: 'error',
+			message: 'Error in stop prechecks',
+			details: error,
+			code: 40001
+		});
 		callback({
 			type: 'error',
 			message: 'error_in_stop_prechecks',
@@ -332,6 +379,12 @@ async function start_session(callback) {
 							);
 						}
 					} catch (err) {
+						sentryExceptioMessage(err,{
+							type: 'error',
+							message: 'Error in mobile proctoring setup',
+							details: err,
+							code:40002
+						});
 						if(window.mereos.startRecordingCallBack){
 							window.mereos.startRecordingCallBack({
 								type: 'error',
@@ -357,6 +410,12 @@ async function start_session(callback) {
 							});
 						}
 					} catch (err) {
+						sentryExceptioMessage(err,{
+							type: 'error',
+							message: 'Error in web room creation',
+							details: err,
+							code:40003
+						});
 						window.mereos.startRecordingCallBack({
 							type: 'error',
 							message: 'error_in_web_room_creation',
@@ -379,6 +438,12 @@ async function start_session(callback) {
 	} catch (err) {
 		logger.error('there_was_an_error_in_starting_the_session',err);
 		registerEvent({ eventType: 'success', notify: false, eventName: 'error_starting_session',eventValue:err });
+		sentryExceptioMessage(err,{
+			type: 'error',
+			message: 'Error in starting the session',
+			details: err,
+			code:40004
+		});
 		callback({
 			type: 'error',
 			message: 'error_in_starting_the_session',
@@ -429,6 +494,11 @@ async function stop_session(callback) {
 		}
 	} catch (err) {
 		logger.error(err);
+		sentryExceptioMessage(err,{
+			type: 'error', 
+			message: 'Error in stopping the session' , 
+			code:40016 
+		});
 		callback({
 			type: 'error', 
 			message: 'error_in_stopping_the_session' , 

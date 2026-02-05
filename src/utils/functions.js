@@ -19,6 +19,13 @@ import { notifyTokenExpired } from './axios';
 import { stop_prechecks } from '../..';
 import pkg from '../../package.json';
 import { detectWindowResize } from './fullscreen';
+import * as Sentry from '@sentry/browser';
+
+export const sentryExceptioMessage = (error, extra = {}) => {
+	Sentry.captureException(error, {
+		extra: extra
+	});					
+};
 
 export const dataURIToBlob = (dataURI) => {
 	
@@ -94,6 +101,7 @@ export const forceClosure = async () => {
 
 				resetSessionData();
 			} catch (apiError) {
+				sentryExceptioMessage(apiError,{type:'error',message:`API error during force closure`});
 				logger.error('API error during force closure:', apiError);
 				resetSessionData();
 			}
@@ -109,6 +117,7 @@ export const forceClosure = async () => {
 			}
 		}
 	} catch (error) {
+		sentryExceptioMessage(error,{type:'error',message:`Error in forceClosure`});
 		logger.error('Error in forceClosure:', error);
 		resetSessionData();
 	}
@@ -153,6 +162,8 @@ export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) =>
 	const settingLevel = profile?.settings?.proctoring_behavior?.name;
 	const aiIncidentlevel = findAIIncidentLevel(aiEvents, settingLevel);
 	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, settingLevel);
+	console.log('aiIncidentlevel',aiIncidentlevel);
+	console.log('browserIncidentlevel',browserIncidentlevel);
 
 	if (aiIncidentlevel === 'high' || browserIncidentlevel === 'high') {
 		return 'high';
@@ -221,7 +232,7 @@ export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {
 	}
 
 	console.log('Total AI Points:', totalPoints);
-
+	
 	if (totalPoints >= 50) {
 		return 'high';
 	} else if (totalPoints >= 24) {
@@ -310,10 +321,6 @@ export const checkForceClosureViolation = async () =>{
 	const { browserEvents, aiEvents, incident_level } = session;
 	const secureFeatures = getSecureFeatures();
 
-	const forceClosureIncidentResp = forceClosureIncident(
-		browserEvents,
-		secureFeatures
-	);
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 	let incidentLevel = findIncidentLevel(
 		aiEvents,
@@ -325,7 +332,6 @@ export const checkForceClosureViolation = async () =>{
 		await addSectionSessionRecord(session,candidateInviteAssessmentSection);
 		updatePersistData('session', { incident_level: incidentLevel });
 	}
-	logger.success('before the if',forceClosureIncidentResp);
 	if (
 		incidentLevel === 'high' &&
 		findConfigs(['force_closure'], secureFeatures?.entities || []).length > 0
@@ -480,12 +486,14 @@ export const registerEvent = async ({ eventName, eventValue = null, duration }) 
 			try {
 				await createEvent(event);
 			} catch (err) {
+				sentryExceptioMessage(err,{type:'error',message:`API failed, storing event for retry`});
 				logger.error('API failed, storing event for retry', err);
 				const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
 				localStorage.setItem('failedEvents', JSON.stringify([...failedEvents, event]));
 			}
 		}
 	} catch (error) {
+		sentryExceptioMessage(error,{type:'error',message:`Error in registerEvent`});
 		logger.error('Error in registerEvent', error);
 	}
 };
@@ -627,6 +635,7 @@ export const cleanupZendeskWidget = () => {
 			delete window.zE;
 			delete window.zESettings;
 		} catch (e) {
+			sentryExceptioMessage(e,{type:'error',message:`Error resetting the Zendesk widget`});
 			logger.error('Error resetting the Zendesk widget:', e);
 		}
 	}
@@ -863,6 +872,7 @@ export const addSectionSessionRecord = async (session) => {
 						throw new Error('Invalid response from recordings API');
 					}
 				} catch (recordingError) {
+					sentryExceptioMessage(recordingError,{type:'error',message:`Failed to fetch recording SIDs`});
 					logger.error('Failed to fetch recording SIDs:', recordingError);
 					recordings = { data: [] };
 					
@@ -941,6 +951,7 @@ export const addSectionSessionRecord = async (session) => {
 			resolve(resp);
 			
 		} catch(err) {
+			sentryExceptioMessage(err,{type:'error',message:`Error in addSectionSessionRecord`});
 			logger.error('Error in addSectionSessionRecord:', err);
 			
 			if (err.response?.status === 403) {
@@ -1012,11 +1023,13 @@ export const registerAIEvent = async ({ eventName, startTime, endTime }) => {
 		}
 
 		let incidentLevel = findIncidentLevel(updatedEvents, browserEvents, secureFeatures);
+		console.log('incidentLevel',incidentLevel);
 		if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {
 			await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 			updatePersistData('session', { incident_level: incidentLevel });
 		}
 	} catch (e) {
+		sentryExceptioMessage(e,{type:'error',message:`Error in registerAIEvent`});
 		logger.error('Error in registerAIEvent', e);
 	}
 };
@@ -1130,19 +1143,69 @@ export const lockBrowserFromContent = (entities) => {
 };
 
 export const disableTextHighlighting = () => {
-	document.body.style.cssText += `
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+	const style = document.createElement('style');
+	style.textContent = `
+    body * {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    /* Re-enable for editable elements */
+    input, 
+    textarea, 
+    [contenteditable="true"],
+    .lrn_texteditor_editable {
+      -webkit-user-select: text !important;
+      -moz-user-select: text !important;
+      -ms-user-select: text !important;
+      user-select: text !important;
+    }
   `;
-  
-	document.addEventListener('selectstart', e => e.preventDefault());
-	document.addEventListener('dragstart', e => e.preventDefault());
-  
+	document.head.appendChild(style);
+
+	// Helper function to check if element or parent is editable
+	const isEditableElement = (target) => {
+		// If target is a text node, get its parent element
+		const element = target.nodeType === 3 ? target.parentElement : target;
+    
+		if (!element) return false;
+    
+		// Check if element itself is editable
+		if (element.isContentEditable || 
+        element.tagName === 'INPUT' || 
+        element.tagName === 'TEXTAREA') {
+			return true;
+		}
+    
+		// Check if parent has contenteditable or specific class
+		if (element.closest && 
+        (element.closest('[contenteditable="true"]') || 
+         element.closest('.lrn_texteditor_editable'))) {
+			return true;
+		}
+    
+		return false;
+	};
+
+	// Allow selection in editable elements
+	document.addEventListener('selectstart', (e) => {
+		if (isEditableElement(e.target)) {
+			return; // Allow selection
+		}
+		e.preventDefault(); // Block selection for non-editable elements
+	});
+
+	document.addEventListener('dragstart', (e) => {
+		if (isEditableElement(e.target)) {
+			return;
+		}
+		e.preventDefault();
+	});
+
+	// Disable F12, Ctrl+U, etc.
 	document.addEventListener('keydown', (e) => {
-		if (e.key === 'F12' || 
-        (e.ctrlKey && (e.key === 'u' || e.key === 'U'))) {
+		if (e.key === 'F12' || (e.ctrlKey && (e.key === 'u' || e.key === 'U'))) {
 			e.preventDefault();
 		}
 	});
@@ -1289,7 +1352,6 @@ export const detectUnfocusOfTab = () => {
 					duration: durationSec, 
 					sentryError: false,
 				});
-				logger.success('in the endAway');
 				checkForceClosureViolation();
 			};
 
@@ -1315,6 +1377,7 @@ export const detectUnfocusOfTab = () => {
 
 			resolve(true);
 		} catch (err) {
+			sentryExceptioMessage(err);
 			console.error('Error in detectUnfocusOfTab:', err);
 			resolve(false);
 		}
@@ -1846,6 +1909,7 @@ export const getNetworkUploadSpeed = async () => {
 		}
         
 	} catch (err) {
+		sentryExceptioMessage(err);
 		console.error(err);
 		return false;
 	}

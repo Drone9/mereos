@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import { closeModal, showTab } from '../ExamsPrechecks';
 import { initSocket } from '../utils/socket';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { convertDataIntoParse, getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, showToast, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, sentryExceptioMessage, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { connectSocketConnection } from '../StartRecording/index.js';
 
@@ -173,6 +173,7 @@ export const MobileProctoring = async (tabContent) => {
 				});
 			});
 		} catch (error) {
+			sentryExceptioMessage(error,{type:'error',message:'Failed to create Peer instance'});
 			logger.error('Failed to create Peer instance:', error);
 		}
 	};
@@ -260,7 +261,7 @@ export const MobileProctoring = async (tabContent) => {
 						}
 						window.mereos.recordingStart = false;
 						logger.error('error',error);
-						
+						sentryExceptioMessage(error,{type:'error',message:'Error on start mobile recording'});
 					} finally {
 						isApiLoading = false;
 						disabledNextBtn = false;
@@ -269,6 +270,7 @@ export const MobileProctoring = async (tabContent) => {
 				}
 			}
 		}catch(error){
+			sentryExceptioMessage(error);
 			logger.error('error',error);
 			isApiLoading = false;
 			disabledNextBtn = false;

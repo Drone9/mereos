@@ -5,6 +5,7 @@ import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
 import { 
 	addSectionSessionRecord, 
+	checkForceClosureViolation, 
 	cleanupZendeskWidget, 
 	convertDataIntoParse, 
 	detectBackButton, 
@@ -69,6 +70,7 @@ export const initMobileConnection = () => {
 	}).catch((error) => {
 		logger.error('Mobile reconnection failed:', error);
 		registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_failed',eventValue:error });
+		sentryExceptioMessage(error,{type:'error',message:'Mobile connection failed'});
 		if(window.mereos.startRecordingCallBack){
 			window.mereos.startRecordingCallBack({ 
 				type:'error',
@@ -376,6 +378,7 @@ const setupTrackStoppedListeners = (track) => {
 			}else if (probeError.name === 'NotReadableError'){
       	handleDeviceLost(kind, true,track);
 			}
+			sentryExceptioMessage(probeError,{type:'error',message:probeError.name});
     } finally {
       detachDeviceChangeWatcher(track);
     }
@@ -538,6 +541,7 @@ const reconnectCamera = async () => {
 					code: 40019
 				});
 			}
+			sentryExceptioMessage(error,{type:'error',message:'Camera permission denied'});
 		} else {
 			if (window.mereos.startRecordingCallBack) {
 				updatePersistData('session', {
@@ -670,6 +674,7 @@ export const startRecording = async () => {
 			window.mereos.roomInstance = room;
 			}catch(error){
 				registerEvent({ eventType: 'success', notify: false, eventName: 'room_is_not_creating',eventValue:error });
+				sentryExceptioMessage(error,{type:'error',message:'Twilio room is not creating'});
 			}
 			
 			updatePersistData('session', { 
@@ -897,6 +902,7 @@ export const startRecording = async () => {
 				sessionStatus:'Terminated'
 			});
 			registerEvent({ eventType: 'success', notify: false, eventName: 'camera_or_microphone_permission_is_denied',eventValue:error });
+			sentryExceptioMessage(error,{type:'error',message:'Camera or microphone permission is denied'});
 			window.mereos.recordingStart = false;
 			if(window.mereos.startRecordingCallBack){
 				window.mereos.startRecordingCallBack({ 
@@ -980,7 +986,7 @@ const setupWebcam = async (mediaStream) => {
 			remoteVideoRef.id = 'remote-video';
 			
 			// Initialize dimensions
-			let currentWidth = 180;
+			let currentWidth = 200;
 			const MIN_WIDTH = 180;
 			const MAX_WIDTH = 600;
 			
@@ -1350,20 +1356,23 @@ const startAIWebcam = async (room, mediaStream) => {
 								startTime: violation.start_time, 
 								endTime: violation.start_time + violation.time_span
 							};
-				
+							
 							registerAIEvent(data);
+							checkForceClosureViolation();
 						}
             
 						activeViolations[key] = null;
 					}
 				});
 			} catch (error) {
+				sentryExceptioMessage(error,{type:'error',message:'Error in AI processing'});
 				logger.error('Error in AI processing:', error);
 			}
 		}, 1000);
 
 		return { success: true, message: 'AI webcam started successfully' };
 	} catch (error) {
+		sentryExceptioMessage(error,{type:'error',message:'Failed to start AI webcam'});
 		logger.error('Failed to start AI webcam:', error);
     
 		if (window.mereos.aiProcessingInterval) {
@@ -1413,7 +1422,7 @@ export function VideoChat(room) {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
     
-	let currentWidth = 180;
+	let currentWidth = 200;
 	const MIN_WIDTH = 180;
 	const MAX_WIDTH = 600;
 	const aspectRatio = 142 / 180;
@@ -1603,6 +1612,7 @@ export function VideoChat(room) {
 					container.appendChild(attachedElement);
 				}
 			} catch (error) {
+				sentryExceptioMessage(error,{type:'error',message:'Error attaching video track'});
 				logger.error('Error attaching video track:', error);
 			}
 		} else {
@@ -1700,6 +1710,7 @@ export function VideoChat(room) {
 				});
 			});
 		} catch (error) {
+			sentryExceptioMessage(error,{type:'error',message:'Error connecting to Twilio room'});
 			logger.error('Error connecting to Twilio room:', error);
 		}
 	}
@@ -1851,6 +1862,7 @@ export const stopAllRecordings = async () => {
 		
 		return 'stop_recording';
 	} catch (e) {
+		sentryExceptioMessage(e,{type:'error',message:'Error in stop recording'});
 		logger.error('Error in stop recording:', e);
 	}
 };

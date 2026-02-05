@@ -1,4 +1,4 @@
-import { logger } from './functions';
+import { logger, sentryExceptioMessage } from './functions';
 
 const { SOCKET_URL } = require('./constant');
 const { v4 } = require('uuid');
@@ -23,6 +23,7 @@ const getGroupId = () => {
 		localStorage.setItem('socketGroupId', JSON.stringify({ groupName: newId }));
 		return newId;
 	} catch (error) {
+		sentryExceptioMessage(error,{type:'error',message:`Error accessing localStorage or invalid UUID`});
 		logger.warn('Error accessing localStorage or invalid UUID:', error);
 		return generatePeerId();
 	}

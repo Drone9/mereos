@@ -303,30 +303,30 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
 
 		let buttonsHTML = '';
-		
-		if (showPrevButton && mode === 'startScreenRecording') {
+	
+		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance) {
 			buttonsHTML += `<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>`;
 		}
-		
+	
 		if (mode === 'startScreenRecording') {
 			buttonsHTML += `<button class="orange-filled-btn" ${multipleScreens ? 'disabled' : ''}>${i18next.t('done')}</button>`;
 		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again') {
 			buttonsHTML += `<button class="orange-filled-btn">${i18next.t('reshare_screen')}</button>`;
 		}
-		
+	
 		btnContainer.insertAdjacentHTML('beforeend', buttonsHTML);
-		
-		if (showPrevButton && mode === 'startScreenRecording') {
+	
+		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance) {
 			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
 		}
-		
+	
 		if (mode === 'startScreenRecording') {
 			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', nextStep);
 		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again') {
 			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', shareScreen);
 		}
 	};
-
+	
 	const createInitialUI = () => {
 		tabContent.innerHTML = '';
 		

@@ -174,72 +174,112 @@ export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) =>
 	}
 };
 
-export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {	
-	let totalPoints = 0;
-	
-	for (const item of aiEvents) {
-		const duration = item.end_at - item.start_at;
-		let points = 0;
+export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {
+    let totalPoints = 0;
+    
+    for (const item of aiEvents) {
+        const duration = item.end_at - item.start_at;
+        let points = 0;
 
-		let adjustedDuration = duration;
-		if (settingLevel === 'moderate') {
-			adjustedDuration = duration / 2;
-		} else if (settingLevel === 'strict') {
-			if (duration > 0) {
-				points = 50;
-				totalPoints += points;
-				continue; 
-			}
-		}
+        // STRICT setting
+        if (settingLevel === 'strict') {
+            if (duration > 0) {
+                points = 50; // Any duration > 0 gives 50 points
+            }
+            totalPoints += points;
+            continue;
+        }
 
-		switch (item.name) {
-			case 'person_missing':
-				if (adjustedDuration >= 16) {
-					points = 50;
-				} else if (adjustedDuration >= 7) {
-					points = 25;
-				} else if (adjustedDuration >= 4) {
-					points = 3;
-				} else if (adjustedDuration >= 0) {
-					points = 1;
-				}
-				break;
+        // MODERATE setting
+        if (settingLevel === 'moderate') {
+            switch (item.name) {
+                case 'person_missing':
+                    if (duration >= 8) {
+                        points = 50;
+                    } else if (duration >= 3.5) {
+                        points = 25;
+                    } else if (duration >= 2) {
+                        points = 3;
+                    } else if (duration > 0) {
+                        points = 1;
+                    }
+                    break;
 
-			case 'multiple_people':
-				if (adjustedDuration >= 16) {
-					points = 50;
-				} else if (adjustedDuration >= 7) {
-					points = 25;
-				} else if (adjustedDuration >= 4) {
-					points = 5;
-				} else if (adjustedDuration >= 0) {
-					points = 1;
-				}
-				break;
+                case 'multiple_people':
+                    if (duration >= 8) {
+                        points = 50;
+                    } else if (duration >= 3.5) {
+                        points = 25;
+                    } else if (duration >= 2) {
+                        points = 5;
+                    } else if (duration > 0) {
+                        points = 1;
+                    }
+                    break;
 
-			case 'object_detection':
-				if (adjustedDuration >= 11) {
-					points = 50;
-				} else if (adjustedDuration >= 4) {
-					points = 15;
-				} else if (adjustedDuration >= 0) {
-					points = 3;
-				}
-				break;
-		}
+                case 'object_detection':
+                    if (duration >= 5.5) {
+                        points = 50;
+                    } else if (duration >= 2) {
+                        points = 15;
+                    } else if (duration > 0) {
+                        points = 3;
+                    }
+                    break;
+            }
+        }
+        
+        // LENIENT setting (default)
+        else {
+            switch (item.name) {
+                case 'person_missing':
+                    if (duration >= 16) {
+                        points = 50;
+                    } else if (duration >= 7) {
+                        points = 25;
+                    } else if (duration >= 4) {
+                        points = 3;
+                    } else if (duration > 0) {
+                        points = 1;
+                    }
+                    break;
 
-		totalPoints += points;
-	}
+                case 'multiple_people':
+                    if (duration >= 16) {
+                        points = 50;
+                    } else if (duration >= 7) {
+                        points = 25;
+                    } else if (duration >= 4) {
+                        points = 5;
+                    } else if (duration > 0) {
+                        points = 1;
+                    }
+                    break;
 
-	console.log('Total AI Points:', totalPoints);
-	
-	if (totalPoints >= 50) {
-		return 'high';
-	} else if (totalPoints >= 24) {
-		return 'medium';
-	} else {
-		return 'low';
-	}
+                case 'object_detection':
+                    if (duration >= 11) {
+                        points = 50;
+                    } else if (duration >= 4) {
+                        points = 15;
+                    } else if (duration > 0) {
+                        points = 3;
+                    }
+                    break;
+            }
+        }
+
+        totalPoints += points;
+    }
+
+    console.log('Total AI Points:', totalPoints);
+    
+    if (totalPoints >= 50) {
+        return 'high';
+    } else if (totalPoints >= 24) {
+        return 'medium';
+    } else {
+        return 'low';
+    }
 };
 
 export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {

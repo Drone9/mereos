@@ -3133,8 +3133,7 @@ body{
   background: white;
   border-radius: 12px;
   padding: 0;
-  max-width: 500px;
-  overflow:auto;
+  max-width: 550px;
   width: 90%;
   max-height: 90vh;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -3145,16 +3144,17 @@ body{
 .permission-modal-header {
   background: var(--theme-color);
   color: white;
-  padding: 24px;
+  padding: 15px;
   text-align: center;
   position: relative;
+  border-radius: 10px 10px 0px 0px;
 }
 
 .permission-modal-header::before {
   content: '📹';
-  font-size: 48px;
+  font-size: 37px;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   animation: pulse 2s infinite;
 }
 
@@ -3167,8 +3167,9 @@ body{
 }
 
 .permission-modal-body {
-  padding: 32px 24px;
+  padding: 20px 15px;
   background-color:var(--theme-mode);
+  border-radius: 0px 0px 10px 10px;
 }
 
 .permission-instructions p {
@@ -3187,8 +3188,8 @@ body{
 .permission-instructions ol {
   background: #f8f9fa;
   border-radius: 8px;
-  padding: 20px 20px 20px 40px;
-  margin: 24px 0;
+  padding: 15px 15px 15px 30px;
+  margin: 15px 0;
   border-left: 4px solid #ff6b6b;
 }
 

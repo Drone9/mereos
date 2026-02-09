@@ -4,6 +4,7 @@ import { showTab } from '../ExamsPrechecks';
 import { checkMediaInputs } from '../utils/checkMedia';
 import { fetchIceServers } from '../services/twilio.services';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import { ASSET_URL } from '../utils/constant';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
@@ -38,6 +39,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		logger.success('currentCaptureMode',currentCaptureMode);
 
+		// Icon data placeholder - you can add your SVG icons here
 		const iconData = [
 			{
 				svg: `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -368,11 +370,16 @@ export const PrevalidationInstructions = async (tabContent) => {
                 `;
 			}).join('');
 
+			// Show either video container OR placeholder image based on shouldShowVideo
 			const videoContainerHTML = shouldShowVideo ? `
                 <div id="videoMainContainer" class="pvi-header-img">
                     <div id="videoContainer"></div>
                 </div>
-            ` : '';
+            ` : `
+                <div id="placeholderContainer" class="pvi-header-img">
+                    <img src="${ASSET_URL}/prevalidation-image.png" alt="System Diagnostics" class="prevalidation-placeholder">
+                </div>
+            `;
 
 			const cameraDropdownHTML = shouldShowVideo ? `
                 <div class="camera-container" style=${!isAudioEnabled ? 'width:100%':'width:43%'}>
@@ -471,19 +478,22 @@ export const PrevalidationInstructions = async (tabContent) => {
            
 		const startWebcam = async () => {
 			try {
-				const videoContainer = window.mereos.shadowRoot.getElementById('videoContainer');
+				// Only handle video cleanup if video should be shown
+				if (shouldShowVideo) {
+					const videoContainer = window.mereos.shadowRoot.getElementById('videoContainer');
             
-				if (window.mereos.globalStream) {
-					const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
-					window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
-					window.mereos.globalStream = null;
-					if(videoElement){
-						videoElement.srcObject = null;
+					if (window.mereos.globalStream) {
+						const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
+						window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
+						window.mereos.globalStream = null;
+						if(videoElement){
+							videoElement.srcObject = null;
+						}
 					}
-				}
 
-				if (videoContainer) {
-					videoContainer.innerHTML = '';
+					if (videoContainer) {
+						videoContainer.innerHTML = '';
+					}
 				}
 
 				const mediaConstraints = {};
@@ -496,36 +506,43 @@ export const PrevalidationInstructions = async (tabContent) => {
 					mediaConstraints.audio = audioConstraints;
 				}
 
+				// Only get media stream if either video or audio is enabled
 				if (shouldShowVideo || isAudioEnabled) {
 					window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-					const tracks = window.mereos.globalStream.getTracks();
-		
-					tracks.forEach(track => {
-						track.addEventListener('ended', () => {
-							logger.warn(`${track.kind} track ended - permission may have been revoked`);
-							permissionDenied = true;
-							const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
-							if (checkButton) {
-								checkButton.disabled = true;
-							}
-							const messageElement = window.mereos.shadowRoot.getElementById('message');
-							if(messageElement){
-								messageElement.textContent = i18next.t('enable_camera_permissions');
-							}
-							updateUI();	
-						});
-					});
 					
+					if (shouldShowVideo || isAudioEnabled) {
+						const tracks = window.mereos.globalStream.getTracks();
+			
+						tracks.forEach(track => {
+							track.addEventListener('ended', () => {
+								logger.warn(`${track.kind} track ended - permission may have been revoked`);
+								permissionDenied = true;
+								const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
+								if (checkButton) {
+									checkButton.disabled = true;
+								}
+								const messageElement = window.mereos.shadowRoot.getElementById('message');
+								if(messageElement){
+									messageElement.textContent = i18next.t('enable_camera_permissions');
+								}
+								updateUI();	
+							});
+						});
+					}
 				}
 
-				if (shouldShowVideo && videoContainer) {
-					videoContainer.insertAdjacentHTML('beforeend', `
-                        <video id="myVideo" class="my-recorded-video" autoplay muted playsinline></video>
-                    `);
-                                                
-					const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
-					if (window.mereos.globalStream) {
-						videoElement.srcObject = window.mereos.globalStream;
+				// Only setup video element if video should be shown
+				if (shouldShowVideo) {
+					const videoContainer = window.mereos.shadowRoot.getElementById('videoContainer');
+					if (videoContainer) {
+						videoContainer.insertAdjacentHTML('beforeend', `
+							<video id="myVideo" class="my-recorded-video" autoplay muted playsinline></video>
+						`);
+												
+						const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
+						if (window.mereos.globalStream) {
+							videoElement.srcObject = window.mereos.globalStream;
+						}
 					}
 				}
                 
@@ -614,6 +631,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 				}
 			}
 
+			// Only handle video-related logic if video should be shown
 			if (shouldShowVideo) {
 				if (!streamExists || !streamActive) {
 					if (window.mereos.globalStream) {

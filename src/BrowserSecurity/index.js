@@ -259,8 +259,8 @@ const retrySecurityCheck = async (id, checkFunction) => {
 		return result;
 	} catch (error) {
 		sentryExceptioMessage(error,{
-				type: 'error', 
-				message: `Error retrying ${id} security check:` , 
+			type: 'error', 
+			message: `Error retrying ${id} security check:` , 
 		});
 		logger.error(`Error retrying ${id} security check:`, error);
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, false);
@@ -327,8 +327,8 @@ const detectExtension = async (extension) => {
 		clearTimeout(timeoutId); 
 		controller.abort(); 
 		sentryExceptioMessage(error,{
-				type: 'error', 
-				message: error.name  , 
+			type: 'error', 
+			message: error.name  , 
 		});
 		return { 
 			...extension, 
@@ -429,8 +429,8 @@ const checkExtensions = async () => {
 		extensionError = 'extension_check_failed_please_try_again';
 		displayErrorMessage();
 		sentryExceptioMessage(error,{
-				type: 'error', 
-				message: 'Extension check failed please try again', 
+			type: 'error', 
+			message: 'Extension check failed please try again', 
 		});
 		registerEvent({ eventType: 'error', notify: false, eventName: 'extension_check_failed' });
 		return false;
@@ -464,8 +464,8 @@ const checkIncognitoMode = async () => {
 		}
 	} catch (error) {
 		sentryExceptioMessage(error,{
-				type: 'error', 
-				message: 'Incognito detection failed:', 
+			type: 'error', 
+			message: 'Incognito detection failed:', 
 		});
 		logger.error('Incognito detection failed:', error);
 		return true;
@@ -515,8 +515,8 @@ export const BrowserSecurity = async (tabContent) => {
     
 	} catch (error) {
 		sentryExceptioMessage(error,{
-				type: 'error', 
-				message: 'Error running browser security checks:', 
+			type: 'error', 
+			message: 'Error running browser security checks:', 
 		});
 		logger.error('Error running browser security checks:', error);
 	}

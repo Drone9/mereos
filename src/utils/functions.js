@@ -175,111 +175,111 @@ export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) =>
 };
 
 export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {
-    let totalPoints = 0;
+	let totalPoints = 0;
     
-    for (const item of aiEvents) {
-        const duration = item.end_at - item.start_at;
-        let points = 0;
+	for (const item of aiEvents) {
+		const duration = item.end_at - item.start_at;
+		let points = 0;
 
-        // STRICT setting
-        if (settingLevel === 'strict') {
-            if (duration > 0) {
-                points = 50; // Any duration > 0 gives 50 points
-            }
-            totalPoints += points;
-            continue;
-        }
+		// STRICT setting
+		if (settingLevel === 'strict') {
+			if (duration > 0) {
+				points = 50; // Any duration > 0 gives 50 points
+			}
+			totalPoints += points;
+			continue;
+		}
 
-        // MODERATE setting
-        if (settingLevel === 'moderate') {
-            switch (item.name) {
-                case 'person_missing':
-                    if (duration >= 8) {
-                        points = 50;
-                    } else if (duration >= 3.5) {
-                        points = 25;
-                    } else if (duration >= 2) {
-                        points = 3;
-                    } else if (duration > 0) {
-                        points = 1;
-                    }
-                    break;
+		// MODERATE setting
+		if (settingLevel === 'moderate') {
+			switch (item.name) {
+				case 'person_missing':
+					if (duration >= 8) {
+						points = 50;
+					} else if (duration >= 3.5) {
+						points = 25;
+					} else if (duration >= 2) {
+						points = 3;
+					} else if (duration > 0) {
+						points = 1;
+					}
+					break;
 
-                case 'multiple_people':
-                    if (duration >= 8) {
-                        points = 50;
-                    } else if (duration >= 3.5) {
-                        points = 25;
-                    } else if (duration >= 2) {
-                        points = 5;
-                    } else if (duration > 0) {
-                        points = 1;
-                    }
-                    break;
+				case 'multiple_people':
+					if (duration >= 8) {
+						points = 50;
+					} else if (duration >= 3.5) {
+						points = 25;
+					} else if (duration >= 2) {
+						points = 5;
+					} else if (duration > 0) {
+						points = 1;
+					}
+					break;
 
-                case 'object_detection':
-                    if (duration >= 5.5) {
-                        points = 50;
-                    } else if (duration >= 2) {
-                        points = 15;
-                    } else if (duration > 0) {
-                        points = 3;
-                    }
-                    break;
-            }
-        }
+				case 'object_detection':
+					if (duration >= 5.5) {
+						points = 50;
+					} else if (duration >= 2) {
+						points = 15;
+					} else if (duration > 0) {
+						points = 3;
+					}
+					break;
+			}
+		}
         
-        // LENIENT setting (default)
-        else {
-            switch (item.name) {
-                case 'person_missing':
-                    if (duration >= 16) {
-                        points = 50;
-                    } else if (duration >= 7) {
-                        points = 25;
-                    } else if (duration >= 4) {
-                        points = 3;
-                    } else if (duration > 0) {
-                        points = 1;
-                    }
-                    break;
+		// LENIENT setting (default)
+		else {
+			switch (item.name) {
+				case 'person_missing':
+					if (duration >= 16) {
+						points = 50;
+					} else if (duration >= 7) {
+						points = 25;
+					} else if (duration >= 4) {
+						points = 3;
+					} else if (duration > 0) {
+						points = 1;
+					}
+					break;
 
-                case 'multiple_people':
-                    if (duration >= 16) {
-                        points = 50;
-                    } else if (duration >= 7) {
-                        points = 25;
-                    } else if (duration >= 4) {
-                        points = 5;
-                    } else if (duration > 0) {
-                        points = 1;
-                    }
-                    break;
+				case 'multiple_people':
+					if (duration >= 16) {
+						points = 50;
+					} else if (duration >= 7) {
+						points = 25;
+					} else if (duration >= 4) {
+						points = 5;
+					} else if (duration > 0) {
+						points = 1;
+					}
+					break;
 
-                case 'object_detection':
-                    if (duration >= 11) {
-                        points = 50;
-                    } else if (duration >= 4) {
-                        points = 15;
-                    } else if (duration > 0) {
-                        points = 3;
-                    }
-                    break;
-            }
-        }
+				case 'object_detection':
+					if (duration >= 11) {
+						points = 50;
+					} else if (duration >= 4) {
+						points = 15;
+					} else if (duration > 0) {
+						points = 3;
+					}
+					break;
+			}
+		}
 
-        totalPoints += points;
-    }
+		totalPoints += points;
+	}
 
-    console.log('Total AI Points:', totalPoints);
+	console.log('Total AI Points:', totalPoints);
     
-    if (totalPoints >= 50) {
-        return 'high';
-    } else if (totalPoints >= 24) {
-        return 'medium';
-    } else {
-        return 'low';
-    }
+	if (totalPoints >= 50) {
+		return 'high';
+	} else if (totalPoints >= 24) {
+		return 'medium';
+	} else {
+		return 'low';
+	}
 };
 
 export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
@@ -867,154 +867,150 @@ export const updatePersistData = (key, updates) => {
 
 	if (storedItemJSON) {
 		let storedItem = JSON.parse(storedItemJSON);
+		
+		// Merge updates into storedItem using spread operator
+		const updatedItem = {
+			...storedItem,
+			...updates
+		};
 
-		for (let prop in updates) {
-			if (updates.hasOwnProperty(prop)) {
-				storedItem[prop] = updates[prop];
-			}
-		}
-
-		let updatedItemJSON = JSON.stringify(storedItem);
-
-		localStorage.setItem(key, updatedItemJSON);
+		localStorage.setItem(key, JSON.stringify(updatedItem));
 	} else {
 		logger.warn(`No item found in localStorage with key "${key}"`);
 	}
 };
 
 export const addSectionSessionRecord = async (session) => {
-	return new Promise(async (resolve, reject) => {
-		try{
-			const { 
-				aiEvents, 
-				browserEvents 
-			} = session;
-			const secureFeatures = getSecureFeatures();
-			
-			let recordings = { data: [] };
-			let hasRecordings = false;
-			
-			const allRecordings = [
-				...session?.user_video_name || [],
-				...session?.user_audio_name || [], 
-				...session?.screen_sharing_video_name || [],
-				...session?.mobileRecordings || [],
-				...session?.mobileAudios || []
-			];
-			
-			hasRecordings = allRecordings.length > 0;
-			
-			if (hasRecordings) {
-				try {
-					recordings = await getRecordingSid({'source_id': allRecordings});
-					
-					if (!recordings || !recordings.data) {
-						throw new Error('Invalid response from recordings API');
-					}
-				} catch (recordingError) {
-					sentryExceptioMessage(recordingError,{type:'error',message:`Failed to fetch recording SIDs`});
-					logger.error('Failed to fetch recording SIDs:', recordingError);
-					recordings = { data: [] };
-					
-					if (window.mereos?.globalCallback) {
-						window.mereos.globalCallback({
-							type: 'warning',
-							message: 'recording_info_unavailable',
-							code: 40019
-						});
-					}
+	try {
+		const { 
+			aiEvents, 
+			browserEvents 
+		} = session;
+		const secureFeatures = getSecureFeatures();
+		
+		let recordings = { data: [] };
+		let hasRecordings = false;
+		
+		const allRecordings = [
+			...session?.user_video_name || [],
+			...session?.user_audio_name || [], 
+			...session?.screen_sharing_video_name || [],
+			...session?.mobileRecordings || [],
+			...session?.mobileAudios || []
+		];
+		
+		hasRecordings = allRecordings.length > 0;
+		
+		if (hasRecordings) {
+			try {
+				recordings = await getRecordingSid({'source_id': allRecordings});
+				
+				if (!recordings || !recordings.data) {
+					throw new Error('Invalid response from recordings API');
 				}
-			}
-			
-			const filterRecordings = (sourceArray) => {
-				if (!sourceArray || !sourceArray.length || !recordings.data || !recordings.data.length) {
-					return [];
-				}
-				return recordings.data
-					.filter(recording => 
-						sourceArray.find(subrecording => subrecording === recording.source_sid)
-					)
-					.map(recording => recording.media_external_location);
-			};
-			
-			let sectionSessionDetails = {
-				start_time: session?.quizStartTime,
-				submission_time: session?.submissionTime,
-				duration_taken: session?.quizStartTime ? getTimeInSeconds({isUTC: true}) - session.quizStartTime : 0,
-				identity_card: session?.identityCard,
-				room_scan_video: session?.room_scan_video,
-				identity_photo: session?.candidatePhoto,
-				user_video_name: filterRecordings(session?.user_video_name),
-				user_audio_name: filterRecordings(session?.user_audio_name),
-				screen_sharing_video_name: filterRecordings(session?.screen_sharing_video_name),
-				roomscan_recordings: session?.roomScanRecordings,
-				session_id: session?.sessionId,
-				archive_id: session?.room_id,
-				location: session?.location,
-				library_version: pkg.version,
-				mobile_session_id: session?.mobileRoomSessionId,
-				collected_details: {
-					download_speed: session?.downloadSpeed,
-					upload_speed: session?.uploadSpeed,
-					cpu_info: session?.CPUSpeed,
-					ram_info: session?.RAMSpeed
-				},
-				status: session?.sessionStatus,
-				video_codec: recordings.data?.filter(recording => 
-					session?.user_video_name?.find(subrecording => subrecording === recording.source_sid)
-				)?.map(recording => recording.codec)[0] || null,
-				video_extension: recordings.data?.filter(recording => 
-					session?.user_video_name?.find(subrecording => subrecording === recording.source_sid)
-				)?.map(recording => recording.container_format)[0] || null,
-				incident_level: findIncidentLevel(
-					aiEvents,
-					browserEvents, 	
-					secureFeatures
-				),
-				mobile_audio_name: filterRecordings(session?.mobileAudios),
-				mobile_video_name: filterRecordings(session?.mobileRecordings),
-				conversation_id: localStorage.getItem('conversationId') || '',
-				candidate_assessment: session?.candidate_assessment,
-				recording_fetch_status: hasRecordings ? 
-					(recordings.data.length > 0 ? 'success' : 'failed') : 
-					'not_required'
-			};
-	
-			if (session?.id) {
-				sectionSessionDetails['id'] = session?.id;
-			}
-			
-			const resp = session?.id ? 
-				await editSectionSession(sectionSessionDetails) : 
-				await addSectionSession(sectionSessionDetails);
-			
-			resolve(resp);
-			
-		} catch(err) {
-			sentryExceptioMessage(err,{type:'error',message:`Error in addSectionSessionRecord`});
-			logger.error('Error in addSectionSessionRecord:', err);
-			
-			if (err.response?.status === 403) {
+			} catch (recordingError) {
+				sentryExceptioMessage(recordingError,{type:'error',message:`Failed to fetch recording SIDs`});
+				logger.error('Failed to fetch recording SIDs:', recordingError);
+				recordings = { data: [] };
+				
 				if (window.mereos?.globalCallback) {
 					window.mereos.globalCallback({
-						type: 'error', 
-						message: 'error_saving_session_info',
-						code: 40018 
+						type: 'warning',
+						message: 'recording_info_unavailable',
+						code: 40019
 					});
 				}
 			}
-			
-			if (window.mereos?.startRecordingCallBack) {
-				window.mereos.startRecordingCallBack({
+		}
+		
+		const filterRecordings = (sourceArray) => {
+			if (!sourceArray || !sourceArray.length || !recordings.data || !recordings.data.length) {
+				return [];
+			}
+			return recordings.data
+				.filter(recording => 
+					sourceArray.find(subrecording => subrecording === recording.source_sid)
+				)
+				.map(recording => recording.media_external_location);
+		};
+		
+		let sectionSessionDetails = {
+			start_time: session?.quizStartTime,
+			submission_time: session?.submissionTime,
+			duration_taken: session?.quizStartTime ? getTimeInSeconds({isUTC: true}) - session.quizStartTime : 0,
+			identity_card: session?.identityCard,
+			room_scan_video: session?.room_scan_video,
+			identity_photo: session?.candidatePhoto,
+			user_video_name: filterRecordings(session?.user_video_name),
+			user_audio_name: filterRecordings(session?.user_audio_name),
+			screen_sharing_video_name: filterRecordings(session?.screen_sharing_video_name),
+			roomscan_recordings: session?.roomScanRecordings,
+			session_id: session?.sessionId,
+			archive_id: session?.room_id,
+			location: session?.location,
+			library_version: pkg.version,
+			mobile_session_id: session?.mobileRoomSessionId,
+			collected_details: {
+				download_speed: session?.downloadSpeed,
+				upload_speed: session?.uploadSpeed,
+				cpu_info: session?.CPUSpeed,
+				ram_info: session?.RAMSpeed
+			},
+			status: session?.sessionStatus,
+			video_codec: recordings.data?.filter(recording => 
+				session?.user_video_name?.find(subrecording => subrecording === recording.source_sid)
+			)?.map(recording => recording.codec)[0] || null,
+			video_extension: recordings.data?.filter(recording => 
+				session?.user_video_name?.find(subrecording => subrecording === recording.source_sid)
+			)?.map(recording => recording.container_format)[0] || null,
+			incident_level: findIncidentLevel(
+				aiEvents,
+				browserEvents, 	
+				secureFeatures
+			),
+			mobile_audio_name: filterRecordings(session?.mobileAudios),
+			mobile_video_name: filterRecordings(session?.mobileRecordings),
+			conversation_id: localStorage.getItem('conversationId') || '',
+			candidate_assessment: session?.candidate_assessment,
+			recording_fetch_status: hasRecordings ? 
+				(recordings.data.length > 0 ? 'success' : 'failed') : 
+				'not_required'
+		};
+
+		if (session?.id) {
+			sectionSessionDetails['id'] = session?.id;
+		}
+		
+		const resp = session?.id ? 
+			await editSectionSession(sectionSessionDetails) : 
+			await addSectionSession(sectionSessionDetails);
+		
+		return resp;
+		
+	} catch(err) {
+		sentryExceptioMessage(err,{type:'error',message:`Error in addSectionSessionRecord`});
+		logger.error('Error in addSectionSessionRecord:', err);
+		
+		if (err.response?.status === 403) {
+			if (window.mereos?.globalCallback) {
+				window.mereos.globalCallback({
 					type: 'error', 
-					message: 'error_saving_session_info', 
+					message: 'error_saving_session_info',
 					code: 40018 
 				});
 			}
-			
-			reject(err);
 		}
-	});
+		
+		if (window.mereos?.startRecordingCallBack) {
+			window.mereos.startRecordingCallBack({
+				type: 'error', 
+				message: 'error_saving_session_info', 
+				code: 40018 
+			});
+		}
+		
+		throw err;
+	}
 };
 
 export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _differentiator_ = ' ', inputDate = new Date()) => {
@@ -1097,15 +1093,16 @@ export const retryFailedAIEvents = async () => {
 
 window.addEventListener('online', retryFailedAIEvents);
 
-export const lockBrowserFromContent = (entities) => {
-	return new Promise(async (resolve, _reject) => {
-		let result = {};
-		for (const entity of entities) {
+export const lockBrowserFromContent = async (entities) => {
+	let result = {};
+	
+	for (const entity of entities) {
+		try {
 			switch (entity.key) {
 				case 'disable_right_click': {
 					const disableRightClick = await preventRightClick();
 					if (disableRightClick) {
-						result = {...result, [entity.name]: true};
+						result = { ...result, [entity.name]: true };
 					}
 					break;
 				}
@@ -1113,7 +1110,7 @@ export const lockBrowserFromContent = (entities) => {
 				case 'disable_clipboard': {
 					const copyPasteCutDisabled = await disableCopyPasteCut();
 					if (copyPasteCutDisabled) {
-						result = {...result, [entity.name]: true};
+						result = { ...result, [entity.name]: true };
 					}
 					break;
 				}
@@ -1121,14 +1118,15 @@ export const lockBrowserFromContent = (entities) => {
 				case 'disable_highlight_text': {
 					const disableHightLight = await disableTextHighlighting();
 					if (disableHightLight) {
-						result = {...result, [entity.name]: true};
+						result = { ...result, [entity.name]: true };
 					}
 					break;
 				}
+				
 				case 'disable_keyboard_shortcuts': {
 					const disableShortcuts = await preventShortCuts();
 					if (disableShortcuts) {
-						result = {...result, [entity.name]: true};
+						result = { ...result, [entity.name]: true };
 					}
 					break;
 				}
@@ -1136,7 +1134,7 @@ export const lockBrowserFromContent = (entities) => {
 				case 'disable_printing': {
 					const disablePrinting = await stopPrinting();
 					if (disablePrinting) {
-						result = {...result, [entity.name]: true};
+						result = { ...result, [entity.name]: true };
 					}
 					break;
 				}
@@ -1144,7 +1142,7 @@ export const lockBrowserFromContent = (entities) => {
 				case 'detect_unfocus': {
 					const defocusDisabled = await detectUnfocusOfTab();
 					if (defocusDisabled) {
-						result = {...result, [entity.name]: true};
+						result = { ...result, [entity.name]: true };
 					}
 					break;
 				}
@@ -1152,7 +1150,7 @@ export const lockBrowserFromContent = (entities) => {
 				case 'detect_resizing_of_window': {
 					const disableWindowResize = await detectWindowResize(null);
 					if (disableWindowResize) {
-						result = {...result, [entity.name]: true};
+						result = { ...result, [entity.name]: true };
 					}
 					break;
 				}
@@ -1160,7 +1158,7 @@ export const lockBrowserFromContent = (entities) => {
 				case 'verify_desktop': {
 					const dualDisplay = await detectDualDisplay();
 					if (dualDisplay) {
-						result = {...result, [entity.name]: true};
+						result = { ...result, [entity.name]: true };
 					}
 					break;
 				}
@@ -1168,18 +1166,22 @@ export const lockBrowserFromContent = (entities) => {
 				// case 'force_full_screen': {
 				// 	const fullScreen = await forceFullScreen();
 				// 	if (fullScreen) {
-				// 		result = {...result, [entity.name]: true};
+				// 		result = { ...result, [entity.name]: true };
 				// 	}
 				// 	break;
 				// }
 				
 				default:
-					null;
+					// Do nothing for unknown keys
+					break;
 			}
+		} catch (error) {
+			console.error(`Error processing entity ${entity.key}:`, error);
+			result = { ...result, [entity.name]: false };
 		}
+	}
 
-		resolve(result);
-	});
+	return result;
 };
 
 export const disableTextHighlighting = () => {
@@ -1692,7 +1694,7 @@ export const handlePreChecksRedirection = () => {
 			return 'runSystemDiagnostics';
 		} else if(!preChecksStep?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
 			return 'SystemRequirements';
-		} else if(!preChecksSteps?.browserSecurity && secureFeatures?.filter(entity => BROWSER_SECURTIY_STEP.includes(entity.key))?.length){
+		} else if(!preChecksStep?.browserSecurity && secureFeatures?.filter(entity => BROWSER_SECURTIY_STEP.includes(entity.key))?.length){
 			return 'BrowserSecurity';
 		}	else if(!preChecksStep?.preValidation && hasFeature('verify_multiple_devices')){
 			return 'Prevalidationinstruction';

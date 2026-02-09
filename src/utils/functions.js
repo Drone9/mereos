@@ -603,6 +603,7 @@ export const updateThemeColor = () => {
 	document.documentElement.style.setProperty('--text-color', isDarkMode ? '#fff' : '#000');
 	document.documentElement.style.setProperty('--font-style', fontStyle);
 	document.documentElement.style.setProperty('--video-style', isDarkMode ? '#000' : '#e7ebef');
+	document.documentElement.style.setProperty('--filter-color', isDarkMode ? 'invert(1)' : 'none');
 };
 
 export const loadZendeskWidget = () => {

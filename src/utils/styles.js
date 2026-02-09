@@ -1592,6 +1592,12 @@ export const preValidationCss = `.pvi-container {
   flex-direction: column;
   margin: auto;
 }
+.prevalidation-placeholder{
+    width: 400px;
+    height: 250px;
+    filter: var(--filter-color);
+    object-fit: contain;
+}
 .pvi-query-timer{
   color: var(--theme-color);
   text-align: center;

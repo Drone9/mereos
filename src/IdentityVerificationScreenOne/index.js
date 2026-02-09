@@ -275,7 +275,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
     
 	const nextStep = () => {
 		if(window.mereos.globalStream){
-      window.mereos.globalStream?.getTracks()?.forEach((track) => track.stop());
+			window.mereos.globalStream?.getTracks()?.forEach((track) => track.stop());
 		}
 		updatePersistData('preChecksSteps',{ userPhoto:true });
 		showTab('IdentityVerificationScreenTwo');

@@ -184,7 +184,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		const nextStep = () => {
 			if (window.mereos.globalStream) {
-					window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
+				window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
 			}
 			updatePersistData('preChecksSteps', { preValidation: true });
 			showTab('IdentityVerificationScreenOne');
@@ -233,19 +233,18 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		const handleMediaCheck = async () => {
 			try {
-				// Reset states
 				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
 				const cameraDropdown = window.mereos.shadowRoot.getElementById('cameraDropdown');
 				const microphoneDropdown = window.mereos.shadowRoot.getElementById('microphoneDropdown');
 
-				if(microphoneDropdown){
+				if (microphoneDropdown) {
 					microphoneDropdown.disabled = true;
 				}
-				if(cameraDropdown){
+				if (cameraDropdown) {
 					cameraDropdown.disabled = true;
 				}
 				if (checkButton) {
-					checkButton.style.display='none';
+					checkButton.style.display = 'none';
 				}
 
 				const messageElement = window.mereos.shadowRoot.getElementById('message');
@@ -254,7 +253,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 					messageElement.style.color = '';
 				}
 
-				// Set checking state and start timer
 				isCheckingMedia = true;
 				startTimer();
 
@@ -262,14 +260,19 @@ export const PrevalidationInstructions = async (tabContent) => {
 				if (shouldCheckBitrate) {
 					resp = await fetchIceServers();
 				}
-			
-				if(findConfigs(['object_detection','multiple_people_detection','person_missing'], secureFeatures.entities).length > 0){
-					window.mereos.net = await cocoSsd.load();
+
+				const hasObjectDetection = findConfigs(['object_detection', 'multiple_people_detection', 'person_missing'], secureFeatures.entities).length > 0;
+				if (hasObjectDetection) {
+					try {
+						window.mereos.net = await cocoSsd.load();
+					} catch (cocoError) {
+						console.warn('COCO-SSD model failed to load, but continuing with media check:', cocoError);
+						window.mereos.net = null;
+					}
 				}
 
 				const result = await checkMediaInputs(shouldCheckBitrate && resp?.data);
 
-				// Stop timer when check is complete
 				stopTimer();
 				isCheckingMedia = false;
 
@@ -278,15 +281,14 @@ export const PrevalidationInstructions = async (tabContent) => {
 						notify: false,
 						eventName: result.error,
 					});
-                    
+
 					if (messageElement) {
 						messageElement.textContent = i18next.t(result.error);
 						messageElement.style.color = '#ff4444';
 					}
 
-					// Re-enable check button on error
 					if (checkButton) {
-						checkButton.style.display='block';
+						checkButton.style.display = 'block';
 					}
 				} else if (result.message === 'media_check_success') {
 					registerEvent({
@@ -297,17 +299,17 @@ export const PrevalidationInstructions = async (tabContent) => {
 						notify: false,
 						eventName: 'candidate_selected_microphone_camera',
 					});
-                    
+
 					if (messageElement) {
 						messageElement.textContent = i18next.t(result.message);
 						messageElement.style.color = '';
 					}
-           
-					if(cameraDropdown){
-						cameraDropdown.disabled=false;
+
+					if (cameraDropdown) {
+						cameraDropdown.disabled = false;
 					}
-					if(microphoneDropdown){
-						microphoneDropdown.disabled=false;
+					if (microphoneDropdown) {
+						microphoneDropdown.disabled = false;
 					}
 					const continueBtn = window.mereos.shadowRoot.getElementById('continue-btn');
 					if (continueBtn && checkButton) {
@@ -316,7 +318,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 					}
 				}
 			} catch (error) {
-				// Stop timer on error
 				stopTimer();
 				isCheckingMedia = false;
 
@@ -324,27 +325,29 @@ export const PrevalidationInstructions = async (tabContent) => {
 					notify: false,
 					eventName: 'media_check_exception',
 				});
-                
+
 				const messageElement = window.mereos.shadowRoot.getElementById('message');
 				if (messageElement) {
 					messageElement.textContent = i18next.t('media_check_exception');
 					messageElement.style.color = '#ff4444';
 				}
+        
 				const cameraDropdown = window.mereos.shadowRoot.getElementById('cameraDropdown');
 				const microphoneDropdown = window.mereos.shadowRoot.getElementById('microphoneDropdown');
-				
-				if(cameraDropdown){
-					cameraDropdown.disabled=false;
+
+				if (cameraDropdown) {
+					cameraDropdown.disabled = false;
 				}
-				if(microphoneDropdown){
-					microphoneDropdown.disabled=false;
+				if (microphoneDropdown) {
+					microphoneDropdown.disabled = false;
 				}
+        
 				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
 				if (checkButton) {
-					checkButton.style.display='none';
+					checkButton.style.display = 'block';
 					checkButton.textContent = i18next.t('check_camera_mic');
 				}
-				sentryExceptioMessage(error,{type:'error',message:messageElement});
+				sentryExceptioMessage(error, { type: 'error', message: 'Media check exception' });
 			}
 		};
 
@@ -472,11 +475,11 @@ export const PrevalidationInstructions = async (tabContent) => {
             
 				if (window.mereos.globalStream) {
 					const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
-							window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
-							window.mereos.globalStream = null;
-							if(videoElement){
-								videoElement.srcObject = null;
-							}
+					window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
+					window.mereos.globalStream = null;
+					if(videoElement){
+						videoElement.srcObject = null;
+					}
 				}
 
 				if (videoContainer) {

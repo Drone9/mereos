@@ -537,13 +537,12 @@ const createLanguageDropdown = (currentStep) => {
 				closeTimeout = setTimeout(() => {
 					isHelpDropdownOpen = false;
 					helpDropdown.style.display = 'none';
-					// Stop video when closing the dropdown
 					stopVideo();
 				}, 10);
 			}
 		};
 
-		document.addEventListener('mousedown', handleOutsideClick, true); // Use capture phase
+		document.addEventListener('mousedown', handleOutsideClick, true);
 
 		helpDropdown.addEventListener('mousedown', (e) => {
 			e.stopPropagation();
@@ -631,14 +630,14 @@ const showTab = async (tabId, callback) => {
 			'IdentityCardRequirement': 'verify_id',
 			'runSystemDiagnostics': systemDiagnosticSteps,
 			'SystemRequirements': SYSTEM_REQUIREMENT_STEP,
+			'BrowserSecurity':BROWSER_SECURTIY_STEP,
 			'Prevalidationinstruction': 'verify_multiple_devices',
 			'IdentityVerificationScreenOne': 'verify_candidate',
 			'IdentityVerificationScreenTwo': 'verify_id',
 			'IdentityVerificationScreenThree': 'record_audio',
 			'IdentityVerificationScreenFour': 'record_room',
 			'MobileProctoring': 'mobile_proctoring',
-			'IdentityVerificationScreenFive': 'record_screen',
-			'BrowserSecurity':BROWSER_SECURTIY_STEP
+			'IdentityVerificationScreenFive': 'record_screen'
 		};
 
 		const featureKey = featureMap[tabId];

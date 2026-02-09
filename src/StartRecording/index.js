@@ -26,6 +26,7 @@ import {
 	registerAIEvent, 
 	registerEvent, 
 	restoreRightClick, 
+	sentryExceptioMessage, 
 	showToast, 
 	unlockBrowserFromContent, 
 	updatePersistData, 
@@ -43,9 +44,6 @@ const trackStoppedListeners = new WeakMap();
 const deviceChangeHandlers = new WeakMap();
 let isMediaError = false;
 let isSignalingError = false;
-let currentWidth = 180;
-const MIN_WIDTH = 180;
-const MAX_WIDTH = 600;
 
 export const initMobileConnection = () => {
 	const session = convertDataIntoParse('session');
@@ -285,119 +283,119 @@ const handleDeviceLost = (kind, isUserDisabled = false,track) => {
 	const container = window.mereos?.shadowRoot || document;
 	const session = convertDataIntoParse('session');
 
-	const userRemoteVideo = container.querySelector('#user-video-element');
-  if (userRemoteVideo) {
-    userRemoteVideo.style.display = 'none';
-    userRemoteVideo.remove();
-  }
-
-  if (typeof showPermissionModal === 'function' && 
-    session.sessionStatus === 'Attending') {
-  showPermissionModal();
+	const userRemoteVideo = container.querySelector('#webcam-container');
+	if (userRemoteVideo) {
+		userRemoteVideo.style.display = 'none';
+		userRemoteVideo.remove();
 	}
 
-  if (window.mereos?.startRecordingCallBack) {
-    window.mereos.startRecordingCallBack({
-      type: 'error',
-      message: kind === 'video' ? 'camera_is_stopped' : 'microphone_is_stopped',
-      code: 40019,
-    });
-  }
+	if (typeof showPermissionModal === 'function' && 
+    session.sessionStatus === 'Attending') {
+		showPermissionModal();
+	}
 
-  if (typeof registerEvent === 'function' && session.sessionStatus === 'Attending') {
-    let eventName;
+	if (window.mereos?.startRecordingCallBack) {
+		window.mereos.startRecordingCallBack({
+			type: 'error',
+			message: kind === 'video' ? 'camera_is_stopped' : 'microphone_is_stopped',
+			code: 40019,
+		});
+	}
+
+	if (typeof registerEvent === 'function' && session.sessionStatus === 'Attending') {
+		let eventName;
     
-    if (isUserDisabled) {
-      eventName = kind === 'video' ? 'camera_permission_denied_hardware' : 'camera_permission_denied_hardware';
-    } else {
-      eventName = kind === 'video' ? 'camera_permission_disabled' : 'microphone_permission_denied';
-    }
+		if (isUserDisabled) {
+			eventName = kind === 'video' ? 'camera_permission_denied_hardware' : 'camera_permission_denied_hardware';
+		} else {
+			eventName = kind === 'video' ? 'camera_permission_disabled' : 'microphone_permission_denied';
+		}
     
-    registerEvent({
-      eventType: 'error',
-      notify: false,
-      eventName: eventName,
-      eventValue: new Date(),
-    });
-  }
+		registerEvent({
+			eventType: 'error',
+			notify: false,
+			eventName: eventName,
+			eventValue: new Date(),
+		});
+	}
 };
 
 const attachDeviceChangeWatcher = (track) => {
-  const kind = track.kind;
-  const deviceId = getTrackDeviceId(track);
+	const kind = track.kind;
+	const deviceId = getTrackDeviceId(track);
 	const session = convertDataIntoParse('session');
-  const handler = async () => {
-    try {
-      const present = await isDevicePresent(kind, deviceId);
-      if (!present) {
-        handleDeviceLost(kind, false,track);
-      }
-    } catch (e) {
-      console.error('devicechange check failed', e);
-    }
-  };
+	const handler = async () => {
+		try {
+			const present = await isDevicePresent(kind, deviceId);
+			if (!present) {
+				handleDeviceLost(kind, false,track);
+			}
+		} catch (e) {
+			console.error('devicechange check failed', e);
+		}
+	};
 
 	if(session.sessionStatus === 'Attending'){
-  	navigator.mediaDevices.addEventListener('devicechange', handler);
+		navigator.mediaDevices.addEventListener('devicechange', handler);
 	}
-  deviceChangeHandlers.set(track, handler);
+	deviceChangeHandlers.set(track, handler);
 };
 
 const detachDeviceChangeWatcher = (track) => {
-  const handler = deviceChangeHandlers.get(track);
-  if (handler) {
-    navigator.mediaDevices.removeEventListener('devicechange', handler);
-    deviceChangeHandlers.delete(track);
-  }
+	const handler = deviceChangeHandlers.get(track);
+	if (handler) {
+		navigator.mediaDevices.removeEventListener('devicechange', handler);
+		deviceChangeHandlers.delete(track);
+	}
 };
 
 const setupTrackStoppedListeners = (track) => {
-  attachDeviceChangeWatcher(track);
+	attachDeviceChangeWatcher(track);
 	const session = convertDataIntoParse('session');
-  const stoppedListener = async () => {
+	const stoppedListener = async () => {
 
-    const kind = track.kind;
-    const mst = track.mediaStreamTrack;
-    const deviceId = getTrackDeviceId(track);
+		const kind = track.kind;
+		const mst = track.mediaStreamTrack;
+		const deviceId = getTrackDeviceId(track);
 
-    try {
-      if (mst && mst.readyState === 'ended') {
-        const present = await isDevicePresent(kind, deviceId);
-        if (!present) {
-          handleDeviceLost(kind, false,track);
-          return;
-        }
-      }
+		try {
+			if (mst && mst.readyState === 'ended') {
+				const present = await isDevicePresent(kind, deviceId);
+				if (!present) {
+					handleDeviceLost(kind, false,track);
+					return;
+				}
+			}
 
-      await probeExactDevice(kind, deviceId);
-      handleDeviceLost(kind, true,track);
-    } catch (probeError) {
-      logger?.error?.(`Exact-device probe failed for ${kind}`, probeError);
+			await probeExactDevice(kind, deviceId);
+			handleDeviceLost(kind, true,track);
+		} catch (probeError) {
+			logger?.error?.(`Exact-device probe failed for ${kind}`, probeError);
 			if(probeError.name === 'NotAllowedError'){
-      	handleDeviceLost(kind, false,track);
+				handleDeviceLost(kind, false,track);
 			}else if (probeError.name === 'NotReadableError'){
-      	handleDeviceLost(kind, true,track);
+				handleDeviceLost(kind, true,track);
 			}
 			sentryExceptioMessage(probeError,{type:'error',message:probeError.name});
-    } finally {
-      detachDeviceChangeWatcher(track);
-    }
-  };
+		} finally {
+			detachDeviceChangeWatcher(track);
+		}
+	};
 
 	if(session.sessionStatus === 'Attending' && !track.name.includes('screen-share')){
-  	track.on('stopped', stoppedListener);
+		track.on('stopped', stoppedListener);
 	}
 
-  trackStoppedListeners.set(track, stoppedListener);
+	trackStoppedListeners.set(track, stoppedListener);
 };
 
 const removeStoppedListener = (track) => {
-  const fn = trackStoppedListeners.get(track);
-  if (fn) {
-    try { track.off('stopped', fn); } catch {}
-    trackStoppedListeners.delete(track);
-  }
-  detachDeviceChangeWatcher(track);
+	const fn = trackStoppedListeners.get(track);
+	if (fn) {
+		try { track.off('stopped', fn); } catch {}
+		trackStoppedListeners.delete(track);
+	}
+	detachDeviceChangeWatcher(track);
 };
 
 const reconnectCamera = async () => {
@@ -623,11 +621,11 @@ export const startRecording = async () => {
 	}
 
 	if (fullscreenRequired) {
-    // This will show the modal AND set up monitoring for when user tries to exit
-    const cleanupForceFullscreen = initializeForceFullscreen();
+		// This will show the modal AND set up monitoring for when user tries to exit
+		const cleanupForceFullscreen = initializeForceFullscreen();
     
-    // Store cleanup function for later
-    window.mereos.cleanupForceFullscreen = cleanupForceFullscreen;
+		// Store cleanup function for later
+		window.mereos.cleanupForceFullscreen = cleanupForceFullscreen;
 	}
 
 	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
@@ -670,8 +668,8 @@ export const startRecording = async () => {
 			let room;
 
 			try{
-			room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
-			window.mereos.roomInstance = room;
+				room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
+				window.mereos.roomInstance = room;
 			}catch(error){
 				registerEvent({ eventType: 'success', notify: false, eventName: 'room_is_not_creating',eventValue:error });
 				sentryExceptioMessage(error,{type:'error',message:'Twilio room is not creating'});
@@ -805,7 +803,7 @@ export const startRecording = async () => {
 
 			const handleReconnecting = async (error) => {
 				if (
-				error?.message?.includes('Media connection failed') ||
+					error?.message?.includes('Media connection failed') ||
 				error?.message?.includes('Media activity')
 				) {
 					registerEvent({
@@ -815,7 +813,7 @@ export const startRecording = async () => {
 					showToast('error','internet_connection_lost');
 					isMediaError = true;
 				} else if (
-				error?.message?.includes('Signaling connection disconnected')
+					error?.message?.includes('Signaling connection disconnected')
 				) {
 					registerEvent({
 						notify: false,
@@ -1131,10 +1129,7 @@ const setupWebcam = async (mediaStream) => {
 			let isDragging = false;
 			let startX, startY;
 			let initialX, initialY;
-            
-			const aspectRatio = 142 / 180;
-			const initialHeight = Math.round(currentWidth * aspectRatio);
-			
+
 			Object.assign(webcamContainer.style, {
 				position: 'fixed',
 				top: '20px',
@@ -1423,8 +1418,6 @@ export function VideoChat(room) {
 	const session = convertDataIntoParse('session');
     
 	let currentWidth = 200;
-	const MIN_WIDTH = 180;
-	const MAX_WIDTH = 600;
 	const aspectRatio = 142 / 180;
 	const initialHeight = Math.round(currentWidth * aspectRatio);
     

@@ -72,7 +72,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 						if(eventData?.message?.message === 'Violation'){
 							updatePersistData('preChecksSteps', { mobileConnection: false, screenSharing: false });
 							if(window.mereos.newStream){
-							window.mereos.newStream?.getVideoTracks()[0].stop();
+								window.mereos.newStream?.getVideoTracks()[0].stop();
 							}
 							isScreenAlreadyShared = false; 
 							showTab('MobileProctoring');

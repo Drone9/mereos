@@ -27,6 +27,9 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
+	
+	// Store timeout reference for cleanup
+	let cameraInitTimeout;
 
 	const videoConstraints = {
 		width: 350,
@@ -122,18 +125,40 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const handleRestart = () => {
+		// Clear any pending timeout
+		if (cameraInitTimeout) {
+			clearTimeout(cameraInitTimeout);
+		}
+		
+		// Stop existing webcam stream if it exists
+		if (window.mereos.globalStream?.getTracks()) {
+			window.mereos.globalStream.getTracks().forEach(track => {
+				track.stop();
+			});
+			window.mereos.globalStream = null;
+		}
+		
+		// Stop the photo reference
+		if (photo) {
+			if (photo.srcObject) {
+				const tracks = photo.srcObject.getTracks();
+				tracks.forEach(track => track.stop());
+			}
+			photo = null;
+		}
+	
 		if (inputFile) {
 			inputFile.value = '';
 		}
 	
 		webcamError = false;
-		webcamLoading = true; // Set loading state on restart
+		webcamLoading = true;
 		processingPDF = false;
 		currentState = {
 			...currentState,
 			captureMode: 'take',
 			imageSrc: null,
-			isUploading: false, 
+			isUploading: false,
 			msg: {
 				text: ''
 			}
@@ -577,28 +602,63 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		}
 
 		if (!currentState.imageSrc && !webcamError && webcamLoading) {
-			const hasActiveTracks = window.mereos.globalStream?.getTracks?.().some(track => track.readyState === 'live');
+			// Clear any existing timeout
+			if (cameraInitTimeout) {
+				clearTimeout(cameraInitTimeout);
+			}
+			
+			// Check if we already have an active stream
+			const hasActiveTracks = window.mereos.globalStream?.getTracks?.()?.some(track => 
+				track.readyState === 'live' || track.readyState === 'playing'
+			);
 			
 			if (!window.mereos.globalStream || !hasActiveTracks) {
-				setTimeout(async () => {
+				cameraInitTimeout = setTimeout(async () => {
 					const videoElement = container.querySelector('video');
-					if (!videoElement) {
+					if (!videoElement && !currentState.imageSrc && webcamLoading) {
 						try {
 							window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ 
 								video: videoConstraints, 
 								audio: false 
 							});
 							
-							if (window.mereos.globalStream !== null) {
-								const testVideo = document.createElement('video');
-								testVideo.srcObject = window.mereos.globalStream;
+							if (window.mereos.globalStream) {
+								webcamLoading = false;
 								
-								testVideo.onloadedmetadata = () => {
-									webcamLoading = false;
-									photo = testVideo;
-									renderUI();
-								};
+								// Create video element if it doesn't exist
+								if (!videoElement) {
+									const newVideo = document.createElement('video');
+									newVideo.width = videoConstraints.width;
+									newVideo.height = videoConstraints.height;
+									newVideo.autoplay = true;
+									newVideo.playsinline = true;
+									
+									const gridOverlay = document.createElement('img');
+									gridOverlay.src = `${ASSET_URL}/screen-centered-grid.svg`;
+									gridOverlay.className = 'ivst-screen-grid';
+									gridOverlay.alt = 'screen-centered-grid';
+									
+									// Get the container
+									const imgContainer = container.querySelector('.ivst-header-img-container');
+									if (imgContainer) {
+										imgContainer.innerHTML = '';
+										imgContainer.appendChild(newVideo);
+										imgContainer.appendChild(gridOverlay);
+										
+										newVideo.srcObject = window.mereos.globalStream;
+										photo = newVideo;
+										
+										// Play the video
+										newVideo.play().then(() => {
+											renderUI(); // Re-render to show video
+										}).catch((error) => {
+											console.error('Error playing video:', error);
+											handleWebcamError();
+										});
+									}
+								}
 								
+								// Add error handling for tracks
 								const tracks = window.mereos.globalStream.getTracks();
 								tracks.forEach(track => {
 									track.addEventListener('ended', () => {
@@ -611,8 +671,16 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 							console.error('Webcam error:', error);
 							handleWebcamError();
 						}
+					} else if (videoElement && window.mereos.globalStream && hasActiveTracks) {
+						// If we already have video element and active stream, update loading state
+						webcamLoading = false;
+						renderUI();
 					}
 				}, 100);
+			} else {
+				// Stream already exists and is active
+				webcamLoading = false;
+				renderUI();
 			}
 		} else if (!currentState.imageSrc && !webcamError && !webcamLoading) {
 			const videoElement = container.querySelector('video');

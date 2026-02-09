@@ -145,7 +145,7 @@ export const connectSocketConnection = () => {
 	};
 };
 
-const showPermissionModal = () => {
+export const showPermissionModal = () => {
 	let container, existingModal;
   
 	if (window.mereos?.shadowRoot) {

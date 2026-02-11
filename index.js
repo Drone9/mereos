@@ -16,7 +16,6 @@ import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredErr
 import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, logger, registerEvent, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
-import 'notyf/notyf.min.css';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 import i18next from 'i18next';
 import { initSentry } from './src/utils/sentry';

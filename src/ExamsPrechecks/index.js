@@ -1,8 +1,6 @@
 import i18next from 'i18next';
 import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfJS, loadZendeskWidget, logger, normalizeLanguage, registerEvent, sentryExceptioMessage, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
 import { browserSecurityCss, examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
-import 'notyf/notyf.min.css';
-import 'notyf/notyf.min.css';
 import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, systemDiagnosticSteps, preChecksSteps, BROWSER_SECURTIY_STEP } from '../utils/constant';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
 import { SystemDiagnostics } from '../SystemDiagnostic';

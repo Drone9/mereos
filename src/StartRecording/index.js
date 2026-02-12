@@ -11,6 +11,7 @@ import {
 	detectBackButton, 
 	detectBackButtonCallback, 
 	detectPageRefresh, 
+	enableTextHighlighting, 
 	findConfigs, 
 	forceClosure, 
 	getDateTime, 
@@ -1728,6 +1729,8 @@ export const stopAllRecordings = async () => {
 		document.removeEventListener('beforeunload', ()=> {});
 		window.removeEventListener('beforeunload',  ()=> {});
 		window.removeEventListener('popstate', detectBackButtonCallback);
+		enableTextHighlighting();
+		
 		restoreRightClick();
 		cleanupForceFullscreen();
 

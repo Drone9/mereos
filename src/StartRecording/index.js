@@ -11,6 +11,7 @@ import {
 	detectBackButton, 
 	detectBackButtonCallback, 
 	detectPageRefresh, 
+	enableCopyPasteCut, 
 	enableTextHighlighting, 
 	findConfigs, 
 	forceClosure, 
@@ -1729,8 +1730,8 @@ export const stopAllRecordings = async () => {
 		document.removeEventListener('beforeunload', ()=> {});
 		window.removeEventListener('beforeunload',  ()=> {});
 		window.removeEventListener('popstate', detectBackButtonCallback);
+		enableCopyPasteCut();
 		enableTextHighlighting();
-		
 		restoreRightClick();
 		cleanupForceFullscreen();
 

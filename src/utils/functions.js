@@ -1323,57 +1323,105 @@ export const restoreRightClick = () => {
 	return true;
 };
 
+let copyPasteHandlers = {};
+let originalClipboard = {};
+
 export const disableCopyPasteCut = () => {
-	return new Promise((resolve, _reject) => {
-		let copyEventRegistered = false; 
-        
-		'cut copy paste'.split(' ').forEach((eventName) => {
-			document.addEventListener(eventName, e => {
-				e.preventDefault();
-				e.stopImmediatePropagation(); 
-                
-				if (eventName === 'copy' && !copyEventRegistered) {
-					registerEvent({notify: false, eventName: 'copy_paste_cut', eventType: 'error'});
-					copyEventRegistered = true;
-					setTimeout(() => { copyEventRegistered = false; }, 100);
-				}
-                
-				checkForceClosureViolation();
-			}, true);
+	return new Promise((resolve) => {
+		let copyEventRegistered = false;
+
+		const handler = (eventName) => (e) => {
+			e.preventDefault();
+
+			if (!copyEventRegistered) {
+				const eventMap = {
+					copy: 'candidate_copy_the_content',
+					paste: 'candidate_paste_the_content',
+					cut: 'candidate_cut_the_content',
+				};
+
+				registerEvent({
+					notify: false,
+					eventName: eventMap[eventName] || 'copy_paste_cut',
+					eventType: 'error',
+				});
+
+				copyEventRegistered = true;
+				setTimeout(() => (copyEventRegistered = false), 200);
+			}
+
+			checkForceClosureViolation();
+		};
+
+		['cut', 'copy', 'paste'].forEach((eventName) => {
+			const fn = handler(eventName);
+			copyPasteHandlers[eventName] = fn;
+			document.addEventListener(eventName, fn, true);
 		});
-        
-		document.addEventListener('keydown', e => {
-			if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'c' || e.key === 'x')) {
+
+		const keydownHandler = (e) => {
+			if (
+				(e.ctrlKey || e.metaKey) &&
+        ['c', 'v', 'x'].includes(e.key.toLowerCase())
+			) {
 				e.preventDefault();
-				e.stopImmediatePropagation();
-                
-				if (!copyEventRegistered) {
-					const eventName = 
-									e.key === 'v' ? 'candidate_paste_the_content' :
-										e.key === 'c' ? 'candidate_copy_the_content' :
-											'candidate_cut_the_content';
-                    
-					registerEvent({notify: false, eventName, eventType: 'error'});
-					copyEventRegistered = true;
-					setTimeout(() => { copyEventRegistered = false; }, 100);
-				}
-                
+
+				const eventName =
+          e.key === 'v' ? 'candidate_paste_the_content' : e.key === 'c' ? 'candidate_copy_the_content' : 'candidate_cut_the_content';
+
+				registerEvent({ notify: false, eventName, eventType: 'error' });
+
 				checkForceClosureViolation();
 			}
-		}, true);
-        
+		};
+
+		copyPasteHandlers.keydown = keydownHandler;
+		document.addEventListener('keydown', keydownHandler, true);
+
+		// Save original clipboard methods
 		if (navigator.clipboard) {
-			navigator.clipboard.writeText = function() {
-				return Promise.reject('Clipboard operations are disabled');
-			};
-            
-			navigator.clipboard.readText = function() {
-				return Promise.reject('Clipboard operations are disabled');
-			};
+			originalClipboard.writeText = navigator.clipboard.writeText;
+			originalClipboard.readText = navigator.clipboard.readText;
+
+			navigator.clipboard.writeText = () =>
+				Promise.reject('Clipboard disabled');
+			navigator.clipboard.readText = () =>
+				Promise.reject('Clipboard disabled');
 		}
-        
+
 		resolve(true);
 	});
+};
+
+export const enableCopyPasteCut = () => {
+	// Remove event listeners
+	['cut', 'copy', 'paste'].forEach((eventName) => {
+		if (copyPasteHandlers[eventName]) {
+			document.removeEventListener(
+				eventName,
+				copyPasteHandlers[eventName],
+				true
+			);
+		}
+	});
+
+	if (copyPasteHandlers.keydown) {
+		document.removeEventListener(
+			'keydown',
+			copyPasteHandlers.keydown,
+			true
+		);
+	}
+
+	copyPasteHandlers = {};
+
+	// Restore clipboard
+	if (navigator.clipboard && originalClipboard.writeText) {
+		navigator.clipboard.writeText = originalClipboard.writeText;
+		navigator.clipboard.readText = originalClipboard.readText;
+	}
+
+	originalClipboard = {};
 };
 
 export const preventPreClosure = () => {

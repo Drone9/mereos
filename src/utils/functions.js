@@ -1185,8 +1185,17 @@ export const lockBrowserFromContent = async (entities) => {
 	return result;
 };
 
+// Store handler references outside so we can remove them later
+let selectStartHandler;
+let dragStartHandler;
+let keyDownHandler;
+
 export const disableTextHighlighting = () => {
+	// Prevent duplicate injection
+	if (document.getElementById('highligh-text-style')) return;
+
 	const style = document.createElement('style');
+	style.id = 'highligh-text-style';
 	style.textContent = `
     body * {
       -webkit-user-select: none;
@@ -1194,9 +1203,9 @@ export const disableTextHighlighting = () => {
       -ms-user-select: none;
       user-select: none;
     }
-    /* Re-enable for editable elements */
-    input, 
-    textarea, 
+
+    input,
+    textarea,
     [contenteditable="true"],
     .lrn_texteditor_editable {
       -webkit-user-select: text !important;
@@ -1207,51 +1216,75 @@ export const disableTextHighlighting = () => {
   `;
 	document.head.appendChild(style);
 
-	// Helper function to check if element or parent is editable
 	const isEditableElement = (target) => {
-		// If target is a text node, get its parent element
 		const element = target.nodeType === 3 ? target.parentElement : target;
-    
 		if (!element) return false;
-    
-		// Check if element itself is editable
-		if (element.isContentEditable || 
-        element.tagName === 'INPUT' || 
-        element.tagName === 'TEXTAREA') {
+
+		if (
+			element.isContentEditable ||
+      element.tagName === 'INPUT' ||
+      element.tagName === 'TEXTAREA'
+		) {
 			return true;
 		}
-    
-		// Check if parent has contenteditable or specific class
-		if (element.closest && 
-        (element.closest('[contenteditable="true"]') || 
-         element.closest('.lrn_texteditor_editable'))) {
+
+		if (
+			element.closest &&
+      (element.closest('[contenteditable="true"]') ||
+        element.closest('.lrn_texteditor_editable'))
+		) {
 			return true;
 		}
-    
+
 		return false;
 	};
 
-	// Allow selection in editable elements
-	document.addEventListener('selectstart', (e) => {
-		if (isEditableElement(e.target)) {
-			return; // Allow selection
+	selectStartHandler = (e) => {
+		if (!isEditableElement(e.target)) {
+			e.preventDefault();
 		}
-		e.preventDefault(); // Block selection for non-editable elements
-	});
+	};
 
-	document.addEventListener('dragstart', (e) => {
-		if (isEditableElement(e.target)) {
-			return;
+	dragStartHandler = (e) => {
+		if (!isEditableElement(e.target)) {
+			e.preventDefault();
 		}
-		e.preventDefault();
-	});
+	};
 
-	// Disable F12, Ctrl+U, etc.
-	document.addEventListener('keydown', (e) => {
+	keyDownHandler = (e) => {
 		if (e.key === 'F12' || (e.ctrlKey && (e.key === 'u' || e.key === 'U'))) {
 			e.preventDefault();
 		}
-	});
+	};
+
+	document.addEventListener('selectstart', selectStartHandler);
+	document.addEventListener('dragstart', dragStartHandler);
+	document.addEventListener('keydown', keyDownHandler);
+};
+
+
+export const enableTextHighlighting = () => {
+	// Remove style
+	const style = document.getElementById('highligh-text-style');
+	if (style) {
+		style.remove();
+	}
+
+	// Remove listeners safely
+	if (selectStartHandler) {
+		document.removeEventListener('selectstart', selectStartHandler);
+		selectStartHandler = null;
+	}
+
+	if (dragStartHandler) {
+		document.removeEventListener('dragstart', dragStartHandler);
+		dragStartHandler = null;
+	}
+
+	if (keyDownHandler) {
+		document.removeEventListener('keydown', keyDownHandler);
+		keyDownHandler = null;
+	}
 };
 
 //* ***************** DefaultEvent Callback *********************/

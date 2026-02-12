@@ -2,9 +2,8 @@ import i18next from 'i18next';
 import { checkForceClosureViolation, logger, registerEvent, sentryExceptioMessage, showToast } from './functions';
 
 let fullscreenExitCallback = null;
-let isProgrammaticFullscreen = false;
 let resizeTimeout;
-let isResizing = false;
+let fullscreenTransitionInProgress = false;
 
 export const initializeFullscreenMonitor = () => {
 	if (!document.fullscreenEnabled) {
@@ -12,15 +11,14 @@ export const initializeFullscreenMonitor = () => {
 	}
 
 	let fullscreenCheckInterval = null;
-	window.mereos.lastFullscreenState = false; // Initialize state tracking
+	window.mereos.lastFullscreenState = false;
 
 	const handleFullscreenChange = () => {
 		const isCurrentlyFullscreen = document.fullscreenElement || 
-									document.webkitFullscreenElement || 
-									document.mozFullScreenElement || 
-									document.msFullscreenElement;
+		document.webkitFullscreenElement || 
+		document.mozFullScreenElement || 
+		document.msFullscreenElement;
 		
-		// Update state tracking
 		window.mereos.lastFullscreenState = isCurrentlyFullscreen;
 		
 		if (!isCurrentlyFullscreen) {
@@ -253,78 +251,66 @@ export const showForceFullscreenModal = (options = {}) => {
 export const forceFullScreen = () => {
 	return new Promise((resolve, reject) => {
 		const elem = document.documentElement;
-		
+
 		if (document.fullscreenElement) {
 			resolve();
 			return;
 		}
-		
+
+		fullscreenTransitionInProgress = true;
+
 		const onFullscreenChange = () => {
 			if (document.fullscreenElement) {
 				document.removeEventListener('fullscreenchange', onFullscreenChange);
 				document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
-				isProgrammaticFullscreen = true;
-				// Reset the flag after a short delay to allow normal resize detection
+
 				setTimeout(() => {
-					isProgrammaticFullscreen = false;
-				}, 1000);
+					fullscreenTransitionInProgress = false;
+				}, 500); // small safe window
+
 				resolve();
 			}
 		};
-		
+
 		document.addEventListener('fullscreenchange', onFullscreenChange);
 		document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-		
+
 		let requestPromise;
+
 		if (elem.requestFullscreen) {
 			requestPromise = elem.requestFullscreen();
-		} else if (elem.webkitRequestFullscreen) { /* Safari */
+		} else if (elem.webkitRequestFullscreen) {
 			requestPromise = elem.webkitRequestFullscreen();
-		} else if (elem.msRequestFullscreen) { /* IE11 */
+		} else if (elem.msRequestFullscreen) {
 			requestPromise = elem.msRequestFullscreen();
 		} else {
-			document.removeEventListener('fullscreenchange', onFullscreenChange);
-			document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+			fullscreenTransitionInProgress = false;
 			reject(new Error('Fullscreen API not supported'));
 			return;
 		}
-		
+
 		requestPromise.catch(error => {
-			document.removeEventListener('fullscreenchange', onFullscreenChange);
-			document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+			fullscreenTransitionInProgress = false;
 			reject(error);
 		});
 	});
 };
 
+
 const handleResize = () => {
-	if (isProgrammaticFullscreen) {
+	if (fullscreenTransitionInProgress) {
 		return;
 	}
 
-	const isCurrentlyFullscreen = document.fullscreenElement || 
-								document.webkitFullscreenElement || 
-								document.mozFullScreenElement || 
-								document.msFullscreenElement;
-	
-	if (!window.mereos.lastFullscreenState) {
-		window.mereos.lastFullscreenState = isCurrentlyFullscreen;
-	}
-	
-	if (!isResizing && (isCurrentlyFullscreen || !isCurrentlyFullscreen)) {
-		registerEvent({ eventType: 'error', notify: false, eventName: 'candidate_resized_window' });
-		checkForceClosureViolation();
-		isResizing = true;
-	}
-	
-	window.mereos.lastFullscreenState = isCurrentlyFullscreen;
+	registerEvent({
+		eventType: 'error',
+		notify: false,
+		eventName: 'candidate_resized_window'
+	});
 
-	clearTimeout(resizeTimeout);
-
-	resizeTimeout = setTimeout(() => {
-		isResizing = false;
-	}, 1000);
+	checkForceClosureViolation();
 };
+
 
 export const detectWindowResize = () => {
 	return new Promise((resolve, _reject) => {
@@ -381,7 +367,5 @@ export const cleanupForceFullscreen = () => {
 	
 	delete window.mereos.lastFullscreenState;
 	
-	isProgrammaticFullscreen = false;
-	isResizing = false;
 	clearTimeout(resizeTimeout);
 };

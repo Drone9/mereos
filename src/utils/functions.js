@@ -1650,6 +1650,11 @@ export const detectPageRefreshCallback = (e) => {
 		return;
 	}
 
+	const secureFeatures = getSecureFeatures();
+	if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
+		forceClosure();
+	}
+
 	if (window.mereos?.socket?.readyState === WebSocket.OPEN) {
 		window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 	}
@@ -1659,6 +1664,14 @@ export const detectPageRefreshCallback = (e) => {
 		updatePersistData('preChecksSteps', { 
 			mobileConnection: false,
 			screenSharing: false
+		});
+	}
+
+	if (window.mereos.startRecordingCallBack) {
+		window.mereos.startRecordingCallBack({ 
+			type: 'error',
+			message: 'candidate_clicked_on_refresh_button',
+			code: 40026
 		});
 	}
 

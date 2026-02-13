@@ -10,6 +10,7 @@ import {
 	convertDataIntoParse, 
 	detectBackButton, 
 	detectBackButtonCallback, 
+	detectBrowserActions, 
 	detectPageRefresh, 
 	enableCopyPasteCut, 
 	enableTextHighlighting, 
@@ -575,7 +576,10 @@ export const startRecording = async () => {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-
+	
+	window.addEventListener('pageshow', (event) => {
+		detectBrowserActions(event);
+	});
 	detectPageRefresh();
 	detectBackButton();
 	
@@ -623,10 +627,8 @@ export const startRecording = async () => {
 	}
 
 	if (fullscreenRequired) {
-		// This will show the modal AND set up monitoring for when user tries to exit
 		const cleanupForceFullscreen = initializeForceFullscreen();
     
-		// Store cleanup function for later
 		window.mereos.cleanupForceFullscreen = cleanupForceFullscreen;
 	}
 

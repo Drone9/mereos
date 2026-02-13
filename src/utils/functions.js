@@ -1657,11 +1657,6 @@ export const detectPageRefreshCallback = (e) => {
 		return;
 	}
 
-	const secureFeatures = getSecureFeatures();
-	if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
-		forceClosure();
-	}
-
 	if (window.mereos?.socket?.readyState === WebSocket.OPEN) {
 		window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
 	}
@@ -1688,7 +1683,11 @@ export const detectPageRefreshCallback = (e) => {
 		eventName: 'candidate_clicked_on_refresh_button',
 		eventValue: getDateTime() 
 	});
-
+	const secureFeatures = getSecureFeatures();
+	if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
+		checkForceClosureViolation();
+	}
+	
 	e.preventDefault();
 	e.returnValue = '';
 };

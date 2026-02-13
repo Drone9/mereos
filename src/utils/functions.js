@@ -290,6 +290,9 @@ export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 	);
 	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
 	const awayEvents = browserEvents.filter(item => item.name === 'moved_back_to_page');
+	const navigatingAway = browserEvents.filter(item =>
+		['candidate_navigate_away_from_page', 'candidate_move_back_or_forward_from_the_page'].includes(item.name)
+	);
 
 	let copyPastePoints = 10;
 	let resizePoints = 10;
@@ -299,6 +302,10 @@ export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 		resizePoints = 50;
 	}
 	
+	navigatingAway.forEach(() => {
+		totalPoints += 50;
+	});
+
 	copyPasteCutEvents.forEach(() => {
 		totalPoints += copyPastePoints;
 	});
@@ -2245,4 +2252,42 @@ export const getCurrentStep = () => {
 export const hasHelpVideo = () => {
 	const currentStep = getCurrentStep();
 	return !!stepToVideoId[currentStep];
+};
+
+export const detectBrowserActions = () => {
+	const currentUrl = window.location.href;
+	const previousUrl = sessionStorage.getItem('lastUrl');
+
+	const navEntry = performance.getEntriesByType('navigation')[0];
+	const navType = navEntry?.type;
+	logger.success('navType',navType);
+
+	if (navType === 'back_forward') {
+		registerEvent({
+			eventType: 'error',
+			notify: false,
+			eventName: 'candidate_move_back_or_forward_from_the_page',
+			eventValue: getDateTime()
+		});
+
+		const secureFeatures = getSecureFeatures();
+		if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
+			checkForceClosureViolation();
+		}
+	}
+	else if (navType === 'navigate' && previousUrl && previousUrl !== currentUrl) {
+		registerEvent({
+			eventType: 'error',
+			notify: false,
+			eventName: 'candidate_navigate_away_from_page',
+			eventValue: getDateTime()
+		});
+
+		const secureFeatures = getSecureFeatures();
+		if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
+			forceClosure();
+		}
+	}
+
+	sessionStorage.setItem('lastUrl', currentUrl);
 };

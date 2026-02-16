@@ -418,7 +418,6 @@ export const SystemDiagnostics = async (tab1Content) => {
 		logger.error('Element with id "runSystemDiagnostics" not found.');
 		return;
 	}
-	logger.success('langaueg isse', i18next.language);
 	renderUI(tab1Content);
 
 	try {

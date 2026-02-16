@@ -13,7 +13,7 @@ import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, logger, registerEvent, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
@@ -161,7 +161,6 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 					});
 				}
 
-				logger.success('resp?.data?.id',resp?.data);
 				Sentry.setUser({ id: resp?.data?.id, email: resp?.data?.email,name: resp?.data?.name });
 
 				updatePersistData('session', {
@@ -217,7 +216,6 @@ async function start_prechecks(callback,setting) {
 			openModal(callback);
 		}
 	} catch (error) {
-		logger.error('Error in start_prechecks:', error);
 		sentryExceptioMessage(error,{
 			type: 'error',
 			message: 'Error in prechecks setup',
@@ -435,8 +433,14 @@ async function start_session(callback) {
 			}
 		}
 	} catch (err) {
-		logger.error('there_was_an_error_in_starting_the_session',err);
-		registerEvent({ eventType: 'success', notify: false, eventName: 'error_starting_session',eventValue:err });
+		if (registerEvent && typeof registerEvent === 'function') {
+			registerEvent({ 
+				eventType: 'success', 
+				notify: false, 
+				eventName: 'error_starting_session',
+				eventValue: err 
+			});
+		}
 		sentryExceptioMessage(err,{
 			type: 'error',
 			message: 'Error in starting the session',
@@ -492,7 +496,6 @@ async function stop_session(callback) {
 			throw 'session can\'t add';
 		}
 	} catch (err) {
-		logger.error(err);
 		sentryExceptioMessage(err,{
 			type: 'error', 
 			message: 'Error in stopping the session' , 

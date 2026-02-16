@@ -27,6 +27,19 @@ export const sentryExceptioMessage = (error, extra = {}) => {
 	});					
 };
 
+export const logger = {
+	info: (message, object) =>
+		logWithStyle(message, 'color: blue; font-weight: bold;', object),
+	success: (message, object) =>
+		logWithStyle(message, 'color: green; font-weight: bold', object),
+	debug: (message, object) =>
+		logWithStyle(message, 'color: orange; font-weight: bold;', object),
+	error: (message, object) =>
+		logWithStyle(message, 'color: red; font-weight: bold;', object),
+	warn: (message, object) =>
+		logWithStyle(message, 'color: yellow; font-weight: bold;', object),
+};
+
 export const dataURIToBlob = (dataURI) => {
 	
 	const splitDataURI = dataURI.split(',');
@@ -1852,19 +1865,6 @@ const logWithStyle = (message, style, object = null) => {
 	}
 };
 
-export const logger = {
-	info: (message, object) =>
-		logWithStyle(message, 'color: blue; font-weight: bold;', object),
-	success: (message, object) =>
-		logWithStyle(message, 'color: green; font-weight: bold', object),
-	debug: (message, object) =>
-		logWithStyle(message, 'color: orange; font-weight: bold;', object),
-	error: (message, object) =>
-		logWithStyle(message, 'color: red; font-weight: bold;', object),
-	warn: (message, object) =>
-		logWithStyle(message, 'color: yellow; font-weight: bold;', object),
-};
-
 export const initializeI18next = () => {
 	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolLanguage?.language || 'en';
@@ -2254,12 +2254,8 @@ export const hasHelpVideo = () => {
 };
 
 export const detectBrowserActions = () => {
-	const currentUrl = window.location.href;
-	const previousUrl = sessionStorage.getItem('lastUrl');
-
 	const navEntry = performance.getEntriesByType('navigation')[0];
 	const navType = navEntry?.type;
-	logger.success('navType',navType);
 
 	if (navType === 'back_forward') {
 		registerEvent({
@@ -2274,7 +2270,7 @@ export const detectBrowserActions = () => {
 			checkForceClosureViolation();
 		}
 	}
-	else if (navType === 'navigate' && previousUrl && previousUrl !== currentUrl) {
+	else if (navType === 'navigate') {
 		registerEvent({
 			eventType: 'error',
 			notify: false,
@@ -2287,6 +2283,4 @@ export const detectBrowserActions = () => {
 			forceClosure();
 		}
 	}
-
-	sessionStorage.setItem('lastUrl', currentUrl);
 };

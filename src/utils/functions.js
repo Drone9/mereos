@@ -1045,7 +1045,7 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 	return `${year}${_dateBreaker_}${date}${_dateBreaker_}${month}${_differentiator_}${hours}${_timeBreaker_}${minutes}${_timeBreaker_}${seconds}`;
 };
 
-export const registerAIEvent = async ({ eventName, startTime, endTime }) => {
+export const registerAIEvent = async ({ eventName, startTime, endTime,eventValue }) => {
 	try {
 		const session = convertDataIntoParse('session');
 		if (!session || !session.aiEvents) return;
@@ -1063,7 +1063,7 @@ export const registerAIEvent = async ({ eventName, startTime, endTime }) => {
 			name: eventName,
 			start_at: startTime,
 			end_at: endTime,
-			value: eventName,
+			value: eventValue || eventName,
 			created_at: getDateTime(),
 			session_id: session?.id
 		};

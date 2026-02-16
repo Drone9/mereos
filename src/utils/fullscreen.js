@@ -216,15 +216,6 @@ export const showForceFullscreenModal = (options = {}) => {
 		? (i18next.t('continue_in_fullscreen') || 'Continue in Fullscreen')
 		: (i18next.t('return_to_fullscreen') || 'Return to Fullscreen');
 
-	button.addEventListener('mouseenter', () => {
-		button.style.backgroundColor = 'var(--theme-color-dark)';
-		button.style.transform = 'translateY(-2px)';
-	});
-	button.addEventListener('mouseleave', () => {
-		button.style.backgroundColor = 'var(--theme-color)';
-		button.style.transform = 'translateY(0)';
-	});
-
 	button.addEventListener('click', async () => {
 		try {
 			await forceFullScreen();
@@ -232,7 +223,6 @@ export const showForceFullscreenModal = (options = {}) => {
 				window.mereos.forceFullscreenModal.remove();
 				window.mereos.forceFullscreenModal.isOpen = false;
 			}
-			// Remove the style element we added
 			if (style.parentNode) {
 				style.parentNode.removeChild(style);
 			}

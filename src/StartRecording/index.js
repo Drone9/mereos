@@ -203,7 +203,6 @@ export const showPermissionModal = () => {
 	try {
 		container.appendChild(modalDiv);
 	} catch (error) {
-		console.error('Error adding modal to container:', error);
 		document.body.appendChild(modalDiv);
 	}
   
@@ -441,7 +440,6 @@ const reconnectCamera = async () => {
 		}
 		
 		if (!needsVideo && !needsAudio) {
-			console.log('No camera or audio recording configured');
 			return;
 		}
 		
@@ -527,7 +525,6 @@ const reconnectCamera = async () => {
 		
 				
 	} catch (error) {
-		console.error('Failed to reconnect camera:', error);
 		
 		if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
 			setTimeout(() => {
@@ -897,6 +894,7 @@ export const startRecording = async () => {
 			}
 			
 		} catch (error) {
+			logger.error('error in startRecording',error.message);
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});
@@ -932,7 +930,7 @@ export const startRecording = async () => {
 	}
 };
 
-const PREDICTION = ['cell phone', 'book','laptop'];
+const PREDICTION = ['cell phone', 'book', 'laptop'];
 
 const setupWebcam = async (mediaStream) => {
 	return new Promise((resolve, reject) => {
@@ -1290,7 +1288,7 @@ const startAIWebcam = async (room, mediaStream) => {
 				}
 
 				let log = {}, person = {}, multiplePersonFound = false;
-				let detectedObjects = new Set(); // Track unique detected objects
+				let detectedObjects = new Set();
 			
 				predictions.forEach(prediction => {
 					if (prediction.class === 'person' && (personMissingFeature || multiplePeopleFeature)) {
@@ -1351,14 +1349,13 @@ const startAIWebcam = async (room, mediaStream) => {
 					}
 					else if (activeViolations[key]) {
 						const violation = activeViolations[key];
-						
+
 						if (violation.time_span >= 2) {
 							const data = { 
 								eventType: 'success', 
 								notify: true, 
-								eventName: key === 'object_detected' && violation.detected_objects && violation.detected_objects.length > 0 
-									? violation.detected_objects.map(obj => obj.replace(/\s+/g, '_') + '_detected').join(', ')
-									: key, 
+								eventName: key, 
+								eventValue:violation?.detected_objects?.length > 0 ? violation?.detected_objects[0]?.replace(/\s+/g, '_') : key,
 								startTime: violation.start_time, 
 								endTime: violation.start_time + violation.time_span
 							};

@@ -293,7 +293,7 @@ const handleDeviceLost = (kind, isUserDisabled = false,track) => {
 	}
 
 	if (typeof showPermissionModal === 'function' && 
-    session.sessionStatus === 'Attending') {
+    session?.sessionStatus === 'Attending') {
 		showPermissionModal();
 	}
 
@@ -404,7 +404,6 @@ const removeStoppedListener = (track) => {
 const reconnectCamera = async () => {
 	try {		
 		if (!window.mereos?.roomInstance) {
-			console.error('No active Twilio room instance found');
 			if (window.mereos.startRecordingCallBack) {
 				window.mereos.startRecordingCallBack({ 
 					type: 'error',
@@ -620,7 +619,6 @@ export const startRecording = async () => {
 	}
 
 	const fullscreenRequired = secureFeatures?.entities?.some(entity => entity.key === 'force_full_screen');
-	console.log('fullscreenRequired',fullscreenRequired);
 
 	if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
 		await lockBrowserFromContent(secureFeatures?.entities || []);
@@ -899,11 +897,10 @@ export const startRecording = async () => {
 			}
 			
 		} catch (error) {
-			logger.error('error in startRecording',error.message);
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});
-			registerEvent({ eventType: 'success', notify: false, eventName: 'camera_or_microphone_permission_is_denied',eventValue:error });
+			registerEvent({ eventType: 'success', notify: false, eventName: 'camera_or_microphone_permission_is_denied' });
 			sentryExceptioMessage(error,{type:'error',message:'Camera or microphone permission is denied'});
 			window.mereos.recordingStart = false;
 			if(window.mereos.startRecordingCallBack){
@@ -935,7 +932,7 @@ export const startRecording = async () => {
 	}
 };
 
-const PREDICTION = ['cell phone', 'book'];
+const PREDICTION = ['cell phone', 'book','laptop'];
 
 const setupWebcam = async (mediaStream) => {
 	return new Promise((resolve, reject) => {
@@ -1293,7 +1290,8 @@ const startAIWebcam = async (room, mediaStream) => {
 				}
 
 				let log = {}, person = {}, multiplePersonFound = false;
-                    
+				let detectedObjects = new Set(); // Track unique detected objects
+			
 				predictions.forEach(prediction => {
 					if (prediction.class === 'person' && (personMissingFeature || multiplePeopleFeature)) {
 						if (person?.class && multiplePeopleFeature) {
@@ -1307,6 +1305,7 @@ const startAIWebcam = async (room, mediaStream) => {
 					}
 					else if (objectDetectionFeature && PREDICTION.includes(prediction.class)) {
 						log = { ...log, ['object_detected']: (log[prediction.class] || 0) + 1 };
+						detectedObjects.add(prediction.class);
 					}
 				});
 
@@ -1324,12 +1323,18 @@ const startAIWebcam = async (room, mediaStream) => {
 						if (!activeViolations[key]) {
 							activeViolations[key] = {
 								start_time: seconds,
-								time_span: 1
+								time_span: 1,
+								...(key === 'object_detected' && detectedObjects.size > 0 ? { detected_objects: Array.from(detectedObjects) } : {})
 							};
 							aiEvents.push({ ...activeViolations[key], [key]: log[key] });
 						} 
 						else {
 							activeViolations[key].time_span += 1;
+							if (key === 'object_detected' && detectedObjects.size > 0) {
+								const existingObjects = new Set(activeViolations[key].detected_objects || []);
+								detectedObjects.forEach(obj => existingObjects.add(obj));
+								activeViolations[key].detected_objects = Array.from(existingObjects);
+							}
 						}
 
 						if (activeViolations[key].time_span === 10) {
@@ -1351,11 +1356,12 @@ const startAIWebcam = async (room, mediaStream) => {
 							const data = { 
 								eventType: 'success', 
 								notify: true, 
-								eventName: key, 
+								eventName: key === 'object_detected' && violation.detected_objects && violation.detected_objects.length > 0 
+									? violation.detected_objects.map(obj => obj.replace(/\s+/g, '_') + '_detected').join(', ')
+									: key, 
 								startTime: violation.start_time, 
 								endTime: violation.start_time + violation.time_span
 							};
-							
 							registerAIEvent(data);
 							checkForceClosureViolation();
 						}

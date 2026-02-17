@@ -608,7 +608,7 @@ body.modal-active applet:not(.modal applet) {
 .dropdown-content {
   position: absolute;
   top: 42px;
-  right: -70px;
+  right: -65px;
   background-color: var(--theme-mode);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 8px;

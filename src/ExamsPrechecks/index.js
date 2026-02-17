@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfJS, loadZendeskWidget, logger, normalizeLanguage, registerEvent, sentryExceptioMessage, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfCss, loadZendeskWidget, logger, normalizeLanguage, registerEvent, sentryExceptioMessage, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
 import { browserSecurityCss, examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, systemDiagnosticSteps, preChecksSteps, BROWSER_SECURTIY_STEP } from '../utils/constant';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
@@ -428,13 +428,24 @@ const createLanguageDropdown = (currentStep) => {
 	const flagImg = modalContent.querySelector('.select .flag-icon-img');
 	const label = modalContent.querySelector('.language');
   
-	selectContainer.addEventListener('click', () => {
+	selectContainer.addEventListener('click', (e) => {
+		e.stopPropagation();
 		languageDropdown.classList.toggle('active');
 	});
 
+	const closeLanguageDropdown = (e) => {
+		const dropdown = modalContent.querySelector('.dropdown');
+		if (dropdown && !dropdown.contains(e.target) && languageDropdown.classList.contains('active')) {
+			languageDropdown.classList.remove('active');
+		}
+	};
+
+	document.addEventListener('click', closeLanguageDropdown);
+
 	const optionDivs = languageDropdown.querySelectorAll('.dropdown-option');
 	optionDivs.forEach(optionDiv => {
-		optionDiv.addEventListener('click', function() {
+		optionDiv.addEventListener('click', function(e) {
+			e.stopPropagation();
 			const index = parseInt(this.getAttribute('data-index'));
 			const selectedLang = languages[index];
       
@@ -446,11 +457,18 @@ const createLanguageDropdown = (currentStep) => {
 					optionDivs.forEach((div, i) => {
 						const optionText = div.querySelector('.text');
 						optionText.textContent = i18next.t(languages[i].value);
+						
+						if (i === index) {
+							div.classList.add('selected');
+						} else {
+							div.classList.remove('selected');
+						}
 					});
 				})
 				.catch(err => logger.error(err));
       
 			languageDropdown.classList.remove('active');
+			
 			if (typeof window?.mereos?.globalCallback === 'function') {
 				window.mereos.globalCallback({ 
 					type:'success',
@@ -461,6 +479,10 @@ const createLanguageDropdown = (currentStep) => {
 			}
 			updatePersistData('schoolTheme', { language: selectedLang.keyword });
 		});
+	});
+
+	languageDropdown.addEventListener('click', (e) => {
+		e.stopPropagation();
 	});
 
 	if (hasVideo) {
@@ -547,9 +569,17 @@ const createLanguageDropdown = (currentStep) => {
 		});
 
 		const cleanup = () => {
+			document.removeEventListener('click', closeLanguageDropdown);
 			document.removeEventListener('mousedown', handleOutsideClick, true);
-			// Stop video on cleanup
 			stopVideo();
+		};
+
+		if (window.mereos) {
+			window.mereos.cleanupLanguageDropdown = cleanup;
+		}
+	} else {
+		const cleanup = () => {
+			document.removeEventListener('click', closeLanguageDropdown);
 		};
 
 		if (window.mereos) {
@@ -618,7 +648,7 @@ const showTab = async (tabId, callback) => {
 		const { containers } = window.mereos.dom;
 		initializeI18next();
 		createLanguageDropdown(tabId);
-		loadNotyfJS();
+		loadNotyfCss();
 
 		const getSecureFeature = getSecureFeatures();
 		const secureFeatures = getSecureFeature?.entities || [];
@@ -770,6 +800,9 @@ export const startSession = async () => {
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
 			if(!session?.browserEvents.filter(item => item.name === 'session_initiated')?.length){
 				registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
+			}
+			if(!session?.browserEvents.filter(item => item.name === 'session_started')?.length){
+				registerEvent({ eventType: 'success', notify: false, eventName: 'session_started' });
 			}
 		}
 		updatePersistData('session',

@@ -23,7 +23,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		return;
 	}
 	window.mereos.isScreenShare=true;
-	logger.success('in the IdentityVerificationScreenFive');
 	let multipleScreens;
 	window.mereos.newStream = null;
 	const candidateAssessment = getSecureFeatures();

@@ -13,7 +13,7 @@ import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
+import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBrowserActions, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
@@ -306,6 +306,9 @@ async function stop_prechecks(callback) {
 
 async function start_session(callback) {
 	try {
+		window.addEventListener('pageshow', (event) => {
+			detectBrowserActions(event);
+		});
 		const secureFeatures = getSecureFeatures();
 		window.mereos.startRecordingCallBack = callback;
 		const tokenData = localStorage.getItem('mereosToken');
@@ -336,7 +339,7 @@ async function start_session(callback) {
 		}
 
 		if(!window.mereos.roomInstance && !window.mereos.recordingStart){
-			window.mereos.recordingStart=true;
+			window.mereos.recordingStart = true;
 			const dateTime = new Date();
 			const currentTimeInSeconds = Math.abs(getTimeInSeconds({ isUTC: true, inputDate: dateTime }));
             
@@ -433,12 +436,12 @@ async function start_session(callback) {
 			}
 		}
 	} catch (err) {
-		if (registerEvent && typeof registerEvent === 'function') {
+		if (typeof registerEvent !== 'undefined' && typeof registerEvent === 'function') {
 			registerEvent({ 
 				eventType: 'success', 
 				notify: false, 
 				eventName: 'error_starting_session',
-				eventValue: err 
+				eventValue: err  
 			});
 		}
 		sentryExceptioMessage(err,{

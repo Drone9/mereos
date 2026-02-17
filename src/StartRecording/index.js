@@ -926,7 +926,9 @@ export const startRecording = async () => {
 	let resp = await addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
 	if(resp){
 		const dateTime = new Date();
-		registerEvent({ eventType: 'success', notify: false, eventName: 'session_started', startAt: dateTime });
+		if(!session?.browserEvents.filter(item => item.name === 'session_started')?.length){
+			registerEvent({ eventType: 'success', notify: false, eventName: 'session_started', startAt: dateTime });
+		}
 	}
 };
 

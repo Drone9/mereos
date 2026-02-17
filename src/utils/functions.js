@@ -21,11 +21,11 @@ import pkg from '../../package.json';
 import { detectWindowResize } from './fullscreen';
 import * as Sentry from '@sentry/browser';
 
-export const sentryExceptioMessage = (error, extra = {}) => {
-	Sentry.captureException(error, {
+export function sentryExceptioMessage(error, extra = {}) {
+	Sentry?.captureException(error, {
 		extra: extra
 	});					
-};
+}
 
 export const logger = {
 	info: (message, object) =>
@@ -105,6 +105,8 @@ export const forceClosure = async () => {
 						eventValue: getDateTime(),
 					});
 
+					resetSessionData();
+
 					window.mereos.startRecordingCallBack({ 
 						type: 'error', 
 						message: 'assessment_closed_due_to_multiple_violation',
@@ -112,7 +114,6 @@ export const forceClosure = async () => {
 					});
 				}
 
-				resetSessionData();
 			} catch (apiError) {
 				sentryExceptioMessage(apiError,{type:'error',message:`API error during force closure`});
 				logger.error('API error during force closure:', apiError);
@@ -175,8 +176,6 @@ export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) =>
 	const settingLevel = profile?.settings?.proctoring_behavior?.name;
 	const aiIncidentlevel = findAIIncidentLevel(aiEvents, settingLevel);
 	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, settingLevel);
-	console.log('aiIncidentlevel',aiIncidentlevel);
-	console.log('browserIncidentlevel',browserIncidentlevel);
 
 	if (aiIncidentlevel === 'high' || browserIncidentlevel === 'high') {
 		return 'high';
@@ -297,14 +296,14 @@ export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {
 
 export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 	let totalPoints = 0;
-
+	console.log('browserEvents',browserEvents);
 	let copyPasteCutEvents = browserEvents.filter(item =>
 		['candidate_paste_the_content', 'candidate_copy_the_content', 'copy_and_paste'].includes(item.name)
 	);
 	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
 	const awayEvents = browserEvents.filter(item => item.name === 'moved_back_to_page');
 	const navigatingAway = browserEvents.filter(item =>
-		['candidate_navigate_away_from_page', 'candidate_move_back_or_forward_from_the_page'].includes(item.name)
+		['candidate_came_back_to_assessment_page', 'candidate_move_back_or_forward_from_the_page'].includes(item.name)
 	);
 
 	let copyPastePoints = 10;
@@ -515,7 +514,7 @@ export const checkMicrophone = () => {
 	});
 };
 
-export const registerEvent = async ({ eventName, eventValue = null, duration }) => {
+export async function registerEvent({ eventName, eventValue = null, duration }) {
 	try {
 		const session = convertDataIntoParse('session');
 		if (!session || !session.browserEvents) return;
@@ -556,7 +555,7 @@ export const registerEvent = async ({ eventName, eventValue = null, duration }) 
 		sentryExceptioMessage(error,{type:'error',message:`Error in registerEvent`});
 		logger.error('Error in registerEvent', error);
 	}
-};
+}
 
 export const retryFailedEvents = async () => {
 	if (window.mereos.isRetryEvent) return;
@@ -1080,7 +1079,6 @@ export const registerAIEvent = async ({ eventName, startTime, endTime,eventValue
 		}
 
 		let incidentLevel = findIncidentLevel(updatedEvents, browserEvents, secureFeatures);
-		console.log('incidentLevel',incidentLevel);
 		if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {
 			await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 			updatePersistData('session', { incident_level: incidentLevel });
@@ -1666,43 +1664,44 @@ export const exitFullScreen = () => {
 
 // ************* Detect Page Refresh ***************** //
 export const detectPageRefreshCallback = (e) => {
-	if(!localStorage.getItem('mereosToken')){
+	if (!localStorage.getItem('mereosToken')) {
 		return;
 	}
+	localStorage.setItem('examLeaveTime', Date.now());
 
-	if (window.mereos?.socket?.readyState === WebSocket.OPEN) {
-		window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
-	}
-
-	const getPreChecksSteps = convertDataIntoParse('preChecksSteps');
-	if(getPreChecksSteps){
-		updatePersistData('preChecksSteps', { 
-			mobileConnection: false,
-			screenSharing: false
-		});
-	}
-
-	if (window.mereos.startRecordingCallBack) {
-		window.mereos.startRecordingCallBack({ 
-			type: 'error',
-			message: 'candidate_clicked_on_refresh_button',
-			code: 40026
-		});
-	}
-
-	registerEvent({ 
-		eventType: 'error', 
-		notify: false, 
-		eventName: 'candidate_clicked_on_refresh_button',
-		eventValue: getDateTime() 
-	});
-	const secureFeatures = getSecureFeatures();
-	if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
-		checkForceClosureViolation();
-	}
-	
 	e.preventDefault();
 	e.returnValue = '';
+
+	try {
+		if (window.mereos?.socket?.readyState === WebSocket.OPEN) {
+			window.mereos.socket?.send(JSON.stringify({ event: 'resetSession' }));
+		}
+
+		const getPreChecksSteps = convertDataIntoParse('preChecksSteps');
+		if (getPreChecksSteps) {
+			updatePersistData('preChecksSteps', {
+				mobileConnection: false,
+				screenSharing: false
+			});
+		}
+
+		// if (window.mereos?.startRecordingCallBack) {
+		// 	window.mereos.startRecordingCallBack({
+		// 		type: 'error',
+		// 		message: 'candidate_left_the_page',
+		// 		code: 40026
+		// 	});
+		// }
+
+		registerEvent({
+			eventType: 'error',
+			notify: false,
+			eventName: 'candidate_clicked_on_refresh_button',
+			eventValue: getDateTime()
+		});
+	} catch (err) {
+		console.log(err);
+	}
 };
 
 export const detectPageRefresh = () => {
@@ -1912,6 +1911,7 @@ export const showToast = (type, message) => {
 
 	if(hasNotifyFeature){
 		const notyf = new Notyf();
+		loadNotyfCss();
 		const translatedMessage = i18next.t(message);
 		const options = {
 			message: i18next.t(translatedMessage),
@@ -1937,7 +1937,7 @@ export const showToast = (type, message) => {
 	}
 };
 
-export const loadNotyfJS = () => {
+export const loadNotyfCss = () => {
 	const link = document.createElement('link');
 	link.rel = 'stylesheet';
 	link.href = 'https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css';
@@ -2254,33 +2254,33 @@ export const hasHelpVideo = () => {
 };
 
 export const detectBrowserActions = () => {
-	const navEntry = performance.getEntriesByType('navigation')[0];
-	const navType = navEntry?.type;
-
-	if (navType === 'back_forward') {
-		registerEvent({
-			eventType: 'error',
-			notify: false,
-			eventName: 'candidate_move_back_or_forward_from_the_page',
-			eventValue: getDateTime()
-		});
-
-		const secureFeatures = getSecureFeatures();
-		if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
-			checkForceClosureViolation();
-		}
+	const navEntries = performance.getEntriesByType('navigation');
+	if (!navEntries || !navEntries.length) {
+		return null;
 	}
-	else if (navType === 'navigate') {
-		registerEvent({
-			eventType: 'error',
-			notify: false,
-			eventName: 'candidate_navigate_away_from_page',
-			eventValue: getDateTime()
-		});
 
-		const secureFeatures = getSecureFeatures();
-		if (findConfigs(['force_closure'], secureFeatures?.entities || []).length) {
-			forceClosure();
-		}
+	const navType = navEntries[0].type;
+	console.log('navType',navType);
+	const leaveTime = localStorage.getItem('examLeaveTime');
+	const currentTime = Date.now();
+	let timeDiff = null;
+
+	if (leaveTime) {
+		timeDiff = Math.floor((currentTime - Number(leaveTime)) / 1000);
+		localStorage.removeItem('examLeaveTime');
 	}
+
+	registerEvent({
+		eventType: 'error',
+		notify: false,
+		eventName:navType === 'navigate' ? 'candidate_came_back_to_assessment_page': navType === 'back_forward'? 'candidate_move_back_or_forward_from_the_page': 'candidate_refreshed_the_assessment_page',
+		duration:timeDiff
+	});
+
+	const secureFeatures = getSecureFeatures();
+	const checkForceClosure = findConfigs(['force_closure'], secureFeatures?.entities || []).length;
+	if (checkForceClosure) {
+		checkForceClosureViolation();
+	}
+	return navType;
 };

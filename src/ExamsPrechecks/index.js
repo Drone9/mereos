@@ -448,27 +448,45 @@ const createLanguageDropdown = (currentStep) => {
 			e.stopPropagation();
 			const index = parseInt(this.getAttribute('data-index'));
 			const selectedLang = languages[index];
-      
+        
 			i18next.changeLanguage(selectedLang.keyword)
 				.then(() => {
 					flagImg.src = selectedLang.src;
 					label.textContent = i18next.t(selectedLang.value);
-          
+                
 					optionDivs.forEach((div, i) => {
 						const optionText = div.querySelector('.text');
 						optionText.textContent = i18next.t(languages[i].value);
-						
+                    
 						if (i === index) {
 							div.classList.add('selected');
 						} else {
 							div.classList.remove('selected');
 						}
 					});
+                
+					// Update "Need Help" button text
+					const helpButtonText = modalContent.querySelector('.help-btn p');
+					if (helpButtonText) {
+						helpButtonText.textContent = i18next.t('need_help');
+					}
+                
+					// Update help dropdown title
+					const helpDropdownTitle = modalContent.querySelector('.help-dropdown-content h3');
+					if (helpDropdownTitle) {
+						helpDropdownTitle.textContent = i18next.t('need_help');
+					}
+                
+					// Update "Open in new tab" button text
+					const openTabButtonSpan = modalContent.querySelector('.open-tab-btn span');
+					if (openTabButtonSpan) {
+						openTabButtonSpan.textContent = i18next.t('open_in_new_tab');
+					}
 				})
 				.catch(err => logger.error(err));
-      
+        
 			languageDropdown.classList.remove('active');
-			
+        
 			if (typeof window?.mereos?.globalCallback === 'function') {
 				window.mereos.globalCallback({ 
 					type:'success',
@@ -644,7 +662,6 @@ const showTab = async (tabId, callback) => {
 		if(!window.mereos.dom){
 			return;
 		}
-		logger.success('tabId',tabId);
 		const { containers } = window.mereos.dom;
 		initializeI18next();
 		createLanguageDropdown(tabId);

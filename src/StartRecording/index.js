@@ -10,7 +10,6 @@ import {
 	convertDataIntoParse, 
 	detectBackButton, 
 	detectBackButtonCallback, 
-	detectBrowserActions, 
 	detectPageRefresh, 
 	enableCopyPasteCut, 
 	enableTextHighlighting, 
@@ -573,9 +572,6 @@ export const startRecording = async () => {
 	const session = convertDataIntoParse('session');
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 	
-	window.addEventListener('pageshow', (event) => {
-		detectBrowserActions(event);
-	});
 	detectPageRefresh();
 	detectBackButton();
 	

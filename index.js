@@ -306,11 +306,9 @@ async function stop_prechecks(callback) {
 
 async function start_session(callback) {
 	try {
-		window.addEventListener('pageshow', (event) => {
-			detectBrowserActions(event);
-		});
-		const secureFeatures = getSecureFeatures();
 		window.mereos.startRecordingCallBack = callback;
+		await detectBrowserActions();
+		const secureFeatures = getSecureFeatures();
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');
@@ -436,12 +434,12 @@ async function start_session(callback) {
 			}
 		}
 	} catch (err) {
+		console.log('err_________',err);
 		if (typeof registerEvent !== 'undefined' && typeof registerEvent === 'function') {
 			registerEvent({ 
 				eventType: 'success', 
 				notify: false, 
 				eventName: 'error_starting_session',
-				eventValue: err  
 			});
 		}
 		sentryExceptioMessage(err,{

@@ -399,7 +399,7 @@ export const checkForceClosureViolation = async () =>{
 			sessionStatus: 'Terminated',
 		});
 		window.mereos.forceClosureTriggered = true;
-		forceClosure();
+		await forceClosure();
 	}
 };
 
@@ -1697,7 +1697,7 @@ export const detectPageRefreshCallback = (e) => {
 			eventType: 'error',
 			notify: false,
 			eventName: 'candidate_clicked_on_refresh_button',
-			eventValue: getDateTime()
+			eventValue: 'browser_refresh_close'
 		});
 	} catch (err) {
 		console.log(err);
@@ -2253,14 +2253,14 @@ export const hasHelpVideo = () => {
 	return !!stepToVideoId[currentStep];
 };
 
-export const detectBrowserActions = () => {
+export const detectBrowserActions = async () => {
 	const navEntries = performance.getEntriesByType('navigation');
 	if (!navEntries || !navEntries.length) {
 		return null;
 	}
-
+	const session = convertDataIntoParse('session');
 	const navType = navEntries[0].type;
-	console.log('navType',navType);
+
 	const leaveTime = localStorage.getItem('examLeaveTime');
 	const currentTime = Date.now();
 	let timeDiff = null;
@@ -2270,17 +2270,26 @@ export const detectBrowserActions = () => {
 		localStorage.removeItem('examLeaveTime');
 	}
 
-	registerEvent({
-		eventType: 'error',
-		notify: false,
-		eventName:navType === 'navigate' ? 'candidate_came_back_to_assessment_page': navType === 'back_forward'? 'candidate_move_back_or_forward_from_the_page': 'candidate_refreshed_the_assessment_page',
-		duration:timeDiff
+	window.mereos.startRecordingCallBack({ 
+		type: 'error',
+		message: navType === 'navigate' ? 'candidate_came_back_to_assessment_page': navType === 'back_forward'? 'candidate_move_back_or_forward_from_the_page': 'candidate_refreshed_the_assessment_page',
+		code: 40019
 	});
+
+	if(session?.quizStartTime > 1 && session?.sessionStatus === 'Attending'){
+		registerEvent({
+			eventType: 'error',
+			notify: false,
+			eventName:navType === 'navigate' ? 'candidate_came_back_to_assessment_page': navType === 'back_forward'? 'candidate_move_back_or_forward_from_the_page': 'candidate_refreshed_the_assessment_page',
+			duration:timeDiff,
+			eventValue:navType
+		});
+	}
 
 	const secureFeatures = getSecureFeatures();
 	const checkForceClosure = findConfigs(['force_closure'], secureFeatures?.entities || []).length;
-	if (checkForceClosure) {
-		checkForceClosureViolation();
+	if (checkForceClosure && session?.quizStartTime > 1 && session?.sessionStatus === 'Attending') {
+		await checkForceClosureViolation();
 	}
 	return navType;
 };

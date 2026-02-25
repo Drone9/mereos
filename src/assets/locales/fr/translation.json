@@ -1083,5 +1083,17 @@
 	"return_to_fullscreen": "Retour au plein écran",
 	"fullscreen_failed": "Impossible de passer en mode plein écran. Veuillez autoriser les permissions de plein écran.",
 	"retrying": "Nouvel essai",
-	"open_in_new_tab": "Ouvrir dans un nouvel onglet"
+	"open_in_new_tab": "Ouvrir dans un nouvel onglet",
+	"single_screen": "Écran unique",
+	"microphone_access_lost": "Accès au microphone perdu",
+	"your_microphone_access_has_been_disabled_during_the_session": "Votre accès au microphone a été désactivé pendant la session",
+	"click_the_microphone_icon": "Cliquez sur l'icône du microphone dans la barre d'adresse",
+	"select_allow_for_microphone_access": "Sélectionnez Autoriser pour l'accès au microphone",
+	"reconnect_microphone": "Reconnecter le microphone",
+	"alternative_method_microphone": "Méthode alternative pour microphone",
+	"settings_microphone_steps": "Allez dans Paramètres > Confidentialité > Microphone et autorisez l'accès",
+	"firefox_microphone_steps": "Cliquez sur l'icône du cadenas > Paramètres de connexion > Autorisations du microphone",
+	"safari_microphone_step": "Allez dans Safari > Paramètres > Sites web > Microphone",
+	"click_reconnect_camera": "Cliquez sur Reconnecter la caméra",
+	"click_reconnect_microphone": "Cliquez sur Reconnecter le microphone"
 }

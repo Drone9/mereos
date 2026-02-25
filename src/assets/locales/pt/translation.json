@@ -1083,5 +1083,17 @@
 	"return_to_fullscreen": "Voltar para Tela Cheia",
 	"fullscreen_failed": "Falha ao entrar no modo de tela cheia. Permita permissões de tela cheia.",
 	"retrying": "Tentando novamente",
-	"open_in_new_tab": "Abrir em nova guia"
+	"open_in_new_tab": "Abrir em nova guia",
+	"single_screen": "Ecrã único",
+	"microphone_access_lost": "Acesso ao microfone perdido",
+	"your_microphone_access_has_been_disabled_during_the_session": "O seu acesso ao microfone foi desativado durante a sessão",
+	"click_the_microphone_icon": "Clique no ícone do microfone na barra de endereços",
+	"select_allow_for_microphone_access": "Selecione Permitir para acesso ao microfone",
+	"reconnect_microphone": "Reconectar microfone",
+	"alternative_method_microphone": "Método alternativo para microfone",
+	"settings_microphone_steps": "Vá para Configurações > Privacidade > Microfone e permita o acesso",
+	"firefox_microphone_steps": "Clique no ícone do cadeado > Configurações de conexão > Permissões do microfone",
+	"safari_microphone_step": "Vá para Safari > Configurações > Sites > Microfone",
+	"click_reconnect_camera": "Clique em Reconectar câmera",
+	"click_reconnect_microphone": "Clique em Reconectar microfone"
 }

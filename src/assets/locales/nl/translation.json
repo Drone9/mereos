@@ -1083,5 +1083,17 @@
 	"return_to_fullscreen": "Terug naar volledig scherm",
 	"fullscreen_failed": "Kan niet naar volledig scherm-modus overschakelen. Sta volledig scherm-rechten toe.",
 	"retrying": "Opnieuw proberen",
-	"open_in_new_tab": "Openen in nieuw tabblad"
+	"open_in_new_tab": "Openen in nieuw tabblad",
+	"single_screen": "Enkel scherm",
+	"microphone_access_lost": "Microfoontoegang verloren",
+	"your_microphone_access_has_been_disabled_during_the_session": "Uw microfoontoegang is tijdens de sessie uitgeschakeld",
+	"click_the_microphone_icon": "Klik op het microfoonpictogram in de adresbalk",
+	"select_allow_for_microphone_access": "Selecteer Toestaan voor microfoontoegang",
+	"reconnect_microphone": "Microfoon opnieuw verbinden",
+	"alternative_method_microphone": "Alternatieve methode voor microfoon",
+	"settings_microphone_steps": "Ga naar Instellingen > Privacy > Microfoon en sta toegang toe",
+	"firefox_microphone_steps": "Klik op het hangslotpictogram > Verbindingsinstellingen > Microfoonmachtigingen",
+	"safari_microphone_step": "Ga naar Safari > Instellingen > Websites > Microfoon",
+	"click_reconnect_camera": "Klik op Camera opnieuw verbinden",
+	"click_reconnect_microphone": "Klik op Microfoon opnieuw verbinden"
 }

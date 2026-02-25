@@ -322,7 +322,7 @@ async function start_session(callback) {
 
 		if (
 			(hasRecordScreen && screenShareStream && notCompleted) || 
-			(hasMobileProctoring && notCompleted && !mobileStream)
+			(hasMobileProctoring && notCompleted && !mobileStream && tokenData)
 		) {
 			updatePersistData('preChecksSteps', { 
 				mobileConnection: false,

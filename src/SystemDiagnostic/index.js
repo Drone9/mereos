@@ -23,11 +23,11 @@ let locationErrorRegistered = false;
 const videoGreen = `${ASSET_URL}/video-camera-green.svg`;
 const microPhoneGreen = `${ASSET_URL}/microphone-green.svg`;
 const locationGreen = `${ASSET_URL}/location-pin-green.svg`;
-const multipleScreenGreen = `${ASSET_URL}/multiple-screen-green.svg`;
+const multipleScreenGreen = `${ASSET_URL}/single-screen-green.svg`;
 const videoRed = `${ASSET_URL}/video-camera-red.svg`;
 const microPhoneRed = `${ASSET_URL}/microphone-red.svg`;
 const locationRed = `${ASSET_URL}/location-pin-red.svg`;
-const multipleScreenRed = `${ASSET_URL}/multiple-screen-red.svg`;
+const multipleScreenRed = `${ASSET_URL}/single-screen-red.svg`;
 
 const successIconMap = {
 	webcam: videoGreen,
@@ -70,7 +70,7 @@ const renderUI = (tab1Content) => {
 		diagnosticItemsHTML += createDiagnosticItemHTML('location', i18next.t('location'));
 	}
 	if (multipleScreensCheck) {
-		diagnosticItemsHTML += createDiagnosticItemHTML('desktop', i18next.t('desktop'));
+		diagnosticItemsHTML += createDiagnosticItemHTML('desktop', i18next.t('single_screen'));
 	}
 
 	const html = `
@@ -121,7 +121,7 @@ const createDiagnosticItemHTML = (id, label) => {
 		webcam: 'video-camera-light-gray.svg',
 		microphone: 'microphone-light-gray.svg',
 		location: 'location-pin-black.svg',
-		desktop: 'multiple-screen-gray.svg'
+		desktop: 'single-screen-gray.svg'
 	};
 
 	return `
@@ -232,7 +232,7 @@ const retryDiagnosticItem = async (id) => {
 		webcam: 'video-camera-light-gray.svg',
 		microphone: 'microphone-light-gray.svg',
 		location: 'location-pin-black.svg',
-		desktop: 'multiple-screen-gray.svg'
+		desktop: 'single-screen-gray.svg'
 	};
 	statusIcon.src = `${ASSET_URL}/${statusIconMap[id] || 'video-camera-light-gray.svg'}`;
 	statusLoading.src = `${ASSET_URL}/loading-gray.svg`;

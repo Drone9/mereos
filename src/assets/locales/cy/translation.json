@@ -1083,5 +1083,17 @@
 	"return_to_fullscreen": "Dychwelyd i Sgrin Lawn",
 	"fullscreen_failed": "Methu mynd i mewn i'r modd sgrin llawn. Caniatewch ganiatâd sgrin llawn.",
 	"retrying": "Ailgeisio",
-  "open_in_new_tab": "Agor mewn Tab Newydd"
+  "open_in_new_tab": "Agor mewn Tab Newydd",
+	"single_screen": "Un Sgrîn",
+	"microphone_access_lost": "Mynediad i'r Meicroffon ar Goll",
+	"your_microphone_access_has_been_disabled_during_the_session": "Mae eich mynediad i'r meicroffon wedi'i analluogi yn ystod y sesiwn",
+	"click_the_microphone_icon": "Cliciwch eicon y meicroffon yn y bar cyfeiriad",
+	"select_allow_for_microphone_access": "Dewiswch Caniatáu ar gyfer mynediad i'r meicroffon",
+	"reconnect_microphone": "Ailgysylltu Meicroffon",
+	"alternative_method_microphone": "Dull amgen ar gyfer meicroffon",
+	"settings_microphone_steps": "Ewch i Gosodiadau > Preifatrwydd > Meicroffon a chaniatáu mynediad",
+	"firefox_microphone_steps": "Cliciwch yr eicon clo > Gosodiadau cysylltiad > Caniatadau meicroffon",
+	"safari_microphone_step": "Ewch i Safari > Gosodiadau > Gwefannau > Meicroffon",
+	"click_reconnect_camera": "Cliciwch Ailgysylltu Camera",
+	"click_reconnect_microphone": "Cliciwch Ailgysylltu Meicroffon"
 }

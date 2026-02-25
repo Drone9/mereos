@@ -1083,5 +1083,17 @@
 	"return_to_fullscreen": "Zum Vollbildmodus zurückkehren",
 	"fullscreen_failed": "Vollbildmodus konnte nicht gestartet werden. Bitte erlauben Sie Vollbildberechtigungen.",
 	"retrying": "Erneut versuchen",
-  "open_in_new_tab": "In neuem Tab öffnen"
+  "open_in_new_tab": "In neuem Tab öffnen",
+	"single_screen": "Einzelbildschirm",
+	"microphone_access_lost": "Mikrofonzugriff verloren",
+	"your_microphone_access_has_been_disabled_during_the_session": "Ihr Mikrofonzugriff wurde während der Sitzung deaktiviert",
+	"click_the_microphone_icon": "Klicken Sie auf das Mikrofonsymbol in der Adressleiste",
+	"select_allow_for_microphone_access": "Wählen Sie Zulassen für Mikrofonzugriff",
+	"reconnect_microphone": "Mikrofon wieder verbinden",
+	"alternative_method_microphone": "Alternative Methode für Mikrofon",
+	"settings_microphone_steps": "Gehen Sie zu Einstellungen > Datenschutz > Mikrofon und erlauben Sie Zugriff",
+	"firefox_microphone_steps": "Klicken Sie auf das Schlosssymbol > Verbindungseinstellungen > Mikrofonberechtigungen",
+	"safari_microphone_step": "Gehen Sie zu Safari > Einstellungen > Websites > Mikrofon",
+	"click_reconnect_camera": "Klicken Sie auf Kamera wieder verbinden",
+	"click_reconnect_microphone": "Klicken Sie auf Mikrofon wieder verbinden"
 }

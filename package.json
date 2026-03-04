@@ -44,7 +44,7 @@
     "peerjs": "^1.5.5",
     "qrcode": "^1.5.4",
     "talkjs": "^0.31.0",
-    "twilio-video": "2.28.1",
+    "twilio-video": "2.28.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {

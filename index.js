@@ -8,7 +8,7 @@
 */
 window.mereos = window.mereos || {};
 import { initShadowDOM, openModal, startSession } from './src/ExamsPrechecks';
-import { getRoomSid, getToken } from './src/services/twilio.services';
+import { getRoomToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
@@ -77,12 +77,12 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			try {
 				resp = await createCandidate(candidateData);
 			} catch (error) {
+				const message = handleBackendError(i18next.t,error?.response?.data?.message);
 				sentryExceptioMessage(error,{
 					type: 'error',
 					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 					code: 40021,
 				});
-				const message = handleBackendError(i18next.t,error?.response?.data?.message);
 				localStorage.removeItem('mereosToken');
 				return callback({
 					type: 'error',
@@ -359,20 +359,20 @@ async function start_session(callback) {
 				
 				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
 					try {
-						const resp = await getRoomSid({ session_id: mobileRoomSessionId, auto_record: true });
-						const mobileTwilioToken = await getToken({ room_sid: resp.data.room_sid });
+						const resp = await getRoomToken({ room_name: mobileRoomSessionId, identity: mobileRoomSessionId });
+						const mobileTwilioToken = resp?.data?.token;
 	
 						updatePersistData('session', {
 							mobileRoomId: resp.data.room_sid,
 							mobileRoomSessionId: mobileRoomSessionId,
-							mobileTwilioToken:mobileTwilioToken?.data?.token
+							mobileTwilioToken:mobileTwilioToken
 						});
 	
 						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 							window.mereos.socket.send(
 								JSON.stringify({
 									event: 'twilioToken',
-									message: mobileTwilioToken?.data?.token,
+									message:mobileTwilioToken,
 								})
 							);
 						}
@@ -398,12 +398,12 @@ async function start_session(callback) {
 				const roomCreation = ['record_screen', 'record_audio', 'record_video', 'mobile_proctoring'];
 				if (secureFeatures?.entities.filter((entity) => roomCreation.includes(entity.key)).length > 0) {
 					try {
-						const resp = await getRoomSid({ session_id: newRoomSessionId, auto_record: true });
-						const twilioToken = await getToken({ room_sid: resp.data.room_sid });
+						const resp = await getRoomToken({ room_name: newRoomSessionId, identity: newRoomSessionId });
+						const twilioToken = resp?.data?.token;
 	
 						if (twilioToken) {
 							updatePersistData('session', {
-								twilioToken: twilioToken.data.token,
+								twilioToken: twilioToken,
 								sessionId: newRoomSessionId,
 							});
 						}

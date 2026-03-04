@@ -181,7 +181,6 @@ const cleanupCameraTracks = async (room, trackKind) => {
 // ============= MODAL FUNCTIONS =============
 
 export const showPermissionModal = (permissionType = 'camera') => {
-	logger.success('permissionType',permissionType);
 	let container, existingModal;
     
 	if (window.mereos?.shadowRoot) {
@@ -707,12 +706,9 @@ export const startRecording = async () => {
 			});
 			let room;
 			try{
-				logger.success('twilioToken',session.twilioToken);
-				logger.success('twilioOptions',twilioOptions);
 				room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
 				window.mereos.roomInstance = room;
 			}catch(error){
-				logger.error('room error',error);
 				if (error.code) {
 					logger.error('Twilio error code:', error.code);
 				}
@@ -722,7 +718,6 @@ export const startRecording = async () => {
 				registerEvent({ eventType: 'success', notify: false, eventName: 'room_is_not_creating' });
 				sentryExceptioMessage(error,{type:'error',message:'Twilio room is not creating'});
 			}
-			logger.success('room',room);
 			updatePersistData('session', { 
 				room_id: room?.sid 
 			});
@@ -742,7 +737,6 @@ export const startRecording = async () => {
 			} else {
 				mediaConstraints.audio = false;
 			}
-			logger.error('room.localParticipant',room?.localParticipant);
 			if(secureFeatures?.entities?.find(entity => entity.key === 'record_video')){
 				await new Promise((resolve) => {
 					if(room.localParticipant.videoTracks){

@@ -3389,3 +3389,135 @@ body{
   cursor: not-allowed;
 }
 `;
+
+
+export const permissionModalStyle = `
+.permission-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.permission-modal {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.permission-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.permission-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.permission-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    line-height: 1;
+}
+
+.permission-modal-close:hover {
+    color: #111827;
+}
+
+.permission-modal-body {
+    padding: 24px;
+}
+
+.permission-instructions p {
+    margin: 0 0 16px;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.permission-instructions ol,
+.permission-instructions ul {
+    margin: 0 0 20px;
+    padding-left: 20px;
+}
+
+.permission-instructions li {
+    margin-bottom: 8px;
+    color: #4b5563;
+    line-height: 1.5;
+}
+
+.browser-instructions {
+    background-color: #f9fafb;
+    padding: 16px;
+    border-radius: 6px;
+    margin: 16px 0;
+}
+
+.browser-instructions h4 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.browser-instructions ul {
+    margin: 0;
+}
+
+.browser-instructions li {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.browser-instructions strong {
+    color: #111827;
+    font-weight: 600;
+}
+
+.permission-modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.orange-filled-btn {
+    background-color: #f97316;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.orange-filled-btn:hover {
+    background-color: #ea580c;
+}
+
+.orange-filled-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.5);
+}
+`;

@@ -1095,5 +1095,8 @@
 	"firefox_microphone_steps": "Fare clic sull'icona del lucchetto > Impostazioni connessione > Autorizzazioni microfono",
 	"safari_microphone_step": "Vai su Safari > Impostazioni > Siti web > Microfono",
 	"click_reconnect_camera": "Fare clic su Riconnetti fotocamera",
-	"click_reconnect_microphone": "Fare clic su Riconnetti microfono"
+	"click_reconnect_microphone": "Fare clic su Riconnetti microfono",
+	"lighting_too_dark": "L'illuminazione è troppo scura. Migliora il tuo ambiente.",
+	"lighting_too_bright": "L'illuminazione è troppo luminosa. Evita la luce diretta dietro di te.",
+	"lighting_ok": "L'illuminazione sembra buona"
 }

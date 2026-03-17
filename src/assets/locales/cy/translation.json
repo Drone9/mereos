@@ -1095,5 +1095,8 @@
 	"firefox_microphone_steps": "Cliciwch yr eicon clo > Gosodiadau cysylltiad > Caniatadau meicroffon",
 	"safari_microphone_step": "Ewch i Safari > Gosodiadau > Gwefannau > Meicroffon",
 	"click_reconnect_camera": "Cliciwch Ailgysylltu Camera",
-	"click_reconnect_microphone": "Cliciwch Ailgysylltu Meicroffon"
+	"click_reconnect_microphone": "Cliciwch Ailgysylltu Meicroffon",
+	"lighting_too_dark": "Mae'r goleuo'n rhy dywyll. Gwella eich amgylchedd.",
+	"lighting_too_bright": "Mae'r goleuo'n rhy llachar. Ceisiwch osgoi golau uniongyrchol y tu ôl i chi.",
+	"lighting_ok": "Mae'r goleuo'n edrych yn dda"
 }

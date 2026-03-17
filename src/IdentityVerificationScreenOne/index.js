@@ -58,14 +58,12 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
 			videoElement.srcObject = window.mereos.globalStream;
 			
-			// Wait for video to be ready
 			await new Promise((resolve) => {
 				videoElement.onloadedmetadata = () => {
 					resolve();
 				};
 			});
 			
-			// Add track ended listener
 			const tracks = window.mereos.globalStream.getTracks();
 			tracks.forEach(track => {
 				track.addEventListener('ended', () => {
@@ -73,7 +71,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				});
 			});
             
-			// Reset webcamError and set loading to false when camera starts successfully
 			state.webcamError = false;
 			state.webcamLoading = false;
 			
@@ -134,7 +131,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				const predictions = resp?.data?.face?.FaceDetails;
     
 				img.onload = async function () {
-					// Reset processing flag when done
 					state.isProcessing = false;
 					
 					if (predictions?.length && predictions.length === 1) {
@@ -245,7 +241,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				sentryExceptioMessage(error,{type:'error',message:'Error processing the image'});
 				logger.error('Error processing the image:', error);
 				
-				// Reset processing flag on error
 				state.isProcessing = false;
 				state.failedAttempts++;
 				
@@ -441,7 +436,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
         
 		ivsoContainer.insertAdjacentHTML('beforeend', contentHTML);
         
-		// Add event listeners only when elements exist
 		const retakeBtn = window.mereos.shadowRoot.getElementById('retake-btn');
 		if (retakeBtn) {
 			retakeBtn.addEventListener('click', () => {

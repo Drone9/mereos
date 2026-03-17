@@ -1613,8 +1613,8 @@ export const preValidationCss = `.pvi-container {
 }
 
 .pvi-header-img {
-  margin: 20px auto 0px;
-  height: 230px;
+  margin: 0px auto 0px;
+  height: 250px;
 }
 .pvi-instruction-img{
   width: 40px;

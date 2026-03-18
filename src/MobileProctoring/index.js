@@ -181,6 +181,13 @@ export const MobileProctoring = async (tabContent) => {
 			});
 		} catch (error) {
 			sentryExceptioMessage(error,{type:'error',message:'Failed to create Peer instance'});
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'failed_connect_with_mobile_video',
+					code:40053
+				});
+			}
 			logger.error('Failed to create Peer instance:', error);
 		}
 	};
@@ -193,13 +200,6 @@ export const MobileProctoring = async (tabContent) => {
 			if (newStep === 'step4') {
 				if(!window.mereos.mobileProctoring){
 					registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
-					if(window.mereos.globalCallback) {
-						window.mereos.globalCallback({ 
-							type:'error',
-							message: 'mobile_connection_successful',
-							code:40053
-						});
-					}
 					updatePersistData('preChecksSteps', { mobileConnection: true });
 					showTab('IdentityVerificationScreenFive');
 					let container = window.mereos.shadowRoot.getElementById('mobile-proctoring');
@@ -516,7 +516,7 @@ export const MobileProctoring = async (tabContent) => {
 			if(window.mereos.globalCallback) {
 				window.mereos.globalCallback({ 
 					type:'error',
-					message: 'internet_connection_lost',
+					message: 'internet_connection_lost_during_mobile_connection',
 					code:40054
 				});
 			}

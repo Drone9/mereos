@@ -267,7 +267,7 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			if(window.mereos.globalCallback){
 				window.mereos.globalCallback({ 
 					type:'error',
-					message: 'something_went_wrong_please_upload_again',
+					message: 'something_went_wrong_please_upload_video_again',
 					code:40051
 				});
 			}

@@ -250,7 +250,7 @@ const retrySecurityCheck = async (id, checkFunction) => {
 			});
 			window.mereos.globalCallback({ 
 				type:'success',
-				message: `${id}_security_retry_success`,
+				message: `browser_security_retry_success`,
 				code:50012
 			});
 		} else {
@@ -261,7 +261,7 @@ const retrySecurityCheck = async (id, checkFunction) => {
 			});
 			window.mereos.globalCallback({ 
 				type:'error',
-				message: `${id}_security_retry_failed`,
+				message: `browser_security_retry_failed`,
 				code:40044
 			});
 		}
@@ -484,11 +484,6 @@ const checkIncognitoMode = async () => {
 				notify: false,
 				eventName: 'incognito_mode_detected',
 				details: { browserName }
-			});
-			window.mereos.globalCallback({ 
-				type:'success',
-				message: 'incognito_mode_detected',
-				code:50012
 			});
 			return true;
 		}

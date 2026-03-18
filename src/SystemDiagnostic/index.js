@@ -261,7 +261,7 @@ const retryDiagnosticItem = async (id) => {
 			if(window.mereos.globalCallback) {
 				window.mereos.globalCallback({ 
 					type:'success',
-					message: `${id}_retry_success` ,
+					message: `system_diagnostic_retry_success` ,
 					code:50010
 				});
 			}
@@ -269,8 +269,8 @@ const retryDiagnosticItem = async (id) => {
 			if(window.mereos.globalCallback) {
 				window.mereos.globalCallback({ 
 					type:'error',
-					message: `${id}_retry_failed` ,
-					code:40035
+					message: `system_diagnostic_retry_failed` ,
+					code:40066
 				});
 			}
 			registerEvent({ 
@@ -527,7 +527,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 					if(window.mereos.globalCallback) {
 						window.mereos.globalCallback({ 
 							type:'error',
-							message: `location_not_working` ,
+							message: `multiple_screens_detected` ,
 							code:40037
 						});
 					}

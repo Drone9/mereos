@@ -110,6 +110,13 @@ export const MobileProctoring = async (tabContent) => {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
 						showToast('error', 'mobile_phone_disconnected');
+						if(window.mereos.globalCallback) {
+							window.mereos.globalCallback({ 
+								type:'error',
+								message: 'mobile_phone_disconnected',
+								code:40055
+							});
+						}
 						updatePersistData('session', {
 							sessionStatus:'Terminated'
 						});
@@ -186,6 +193,13 @@ export const MobileProctoring = async (tabContent) => {
 			if (newStep === 'step4') {
 				if(!window.mereos.mobileProctoring){
 					registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_successful', eventValue: getDateTime() });
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: 'mobile_connection_successful',
+							code:40053
+						});
+					}
 					updatePersistData('preChecksSteps', { mobileConnection: true });
 					showTab('IdentityVerificationScreenFive');
 					let container = window.mereos.shadowRoot.getElementById('mobile-proctoring');
@@ -239,7 +253,13 @@ export const MobileProctoring = async (tabContent) => {
 						connectSocketConnection();		
 						closeModal();
 						registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_phone_reconnected', eventValue: getDateTime() });
-						
+						if(window.mereos.globalCallback) {
+							window.mereos.globalCallback({ 
+								type:'success',
+								message: 'mobile_phone_reconnected',
+								code:50016
+							});
+						}
 						if(window.mereos.startRecordingCallBack){
 							window.mereos.startRecordingCallBack({ 
 								type:'success',
@@ -493,6 +513,13 @@ export const MobileProctoring = async (tabContent) => {
 	window.addEventListener('offline', () => {
 		if (window.mereos.socket) {
 			showToast('error','internet_connection_lost');
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'internet_connection_lost',
+					code:40054
+				});
+			}
 			window.mereos.socket.close();
 		}
 	});

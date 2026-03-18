@@ -248,11 +248,21 @@ const retrySecurityCheck = async (id, checkFunction) => {
 				notify: false, 
 				eventName: `${id}_security_retry_success` 
 			});
+			window.mereos.globalCallback({ 
+				type:'success',
+				message: `${id}_security_retry_success`,
+				code:50012
+			});
 		} else {
 			registerEvent({ 
 				eventType: 'error', 
 				notify: false, 
 				eventName: `${id}_security_retry_failed` 
+			});
+			window.mereos.globalCallback({ 
+				type:'error',
+				message: `${id}_security_retry_failed`,
+				code:40044
 			});
 		}
 		
@@ -416,6 +426,11 @@ const checkExtensions = async () => {
 			detectedExtensionNames = detected.map(ext => ext.name);
 			extensionError = 'please_disable_your_browser_extensions';
 			displayErrorMessage();
+			window.mereos.globalCallback({ 
+				type:'error',
+				message: 'extensions_detected',
+				code:40045
+			});
 			registerEvent({ eventType: 'error', notify: false, eventName: 'extensions_detected' });
 			return false;
 		} else {
@@ -431,6 +446,11 @@ const checkExtensions = async () => {
 		sentryExceptioMessage(error,{
 			type: 'error', 
 			message: 'Extension check failed please try again', 
+		});
+		window.mereos.globalCallback({ 
+			type:'error',
+			message: 'extension_check_failed',
+			code:40046
 		});
 		registerEvent({ eventType: 'error', notify: false, eventName: 'extension_check_failed' });
 		return false;
@@ -450,6 +470,11 @@ const checkIncognitoMode = async () => {
 				eventName: 'standard_browser_mode_detected',
 				details: { browserName }
 			});
+			window.mereos.globalCallback({ 
+				type:'error',
+				message: 'standard_browser_mode_detected',
+				code:40047
+			});
 			return false;
 		} else {
 			incognitoError = '';
@@ -459,6 +484,11 @@ const checkIncognitoMode = async () => {
 				notify: false,
 				eventName: 'incognito_mode_detected',
 				details: { browserName }
+			});
+			window.mereos.globalCallback({ 
+				type:'success',
+				message: 'incognito_mode_detected',
+				code:50012
 			});
 			return true;
 		}

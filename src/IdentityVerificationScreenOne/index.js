@@ -152,6 +152,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 									text: 'detected_face_successfully',
 								},
 							};
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'success',
+									message: 'detected_face_successfully',
+									code:50007
+								});
+							}
 							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 						} else {
 							state.failedAttempts++;
@@ -165,6 +172,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 										text: 'detected_face_successfully',
 									},
 								};
+								if(window.mereos.globalCallback){
+									window.mereos.globalCallback({ 
+										type:'success',
+										message: 'detected_face_successfully',
+										code:50007
+									});
+								}
 								registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 							} else {
 								state = {
@@ -176,6 +190,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 										text: 'face_not_detected',
 									},
 								};
+								if(window.mereos.globalCallback){
+									window.mereos.globalCallback({ 
+										type:'error',
+										message: 'face_not_detected',
+										code:40029
+									});
+								}
 								startWebcam();
 								registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
 							}
@@ -192,6 +213,14 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 									text: 'detected_face_successfully',
 								},
 							};
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'success',
+									message: 'detected_face_successfully',
+									code:50007
+								});
+							}
+						
 							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 						} else {
 							state = {
@@ -204,6 +233,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 								},
 							};
 							startWebcam();
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'error',
+									message: 'multiple_face_detected',
+									code:40028
+								});
+							}
 							registerEvent({ eventType: 'error', notify: true, eventName: 'multiple_face_detected' });
 						}
 					} else {
@@ -218,6 +254,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 									text: 'detected_face_successfully',
 								},
 							};
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'success',
+									message: 'detected_face_successfully',
+									code:50007
+								});
+							}
 							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 						} else {
 							state = {
@@ -230,6 +273,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 								},
 							};
 							startWebcam();
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'error',
+									message: 'face_not_detected',
+									code:40027
+								});
+							}
 							registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
 						}
 					}
@@ -253,6 +303,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 							text: 'detected_face_successfully',
 						},
 					};
+					if(window.mereos.globalCallback){
+						window.mereos.globalCallback({ 
+							type:'success',
+							message: 'detected_face_successfully',
+							code:50007
+						});
+					}
 					registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 				} else {
 					state = {
@@ -305,6 +362,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 						text: 'candidate_photo_uploaded_successfully',
 					},
 				};
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'candidate_photo_uploaded_successfully',
+						code:50007 
+					});
+				}
 				registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_uploaded_successfully' });
 			}
 		} catch (e) {
@@ -319,6 +383,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 					text: 'something_went_wrong_please_upload_again',
 				},
 			};
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'internet_connection_unstable',
+					code:40026
+				});
+			}
 			registerEvent({ eventType: 'error', notify: false, eventName: 'internet_connection_unstable' });
 			sentryExceptioMessage(e,{type:'error',message:'Image Upload failed'});
 		} finally {

@@ -816,9 +816,23 @@ export const startSession = async () => {
 		if (resp?.data) {
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
 			if(!session?.browserEvents.filter(item => item.name === 'session_initiated')?.length){
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'session_initiated',
+						code:50017
+					});
+				}
 				registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
 			}
 			if(!session?.browserEvents.filter(item => item.name === 'session_started')?.length){
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'session_started',
+						code:50018
+					});
+				}
 				registerEvent({ eventType: 'success', notify: false, eventName: 'session_started' });
 			}
 		}
@@ -837,11 +851,13 @@ export const startSession = async () => {
 		sentryExceptioMessage(e);
 		const callBackFunc = () => {
 			if(e.response?.data?.detail === 'Token not found'){
-				window.mereos.globalCallback({
-					type: 'error',
-					code: 40023,
-					message: 'token_expired_login_again_to_perform_this_action',
-				});
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({
+						type: 'error',
+						code: 40023,
+						message: 'token_expired_login_again_to_perform_this_action',
+					});
+				}
 			}
 		};
 		stop_prechecks(callBackFunc);

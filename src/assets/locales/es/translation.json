@@ -1098,5 +1098,6 @@
 	"click_reconnect_microphone": "Haga clic en Reconectar micrófono",
 	"lighting_too_dark": "La iluminación es demasiado oscura. Por favor, mejore su entorno.",
 	"lighting_too_bright": "La iluminación es demasiado brillante. Evite la luz directa detrás de usted.",
-	"lighting_ok": "La iluminación se ve bien"
+	"lighting_ok": "La iluminación se ve bien",
+	"pdf_multiple_pages_error": "Cargue un archivo PDF de una sola página. No se aceptan PDF de varias páginas para la verificación de identidad."
 }

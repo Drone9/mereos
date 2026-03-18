@@ -383,6 +383,13 @@ export const PrevalidationInstructions = async (tabContent) => {
 				isCheckingMedia = false;
 
 				if (result.error) {
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: result.error  ,
+							code:40042
+						});
+					}
 					registerEvent({ notify: false, eventName: result.error });
 
 					if (messageElement) {
@@ -394,7 +401,13 @@ export const PrevalidationInstructions = async (tabContent) => {
 				} else if (result.message === 'media_check_success') {
 					registerEvent({ notify: false, eventName: result.message });
 					registerEvent({ notify: false, eventName: 'candidate_selected_microphone_camera' });
-
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'success',
+							message: 'candidate_selected_microphone_camera' ,
+							code:50011
+						});
+					}
 					if (messageElement) {
 						messageElement.textContent = i18next.t(result.message);
 						messageElement.style.color = '';
@@ -414,7 +427,13 @@ export const PrevalidationInstructions = async (tabContent) => {
 				isCheckingMedia = false;
 
 				registerEvent({ notify: false, eventName: 'media_check_exception' });
-
+				if(window.mereos.globalCallback) {
+					window.mereos.globalCallback({ 
+						type:'error',
+						message: 'media_check_exception' ,
+						code:40043
+					});
+				}
 				const messageElement = window.mereos.shadowRoot.getElementById('message');
 				if (messageElement) {
 					messageElement.textContent = i18next.t('media_check_exception');

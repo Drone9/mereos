@@ -45,6 +45,13 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const resp = await detectMultipleScreens();
 		if (resp) {
 			multipleScreens = true;
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'multiple_screens_detected',
+					code:40037
+				});
+			}
 			registerEvent({ eventType: 'error', notify: false, eventName: 'multiple_screens_detected' });
 		} else {
 			multipleScreens = false;
@@ -57,7 +64,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				mobileConnection: false,
 				screenSharing: false
 			});
-			window.mereos.globalCallback({ type:'error', message: 'mobile_phone_disconnected', code:40017 });
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ type:'error', message: 'mobile_phone_disconnected', code:40017 });
+			}
 			showToast('error','mobile_phone_disconnected');
 			logger.error('Socket not initialized');
 			return;
@@ -77,6 +86,13 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 							showTab('MobileProctoring');
 						}
 						registerEvent({ eventType: 'error', notify: false, eventName: eventData?.message?.message, eventValue: getDateTime() });
+						if(window.mereos.globalCallback){
+							window.mereos.globalCallback({ 
+								type:'error',
+								message: eventData?.message?.message,
+								code:40052
+							});
+						}
 						break;
 
 					default:
@@ -171,7 +187,13 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				eventName: 'screen_recording_window_shared',
 				eventValue: getDateTime()
 			});
-
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ 
+					type:'success',
+					message: 'screen_recording_window_shared',
+					code:50015
+				});
+			}
 			showTab('IdentityVerificationScreenSix');
 			window.mereos.isScreenShare = false;
 

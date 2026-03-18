@@ -1098,5 +1098,6 @@
 	"click_reconnect_microphone": "Klicken Sie auf Mikrofon wieder verbinden",
 	"lighting_too_dark": "Die Beleuchtung ist zu dunkel. Bitte verbessern Sie Ihre Umgebung.",
 	"lighting_too_bright": "Die Beleuchtung ist zu hell. Vermeiden Sie direktes Licht hinter Ihnen.",
-	"lighting_ok": "Die Beleuchtung sieht gut aus"
+	"lighting_ok": "Die Beleuchtung sieht gut aus",
+	"pdf_multiple_pages_error": "Bitte laden Sie eine einseitige PDF-Datei hoch. Mehrseitige PDFs werden zur Identitätsüberprüfung nicht akzeptiert."
 }

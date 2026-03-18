@@ -75,6 +75,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			msg: { type: 'unsuccessful', text: 'webcam_error' }
 		};
 		renderUI();
+		if(window.mereos.globalCallback) {
+			window.mereos.globalCallback({ 
+				type:'error',
+				message: 'webcam_error',
+				code:40030
+			});
+		}
 		registerEvent({
 			eventType: 'error',
 			notify: true,
@@ -124,7 +131,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const handleRestart = () => {
-		// Clear any pending timeout
 		if (cameraInitTimeout) {
 			clearTimeout(cameraInitTimeout);
 		}
@@ -180,6 +186,11 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
 			const pdf = await loadingTask.promise;
 			
+			if (pdf.numPages > 1) {
+				processingPDF = false;
+				throw new Error('pdf_has_multiple_pages');
+			}
+			
 			const page = await pdf.getPage(1);
 			
 			const scale = 2.0;
@@ -207,13 +218,37 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		} catch (error) {
 			console.error('Error extracting image from PDF:', error);
 			processingPDF = false;
-			registerEvent({
-				eventType: 'error',
-				notify: true,
-				eventName: 'pdf_extraction_error'
-			});
-			sentryExceptioMessage(error,{type:'error',message:'PDF extraction error'});
-			throw new Error('error_processing_pdf');
+			
+			if (error.message === 'pdf_has_multiple_pages') {
+				if(window.mereos.globalCallback) {
+					window.mereos.globalCallback({ 
+						type:'error',
+						message: 'pdf_multiple_pages_error',
+						code:40035
+					});
+				}
+				registerEvent({
+					eventType: 'error',
+					notify: true,
+					eventName: 'pdf_multiple_pages_error'
+				});
+				throw new Error('pdf_multiple_pages_error');
+			} else {
+				if(window.mereos.globalCallback) {
+					window.mereos.globalCallback({ 
+						type:'error',
+						message: 'pdf_extraction_error',
+						code:40034
+					});
+				}
+				registerEvent({
+					eventType: 'error',
+					notify: true,
+					eventName: 'pdf_extraction_error'
+				});
+				sentryExceptioMessage(error,{type:'error',message:'PDF extraction error'});
+				throw new Error('error_processing_pdf');
+			}
 		}
 	};
 
@@ -323,6 +358,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 							}
 						};
 						disabledBtn = false;
+						if(window.mereos.globalCallback) {
+							window.mereos.globalCallback({ 
+								type:'success',
+								message: 'id_successfully_verified',
+								code:50008
+							});
+						}
 						registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
 					} else {
 						failedAttempts++;
@@ -336,7 +378,14 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 							}
 						};
 						disabledBtn = false;
-						registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
+						if(window.mereos.globalCallback) {
+							window.mereos.globalCallback({ 
+								type:'error',
+								message: 'id_not_verified',
+								code:40031
+							});
+						}
+						registerEvent({eventType: 'error', notify: false, eventName: 'id_not_verified'});
 					}
 				} else if (isFourthTry) {
 					currentState = {
@@ -348,6 +397,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						}
 					};
 					disabledBtn = false;
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'success',
+							message: 'id_successfully_verified',
+							code:50008
+						});
+					}
 					registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
 				}
 			} catch (error) {
@@ -366,6 +422,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						}
 					};
 					disabledBtn = false;
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'success',
+							message: 'id_successfully_verified',
+							code:50008
+						});
+					}
 					registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
 				} else {
 					currentState = {
@@ -377,6 +440,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						}
 					};
 					disabledBtn = false;
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: 'api_verification_failed',
+							code:40032
+						});
+					}
 					registerEvent({
 						eventType: 'error',
 						notify: false,
@@ -428,6 +498,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						text: 'candidate_id_is_uploaded_successfully'
 					}
 				};
+				if(window.mereos.globalCallback) {
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'identity_card_uploaded_successfully',
+						code:50009
+					});
+				}
 				registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_uploaded_successfully'});
 			} else {
 				throw 'something_went_wrong_please_upload_again';
@@ -441,6 +518,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 					text: 'something_went_wrong_please_upload_again'
 				}
 			};
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'internet_connection_unstable',
+					code:40033
+				});
+			}
 			sentryExceptioMessage(error);
 			registerEvent({eventType: 'success', notify: false, eventName: 'internet_connection_unstable'});
 		}

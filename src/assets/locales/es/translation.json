@@ -1095,5 +1095,9 @@
 	"firefox_microphone_steps": "Haga clic en el icono del candado > Configuración de conexión > Permisos de micrófono",
 	"safari_microphone_step": "Vaya a Safari > Configuración > Sitios web > Micrófono",
 	"click_reconnect_camera": "Haga clic en Reconectar cámara",
-	"click_reconnect_microphone": "Haga clic en Reconectar micrófono"
+	"click_reconnect_microphone": "Haga clic en Reconectar micrófono",
+	"lighting_too_dark": "La iluminación es demasiado oscura. Por favor, mejore su entorno.",
+	"lighting_too_bright": "La iluminación es demasiado brillante. Evite la luz directa detrás de usted.",
+	"lighting_ok": "La iluminación se ve bien",
+	"pdf_multiple_pages_error": "Cargue un archivo PDF de una sola página. No se aceptan PDF de varias páginas para la verificación de identidad."
 }

@@ -258,7 +258,21 @@ const retryDiagnosticItem = async (id) => {
 				notify: false, 
 				eventName: `${id}_retry_success` 
 			});
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'success',
+					message: `${id}_retry_success` ,
+					code:50010
+				});
+			}
 		} else {
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: `${id}_retry_failed` ,
+					code:40035
+				});
+			}
 			registerEvent({ 
 				eventType: 'error', 
 				notify: false, 
@@ -362,6 +376,13 @@ const startLocationMonitoring = () => {
 						notify: false, 
 						eventName: 'location_not_working' 
 					});
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: `location_not_working` ,
+							code:40036
+						});
+					}
 					locationErrorRegistered = true;
 				}
 			} else {
@@ -396,6 +417,13 @@ const startScreenMonitoring = () => {
 				setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected);
 				
 				if (isDetected) {
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: `multiple_screens_detected` ,
+							code:40037
+						});
+					}
 					registerEvent({
 						eventType: 'error', 
 						notify: false, 
@@ -435,6 +463,13 @@ export const SystemDiagnostics = async (tab1Content) => {
 				cameraStream = stream; 
 				setElementStatus('webcam', { success: videoGreen, failure: videoRed }, stream);
 				if (!stream) {
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: `webcam_not_working` ,
+							code:40038
+						});
+					}
 					registerEvent({eventType: 'error', notify: false, eventName: 'webcam_not_working'});
 				}
 				return stream;
@@ -448,6 +483,13 @@ export const SystemDiagnostics = async (tab1Content) => {
 				audioStream = stream; 
 				setElementStatus('microphone', { success: microPhoneGreen, failure: microPhoneRed }, stream);
 				if (!stream) {
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: `microphone_not_working` ,
+							code:40039
+						});
+					}
 					registerEvent({eventType: 'error', notify: false, eventName: 'microphone_not_working'});
 				}
 				return stream;
@@ -461,6 +503,13 @@ export const SystemDiagnostics = async (tab1Content) => {
 				updatePersistData('session', { location });
 				setElementStatus('location', { success: locationGreen, failure: locationRed }, location);
 				if (!location) {
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: `location_not_working` ,
+							code:40040
+						});
+					}
 					registerEvent({eventType: 'error', notify: false, eventName: 'location_not_working'});
 					locationErrorRegistered = true;
 				}
@@ -475,6 +524,13 @@ export const SystemDiagnostics = async (tab1Content) => {
 			promises.push(detectMultipleScreens().then(isDetected => {
 				setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected ? true : false);
 				if (isDetected) {
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: `location_not_working` ,
+							code:40037
+						});
+					}
 					registerEvent({eventType: 'error', notify: false, eventName: 'multiple_screens_detected'});
 				}
 				startScreenMonitoring();

@@ -82,6 +82,13 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			} else {
 				textMessage = 'camera_access_lost';
 			}
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: textMessage,
+					code:40050
+				});
+			}
 			sentryExceptioMessage(error,{
 				type: 'error', 
 				message: textMessage, 
@@ -141,6 +148,13 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				type: 'error', 
 				message: textMessage, 
 			});
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'camera_access_lost',
+					code:40049
+				});
+			}
 			updateUI();
 		}
 	};
@@ -236,6 +250,13 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				updatePersistData('session', { room_scan_video: fileUrl });
 				recordingMode = 'uploaded_file';
 				textMessage = 'candidate_video_is_uploaded_successfully';
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'candidate_video_is_uploaded_successfully',
+						code:50014
+					});
+				}
 				updateUI();
 			}
 		} catch (error) {
@@ -243,6 +264,13 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 			textMessage = 'something_went_wrong_please_upload_again';
 			recordingMode = 'stopRecording';
 			sentryExceptioMessage(error);
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'something_went_wrong_please_upload_again',
+					code:40051
+				});
+			}
 			updateUI();
 		}
 	};
@@ -333,7 +361,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				return;
 			}
 
-			// Show loading spinner while initializing camera
 			if (webcamLoading) {
 				headerImgContainer.insertAdjacentHTML('beforeend', `
 					<div class="camera-spinner">
@@ -354,7 +381,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				return;
 			}
 
-			// Check if stream already exists
 			const hasActiveTracks = window.mereos.globalStream?.getTracks?.().some(track => track.readyState === 'live');
 			
 			if (!window.mereos.globalStream || !hasActiveTracks) {
@@ -369,15 +395,12 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				};
 
 				try {
-					// Set loading and trigger UI update
 					webcamLoading = true;
 					
-					// Use setTimeout to ensure UI updates before async operation
 					setTimeout(async () => {
 						try {
 							window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaOptions);
 							
-							// Wait for stream to be ready
 							const testVideo = document.createElement('video');
 							testVideo.srcObject = window.mereos.globalStream;
 							
@@ -399,7 +422,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 						}
 					}, 100);
 					
-					// Trigger UI update to show spinner
 					updateUI();
 					return;
 				} catch (error) {
@@ -413,7 +435,6 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				}
 			}
 
-			// Camera stream is ready, show video
 			headerImgContainer.insertAdjacentHTML('beforeend', `
 				<video id="webcam-recording-media" autoplay muted height="250"></video>
 			`);

@@ -327,12 +327,26 @@ const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
 		
 		if (finalResult) {
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'success',
+					message: `${id}_requirement_retry_success` ,
+					code:50011
+				});
+			}
 			registerEvent({ 
 				eventType: 'success', 
 				notify: false, 
 				eventName: `${id}_requirement_retry_success` 
 			});
 		} else {
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: `${id}_requirement_retry_failed` ,
+					code:40041
+				});
+			}
 			registerEvent({ 
 				eventType: 'error', 
 				notify: false, 

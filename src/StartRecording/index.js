@@ -401,6 +401,13 @@ const setupTrackStoppedListeners = (track,trackType) => {
 				handleDeviceLost(kind, true, track,trackType);
 			}
 			sentryExceptioMessage(probeError, { type: 'error', message: probeError.name });
+			if(window.mereos.startRecordingCallBack){
+				window.mereos.startRecordingCallBack({ 
+					type:'error',
+					message: probeError.name,
+					code:40065,
+				});
+			}	
 		} finally {
 			detachDeviceChangeWatcher(track);
 		}
@@ -717,6 +724,13 @@ export const startRecording = async () => {
 				}
 				registerEvent({ eventType: 'success', notify: false, eventName: 'room_is_not_creating' });
 				sentryExceptioMessage(error,{type:'error',message:'Twilio room is not creating'});
+				if(window.mereos.startRecordingCallBack){
+					window.mereos.startRecordingCallBack({ 
+						type:'error',
+						message: 'room_is_not_creating',
+						code:40065,
+					});
+				}	
 			}
 			updatePersistData('session', { 
 				room_id: room?.sid 
@@ -827,7 +841,7 @@ export const startRecording = async () => {
 						});
 					}
 
-					registerEvent({ eventType: 'success', notify: false, eventName: 'slow_internet_detected' });
+					registerEvent({ eventType: 'error', notify: false, eventName: 'slow_internet_detected' });
 				
 					// showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
 				}
@@ -854,6 +868,13 @@ export const startRecording = async () => {
 						notify: false,
 						eventName: 'media_connection_failed',
 					});
+					if(window.mereos.startRecordingCallBack){
+						window.mereos.startRecordingCallBack({ 
+							type:'error',
+							message: 'media_connection_failed',
+							code:40056
+						});
+					}
 					showToast('error','internet_connection_lost');
 					isMediaError = true;
 				} else if (
@@ -863,9 +884,23 @@ export const startRecording = async () => {
 						notify: false,
 						eventName: 'signaling_connection_disconnected',
 					});
+					if(window.mereos.startRecordingCallBack){
+						window.mereos.startRecordingCallBack({ 
+							type:'error',
+							message: 'signaling_connection_disconnected',
+							code:40057
+						});
+					}
 					showToast('error','reconnecting_signaling_connection');
 					isSignalingError = true;
 				} else {
+					if(window.mereos.startRecordingCallBack){
+						window.mereos.startRecordingCallBack({ 
+							type:'success',
+							message: 'video_recording_reconnecting',
+							code:50019
+						});
+					}
 					registerEvent({
 						notify: false,
 						eventName: 'video_recording_reconnecting',
@@ -879,6 +914,7 @@ export const startRecording = async () => {
 					notify: false,
 					eventName: 'video_recording_disconnected',
 				});
+				
 				updatePersistData('session', { 
 					sessionStatus: 'Terminated'
 				});
@@ -888,7 +924,14 @@ export const startRecording = async () => {
 						mobileConnection: false,
 						screenSharing: false
 					});
-					showToast('error','mobile_phone_disconnected');		
+					showToast('error','mobile_phone_disconnected');	
+					if(window.mereos.startRecordingCallBack){
+						window.mereos.startRecordingCallBack({ 
+							type:'error',
+							message: 'mobile_phone_disconnected',
+							code:40058
+						});
+					}	
 				}else{
 					updatePersistData('preChecksSteps', { 
 						screenSharing: false,
@@ -918,6 +961,13 @@ export const startRecording = async () => {
 					notify: false,
 					eventName: 'video_recording_reconnected',
 				});
+				if(window.mereos.startRecordingCallBack){
+					window.mereos.startRecordingCallBack({ 
+						type:'success',
+						message: 'video_recording_reconnected',
+						code:50020
+					});
+				}
 			};
 
 			room.on('reconnected', handleReconnected);
@@ -1392,6 +1442,14 @@ const startAIWebcam = async (room, mediaStream) => {
 								message = 'multiple_people_detected_for_more_than_10_seconds';
 							}
 							showToast('error', message);
+							if(window.mereos.startRecordingCallBack){
+								window.mereos.startRecordingCallBack({ 
+									type:'error',
+									message: message,
+									code:40059,
+									detail:activeViolations[key].time_span
+								});
+							}	
 						}
 					}
 					else if (activeViolations[key]) {
@@ -1407,6 +1465,14 @@ const startAIWebcam = async (room, mediaStream) => {
 								endTime: violation.start_time + violation.time_span
 							};
 							registerAIEvent(data);
+							if(window.mereos.startRecordingCallBack){
+								window.mereos.startRecordingCallBack({ 
+									type:'error',
+									message: key,
+									code:40060,
+									detail:violation.start_time + violation.time_span
+								});
+							}	
 							checkForceClosureViolation();
 						}
             
@@ -1423,7 +1489,13 @@ const startAIWebcam = async (room, mediaStream) => {
 	} catch (error) {
 		sentryExceptioMessage(error,{type:'error',message:'Failed to start AI webcam'});
 		logger.error('Failed to start AI webcam:', error);
-    
+		if(window.mereos.startRecordingCallBack){
+			window.mereos.startRecordingCallBack({ 
+				type:'error',
+				message: 'Failed to start AI webcam',
+				code:40061,
+			});
+		}	
 		if (window.mereos.aiProcessingInterval) {
 			clearInterval(window.mereos.aiProcessingInterval);
 		}
@@ -1660,6 +1732,13 @@ export function VideoChat(room) {
 				}
 			} catch (error) {
 				sentryExceptioMessage(error,{type:'error',message:'Error attaching video track'});
+				if(window.mereos.startRecordingCallBack){
+					window.mereos.startRecordingCallBack({ 
+						type:'error',
+						message: 'Error attaching video track',
+						code:40062,
+					});
+				}	
 				logger.error('Error attaching video track:', error);
 			}
 		} else {
@@ -1758,6 +1837,13 @@ export function VideoChat(room) {
 			});
 		} catch (error) {
 			sentryExceptioMessage(error,{type:'error',message:'Error connecting to Twilio room'});
+			if(window.mereos.startRecordingCallBack){
+				window.mereos.startRecordingCallBack({ 
+					type:'error',
+					message: 'error_on_starting_recording',
+					code:40063,
+				});
+			}	
 			logger.error('Error connecting to Twilio room:', error);
 		}
 	}
@@ -1911,6 +1997,13 @@ export const stopAllRecordings = async () => {
 		
 		return 'stop_recording';
 	} catch (e) {
+		if(window.mereos.startRecordingCallBack){
+			window.mereos.startRecordingCallBack({ 
+				type:'error',
+				message: 'error_on_stop_recording',
+				code:40064,
+			});
+		}	
 		sentryExceptioMessage(e,{type:'error',message:'Error in stop recording'});
 		logger.error('Error in stop recording:', e);
 	}

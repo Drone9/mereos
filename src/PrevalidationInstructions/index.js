@@ -30,16 +30,17 @@ export const PrevalidationInstructions = async (tabContent) => {
 		const shouldCheckBitrate = findConfigs(['verify_upload_speed'], secureFeatures?.entities).length > 0;
 		const shouldShowVideo = !isAudioEnabled || isVideoEnabled;
 		
-		// Timer state variables
 		let seconds = 10;
 		let timerVisible = false;
 		let timerInterval = null;
 		let isCheckingMedia = false;
-		logger.success('isCheckingMedia',isCheckingMedia);
+		logger.success('isCheckingMedia', isCheckingMedia);
+		logger.success('currentCaptureMode', currentCaptureMode);
 
-		logger.success('currentCaptureMode',currentCaptureMode);
+		let lightingStatus = 'idle'; // 'idle' | 'ok' | 'dark' | 'bright' | 'error'
+		let lightingIntervalId = null;
+		let offscreenCanvas = null;
 
-		// Icon data placeholder - you can add your SVG icons here
 		const iconData = [
 			{
 				svg: `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -103,7 +104,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 			timerInterval = setInterval(() => {
 				seconds--;
 				updateTimerDisplay();
-				
 				if (seconds <= 0) {
 					stopTimer();
 				}
@@ -130,8 +130,118 @@ export const PrevalidationInstructions = async (tabContent) => {
 				}
 			}
 		};
+		const updateLightingUI = () => {
+			const lightingEl = window.mereos.shadowRoot.getElementById('lighting-status');
+			if (!lightingEl) return;
+
+			if (lightingStatus === 'idle') {
+				lightingEl.style.display = 'none';
+				updateCheckButtonState();
+				return;
+			}
+
+			const isLightingPoor = lightingStatus === 'dark' || lightingStatus === 'bright';
+			let message = '';
+			if      (lightingStatus === 'dark')   message = i18next.t('lighting_too_dark');
+			else if (lightingStatus === 'bright') message = i18next.t('lighting_too_bright');
+			else if (lightingStatus === 'ok')     message = i18next.t('lighting_ok');
+
+			lightingEl.style.display    = 'flex';
+			lightingEl.style.alignItems = 'center';
+			lightingEl.style.gap        = '6px';
+			lightingEl.style.marginTop  = '0px';
+			lightingEl.style.fontSize   = '13px';
+			lightingEl.style.color      = isLightingPoor ? '#c0392b' : '#27ae60';
+
+			lightingEl.innerHTML = `
+				<span style="
+					width: 10px;
+					height: 10px;
+					border-radius: 50%;
+					background-color: ${isLightingPoor ? '#e74c3c' : '#2ecc71'};
+					display: inline-block;
+					flex-shrink: 0;
+				"></span>
+				<span>${message}</span>
+			`;
+
+			updateCheckButtonState();
+		};
+
+		/**
+		 * Enables / disables the check button based on current lighting AND
+		 * permission state (mirrors the React disabled logic).
+		 */
+		const updateCheckButtonState = () => {
+			const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
+			if (!checkButton) return;
+
+			const isLightingPoor = lightingStatus === 'dark' || lightingStatus === 'bright';
+			const shouldDisable  = permissionDenied || isLightingPoor;
+
+			checkButton.disabled        = shouldDisable;
+			checkButton.style.opacity   = shouldDisable ? '0.5' : '1';
+			checkButton.style.cursor    = shouldDisable ? 'not-allowed' : 'pointer';
+		};
+
+		/**
+		 * Stops the lighting sampling interval and resets status to idle.
+		 */
+		const stopLightingCheck = () => {
+			if (lightingIntervalId) {
+				clearInterval(lightingIntervalId);
+				lightingIntervalId = null;
+			}
+			lightingStatus = 'idle';
+			updateLightingUI();
+		};
+
+		/**
+		 * Starts a 1 500 ms interval that reads a 64×48 thumbnail of the live
+		 * video, computes luminance-weighted average brightness, and classifies
+		 * the result as 'dark', 'bright', or 'ok' — identical to the React impl.
+		 */
+		const startLightingCheck = () => {
+			stopLightingCheck();
+
+			if (!offscreenCanvas) {
+				offscreenCanvas        = document.createElement('canvas');
+				offscreenCanvas.width  = 64;
+				offscreenCanvas.height = 48;
+			}
+
+			lightingIntervalId = setInterval(() => {
+				try {
+					const video = window.mereos.shadowRoot.getElementById('myVideo');
+					if (!video || video.readyState < 2) return;
+
+					const ctx = offscreenCanvas.getContext('2d');
+					ctx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+
+					const { data } = ctx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+					let sum = 0;
+					for (let i = 0; i < data.length; i += 4) {
+						sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+					}
+					const avg = Math.round(sum / (data.length / 4));
+
+					const prev = lightingStatus;
+					if      (avg < 40)  lightingStatus = 'dark';
+					else if (avg > 220) lightingStatus = 'bright';
+					else                lightingStatus = 'ok';
+
+					if (lightingStatus !== prev) updateLightingUI();
+				} catch (err) {
+					console.error('startLightingCheck:', err);
+					lightingStatus = 'error';
+					updateLightingUI();
+				}
+			}, 1500);
+		};
 
 		const handleDeviceId = async (id, type) => {
+			stopLightingCheck();
+
 			if (type === 'camera' && shouldShowVideo) {
 				videoConstraints = {
 					...videoConstraints,
@@ -139,7 +249,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 				};
 				localStorage.setItem('deviceId', id);
 				await startWebcam();
-		
 				resetMediaCheckUI();
 			}
 
@@ -150,19 +259,18 @@ export const PrevalidationInstructions = async (tabContent) => {
 				};
 				localStorage.setItem('microphoneID', id);
 				await startWebcam();
-		
 				resetMediaCheckUI();
 			}
 		};
 
 		const resetMediaCheckUI = () => {
-			const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
+			const checkButton    = window.mereos.shadowRoot.getElementById('check-btn');
 			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
 			const messageElement = window.mereos.shadowRoot.getElementById('message');
 	
 			if (checkButton && continueButton) {
-				checkButton.style.display = 'block';
-				checkButton.disabled = false;
+				checkButton.style.display  = 'block';
+				checkButton.disabled       = false;
 				continueButton.style.display = 'none';
 			}
 	
@@ -179,7 +287,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 				messageElement.style.color = '';
 			}
 
-			// Reset timer state
 			stopTimer();
 			isCheckingMedia = false;
 		};
@@ -198,9 +305,9 @@ export const PrevalidationInstructions = async (tabContent) => {
             
 			if (continueButton && messageElement) {
 				if (permissionDenied) {
-					continueButton.disabled = true;
-					continueButton.style.opacity = '0.5';
-					continueButton.style.cursor = 'not-allowed';
+					continueButton.disabled        = true;
+					continueButton.style.opacity   = '0.5';
+					continueButton.style.cursor    = 'not-allowed';
                     
 					let permissionMessage = '';
 					if (isAudioEnabled && shouldShowVideo) {
@@ -214,9 +321,9 @@ export const PrevalidationInstructions = async (tabContent) => {
 					messageElement.textContent = permissionMessage;
 					messageElement.style.color = '#ff4444';
 				} else {
-					continueButton.disabled = false;
-					continueButton.style.opacity = '1';
-					continueButton.style.cursor = 'pointer';
+					continueButton.disabled        = false;
+					continueButton.style.opacity   = '1';
+					continueButton.style.cursor    = 'pointer';
                     
 					let selectMessage = '';
 					if (isAudioEnabled && shouldShowVideo) {
@@ -235,19 +342,16 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		const handleMediaCheck = async () => {
 			try {
-				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
-				const cameraDropdown = window.mereos.shadowRoot.getElementById('cameraDropdown');
+				const isLightingPoor = lightingStatus === 'dark' || lightingStatus === 'bright';
+				if (isLightingPoor) return;
+
+				const checkButton       = window.mereos.shadowRoot.getElementById('check-btn');
+				const cameraDropdown    = window.mereos.shadowRoot.getElementById('cameraDropdown');
 				const microphoneDropdown = window.mereos.shadowRoot.getElementById('microphoneDropdown');
 
-				if (microphoneDropdown) {
-					microphoneDropdown.disabled = true;
-				}
-				if (cameraDropdown) {
-					cameraDropdown.disabled = true;
-				}
-				if (checkButton) {
-					checkButton.style.display = 'none';
-				}
+				if (microphoneDropdown) microphoneDropdown.disabled = true;
+				if (cameraDropdown)    cameraDropdown.disabled    = true;
+				if (checkButton)       checkButton.style.display  = 'none';
 
 				const messageElement = window.mereos.shadowRoot.getElementById('message');
 				if (messageElement) {
@@ -279,75 +383,73 @@ export const PrevalidationInstructions = async (tabContent) => {
 				isCheckingMedia = false;
 
 				if (result.error) {
-					registerEvent({
-						notify: false,
-						eventName: result.error,
-					});
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: result.error  ,
+							code:40042
+						});
+					}
+					registerEvent({ notify: false, eventName: result.error });
 
 					if (messageElement) {
 						messageElement.textContent = i18next.t(result.error);
 						messageElement.style.color = '#ff4444';
 					}
 
-					if (checkButton) {
-						checkButton.style.display = 'block';
-					}
+					if (checkButton) checkButton.style.display = 'block';
 				} else if (result.message === 'media_check_success') {
-					registerEvent({
-						notify: false,
-						eventName: result.message,
-					});
-					registerEvent({
-						notify: false,
-						eventName: 'candidate_selected_microphone_camera',
-					});
-
+					registerEvent({ notify: false, eventName: result.message });
+					registerEvent({ notify: false, eventName: 'candidate_selected_microphone_camera' });
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'success',
+							message: 'candidate_selected_microphone_camera' ,
+							code:50011
+						});
+					}
 					if (messageElement) {
 						messageElement.textContent = i18next.t(result.message);
 						messageElement.style.color = '';
 					}
 
-					if (cameraDropdown) {
-						cameraDropdown.disabled = false;
-					}
-					if (microphoneDropdown) {
-						microphoneDropdown.disabled = false;
-					}
+					if (cameraDropdown)    cameraDropdown.disabled    = false;
+					if (microphoneDropdown) microphoneDropdown.disabled = false;
+
 					const continueBtn = window.mereos.shadowRoot.getElementById('continue-btn');
 					if (continueBtn && checkButton) {
-						continueBtn.style.display = 'block';
-						checkButton.style.display = 'none';
+						continueBtn.style.display  = 'block';
+						checkButton.style.display  = 'none';
 					}
 				}
 			} catch (error) {
 				stopTimer();
 				isCheckingMedia = false;
 
-				registerEvent({
-					notify: false,
-					eventName: 'media_check_exception',
-				});
-
+				registerEvent({ notify: false, eventName: 'media_check_exception' });
+				if(window.mereos.globalCallback) {
+					window.mereos.globalCallback({ 
+						type:'error',
+						message: 'media_check_exception' ,
+						code:40043
+					});
+				}
 				const messageElement = window.mereos.shadowRoot.getElementById('message');
 				if (messageElement) {
 					messageElement.textContent = i18next.t('media_check_exception');
 					messageElement.style.color = '#ff4444';
 				}
         
-				const cameraDropdown = window.mereos.shadowRoot.getElementById('cameraDropdown');
+				const cameraDropdown     = window.mereos.shadowRoot.getElementById('cameraDropdown');
 				const microphoneDropdown = window.mereos.shadowRoot.getElementById('microphoneDropdown');
 
-				if (cameraDropdown) {
-					cameraDropdown.disabled = false;
-				}
-				if (microphoneDropdown) {
-					microphoneDropdown.disabled = false;
-				}
+				if (cameraDropdown)    cameraDropdown.disabled    = false;
+				if (microphoneDropdown) microphoneDropdown.disabled = false;
         
 				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
 				if (checkButton) {
-					checkButton.style.display = 'block';
-					checkButton.textContent = i18next.t('check_camera_mic');
+					checkButton.style.display  = 'block';
+					checkButton.textContent    = i18next.t('check_camera_mic');
 				}
 				sentryExceptioMessage(error, { type: 'error', message: 'Media check exception' });
 			}
@@ -355,9 +457,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		const createUIElements = () => {
 			const oldContainer = window.mereos.shadowRoot.querySelector('.ivso-container');
-			if (oldContainer) {
-				oldContainer.remove();
-			}
+			if (oldContainer) oldContainer.remove();
         
 			tabContent.insertAdjacentHTML('beforeend', '<div class="ivso-container"></div>');
 			const container = tabContent.querySelector('.ivso-container');
@@ -365,63 +465,65 @@ export const PrevalidationInstructions = async (tabContent) => {
 			let instructionsHTML = iconData.map(icon => {
 				const coloredSvg = icon.svg.replace('fill="#FF961B"', `fill="${themeColor?.theming || '#FF961B'}"`);
 				return `
-                    <div class="pvi-instruction-svg">${coloredSvg}</div>
-                    <div class="pvi-instruction-txt">${i18next.t(icon.text)}</div>
-                `;
+					<div class="pvi-instruction-svg">${coloredSvg}</div>
+					<div class="pvi-instruction-txt">${i18next.t(icon.text)}</div>
+				`;
 			}).join('');
 
-			// Show either video container OR placeholder image based on shouldShowVideo
 			const videoContainerHTML = shouldShowVideo ? `
-                <div id="videoMainContainer" class="pvi-header-img">
-                    <div id="videoContainer"></div>
-                </div>
-            ` : `
-                <div id="placeholderContainer" class="pvi-header-img">
-                    <img src="${ASSET_URL}/prevalidation-image.png" alt="System Diagnostics" class="prevalidation-placeholder">
-                </div>
-            `;
+				<div id="videoMainContainer" class="pvi-header-img">
+					<div id="videoContainer"></div>
+					<div id="lighting-status" style="display: none;"></div>
+				</div>
+			` : `
+				<div id="placeholderContainer" class="pvi-header-img">
+					<img src="${ASSET_URL}/prevalidation-image.png" alt="System Diagnostics" class="prevalidation-placeholder">
+				</div>
+			`;
 
 			const cameraDropdownHTML = shouldShowVideo ? `
-                <div class="camera-container" style=${!isAudioEnabled ? 'width:100%':'width:43%'}>
-                    <select id="cameraDropdown"></select>
-                </div>
-            ` : '';
+				<div class="camera-container" style=${!isAudioEnabled ? 'width:100%' : 'width:43%'}>
+					<select id="cameraDropdown"></select>
+				</div>
+			` : '';
 
 			const microphoneDropdownHTML = isAudioEnabled ? `
-                <div class="microphone-container" style=${!shouldShowVideo ? 'width:100%':'width:43%'}>
-                    <select id="microphoneDropdown"></select>
-                </div>
-            ` : '';
+				<div class="microphone-container" style=${!shouldShowVideo ? 'width:100%' : 'width:43%'}>
+					<select id="microphoneDropdown"></select>
+				</div>
+			` : '';
 
 			const dropdownContainerHTML = (isAudioEnabled || shouldShowVideo) ? `
-                <div id="dropdownContainer" class="multi-device-block">
-                    ${cameraDropdownHTML}
-                    ${microphoneDropdownHTML}
-                </div>
-            ` : '';
+				<div id="dropdownContainer" class="multi-device-block">
+					${cameraDropdownHTML}
+					${microphoneDropdownHTML}
+				</div>
+			` : '';
         
 			container.innerHTML = `
-                <div class="pvi-header-title">${i18next.t('system_diagnostics')}</div>
-                <div class="pvi-msg">${i18next.t('initial_system_check_passed')}</div>
-                <div class="pvi-instructions-container">${instructionsHTML}</div>
-                ${videoContainerHTML}
-                ${dropdownContainerHTML}
-                <div id="message" class="pvi-query-msg">${i18next.t('select_preferred_camera_and_microphone')}</div>
-                <div id="timer-element" class="pvi-query-timer" style="display: none;"></div>
-                <div id="button-container" class="pvi-btn-container">
-                    <button id="check-btn" class="orange-filled-btn" style="padding: 9px 32px;">
-                        ${i18next.t('check_camera_mic')}
-                    </button>
-                    <button id="continue-btn" class="orange-filled-btn" style="padding: 9px 32px; display: none;">
-                        ${i18next.t('continue')}
-                    </button>
-                </div>
-            `;
+				<div class="pvi-header-title">${i18next.t('system_diagnostics')}</div>
+				<div class="pvi-msg">${i18next.t('initial_system_check_passed')}</div>
+				<div class="pvi-instructions-container">${instructionsHTML}</div>
+				${videoContainerHTML}
+				${dropdownContainerHTML}
+				<div id="message" class="pvi-query-msg">${i18next.t('select_preferred_camera_and_microphone')}</div>
+				<div id="timer-element" class="pvi-query-timer" style="display: none;"></div>
+				<div id="button-container" class="pvi-btn-container">
+					<button id="check-btn" class="orange-filled-btn" style="padding: 9px 32px;">
+						${i18next.t('check_camera_mic')}
+					</button>
+					<button id="continue-btn" class="orange-filled-btn" style="padding: 9px 32px; display: none;">
+						${i18next.t('continue')}
+					</button>
+				</div>
+			`;
         
 			const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
 			if (checkButton) {
 				checkButton.addEventListener('click', (e) => {
 					e.preventDefault();
+					const isLightingPoor = lightingStatus === 'dark' || lightingStatus === 'bright';
+					if (isLightingPoor) return;
 					handleMediaCheck();
 				});
 			}
@@ -444,8 +546,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 				if (cameraDropdown) {
 					let cameraOptionsHTML = cameras.map(camera => 
 						`<option value="${camera.id}" ${camera.id === selectedCameraId ? 'selected' : ''}>
-                            ${camera.name}
-                        </option>`
+							${camera.name}
+						</option>`
 					).join('');
 					cameraDropdown.innerHTML = cameraOptionsHTML;
                                 
@@ -461,8 +563,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 				if (microphoneDropdown) {
 					let microphoneOptionsHTML = microphones.map(microphone => 
 						`<option value="${microphone.id}" ${microphone.id === selectedMicrophoneId ? 'selected' : ''}>
-                            ${microphone.name}
-                        </option>`
+							${microphone.name}
+						</option>`
 					).join('');
 					microphoneDropdown.innerHTML = microphoneOptionsHTML;
                                 
@@ -474,11 +576,11 @@ export const PrevalidationInstructions = async (tabContent) => {
 			}
 
 			updateContinueButton();
+			updateCheckButtonState();
 		};
            
 		const startWebcam = async () => {
 			try {
-				// Only handle video cleanup if video should be shown
 				if (shouldShowVideo) {
 					const videoContainer = window.mereos.shadowRoot.getElementById('videoContainer');
             
@@ -486,52 +588,35 @@ export const PrevalidationInstructions = async (tabContent) => {
 						const videoElement = window.mereos.shadowRoot.getElementById('myVideo');
 						window.mereos.globalStream?.getTracks()?.forEach(track => track.stop());
 						window.mereos.globalStream = null;
-						if(videoElement){
-							videoElement.srcObject = null;
-						}
+						if (videoElement) videoElement.srcObject = null;
 					}
 
-					if (videoContainer) {
-						videoContainer.innerHTML = '';
-					}
+					if (videoContainer) videoContainer.innerHTML = '';
 				}
 
 				const mediaConstraints = {};
                 
-				if (shouldShowVideo) {
-					mediaConstraints.video = videoConstraints;
-				}
-                
-				if (isAudioEnabled) {
-					mediaConstraints.audio = audioConstraints;
-				}
+				if (shouldShowVideo)   mediaConstraints.video = videoConstraints;
+				if (isAudioEnabled)    mediaConstraints.audio = audioConstraints;
 
-				// Only get media stream if either video or audio is enabled
 				if (shouldShowVideo || isAudioEnabled) {
 					window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
 					
-					if (shouldShowVideo || isAudioEnabled) {
-						const tracks = window.mereos.globalStream.getTracks();
-			
-						tracks.forEach(track => {
-							track.addEventListener('ended', () => {
-								logger.warn(`${track.kind} track ended - permission may have been revoked`);
-								permissionDenied = true;
-								const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
-								if (checkButton) {
-									checkButton.disabled = true;
-								}
-								const messageElement = window.mereos.shadowRoot.getElementById('message');
-								if(messageElement){
-									messageElement.textContent = i18next.t('enable_camera_permissions');
-								}
-								updateUI();	
-							});
+					const tracks = window.mereos.globalStream.getTracks();
+					tracks.forEach(track => {
+						track.addEventListener('ended', () => {
+							logger.warn(`${track.kind} track ended - permission may have been revoked`);
+							permissionDenied = true;
+							stopLightingCheck();
+							const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
+							if (checkButton) checkButton.disabled = true;
+							const messageElement = window.mereos.shadowRoot.getElementById('message');
+							if (messageElement) messageElement.textContent = i18next.t('enable_camera_permissions');
+							updateUI();	
 						});
-					}
+					});
 				}
 
-				// Only setup video element if video should be shown
 				if (shouldShowVideo) {
 					const videoContainer = window.mereos.shadowRoot.getElementById('videoContainer');
 					if (videoContainer) {
@@ -543,6 +628,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 						if (window.mereos.globalStream) {
 							videoElement.srcObject = window.mereos.globalStream;
 						}
+
+						videoElement.addEventListener('playing', () => {
+							setTimeout(() => startLightingCheck(), 500);
+						}, { once: true });
 					}
 				}
                 
@@ -551,6 +640,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 				updateUI();
 			} catch (error) {
 				logger.error('Webcam error:', error);
+				stopLightingCheck();
                 
 				if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
 					permissionDenied = true;
@@ -563,10 +653,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 					permissionDenied = true;
 				}
 				const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
-				if (checkButton) {
-					checkButton.disabled = true;
-				}
-				sentryExceptioMessage(error,{type:'error',message:error.name });
+				if (checkButton) checkButton.disabled = true;
+				sentryExceptioMessage(error, { type: 'error', message: error.name });
 				updateUI();
 			}
 		};
@@ -576,31 +664,25 @@ export const PrevalidationInstructions = async (tabContent) => {
 			const streamActive = streamExists && window.mereos.globalStream.active;
 
 			const headerTitle = window.mereos.shadowRoot.querySelector('.pvi-header-title');
-			const msg = window.mereos.shadowRoot.querySelector('.pvi-msg');
+			const msg         = window.mereos.shadowRoot.querySelector('.pvi-msg');
 
 			if (headerTitle) headerTitle.textContent = i18next.t('system_diagnostics');
-			if (msg) msg.textContent = i18next.t('initial_system_check_passed');
+			if (msg)         msg.textContent         = i18next.t('initial_system_check_passed');
 
 			const continueButton = window.mereos.shadowRoot.getElementById('continue-btn');
-			if (continueButton) {
-				continueButton.textContent = i18next.t('continue');
-			}
+			if (continueButton) continueButton.textContent = i18next.t('continue');
         
 			const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
-			if (checkButton) {
-				checkButton.textContent = i18next.t('check_camera_mic');
-			}
+			if (checkButton) checkButton.textContent = i18next.t('check_camera_mic');
 
 			const instructionTexts = window.mereos.shadowRoot.querySelectorAll('.pvi-instruction-txt');
 			instructionTexts.forEach((element, index) => {
-				if (index < iconData.length) {
-					element.textContent = i18next.t(iconData[index].text);
-				}
+				if (index < iconData.length) element.textContent = i18next.t(iconData[index].text);
 			});
 
 			const messageElement = window.mereos.shadowRoot.getElementById('message');
 			if (messageElement) {
-				const checkButtonHidden = checkButton && checkButton.style.display === 'none';
+				const checkButtonHidden    = checkButton    && checkButton.style.display    === 'none';
 				const continueButtonVisible = continueButton && continueButton.style.display === 'block';
         
 				if (checkButtonHidden && continueButtonVisible) {
@@ -631,15 +713,14 @@ export const PrevalidationInstructions = async (tabContent) => {
 				}
 			}
 
-			// Only handle video-related logic if video should be shown
+			updateLightingUI();
+
 			if (shouldShowVideo) {
 				if (!streamExists || !streamActive) {
-					if (window.mereos.globalStream) {
-						window.mereos.globalStream = null;
-					}
+					if (window.mereos.globalStream) window.mereos.globalStream = null;
 					await startWebcam();
 				} else {
-					const videoElementAfter = window.mereos.shadowRoot.getElementById('myVideo');
+					const videoElementAfter  = window.mereos.shadowRoot.getElementById('myVideo');
 					const videoContainerAfter = window.mereos.shadowRoot.getElementById('videoContainer');
     
 					if (videoElementAfter && !videoElementAfter.srcObject) {
@@ -647,13 +728,13 @@ export const PrevalidationInstructions = async (tabContent) => {
 					}
     
 					if (videoContainerAfter) {
-						videoContainerAfter.style.display = '';
+						videoContainerAfter.style.display    = '';
 						videoContainerAfter.style.visibility = 'visible';
 					}
     
 					const videoMainContainer = window.mereos.shadowRoot.getElementById('videoMainContainer');
 					if (videoMainContainer) {
-						videoMainContainer.style.display = '';
+						videoMainContainer.style.display    = '';
 						videoMainContainer.style.visibility = 'visible';
 					}
 				}
@@ -663,14 +744,14 @@ export const PrevalidationInstructions = async (tabContent) => {
 		const init = async () => {
 			if (shouldShowVideo) {
 				cameras = await getMultipleCameraDevices();
-				cameras = cameras?.map(camera => ({id: camera.deviceId, name: camera.label, ...camera }));
+				cameras = cameras?.map(camera => ({ id: camera.deviceId, name: camera.label, ...camera }));
 				localStorage.setItem('deviceId', cameras?.length ? cameras[0].id : null);
 				selectedCameraId = cameras?.length ? cameras[0].id : null;
 			}
 
 			if (isAudioEnabled) {
 				microphones = await checkForMultipleMicrophones();
-				microphones = microphones?.map(microphone => ({id: microphone.deviceId, name: microphone.label, ...microphone }));
+				microphones = microphones?.map(microphone => ({ id: microphone.deviceId, name: microphone.label, ...microphone }));
 				localStorage.setItem('microphoneID', microphones?.length ? microphones[0].id : null);
 				selectedMicrophoneId = microphones?.length ? microphones[0].id : null;
 			}
@@ -688,7 +769,7 @@ export const PrevalidationInstructions = async (tabContent) => {
             
 		i18next.on('languageChanged', handleLanguageChange);
 	} catch (error) {
-		sentryExceptioMessage(error,{type:'error',message:'Failed to initialize Language'});
+		sentryExceptioMessage(error, { type: 'error', message: 'Failed to initialize Language' });
 		logger.error('Failed to initialize; error: ' + error);
 	}
 };

@@ -1095,5 +1095,9 @@
 	"firefox_microphone_steps": "Klik op het hangslotpictogram > Verbindingsinstellingen > Microfoonmachtigingen",
 	"safari_microphone_step": "Ga naar Safari > Instellingen > Websites > Microfoon",
 	"click_reconnect_camera": "Klik op Camera opnieuw verbinden",
-	"click_reconnect_microphone": "Klik op Microfoon opnieuw verbinden"
+	"click_reconnect_microphone": "Klik op Microfoon opnieuw verbinden",
+	"lighting_too_dark": "De verlichting is te donker. Verbeter uw omgeving.",
+	"lighting_too_bright": "De verlichting is te fel. Vermijd direct licht achter u.",
+	"lighting_ok": "Verlichting ziet er goed uit",
+	"pdf_multiple_pages_error": "Upload een PDF-bestand van één pagina. PDF's met meerdere pagina's worden niet geaccepteerd voor identiteitsverificatie."
 }

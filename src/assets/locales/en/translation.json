@@ -1096,5 +1096,9 @@
   "firefox_microphone_steps": "Click the lock icon > Connection settings > Microphone permissions",
   "safari_microphone_step": "Go to Safari > Settings > Websites > Microphone",
 	"click_reconnect_camera":"Click Reconnect Camera",
-	"click_reconnect_microphone":"Click Reconnect Microphone"
+	"click_reconnect_microphone":"Click Reconnect Microphone",
+	"lighting_too_dark" :"Lighting is too dark. Please improve your environment.",
+	"lighting_too_bright" : "Lighting is too bright. Avoid direct light behind you.",
+	"lighting_ok": "Lighting looks good",
+	"pdf_multiple_pages_error": "Please upload a single-page PDF file. Multi-page PDFs are not accepted for identity verification."
 }

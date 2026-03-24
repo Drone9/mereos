@@ -148,10 +148,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 			lightingEl.style.display    = 'flex';
 			lightingEl.style.alignItems = 'center';
-			lightingEl.style.gap        = '6px';
-			lightingEl.style.marginTop  = '0px';
-			lightingEl.style.fontSize   = '13px';
-			lightingEl.style.color      = isLightingPoor ? '#c0392b' : '#27ae60';
+			lightingEl.style.backgroundColor      = isLightingPoor ? '#c0392b' : '#27ae60';
 
 			lightingEl.innerHTML = `
 				<span style="
@@ -466,7 +463,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 			const videoContainerHTML = shouldShowVideo ? `
 				<div id="videoMainContainer" class="pvi-header-img">
 					<div id="videoContainer"></div>
-					<div id="lighting-status" style="display: none;"></div>
+					<div class='lighting-status' id="lighting-status" style="display: none;"></div>
 				</div>
 			` : `
 				<div id="placeholderContainer" class="pvi-header-img">

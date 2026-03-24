@@ -1615,6 +1615,20 @@ export const preValidationCss = `.pvi-container {
 .pvi-header-img {
   margin: 0px auto 0px;
   height: 250px;
+  position: relative;
+}
+.lighting-status{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0px;
+  font-size: 11px;
+  color: white;
+  position: absolute;
+  top: 7px;
+  left: 6px;
+  padding: 3px;
+  border-radius: 5px;
 }
 .pvi-instruction-img{
   width: 40px;

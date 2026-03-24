@@ -2229,14 +2229,14 @@ export const findPreviousPrecheckStep = (currentRoute) => {
 
 
 const stepToVideoId = {
-	ExamPreparation: 'Auo67aH9cEo',
-	runSystemDiagnostics: 'aUMnLA_HvVw',
-	SystemRequirements: 'PcDT3YfaLaA',
+	ExamPreparation: 'full-demo',
+	runSystemDiagnostics: 'system-diagnostic',
+	SystemRequirements: 'system-requirement',
 	
-	IdentityVerificationScreenOne: '7zYeVZv1ZtQ',
-	IdentityVerificationScreenTwo: 'RbgXRpUnZaM',
-	IdentityVerificationScreenThree: 'NBHQa8y--Mg',
-	IdentityVerificationScreenFive: 'b0avjfaAMjc',
+	IdentityVerificationScreenOne: 'candidate-photo',
+	IdentityVerificationScreenTwo: 'identity-card',
+	IdentityVerificationScreenThree: 'detect-microphone',
+	IdentityVerificationScreenFive: 'screen-share',
 };
 
 export const getVideoIdForStep = (step) => {

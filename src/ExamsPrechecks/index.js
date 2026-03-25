@@ -342,7 +342,7 @@ const createLanguageDropdown = (currentStep) => {
 	const themeColor = schoolTheme?.theming || '#FF961B';
 	
 	const VIDEO_URL = videoId
-		? `https://mereos-dashboard.s3.eu-west-3.amazonaws.com/help-videos/${videoId}.mp4`
+		? `https://d3ia9qn5swl78e.cloudfront.net/help-videos/${videoId}.mp4`
 		: null;
 	
 	const headerHTML = `

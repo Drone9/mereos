@@ -330,7 +330,7 @@ const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 			if(window.mereos.globalCallback) {
 				window.mereos.globalCallback({ 
 					type:'success',
-					message: `${id}_requirement_retry_success` ,
+					message: `system_requirement_retry_success` ,
 					code:50011
 				});
 			}
@@ -343,7 +343,7 @@ const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 			if(window.mereos.globalCallback) {
 				window.mereos.globalCallback({ 
 					type:'error',
-					message: `${id}_requirement_retry_failed` ,
+					message: `system_requirement_retry_failed` ,
 					code:40041
 				});
 			}

@@ -401,13 +401,6 @@ const setupTrackStoppedListeners = (track,trackType) => {
 				handleDeviceLost(kind, true, track,trackType);
 			}
 			sentryExceptioMessage(probeError, { type: 'error', message: probeError.name });
-			if(window.mereos.startRecordingCallBack){
-				window.mereos.startRecordingCallBack({ 
-					type:'error',
-					message: probeError.name,
-					code:40065,
-				});
-			}	
 		} finally {
 			detachDeviceChangeWatcher(track);
 		}
@@ -928,7 +921,7 @@ export const startRecording = async () => {
 					if(window.mereos.startRecordingCallBack){
 						window.mereos.startRecordingCallBack({ 
 							type:'error',
-							message: 'mobile_phone_disconnected',
+							message: 'mobile_phone_disconnected_during_assessment',
 							code:40058
 						});
 					}	
@@ -1492,7 +1485,7 @@ const startAIWebcam = async (room, mediaStream) => {
 		if(window.mereos.startRecordingCallBack){
 			window.mereos.startRecordingCallBack({ 
 				type:'error',
-				message: 'Failed to start AI webcam',
+				message: 'failed_to_start_ai_webcam',
 				code:40061,
 			});
 		}	
@@ -1735,7 +1728,7 @@ export function VideoChat(room) {
 				if(window.mereos.startRecordingCallBack){
 					window.mereos.startRecordingCallBack({ 
 						type:'error',
-						message: 'Error attaching video track',
+						message: 'error_attaching_video_track',
 						code:40062,
 					});
 				}	

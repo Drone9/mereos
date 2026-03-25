@@ -89,7 +89,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 						if(window.mereos.globalCallback){
 							window.mereos.globalCallback({ 
 								type:'error',
-								message: eventData?.message?.message,
+								message:'mobile_phone_disconnected_in_screen_share_screen',
 								code:40052
 							});
 						}

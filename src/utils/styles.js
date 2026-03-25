@@ -2908,6 +2908,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	justify-content: center;
 	margin-top: 5px;
 	margin-bottom: 5px;
+  filter:var(--filter-color);
 }
 
 @media (max-width: 720px) {

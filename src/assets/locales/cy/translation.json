@@ -1099,5 +1099,6 @@
 	"lighting_too_dark": "Mae'r goleuo'n rhy dywyll. Gwella eich amgylchedd.",
 	"lighting_too_bright": "Mae'r goleuo'n rhy llachar. Ceisiwch osgoi golau uniongyrchol y tu ôl i chi.",
 	"lighting_ok": "Mae'r goleuo'n edrych yn dda",
-	"pdf_multiple_pages_error": "Llwythwch ffeil PDF un dudalen i fyny. Ni dderbynnir PDFau aml-dudalen ar gyfer gwirio hunaniaeth."
+	"pdf_multiple_pages_error": "Llwythwch ffeil PDF un dudalen i fyny. Ni dderbynnir PDFau aml-dudalen ar gyfer gwirio hunaniaeth.",
+  "face_processing_failed": "Nid oeddem yn gallu canfod wyneb yn y ddelwedd. Sicrhewch fod eich wyneb yn weladwy yn glir a rhowch gynnig arall arni."
 }

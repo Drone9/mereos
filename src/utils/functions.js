@@ -1,6 +1,4 @@
-import axios from 'axios';
 import { 
-	BASE_URL, 
 	BROWSER_SECURTIY_STEP, 
 	examPreparationSteps, 
 	preChecksSteps, 
@@ -419,7 +417,8 @@ export const checkCamera = () => {
 				.then((stream) => {
 					resolve(stream);
 				})
-				.catch(() => {
+				.catch((e) => {
+					logger.error('erre',e);
 					resolve(false);
 				});
 		} else if (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia) {
@@ -749,10 +748,6 @@ export const getAuthenticationToken = () => {
 	}
 
 	return null;
-};
-
-export const userRekognitionInfo = async (data) => {
-	return axios.post(`${BASE_URL}/general/rekognition/`, data);
 };
 
 export const convertDataIntoParse = (key) => {

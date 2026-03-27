@@ -1099,5 +1099,6 @@
 	"lighting_too_dark": "L'éclairage est trop sombre. Veuillez améliorer votre environnement.",
 	"lighting_too_bright": "L'éclairage est trop brillant. Évitez la lumière directe derrière vous.",
 	"lighting_ok": "L'éclairage semble bon",
-	"pdf_multiple_pages_error": "Veuillez télécharger un fichier PDF d'une seule page. Les PDF multipages ne sont pas acceptés pour la vérification d'identité."
+	"pdf_multiple_pages_error": "Veuillez télécharger un fichier PDF d'une seule page. Les PDF multipages ne sont pas acceptés pour la vérification d'identité.",
+  "face_processing_failed": "Nous n'avons pas pu détecter de visage sur l'image. Assurez-vous que votre visage est bien visible et réessayez."
 }

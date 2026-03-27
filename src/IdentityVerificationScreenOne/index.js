@@ -3,9 +3,9 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { dataURIToBlob, logger, registerEvent, sentryExceptioMessage, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { dataURIToBlob, logger, registerEvent, sentryExceptioMessage, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { uploadFileInS3Folder } from '../services/general.services.js';
+import { uploadFileInS3Folder, userRekognitionInfo } from '../services/general.services.js';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
@@ -315,7 +315,7 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 					state = {
 						...state,
 						msg: {
-							type: 'error',
+							type: 'unsuccessful',
 							text: 'face_processing_failed',
 						},
 					};

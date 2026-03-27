@@ -3148,7 +3148,7 @@ body{
   background: white;
   border-radius: 12px;
   padding: 0;
-  max-width: 550px;
+  max-width: 500px;
   width: 90%;
   max-height: 90vh;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);

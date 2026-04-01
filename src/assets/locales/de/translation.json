@@ -1099,5 +1099,6 @@
 	"lighting_too_dark": "Die Beleuchtung ist zu dunkel. Bitte verbessern Sie Ihre Umgebung.",
 	"lighting_too_bright": "Die Beleuchtung ist zu hell. Vermeiden Sie direktes Licht hinter Ihnen.",
 	"lighting_ok": "Die Beleuchtung sieht gut aus",
-	"pdf_multiple_pages_error": "Bitte laden Sie eine einseitige PDF-Datei hoch. Mehrseitige PDFs werden zur Identitätsüberprüfung nicht akzeptiert."
+	"pdf_multiple_pages_error": "Bitte laden Sie eine einseitige PDF-Datei hoch. Mehrseitige PDFs werden zur Identitätsüberprüfung nicht akzeptiert.",
+  "face_processing_failed": "Wir konnten kein Gesicht im Bild erkennen. Bitte stellen Sie sicher, dass Ihr Gesicht deutlich sichtbar ist, und versuchen Sie es erneut."
 }

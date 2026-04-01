@@ -181,12 +181,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const nextStep = async () => {
 		try {
 			updatePersistData('preChecksSteps', { screenSharing: true });
-			registerEvent({
-				eventType: 'success',
-				notify: false,
-				eventName: 'screen_recording_window_shared',
-				eventValue: getDateTime()
-			});
 			if(window.mereos.globalCallback){
 				window.mereos.globalCallback({ 
 					type:'success',
@@ -242,7 +236,28 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					...(session.screen_sharing_video_name || []),
 					publishedScreenTrack.trackSid
 				];
+
+				registerEvent({
+					eventType: 'success', 
+					notify: false, 
+					eventName: 'screen_shared_again', 
+					eventValue: getDateTime()
+				});
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'screen_shared_again',
+						code:50015
+					});
+				}
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+			}else{
+				registerEvent({
+					eventType: 'success',
+					notify: false,
+					eventName: 'screen_recording_window_shared',
+					eventValue: getDateTime()
+				});
 			}
 		} catch (error) {
 			console.error('Error starting screen share:', error);

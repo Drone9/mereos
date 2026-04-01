@@ -3,7 +3,7 @@ import { authenticatedRequest } from '../utils/functions';
 
 export const testUploadSpeed = async (data) => {
 	return authenticatedRequest(config => 
-		axiosInstance.post('/general/info/',data,config)
+		axiosInstance.post('/general/candidate_info/',data,config)
 	);
 };
 
@@ -23,4 +23,10 @@ export const uploadFileInS3Folder = async (data) => {
     
 		return axiosInstance.post(`/general/candidate_upload_file/`, formData, uploadConfig);
 	});
+};
+
+export const userRekognitionInfo = async (data) => {
+	return authenticatedRequest(config => 
+		axiosInstance.post('/general/candidate_rekognition/',data,config)
+	);
 };

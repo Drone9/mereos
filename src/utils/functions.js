@@ -296,7 +296,7 @@ export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 	let totalPoints = 0;
 	console.log('browserEvents',browserEvents);
 	let copyPasteCutEvents = browserEvents.filter(item =>
-		['candidate_paste_the_content', 'candidate_copy_the_content', 'copy_and_paste'].includes(item.name)
+		['candidate_paste_the_content', 'candidate_copy_the_content', 'copy_and_paste','candidate_cut_the_content'].includes(item.name)
 	);
 	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
 	const awayEvents = browserEvents.filter(item => item.name === 'moved_back_to_page');

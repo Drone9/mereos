@@ -2,7 +2,7 @@ import i18next from 'i18next';
 
 import { showTab } from '../ExamsPrechecks';
 
-import { acceptableLabels, acceptableText, dataURIToBlob, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, sentryExceptioMessage, srcToData, updatePersistData } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, sentryExceptioMessage, srcToData, updatePersistData, convertDataIntoParse, logger, addSectionSessionRecord } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 
@@ -487,8 +487,20 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				file: dataURIToBlob(currentState.imageSrc)
 			});
 
-			if (resp?.data?.file_url) {
-				updatePersistData('session', { identityCard: resp.data.file_url });
+			if (resp?.data?.file_key) {
+				updatePersistData('session', { identityCard: `https://mereos-corder.s3.eu-west-3.amazonaws.com/${resp?.data?.file_key}` });
+				
+				const updatedSession = convertDataIntoParse('session');
+				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+				
+				try {
+					const sectionRecordResp = await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+					logger.info('Section session record added successfully:', sectionRecordResp);
+				} catch (sectionError) {
+					logger.error('Error adding section session record:', sectionError);
+					sentryExceptioMessage(sectionError, { type: 'error', message: 'Failed to add section session record' });
+				}
+				
 				currentState = {
 					...currentState,
 					captureMode: 'uploaded_photo',
@@ -541,6 +553,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	const triggerFileUpload = () => {
 		if (inputFile) inputFile.click();
 	};
+	
 	const setupEventListeners = () => {
 		const uploadEl = window.mereos.shadowRoot.querySelector('#upload-identity-card');
 		if (uploadEl) {

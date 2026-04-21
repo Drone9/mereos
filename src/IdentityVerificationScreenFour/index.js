@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { findConfigs, findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerEvent, sentryExceptioMessage, updatePersistData } from '../utils/functions';
+import { findConfigs, findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerEvent, sentryExceptioMessage, updatePersistData, convertDataIntoParse, addSectionSessionRecord } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 
 import { uploadFileInS3Folder } from '../services/general.services.js';
@@ -245,9 +245,21 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 				folderName: 'videos'
 			});
 
-			if (url?.data?.file_url) {
-				const fileUrl = url.data.file_url;
-				updatePersistData('session', { room_scan_video: fileUrl });
+			if (url?.data?.file_key) {
+				const fileUrl = url.data.file_key;
+				updatePersistData('session', { room_scan_video: `https://mereos-corder.s3.eu-west-3.amazonaws.com/${fileUrl}` });
+				
+				const updatedSession = convertDataIntoParse('session');
+				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+				
+				try {
+					const sectionRecordResp = await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+					logger.info('Section session record added successfully:', sectionRecordResp);
+				} catch (sectionError) {
+					logger.error('Error adding section session record:', sectionError);
+					sentryExceptioMessage(sectionError, { type: 'error', message: 'Failed to add section session record' });
+				}
+				
 				recordingMode = 'uploaded_file';
 				textMessage = 'candidate_video_is_uploaded_successfully';
 				if(window.mereos.globalCallback){

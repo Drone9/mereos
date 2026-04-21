@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { dataURIToBlob, logger, registerEvent, sentryExceptioMessage, updatePersistData } from '../utils/functions';
+import { dataURIToBlob, logger, registerEvent, sentryExceptioMessage, updatePersistData, convertDataIntoParse, addSectionSessionRecord } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { uploadFileInS3Folder, userRekognitionInfo } from '../services/general.services.js';
 
@@ -352,8 +352,19 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				file: blob,
 			});
     
-			if (resp?.data?.file_url) {
-				updatePersistData('session', { candidatePhoto: resp.data.file_url });
+			if (resp?.data?.file_key) {
+				updatePersistData('session', { candidatePhoto: `https://mereos-corder.s3.eu-west-3.amazonaws.com/${resp.data.file_key}` });
+				
+				const updatedSession = convertDataIntoParse('session');
+				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+				
+				try {
+					const sectionRecordResp = await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+					logger.info('Section session record added successfully:', sectionRecordResp);
+				} catch (sectionError) {
+					sentryExceptioMessage(sectionError, { type: 'error', message: 'Failed to add section session record' });
+				}
+				
 				state = {
 					...state,
 					captureMode: 'uploaded_photo',

@@ -58,6 +58,8 @@ export const dataURIToBlob = (dataURI) => {
 
 export const forceClosure = async () => {
 	try {
+		await releaseAllMediaStreams();
+
 		const secureFeatures = getSecureFeatures();
 		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 
@@ -118,7 +120,6 @@ export const forceClosure = async () => {
 				resetSessionData();
 			}
 		} else {
-			window.mereos.roomInstance = null;
 			window.mereos.recordingStart = false;
 			if (window.mereos.startRecordingCallBack) {
 				window.mereos.startRecordingCallBack({
@@ -136,6 +137,8 @@ export const forceClosure = async () => {
 };
 
 export const resetSessionData = () => {
+	void releaseAllMediaStreams();
+
 	if (window.mereos.aiProcessingInterval) {
 		clearInterval(window.mereos.aiProcessingInterval);
 		window.mereos.aiProcessingInterval = null;
@@ -700,6 +703,232 @@ export const cleanupZendeskWidget = () => {
 	}
 };
 
+const activeMediaTracks = new Set();
+
+const registerActiveTracks = (...sources) => {
+	for (const source of sources) {
+		if (!source) continue;
+		if (typeof source.getTracks === 'function') {
+			source.getTracks().forEach((track) => activeMediaTracks.add(track));
+		} else if (source.mediaStreamTrack) {
+			activeMediaTracks.add(source.mediaStreamTrack);
+		} else if (source.kind && typeof source.stop === 'function') {
+			activeMediaTracks.add(source);
+		}
+	}
+};
+
+const installActiveMediaTrackRegistry = () => {
+	if (typeof navigator === 'undefined' || installActiveMediaTrackRegistry.installed) return;
+	installActiveMediaTrackRegistry.installed = true;
+
+	const captureStream = (stream) => {
+		registerActiveTracks(stream);
+		return stream;
+	};
+
+	if (navigator.mediaDevices?.getUserMedia) {
+		const nativeGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+		navigator.mediaDevices.getUserMedia = (constraints) =>
+			Promise.resolve(nativeGetUserMedia(constraints)).then(captureStream);
+	}
+
+	if (navigator.mediaDevices?.getDisplayMedia) {
+		const nativeGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+		navigator.mediaDevices.getDisplayMedia = (constraints) =>
+			Promise.resolve(nativeGetDisplayMedia(constraints)).then(captureStream);
+	}
+
+	['getUserMedia', 'webkitGetUserMedia', 'mozGetUserMedia', 'msGetUserMedia'].forEach((methodName) => {
+		if (typeof navigator[methodName] !== 'function') return;
+		const nativeLegacy = navigator[methodName].bind(navigator);
+		navigator[methodName] = (constraints, onSuccess, onError) => {
+			nativeLegacy(
+				constraints,
+				(stream) => {
+					captureStream(stream);
+					onSuccess?.(stream);
+				},
+				onError,
+			);
+		};
+	});
+};
+
+if (typeof window !== 'undefined') {
+	installActiveMediaTrackRegistry();
+}
+
+const stopMediaStreamTrack = (track) => {
+	if (!track || track.readyState === 'ended') return;
+	try {
+		track.stop();
+		track.enabled = false;
+	} catch (error) {
+		logger.error('Failed to stop media track:', error);
+	}
+};
+
+const collectLocalTwilioTracks = (localParticipant) => {
+	if (!localParticipant) return [];
+	const tracks = new Set();
+	const addFromMap = (map) => {
+		map?.forEach?.((publication) => {
+			if (publication?.track) tracks.add(publication.track);
+		});
+	};
+	addFromMap(localParticipant.tracks);
+	addFromMap(localParticipant.videoTracks);
+	addFromMap(localParticipant.audioTracks);
+	return Array.from(tracks);
+};
+
+const unbindMediaElements = () => {
+	const mereos = window.mereos || {};
+	const roots = [document];
+	if (mereos.shadowRoot) roots.push(mereos.shadowRoot);
+	const host = document.getElementById('mereos-library');
+	if (host?.shadowRoot && !roots.includes(host.shadowRoot)) roots.push(host.shadowRoot);
+
+	roots.forEach((root) => {
+		root.querySelectorAll('video, audio').forEach((element) => {
+			try {
+				element.pause?.();
+				if (element.srcObject?.getTracks) {
+					element.srcObject.getTracks().forEach(stopMediaStreamTrack);
+				}
+				element.srcObject = null;
+				element.removeAttribute('src');
+				if (element.src) element.src = '';
+			} catch (error) {
+				logger.error('Failed to unbind media element:', error);
+			}
+		});
+	});
+};
+
+let releasingMediaStreams = null;
+
+const stopAllActiveTracks = () => {
+	Array.from(activeMediaTracks).forEach(stopMediaStreamTrack);
+	activeMediaTracks.clear();
+};
+
+export const releaseAllMediaStreams = async () => {
+	if (releasingMediaStreams) return releasingMediaStreams;
+
+	releasingMediaStreams = (async () => {
+		const mereos = window.mereos || {};
+
+		if (mereos.aiProcessingInterval) {
+			clearInterval(mereos.aiProcessingInterval);
+			mereos.aiProcessingInterval = null;
+		}
+
+		if (mereos.aiProcessingVideo) {
+			mereos.aiProcessingVideo.pause?.();
+			registerActiveTracks(mereos.aiProcessingVideo.srcObject);
+			if (mereos.aiProcessingVideo.srcObject?.getTracks) {
+				mereos.aiProcessingVideo.srcObject.getTracks().forEach(stopMediaStreamTrack);
+			}
+			mereos.aiProcessingVideo.srcObject = null;
+			mereos.aiProcessingVideo = null;
+		}
+
+		const rooms = [mereos.roomInstance, mereos.mobileRoomInstance].filter(Boolean);
+		const twilioTracks = rooms.flatMap((room) =>
+			collectLocalTwilioTracks(room.localParticipant)
+		);
+
+		registerActiveTracks(
+			mereos.globalStream,
+			mereos.newStream,
+			mereos.mobileStream,
+			mereos.audioStream,
+			mereos.screenTrackPublished?.track,
+			...twilioTracks
+		);
+
+		unbindMediaElements();
+
+		for (const room of rooms) {
+			try {
+				for (const track of collectLocalTwilioTracks(room.localParticipant)) {
+					try {
+						(track.detach?.() || []).forEach((element) => {
+							element.pause?.();
+							if (element.srcObject?.getTracks) {
+								element.srcObject.getTracks().forEach(stopMediaStreamTrack);
+							}
+							element.srcObject = null;
+							element.remove?.();
+						});
+					} catch (error) {
+						logger.error('Failed to detach Twilio track:', error);
+					}
+				}
+
+				room.participants?.forEach((participant) => participant.removeAllListeners?.());
+				room.removeAllListeners?.();
+				room.disconnect();
+			} catch (error) {
+				logger.error('Failed to disconnect Twilio room:', error);
+			}
+		}
+
+		for (const track of twilioTracks) {
+			try {
+				track.disable?.();
+				stopMediaStreamTrack(track.mediaStreamTrack);
+				track.stop?.();
+			} catch (error) {
+				logger.error('Failed to stop Twilio track:', error);
+			}
+		}
+
+		[
+			mereos.globalStream,
+			mereos.newStream,
+			mereos.mobileStream,
+			mereos.audioStream,
+		].forEach((stream) => stream?.getTracks?.().forEach(stopMediaStreamTrack));
+
+		const screenTrack = mereos.screenTrackPublished?.track;
+		if (screenTrack) {
+			try {
+				stopMediaStreamTrack(screenTrack.mediaStreamTrack);
+				screenTrack.stop?.();
+			} catch (error) {
+				logger.error('Failed to stop screen share track:', error);
+			}
+		}
+
+		try {
+			mereos.peerInstance?.destroy?.();
+		} catch (error) {
+			logger.error('Failed to destroy peer connection:', error);
+		}
+
+		unbindMediaElements();
+		stopAllActiveTracks();
+
+		mereos.roomInstance = null;
+		mereos.mobileRoomInstance = null;
+		mereos.globalStream = null;
+		mereos.newStream = null;
+		mereos.mobileStream = null;
+		mereos.audioStream = null;
+		mereos.screenTrackPublished = null;
+		mereos.peerInstance = null;
+	})();
+
+	try {
+		await releasingMediaStreams;
+	} finally {
+		releasingMediaStreams = null;
+	}
+};
+
 export const authenticatedRequest = async (apiCall, params = null) => {
 	const mereosToken = getAuthenticationToken();
 
@@ -856,7 +1085,8 @@ export const getSecureFeatures = () => {
 
 export const checkForMultipleMicrophones = async () => {
 	try {
-		await navigator.mediaDevices.getUserMedia({ audio: true });
+		const probeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+		probeStream.getTracks().forEach(stopMediaStreamTrack);
 
 		const devices = await navigator.mediaDevices.enumerateDevices();
 

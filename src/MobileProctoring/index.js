@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import { closeModal, showTab } from '../ExamsPrechecks';
 import { initSocket } from '../utils/socket';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { convertDataIntoParse, getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, sentryExceptioMessage, showToast, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, releaseAllMediaStreams, sentryExceptioMessage, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { connectSocketConnection } from '../StartRecording/index.js';
 
@@ -121,9 +121,7 @@ export const MobileProctoring = async (tabContent) => {
 							sessionStatus:'Terminated'
 						});
 						window.mereos.precheckCompleted=false;
-						if(window.mereos.mobileStream){
-							window.mereos.mobileStream.getTracks().forEach(track => track.stop());
-						}
+						void releaseAllMediaStreams();
 						renderUI();
 					} else {
 						logger.error(eventData?.message?.message);
@@ -149,6 +147,7 @@ export const MobileProctoring = async (tabContent) => {
 		try {
 			if (peerInstance) {
 				peerInstance.destroy();
+				peerInstance = null;
 			}
 
 			const groupName = v4();
@@ -156,6 +155,7 @@ export const MobileProctoring = async (tabContent) => {
 			const peer = new Peer(groupName);
 
 			peerInstance = peer;
+			window.mereos.peerInstance = peer;
 
 			peer.on('open', (id) => {
 				logger.success('Peer connection opened with ID:', id);

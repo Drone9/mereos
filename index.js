@@ -7,13 +7,13 @@
  * LICENSE file in the root directory of this source tree.
 */
 window.mereos = window.mereos || {};
+import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBrowserActions, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, releaseAllMediaStreams, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
 import { initShadowDOM, openModal, startSession } from './src/ExamsPrechecks';
 import { getRoomToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services'; 
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBrowserActions, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
@@ -239,26 +239,7 @@ async function stop_prechecks(callback) {
 		const chatIcons = window.mereos.shadowRoot.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = window.mereos.shadowRoot.getElementById('talkjs-container');
 
-		if (window.mereos.globalStream) {
-			window.mereos.globalStream.getTracks().forEach(track => {
-				track.stop();
-				track.enabled = false;
-				track.onended = null;
-				track.onmute = null;
-				track.onunmute = null;
-			});
-			const videoElements = [
-				...document.querySelectorAll('video'),
-				...window.mereos.shadowRoot.querySelectorAll('video')
-			];
-			
-			videoElements.forEach(video => {
-				if (video.srcObject === window.mereos.globalStream) {
-					video.srcObject = null;
-				}
-			});
-			window.mereos.globalStream = null;
-		}
+		await releaseAllMediaStreams();
 		
 		if(sessionSetting !== 'session_resume'){
 			localStorage.removeItem('preChecksSteps');
@@ -459,6 +440,8 @@ async function start_session(callback) {
 
 async function stop_session(callback) {
 	try {
+		await releaseAllMediaStreams();
+
 		if (window.mereos.checkTokenInterval) {
 			clearInterval(window.mereos.checkTokenInterval);
 			window.mereos.checkTokenInterval = null;

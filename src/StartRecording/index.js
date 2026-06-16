@@ -1,8 +1,3 @@
-import * as TwilioVideo from 'twilio-video';
-import i18next from 'i18next';
-import { v4 } from 'uuid';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import * as tf from '@tensorflow/tfjs';
 import { 
 	addSectionSessionRecord, 
 	checkForceClosureViolation, 
@@ -27,6 +22,7 @@ import {
 	probeExactDevice, 
 	registerAIEvent, 
 	registerEvent, 
+	releaseAllMediaStreams,
 	restoreRightClick, 
 	sentryExceptioMessage, 
 	showToast, 
@@ -34,6 +30,11 @@ import {
 	updatePersistData, 
 	updateThemeColor
 } from '../utils/functions';
+import * as TwilioVideo from 'twilio-video';
+import i18next from 'i18next';
+import { v4 } from 'uuid';
+import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import * as tf from '@tensorflow/tfjs';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
@@ -42,7 +43,6 @@ import { cleanupForceFullscreen, initializeForceFullscreen } from '../utils/full
 import { permissionModalStyle } from '../utils/styles';
 
 let aiEvents = [];
-let mediaStream = null;
 const trackStoppedListeners = new WeakMap();
 const deviceChangeHandlers = new WeakMap();
 let isMediaError = false;
@@ -587,6 +587,8 @@ const reconnectCamera = async () => {
 				});
 			}
 		}
+
+		await releaseAllMediaStreams();
         
 		if (typeof registerEvent === 'function') {
 			registerEvent({ 
@@ -695,6 +697,18 @@ export const startRecording = async () => {
 				false
 		};
 
+		[window.mereos.globalStream, window.mereos.audioStream].forEach((stream) => {
+			stream?.getTracks?.().forEach((track) => {
+				try {
+					track.stop();
+				} catch (error) {
+					logger.error('Failed to stop precheck media track:', error);
+				}
+			});
+		});
+		window.mereos.globalStream = null;
+		window.mereos.audioStream = null;
+
 		try {
 			const newRoomSessionId = v4();
 			const newSessionId = session?.sessionId ? session?.sessionId : v4();
@@ -709,6 +723,7 @@ export const startRecording = async () => {
 				room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
 				window.mereos.roomInstance = room;
 			}catch(error){
+				await releaseAllMediaStreams();
 				if (error.code) {
 					logger.error('Twilio error code:', error.code);
 				}
@@ -983,6 +998,7 @@ export const startRecording = async () => {
 			
 		} catch (error) {
 			logger.error('error in startRecording',error);
+			await releaseAllMediaStreams();
 			updatePersistData('session', {
 				sessionStatus:'Terminated'
 			});
@@ -1344,6 +1360,7 @@ const startAIWebcam = async (room, mediaStream) => {
 		processingVideo.srcObject = new MediaStream([videoTrackPublications[0].track.mediaStreamTrack]);
 		processingVideo.autoplay = true;
 		processingVideo.playsInline = true;
+		window.mereos.aiProcessingVideo = processingVideo;
 			
 		await new Promise((resolve) => {
 			processingVideo.onloadedmetadata = () => {
@@ -1518,7 +1535,9 @@ export const cleanupLocalVideo = () => {
 			const videoElement = webcamContainer.querySelector('video');
 			if (videoElement) {
 				videoElement.pause();
-				videoElement.srcObject.getTracks().forEach(track => track.stop());
+				if (videoElement.srcObject?.getTracks) {
+					videoElement.srcObject.getTracks().forEach(track => track.stop());
+				}
 				videoElement.srcObject = null;
 			}
 
@@ -1790,7 +1809,7 @@ export function VideoChat(room) {
 				handleParticipant(participant);
 			});
 
-			room.on('participantReconnecting', () => {
+			room.on('participantReconnecting', async () => {
 				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0) {
 					updatePersistData('preChecksSteps', { 
 						mobileConnection: false,
@@ -1806,6 +1825,7 @@ export function VideoChat(room) {
 					});	
 					showToast('error',i18next.t('internet_connection_not_working'));					
 				}
+				await releaseAllMediaStreams();
 				setTimeout(() => {
 					if(window.mereos.startRecordingCallBack){
 						window.mereos.startRecordingCallBack({ 
@@ -1829,6 +1849,7 @@ export function VideoChat(room) {
 				});
 			});
 		} catch (error) {
+			void releaseAllMediaStreams();
 			sentryExceptioMessage(error,{type:'error',message:'Error connecting to Twilio room'});
 			if(window.mereos.startRecordingCallBack){
 				window.mereos.startRecordingCallBack({ 
@@ -1853,6 +1874,14 @@ export function VideoChat(room) {
 }
 
 export const stopAllRecordings = async () => {
+	if (window.mereos.aiProcessingInterval) {
+		clearInterval(window.mereos.aiProcessingInterval);
+		window.mereos.aiProcessingInterval = null;
+	}
+
+	cleanupLocalVideo();
+	await releaseAllMediaStreams();
+
 	try {
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
@@ -1866,9 +1895,6 @@ export const stopAllRecordings = async () => {
 		restoreRightClick();
 		cleanupForceFullscreen();
 
-		if(window?.mereos?.mobileStream){
-			window?.mereos?.mobileStream?.getTracks()?.forEach((track) => track.stop());
-		}
 		window.mereos.forceClosureTriggered = false;
 		if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 			window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
@@ -1901,78 +1927,12 @@ export const stopAllRecordings = async () => {
 		});
 
 		cleanupZendeskWidget();
-		cleanupLocalVideo();
-
-		if(mediaStream){
-			mediaStream.getTracks().forEach(track => track.stop());
-			mediaStream=null;
-		}
-
-		if (window?.mereos?.newStream) {
-			window?.mereos?.newStream.getTracks().forEach(track => {
-				track.stop();
-				track.enabled = false;
-			});
-		}
-
-		if (window.mereos.globalStream) {
-			window.mereos.globalStream.getTracks().forEach(track => track.stop());
-			window.mereos.globalStream = null;
-		}
 
 		removeStoppedListener();
+		window.mereos.recordingStart = false;
 
-		window.mereos.recordingStart=false;
-
-		if (window?.mereos?.roomInstance) {
-			const tracks = window?.mereos?.roomInstance?.localParticipant?.tracks;
-			if (!tracks) return;
-    
-			for (const publication of tracks) {
-				const track = publication.track;
-				if (!track) continue;
-        
-				try {
-					await window.mereos.roomInstance.localParticipant.unpublishTrack(track);
-            
-					track.stop();
-					const elements = track.detach();
-					elements.forEach(element => element.remove());
-            
-					if (track.disable) track.disable();
-				} catch (error) {
-					logger.error('Failed to cleanup track:', error);
-				}
-			}
-
-			window.mereos.roomInstance.participants.forEach(participant => {
-				participant.removeAllListeners();
-			});
-			if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
-				registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully' });
-			}
-			window.mereos.roomInstance.removeAllListeners();
-			window.mereos.roomInstance.disconnect();
-			window.mereos.roomInstance = null;
-		}
-
-		if (window.mereos.mobileRoomInstance) {
-			window.mereos.mobileRoomInstance.localParticipant.tracks.forEach(publication => {
-				const track = publication.track;
-				if (track) {
-					track.stop();
-					track.detach().forEach(element => element.remove());
-					track.disable();
-					window.mereos.mobileRoomInstance.localParticipant.unpublishTrack(track);
-				}
-			});
-			window.mereos.mobileRoomInstance.disconnect();
-			window.mereos.mobileRoomInstance = null;
-		}
-
-		if (window.mereos.aiProcessingInterval) {
-			clearInterval(window.mereos.aiProcessingInterval);
-			window.mereos.aiProcessingInterval = null;
+		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
+			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully' });
 		}
 
 		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
@@ -1999,5 +1959,7 @@ export const stopAllRecordings = async () => {
 		}	
 		sentryExceptioMessage(e,{type:'error',message:'Error in stop recording'});
 		logger.error('Error in stop recording:', e);
+	} finally {
+		await releaseAllMediaStreams();
 	}
 };

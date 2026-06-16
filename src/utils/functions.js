@@ -1,15 +1,15 @@
-import { 
-	BROWSER_SECURTIY_STEP, 
-	examPreparationSteps, 
-	preChecksSteps, 
-	SYSTEM_REQUIREMENT_STEP, 
-	systemDiagnosticSteps
+import {
+	BROWSER_SECURTIY_STEP,
+	examPreparationSteps,
+	preChecksSteps,
+	SYSTEM_REQUIREMENT_STEP,
+	systemDiagnosticSteps,
+	BASE_URL
 } from './constant';
 import { addSectionSession, editSectionSession } from '../services/sessions.service';
 import { getRecordingSid } from '../services/twilio.services';
 import { bulkRegisterAIEvents, createAiEvent } from '../services/ai-event.services';
 import { bulkRegisterEvents, createEvent } from '../services/event.service';
-import { testUploadSpeed } from '../services/general.services';
 import i18next from 'i18next';
 import { closeModal, openModal } from '../ExamsPrechecks';
 import { Notyf } from 'notyf';
@@ -22,7 +22,7 @@ import * as Sentry from '@sentry/browser';
 export function sentryExceptioMessage(error, extra = {}) {
 	Sentry?.captureException(error, {
 		extra: extra
-	});					
+	});
 }
 
 export const logger = {
@@ -39,7 +39,7 @@ export const logger = {
 };
 
 export const dataURIToBlob = (dataURI) => {
-	
+
 	const splitDataURI = dataURI.split(',');
 	if (splitDataURI.length < 2) {
 		return null;
@@ -66,9 +66,9 @@ export const forceClosure = async () => {
 				const isOnline = navigator.onLine;
 				const updatedSession = convertDataIntoParse('session');
 
-				document.removeEventListener('visibilitychange', () => {});
-				document.removeEventListener('beforeunload', ()=> {});
-				window.removeEventListener('beforeunload',  ()=> {});
+				document.removeEventListener('visibilitychange', () => { });
+				document.removeEventListener('beforeunload', () => { });
+				window.removeEventListener('beforeunload', () => { });
 
 				if (!isOnline) {
 					if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
@@ -76,14 +76,14 @@ export const forceClosure = async () => {
 					}
 					showToast('error', 'signaling_connection_disconnected');
 					addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
-					registerEvent({ 
-						eventType: 'success', 
-						notify: false, 
-						eventName: 'signaling_connection_disconnected', 
-						eventValue: getDateTime() 
+					registerEvent({
+						eventType: 'success',
+						notify: false,
+						eventName: 'signaling_connection_disconnected',
+						eventValue: getDateTime()
 					});
-					window.mereos.startRecordingCallBack({ 
-						type: 'error', 
+					window.mereos.startRecordingCallBack({
+						type: 'error',
 						message: 'signaling_connection_disconnected',
 						code: 40006
 					});
@@ -95,25 +95,25 @@ export const forceClosure = async () => {
 					}
 
 					await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
-						
-					await registerEvent({ 
-						eventType: 'error', 
-						notify: false, 
-						eventName: 'assessment_closed_due_to_multiple_violation', 
+
+					await registerEvent({
+						eventType: 'error',
+						notify: false,
+						eventName: 'assessment_closed_due_to_multiple_violation',
 						eventValue: getDateTime(),
 					});
 
 					resetSessionData();
 
-					window.mereos.startRecordingCallBack({ 
-						type: 'error', 
+					window.mereos.startRecordingCallBack({
+						type: 'error',
 						message: 'assessment_closed_due_to_multiple_violation',
 						code: 400010
 					});
 				}
 
 			} catch (apiError) {
-				sentryExceptioMessage(apiError,{type:'error',message:`API error during force closure`});
+				sentryExceptioMessage(apiError, { type: 'error', message: `API error during force closure` });
 				logger.error('API error during force closure:', apiError);
 				resetSessionData();
 			}
@@ -121,15 +121,15 @@ export const forceClosure = async () => {
 			window.mereos.roomInstance = null;
 			window.mereos.recordingStart = false;
 			if (window.mereos.startRecordingCallBack) {
-				window.mereos.startRecordingCallBack({ 
-					type: 'error', 
+				window.mereos.startRecordingCallBack({
+					type: 'error',
 					message: 'signaling_connection_disconnected',
 					code: 40006
 				});
 			}
 		}
 	} catch (error) {
-		sentryExceptioMessage(error,{type:'error',message:`Error in forceClosure`});
+		sentryExceptioMessage(error, { type: 'error', message: `Error in forceClosure` });
 		logger.error('Error in forceClosure:', error);
 		resetSessionData();
 	}
@@ -142,11 +142,11 @@ export const resetSessionData = () => {
 	}
 
 	localStorage.clear();
-	
+
 	window.mereos.forceClosureTriggered = false;
 
 	if (window.mereos.startRecordingCallBack) {
-		window.mereos.startRecordingCallBack({ 
+		window.mereos.startRecordingCallBack({
 			type: 'error',
 			message: 'internet_connection_lost_force_close_your_session',
 			code: 40007
@@ -155,7 +155,7 @@ export const resetSessionData = () => {
 };
 
 export const forceClosureIncident = (
-	browserEvents = [], 
+	browserEvents = [],
 	profile
 ) => {
 	const browserIncidentlevel = findBrowserIncidentLevel(browserEvents, profile);
@@ -186,7 +186,7 @@ export const findIncidentLevel = (aiEvents = [], browserEvents = [], profile) =>
 
 export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {
 	let totalPoints = 0;
-    
+
 	for (const item of aiEvents) {
 		const duration = item.end_at - item.start_at;
 		let points = 0;
@@ -238,7 +238,7 @@ export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {
 					break;
 			}
 		}
-        
+
 		// LENIENT setting (default)
 		else {
 			switch (item.name) {
@@ -282,7 +282,7 @@ export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {
 	}
 
 	console.log('Total AI Points:', totalPoints);
-    
+
 	if (totalPoints >= 50) {
 		return 'high';
 	} else if (totalPoints >= 24) {
@@ -294,9 +294,9 @@ export const findAIIncidentLevel = (aiEvents = [], settingLevel) => {
 
 export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 	let totalPoints = 0;
-	console.log('browserEvents',browserEvents);
+	console.log('browserEvents', browserEvents);
 	let copyPasteCutEvents = browserEvents.filter(item =>
-		['candidate_paste_the_content', 'candidate_copy_the_content', 'copy_and_paste','candidate_cut_the_content'].includes(item.name)
+		['candidate_paste_the_content', 'candidate_copy_the_content', 'copy_and_paste', 'candidate_cut_the_content'].includes(item.name)
 	);
 	let browserResizedEvents = browserEvents.filter(item => item.name === 'candidate_resized_window');
 	const awayEvents = browserEvents.filter(item => item.name === 'moved_back_to_page');
@@ -306,12 +306,12 @@ export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 
 	let copyPastePoints = 10;
 	let resizePoints = 10;
-	
+
 	if (settingLevel === 'strict') {
 		copyPastePoints = 50;
 		resizePoints = 50;
 	}
-	
+
 	navigatingAway.forEach(() => {
 		totalPoints += 50;
 	});
@@ -370,7 +370,7 @@ export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 	}
 };
 
-export const checkForceClosureViolation = async () =>{
+export const checkForceClosureViolation = async () => {
 	const session = convertDataIntoParse('session');
 	if (!session || !session.browserEvents) {
 		return;
@@ -381,12 +381,12 @@ export const checkForceClosureViolation = async () =>{
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 	let incidentLevel = findIncidentLevel(
 		aiEvents,
-		browserEvents, 
+		browserEvents,
 		secureFeatures
 	);
 
-	if((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high'){
-		await addSectionSessionRecord(session,candidateInviteAssessmentSection);
+	if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {
+		await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		updatePersistData('session', { incident_level: incidentLevel });
 	}
 	if (
@@ -418,7 +418,7 @@ export const checkCamera = () => {
 					resolve(stream);
 				})
 				.catch((e) => {
-					logger.error('erre',e);
+					logger.error('erre', e);
 					resolve(false);
 				});
 		} else if (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia) {
@@ -439,8 +439,8 @@ export const getLocation = () => {
 		let startPos;
 		const geoSuccess = (position) => {
 			startPos = position;
-			const {latitude, longitude} = startPos.coords;
-			resolve({latitude, longitude});
+			const { latitude, longitude } = startPos.coords;
+			resolve({ latitude, longitude });
 		};
 		const geoError = (_error) => {
 			resolve(false);
@@ -465,7 +465,7 @@ export const getMultipleCameraDevices = () => {
 							label.includes('isight')
 						);
 					};
-				
+
 					if (isDefaultCamera(a)) {
 						return -1;
 					} else if (isDefaultCamera(b)) {
@@ -485,7 +485,7 @@ export const getMultipleCameraDevices = () => {
 export const detectMultipleScreens = async () => {
 	if (window.screen.isExtended) {
 		return true;
-	}else {
+	} else {
 		return false;
 	}
 };
@@ -523,8 +523,8 @@ export async function registerEvent({ eventName, eventValue = null, duration }) 
 			retryFailedEvents();
 		}
 
-		const startTime = session?.quizStartTime !== 0 
-			? Math.round((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000) 
+		const startTime = session?.quizStartTime !== 0
+			? Math.round((getTimeInSeconds({ isUTC: true }) - session?.quizStartTime) / 1000)
 			: 0;
 
 		if (session?.id) {
@@ -544,14 +544,14 @@ export async function registerEvent({ eventName, eventValue = null, duration }) 
 			try {
 				await createEvent(event);
 			} catch (err) {
-				sentryExceptioMessage(err,{type:'error',message:`API failed, storing event for retry`});
+				sentryExceptioMessage(err, { type: 'error', message: `API failed, storing event for retry` });
 				logger.error('API failed, storing event for retry', err);
 				const failedEvents = JSON.parse(localStorage.getItem('failedEvents') || '[]');
 				localStorage.setItem('failedEvents', JSON.stringify([...failedEvents, event]));
 			}
 		}
 	} catch (error) {
-		sentryExceptioMessage(error,{type:'error',message:`Error in registerEvent`});
+		sentryExceptioMessage(error, { type: 'error', message: `Error in registerEvent` });
 		logger.error('Error in registerEvent', error);
 	}
 }
@@ -628,7 +628,7 @@ export const loadZendeskWidget = () => {
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
 	const hasChatBot = secureFeatures?.some(entity => entity.key === 'chat_bot');
-	
+
 	if (hasChatBot) {
 		if (!document.querySelector('#ze-snippet')) {
 			const script = document.createElement('script');
@@ -638,16 +638,16 @@ export const loadZendeskWidget = () => {
 
 			document.body.appendChild(script);
 		}
-		
+
 		if (window.zE && typeof window.zE === 'function') {
 			window.zE('messenger', 'show');
-			
+
 			window.zE('messenger:on', 'open', () => {
 				setTimeout(() => {
 					const allZendeskElements = document.querySelectorAll('iframe[id*="webWidget"], iframe[title*="Chat"], iframe[title*="Help"], iframe[title*="Zendesk"], div[data-testid*="widget"], div[data-testid*="chat"], div[data-testid*="messenger"], [id*="zendesk"], [class*="zendesk"], [class*="zEWidget"]');
 					allZendeskElements.forEach(element => {
 						element.style.setProperty('z-index', '2147483647', 'important');
-						
+
 						let parent = element.parentElement;
 						while (parent && parent !== document.body) {
 							parent.style.setProperty('z-index', '2147483647', 'important');
@@ -656,7 +656,7 @@ export const loadZendeskWidget = () => {
 					});
 				}, 100);
 			});
-			
+
 			window.zE('messenger:on', 'close', () => {
 				setTimeout(() => {
 					const launcher = document.querySelector('#launcher');
@@ -669,7 +669,7 @@ export const loadZendeskWidget = () => {
 	}
 };
 
-export const hideZendeskWidget =() => {
+export const hideZendeskWidget = () => {
 	if (window.zE && typeof window.zE === 'function') {
 		try {
 			window.zE('messenger', 'hide');
@@ -694,7 +694,7 @@ export const cleanupZendeskWidget = () => {
 			delete window.zE;
 			delete window.zESettings;
 		} catch (e) {
-			sentryExceptioMessage(e,{type:'error',message:`Error resetting the Zendesk widget`});
+			sentryExceptioMessage(e, { type: 'error', message: `Error resetting the Zendesk widget` });
 			logger.error('Error resetting the Zendesk widget:', e);
 		}
 	}
@@ -702,9 +702,9 @@ export const cleanupZendeskWidget = () => {
 
 export const authenticatedRequest = async (apiCall, params = null) => {
 	const mereosToken = getAuthenticationToken();
-  
+
 	if (!mereosToken) {
-		stop_prechecks(()=>null);
+		stop_prechecks(() => null);
 		return {
 			type: 'error',
 			message: 'authentication_required',
@@ -712,17 +712,17 @@ export const authenticatedRequest = async (apiCall, params = null) => {
 			details: 'Valid authentication token required for this operation'
 		};
 	}
-  
+
 	const config = {
 		headers: {
 			token: mereosToken,
 		}
 	};
-  
+
 	if (params) {
 		config.params = params;
 	}
-  
+
 	return apiCall(config);
 };
 
@@ -732,13 +732,13 @@ export const getAuthenticationToken = () => {
 	if (tokenData) {
 		try {
 			const { token, expiresAt } = JSON.parse(tokenData);
-      
+
 			if (Date.now() > expiresAt) {
 				localStorage.removeItem('mereosToken');
 				notifyTokenExpired();
 				return null;
 			}
-      
+
 			return token;
 		} catch (error) {
 			localStorage.removeItem('mereosToken');
@@ -798,21 +798,21 @@ export const acceptableText = (detectedText, acceptedValue = 80) => {
 export const dataURLtoFile = (dataurl, filename) => {
 	let arr = dataurl?.split(','),
 		mime = arr[0].match(/:(.*?);/)[1],
-		bstr = atob(arr[arr.length - 1]), 
-		n = bstr.length, 
+		bstr = atob(arr[arr.length - 1]),
+		n = bstr.length,
 		u8arr = new Uint8Array(n);
 	while (n--) {
 		u8arr[n] = bstr.charCodeAt(n);
 	}
-	return new File([u8arr], filename, {type: mime});
+	return new File([u8arr], filename, { type: mime });
 };
 
 export const shareScreenFromContent = () => {
 	return new Promise((resolve, reject) => {
 		const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 		const constraints = isFirefox
-			? { video: { mediaSource: 'screen' } } 
-			: { video: { displaySurface: 'monitor' } }; 
+			? { video: { mediaSource: 'screen' } }
+			: { video: { displaySurface: 'monitor' } };
 
 		navigator.mediaDevices.getDisplayMedia(constraints)
 			.then(stream => {
@@ -820,12 +820,12 @@ export const shareScreenFromContent = () => {
 
 				track.addEventListener('ended', () => {
 					window.mereos.isScreenShare = false;
-					registerEvent({notify: false, eventName: 'screen_shared_stopped', eventType: 'error'});
-					if(window.mereos.startRecordingCallBack){
-						window.mereos.startRecordingCallBack({ 
-							type:'error',
+					registerEvent({ notify: false, eventName: 'screen_shared_stopped', eventType: 'error' });
+					if (window.mereos.startRecordingCallBack) {
+						window.mereos.startRecordingCallBack({
+							type: 'error',
 							message: 'screen_share_stopped',
-							code:40012
+							code: 40012
 						});
 					}
 					openModal();
@@ -882,7 +882,7 @@ export const updatePersistData = (key, updates) => {
 
 	if (storedItemJSON) {
 		let storedItem = JSON.parse(storedItemJSON);
-		
+
 		// Merge updates into storedItem using spread operator
 		const updatedItem = {
 			...storedItem,
@@ -897,37 +897,37 @@ export const updatePersistData = (key, updates) => {
 
 export const addSectionSessionRecord = async (session) => {
 	try {
-		const { 
-			aiEvents, 
-			browserEvents 
+		const {
+			aiEvents,
+			browserEvents
 		} = session;
 		const secureFeatures = getSecureFeatures();
-		
+
 		let recordings = { data: [] };
 		let hasRecordings = false;
-		
+
 		const allRecordings = [
 			...session?.user_video_name || [],
-			...session?.user_audio_name || [], 
+			...session?.user_audio_name || [],
 			...session?.screen_sharing_video_name || [],
 			...session?.mobileRecordings || [],
 			...session?.mobileAudios || []
 		];
-		
+
 		hasRecordings = allRecordings.length > 0;
-		
+
 		if (hasRecordings) {
 			try {
-				recordings = await getRecordingSid({'source_id': allRecordings});
-				
+				recordings = await getRecordingSid({ 'source_id': allRecordings });
+
 				if (!recordings || !recordings.data) {
 					throw new Error('Invalid response from recordings API');
 				}
 			} catch (recordingError) {
-				sentryExceptioMessage(recordingError,{type:'error',message:`Failed to fetch recording SIDs`});
+				sentryExceptioMessage(recordingError, { type: 'error', message: `Failed to fetch recording SIDs` });
 				logger.error('Failed to fetch recording SIDs:', recordingError);
 				recordings = { data: [] };
-				
+
 				if (window.mereos?.globalCallback) {
 					window.mereos.globalCallback({
 						type: 'warning',
@@ -937,22 +937,22 @@ export const addSectionSessionRecord = async (session) => {
 				}
 			}
 		}
-		
+
 		const filterRecordings = (sourceArray) => {
 			if (!sourceArray || !sourceArray.length || !recordings.data || !recordings.data.length) {
 				return [];
 			}
 			return recordings.data
-				.filter(recording => 
+				.filter(recording =>
 					sourceArray.find(subrecording => subrecording === recording.source_sid)
 				)
 				.map(recording => recording.media_external_location);
 		};
-		
+
 		let sectionSessionDetails = {
 			start_time: session?.quizStartTime,
 			submission_time: session?.submissionTime,
-			duration_taken: session?.quizStartTime ? getTimeInSeconds({isUTC: true}) - session.quizStartTime : 0,
+			duration_taken: session?.quizStartTime ? getTimeInSeconds({ isUTC: true }) - session.quizStartTime : 0,
 			identity_card: session?.identityCard,
 			room_scan_video: session?.room_scan_video,
 			identity_photo: session?.candidatePhoto,
@@ -972,58 +972,58 @@ export const addSectionSessionRecord = async (session) => {
 				ram_info: session?.RAMSpeed
 			},
 			status: session?.sessionStatus,
-			video_codec: recordings.data?.filter(recording => 
+			video_codec: recordings.data?.filter(recording =>
 				session?.user_video_name?.find(subrecording => subrecording === recording.source_sid)
 			)?.map(recording => recording.codec)[0] || null,
-			video_extension: recordings.data?.filter(recording => 
+			video_extension: recordings.data?.filter(recording =>
 				session?.user_video_name?.find(subrecording => subrecording === recording.source_sid)
 			)?.map(recording => recording.container_format)[0] || null,
 			incident_level: findIncidentLevel(
 				aiEvents,
-				browserEvents, 	
+				browserEvents,
 				secureFeatures
 			),
 			mobile_audio_name: filterRecordings(session?.mobileAudios),
 			mobile_video_name: filterRecordings(session?.mobileRecordings),
 			conversation_id: localStorage.getItem('conversationId') || '',
 			candidate_assessment: session?.candidate_assessment,
-			recording_fetch_status: hasRecordings ? 
-				(recordings.data.length > 0 ? 'success' : 'failed') : 
+			recording_fetch_status: hasRecordings ?
+				(recordings.data.length > 0 ? 'success' : 'failed') :
 				'not_required'
 		};
 
 		if (session?.id) {
 			sectionSessionDetails['id'] = session?.id;
 		}
-		
-		const resp = session?.id ? 
-			await editSectionSession(sectionSessionDetails) : 
+
+		const resp = session?.id ?
+			await editSectionSession(sectionSessionDetails) :
 			await addSectionSession(sectionSessionDetails);
-		
+
 		return resp;
-		
-	} catch(err) {
-		sentryExceptioMessage(err,{type:'error',message:`Error in addSectionSessionRecord`});
+
+	} catch (err) {
+		sentryExceptioMessage(err, { type: 'error', message: `Error in addSectionSessionRecord` });
 		logger.error('Error in addSectionSessionRecord:', err);
-		
+
 		if (err.response?.status === 403) {
 			if (window.mereos?.globalCallback) {
 				window.mereos.globalCallback({
-					type: 'error', 
+					type: 'error',
 					message: 'error_saving_session_info',
-					code: 40018 
+					code: 40018
 				});
 			}
 		}
-		
+
 		if (window.mereos?.startRecordingCallBack) {
 			window.mereos.startRecordingCallBack({
-				type: 'error', 
-				message: 'error_saving_session_info', 
-				code: 40018 
+				type: 'error',
+				message: 'error_saving_session_info',
+				code: 40018
 			});
 		}
-		
+
 		throw err;
 	}
 };
@@ -1039,7 +1039,7 @@ export const getDateTime = (_dateBreaker_ = '/', _timeBreaker_ = ':', _different
 	return `${year}${_dateBreaker_}${date}${_dateBreaker_}${month}${_differentiator_}${hours}${_timeBreaker_}${minutes}${_timeBreaker_}${seconds}`;
 };
 
-export const registerAIEvent = async ({ eventName, startTime, endTime,eventValue }) => {
+export const registerAIEvent = async ({ eventName, startTime, endTime, eventValue }) => {
 	try {
 		const session = convertDataIntoParse('session');
 		if (!session || !session.aiEvents) return;
@@ -1079,13 +1079,13 @@ export const registerAIEvent = async ({ eventName, startTime, endTime,eventValue
 			updatePersistData('session', { incident_level: incidentLevel });
 		}
 	} catch (e) {
-		sentryExceptioMessage(e,{type:'error',message:`Error in registerAIEvent`});
+		sentryExceptioMessage(e, { type: 'error', message: `Error in registerAIEvent` });
 		logger.error('Error in registerAIEvent', e);
 	}
 };
 
 export const retryFailedAIEvents = async () => {
-	if (window.mereos.isRetryingAIEvent) return; 
+	if (window.mereos.isRetryingAIEvent) return;
 	window.mereos.isRetryingAIEvent = true;
 
 	const failedAIEvents = JSON.parse(localStorage.getItem('failedAIEvents') || '[]');
@@ -1109,7 +1109,7 @@ window.addEventListener('online', retryFailedAIEvents);
 
 export const lockBrowserFromContent = async (entities) => {
 	let result = {};
-	
+
 	for (const entity of entities) {
 		try {
 			switch (entity.key) {
@@ -1136,7 +1136,7 @@ export const lockBrowserFromContent = async (entities) => {
 					}
 					break;
 				}
-				
+
 				case 'disable_keyboard_shortcuts': {
 					const disableShortcuts = await preventShortCuts();
 					if (disableShortcuts) {
@@ -1184,7 +1184,7 @@ export const lockBrowserFromContent = async (entities) => {
 				// 	}
 				// 	break;
 				// }
-				
+
 				default:
 					// Do nothing for unknown keys
 					break;
@@ -1235,16 +1235,16 @@ export const disableTextHighlighting = () => {
 
 		if (
 			element.isContentEditable ||
-      element.tagName === 'INPUT' ||
-      element.tagName === 'TEXTAREA'
+			element.tagName === 'INPUT' ||
+			element.tagName === 'TEXTAREA'
 		) {
 			return true;
 		}
 
 		if (
 			element.closest &&
-      (element.closest('[contenteditable="true"]') ||
-        element.closest('.lrn_texteditor_editable'))
+			(element.closest('[contenteditable="true"]') ||
+				element.closest('.lrn_texteditor_editable'))
 		) {
 			return true;
 		}
@@ -1375,12 +1375,12 @@ export const disableCopyPasteCut = () => {
 		const keydownHandler = (e) => {
 			if (
 				(e.ctrlKey || e.metaKey) &&
-        ['c', 'v', 'x'].includes(e.key.toLowerCase())
+				['c', 'v', 'x'].includes(e.key.toLowerCase())
 			) {
 				e.preventDefault();
 
 				const eventName =
-          e.key === 'v' ? 'candidate_paste_the_content' : e.key === 'c' ? 'candidate_copy_the_content' : 'candidate_cut_the_content';
+					e.key === 'v' ? 'candidate_paste_the_content' : e.key === 'c' ? 'candidate_copy_the_content' : 'candidate_cut_the_content';
 
 				registerEvent({ notify: false, eventName, eventType: 'error' });
 
@@ -1473,7 +1473,7 @@ export const detectUnfocusOfTab = () => {
 						eventName: 'moved_away_from_page',
 						sentryError: false,
 					});
-					showToast('error','moved_away_from_page');
+					showToast('error', 'moved_away_from_page');
 				}
 			};
 
@@ -1486,7 +1486,7 @@ export const detectUnfocusOfTab = () => {
 					eventType: 'info',
 					notify: false,
 					eventName: 'moved_back_to_page',
-					duration: durationSec, 
+					duration: durationSec,
 					sentryError: false,
 				});
 				checkForceClosureViolation();
@@ -1551,7 +1551,7 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 			183,  // Start Application 2
 			145,  // Scroll Lock
 			// Function keys (F1-F12)
-			...Array.from({length: 12}, (_, i) => 112 + i)
+			...Array.from({ length: 12 }, (_, i) => 112 + i)
 		]);
 
 		const isAlphabetKey = (key) => /^[a-zA-Z]$/.test(key);
@@ -1559,7 +1559,7 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 		const isNumericKey = (keyCode) => keyCode >= 48 && keyCode <= 57;
 
 		const handleKeyDown = (event) => {
-			const {key, keyCode, ctrlKey, metaKey, shiftKey, altKey} = event;
+			const { key, keyCode, ctrlKey, metaKey, shiftKey, altKey } = event;
 
 			if (ctrlKey || metaKey) {
 				if (key.toLowerCase() === 'n' || key.toLowerCase() === 't') {
@@ -1569,8 +1569,8 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 					return;
 				}
 
-				if (isAlphabetKey(key) || 
-            ['p', 's', 'o', 'u', 'i', 'w', 'f', 'tab'].includes(key.toLowerCase())) {
+				if (isAlphabetKey(key) ||
+					['p', 's', 'o', 'u', 'i', 'w', 'f', 'tab'].includes(key.toLowerCase())) {
 					event.preventDefault();
 					event.stopPropagation();
 					event.stopImmediatePropagation();
@@ -1585,8 +1585,8 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 				return;
 			}
 
-			if (altKey && (isAlphabetKey(key) || isNumericKey(keyCode) || 
-          ['tab', 'f4'].includes(key.toLowerCase()))) {
+			if (altKey && (isAlphabetKey(key) || isNumericKey(keyCode) ||
+				['tab', 'f4'].includes(key.toLowerCase()))) {
 				event.preventDefault();
 				event.stopPropagation();
 				event.stopImmediatePropagation();
@@ -1597,15 +1597,15 @@ export const preventShortCuts = (allowedFunctionKeys = []) => {
 				if (isFunctionKey(keyCode) && allowedFunctionKeys.includes(keyCode)) {
 					return;
 				}
-        
+
 				event.preventDefault();
 				event.stopPropagation();
 				event.stopImmediatePropagation();
 			}
 		};
 
-		document.addEventListener('keydown', handleKeyDown, {capture: true, passive: false});
-		window.addEventListener('keydown', handleKeyDown, {capture: true, passive: false});
+		document.addEventListener('keydown', handleKeyDown, { capture: true, passive: false });
+		window.addEventListener('keydown', handleKeyDown, { capture: true, passive: false });
 
 		resolve(true);
 	});
@@ -1708,7 +1708,7 @@ export const detectBackButtonCallback = () => {
 	if (window.mereos.startRecordingCallBack) {
 		window.mereos.startRecordingCallBack({
 			type: 'error',
-			message: 'candidate_clicked_on_browser_back_button' ,
+			message: 'candidate_clicked_on_browser_back_button',
 			code: 40005
 		});
 		window.mereos.recordingStart = false;
@@ -1754,7 +1754,7 @@ export const unlockBrowserFromContent = () => {
 		document.body.removeChild(whiteBackgroundElement);
 	}
 
-	window.alert = function(){};
+	window.alert = function () { };
 };
 
 export const getPreviousRoute = (currentRoute, navHistory, hasFeature) => {
@@ -1793,39 +1793,39 @@ export const handlePreChecksRedirection = () => {
 	const navHistory = localStorage.getItem('navHistory');
 	const hasFeature = (featureName) => secureFeatures.some(feature => feature.key === featureName);
 
-	if(sessionSetting === 'session_resume'){
+	if (sessionSetting === 'session_resume') {
 		if (!preChecksStep?.examPreparation && secureFeatures?.filter(entity => examPreparationSteps.includes(entity.key))?.length) {
 			return 'ExamPreparation';
-		}if (!preChecksStep?.identityConfirmation && hasFeature('verify_id')) {
+		} if (!preChecksStep?.identityConfirmation && hasFeature('verify_id')) {
 			return 'IdentityCardRequirement';
-		} else if(!preChecksStep?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length){
+		} else if (!preChecksStep?.diagnosticStep && secureFeatures?.filter(entity => systemDiagnosticSteps.includes(entity.key))?.length) {
 			return 'runSystemDiagnostics';
-		} else if(!preChecksStep?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length){
+		} else if (!preChecksStep?.requirementStep && secureFeatures?.filter(entity => SYSTEM_REQUIREMENT_STEP.includes(entity.key))?.length) {
 			return 'SystemRequirements';
-		} else if(!preChecksStep?.browserSecurity && secureFeatures?.filter(entity => BROWSER_SECURTIY_STEP.includes(entity.key))?.length){
+		} else if (!preChecksStep?.browserSecurity && secureFeatures?.filter(entity => BROWSER_SECURTIY_STEP.includes(entity.key))?.length) {
 			return 'BrowserSecurity';
-		}	else if(!preChecksStep?.preValidation && hasFeature('verify_multiple_devices')){
+		} else if (!preChecksStep?.preValidation && hasFeature('verify_multiple_devices')) {
 			return 'Prevalidationinstruction';
 		}
-		else if(!preChecksStep?.userPhoto && hasFeature('verify_candidate')){
+		else if (!preChecksStep?.userPhoto && hasFeature('verify_candidate')) {
 			return 'IdentityVerificationScreenOne';
-		}else if(!preChecksStep?.identityCardPhoto && hasFeature('verify_id')){
+		} else if (!preChecksStep?.identityCardPhoto && hasFeature('verify_id')) {
 			return 'IdentityVerificationScreenTwo';
-		}else if(!preChecksStep?.audioDetection && hasFeature('record_audio')){
+		} else if (!preChecksStep?.audioDetection && hasFeature('record_audio')) {
 			return 'IdentityVerificationScreenThree';
-		}else if(!preChecksStep?.roomScanningVideo && hasFeature('record_room')){
+		} else if (!preChecksStep?.roomScanningVideo && hasFeature('record_room')) {
 			return 'IdentityVerificationScreenFour';
-		}else if(!preChecksStep?.mobileConnection && hasFeature('mobile_proctoring') || !window.mereos?.mobileStream){
+		} else if (!preChecksStep?.mobileConnection && hasFeature('mobile_proctoring') || !window.mereos?.mobileStream) {
 			return 'MobileProctoring';
-		}else if(!preChecksStep?.screenSharing || hasFeature('record_screen')){
+		} else if (!preChecksStep?.screenSharing || hasFeature('record_screen')) {
 			return 'IdentityVerificationScreenFive';
-		} else{
+		} else {
 			closeModal();
 		}
-	}else{
+	} else {
 		if ((window.mereos.precheckCompleted && hasFeature('record_screen')) || navHistory?.includes('IdentityVerificationScreenFive')) {
 			return 'IdentityVerificationScreenFive';
-		}else{
+		} else {
 			localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
 			return 'ExamPreparation';
 		}
@@ -1833,7 +1833,7 @@ export const handlePreChecksRedirection = () => {
 };
 
 export const normalizeLanguage = (input) => {
-	if (!input) return 'en'; 
+	if (!input) return 'en';
 	input = input.toLowerCase();
 	if (input.includes('-')) {
 		return input.split('-')[0];
@@ -1842,11 +1842,11 @@ export const normalizeLanguage = (input) => {
 		french: 'fr',
 		english: 'en',
 		spanish: 'es',
-		german:'de',
-		italian:'it',
-		dutch:'nl',
-		portugese:'pt',
-		welsh:'cy'
+		german: 'de',
+		italian: 'it',
+		dutch: 'nl',
+		portugese: 'pt',
+		welsh: 'cy'
 	};
 	return languageMap[input] || input;
 };
@@ -1868,10 +1868,10 @@ export const initializeI18next = () => {
 		resources: {
 			cy: {
 				translation: require('../assets/locales/cy/translation.json')
-			}, 
+			},
 			en: {
 				translation: require('../assets/locales/en/translation.json')
-			}, 
+			},
 			fr: {
 				translation: require('../assets/locales/fr/translation.json')
 			},
@@ -1889,7 +1889,7 @@ export const initializeI18next = () => {
 			},
 			de: {
 				translation: require('../assets/locales/de/translation.json')
-			},	 
+			},
 		}
 	}, (err) => {
 		if (err) return logger.error('Error in language', err);
@@ -1904,17 +1904,17 @@ export const showToast = (type, message) => {
 	const secureFeatures = getSecureFeature?.entities || [];
 	const hasNotifyFeature = secureFeatures?.some(entity => entity.key === 'notify');
 
-	if(hasNotifyFeature){
+	if (hasNotifyFeature) {
 		const notyf = new Notyf();
 		loadNotyfCss();
 		const translatedMessage = i18next.t(message);
 		const options = {
 			message: i18next.t(translatedMessage),
-			duration: 3000, 
+			duration: 3000,
 			position: { x: 'right', y: 'top' },
-			ripple: true 
+			ripple: true
 		};
-	
+
 		switch (type) {
 			case 'error':
 				notyf.error(options);
@@ -1945,10 +1945,10 @@ export const getRAMInfo = async () => {
 		capacity: 'Unknown',
 		availableCapacity: 'Unknown',
 	};
-	
+
 	if ('deviceMemory' in navigator) {
 		memoryInfo.capacity = (navigator.deviceMemory * 1024 ** 3).toFixed(0);
-	} 
+	}
 	else if ('hardwareConcurrency' in navigator) {
 		memoryInfo.capacity = (navigator.hardwareConcurrency * 2 * 1024 ** 3).toFixed(0);
 	} else {
@@ -1996,61 +1996,298 @@ export const getCPUInfo = () => {
 	});
 };
 
-export const getNetworkDownloadSpeed = () => {
-	return new Promise((resolve, _reject) => {
-		const imageAddr = 'http://d3ia9qn5swl78e.cloudfront.net/images/detection-side-img.svg'; 
-		var downloadSize = 1263621; // bytes
-		
-		let startTime, endTime;
-		const download = new Image();
-		download.onload = function () {
-			endTime = (new Date()).getTime();
-			const duration = (endTime - startTime) / 1000;
-			const bitsLoaded = downloadSize * 8;
-			const speedBps = (bitsLoaded / duration).toFixed(2);
-			const speedKbps = (speedBps / 1024).toFixed(2);
-			const speedMbps = (speedKbps / 1024).toFixed(2);
-			const speed = {
-				speedBps, 
-				speedKbps,
-				speedMbps
-			};
-			resolve(speed);
-		};
-		
-		startTime = (new Date()).getTime();
-		var cacheBuster = '?nnn=' + startTime;
-		download.src = imageAddr + cacheBuster;
+const CLOUDFLARE_DOWN = 'https://speed.cloudflare.com/__down';
+
+const formatNetworkSpeed = (bitsPerSecond, extra = {}) => ({
+	speedBps: bitsPerSecond.toFixed(2),
+	speedKbps: (bitsPerSecond / 1000).toFixed(2),
+	speedMbps: (bitsPerSecond / 1_000_000).toFixed(2),
+	...extra,
+});
+
+const getSpeedPercentile = (values, percentile = 0.9) => {
+	if (!values.length) return 0;
+	const sorted = [...values].sort((a, b) => a - b);
+	const index = Math.min(sorted.length - 1, Math.ceil(sorted.length * percentile) - 1);
+	return sorted[index];
+};
+
+// Median for small batches; 90th percentile for larger sets (filters timing jitter).
+const getStableSpeed = (samples) => {
+	if (!samples.length) return 0;
+	if (samples.length <= 3) return getSpeedPercentile(samples, 0.5);
+	return getSpeedPercentile(samples, 0.9);
+};
+
+const DOWNLOAD_INITIAL_SAMPLES = 3;
+const DOWNLOAD_REFINED_SAMPLES = 3;
+const UPLOAD_PAYLOAD_SIZES_KB = [512, 2048, 8192, 10240];
+const MIN_UPLOAD_DURATION_SEC = 0.8;
+
+const warmUpDownload = async () => {
+	await fetch(`${CLOUDFLARE_DOWN}?bytes=100000&cache_bust=${Date.now()}`, { cache: 'no-store' });
+};
+
+const measureDownloadOnce = async (bytes) => {
+	const response = await fetch(`${CLOUDFLARE_DOWN}?bytes=${bytes}&cache_bust=${Date.now()}`, { cache: 'no-store' });
+	if (!response.ok) {
+		throw new Error(`Download test failed (${response.status})`);
+	}
+
+	const reader = response.body?.getReader();
+	let bytesReceived = 0;
+	let startTime = null;
+
+	if (reader) {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			if (!startTime) startTime = performance.now();
+			bytesReceived += value.byteLength;
+		}
+	} else {
+		startTime = performance.now();
+		const blob = await response.blob();
+		bytesReceived = blob.size;
+	}
+
+	const duration = startTime ? (performance.now() - startTime) / 1000 : 0;
+	if (!duration || duration <= 0 || !bytesReceived) {
+		throw new Error('Invalid download duration');
+	}
+
+	return (bytesReceived * 8) / duration;
+};
+
+const sampleDownloadSpeed = async (bytes, count) => {
+	const samples = [];
+
+	for (let i = 0; i < count; i++) {
+		try {
+			samples.push(await measureDownloadOnce(bytes));
+		} catch (error) {
+			logger.warn('[mereos] Download sample failed', error);
+		}
+	}
+
+	return getStableSpeed(samples);
+};
+
+/*
+	Purpose:
+	- Estimate upload speed with progressively larger payloads.
+	- Uses 4 strategic sizes (512KB → 10MB) and stops once upload duration >= 0.8s.
+	- Falls back to the longest-duration attempt for very fast connections.
+*/
+export const getNetworkUploadSpeed = () => {
+	return new Promise(async (resolve) => {
+		try {
+			const url = `${BASE_URL}/general/candidate_info/`;
+			let best = null;
+
+			for (const size of UPLOAD_PAYLOAD_SIZES_KB) {
+				const data = { name: 'a'.repeat(size * 1024) };
+				const result = await sendUploadRequest(url, data);
+
+				if (!result) continue;
+
+				const { duration, bitsLoaded } = result;
+				if (!duration || duration <= 0 || !bitsLoaded) continue;
+
+				const speedBps = (bitsLoaded / duration).toFixed(2);
+				const speedKbps = (speedBps / 1024).toFixed(2);
+				const speedMbps = (speedKbps / 1024).toFixed(2);
+				const candidate = { speedBps, speedKbps, speedMbps, duration };
+
+				if (!best || candidate.duration > best.duration) best = candidate;
+
+				if (duration >= MIN_UPLOAD_DURATION_SEC) {
+					return resolve({ speedBps, speedKbps, speedMbps });
+				}
+			}
+
+			if (best) {
+				const { speedBps, speedKbps, speedMbps } = best;
+				return resolve({ speedBps, speedKbps, speedMbps });
+			}
+
+			resolve(false);
+		} catch (error) {
+			console.log('Upload speed check failed:', error);
+			resolve(false);
+		}
 	});
 };
 
-export const getNetworkUploadSpeed = async () => {
+/*
+	Purpose:
+	- POST a JSON body to the server.
+	- Measure ONLY the upload portion (bytes leaving the client), not server processing time.
+
+	Timing approach:
+	- We use upload lifecycle events:
+	  - http.upload.onloadstart -> marks when the upload begins
+	  - http.upload.onloadend   -> marks when the upload finishes sending bytes
+	- This is generally more reliable than relying purely on onprogress for timing.
+
+	Byte counting approach:
+	- Prefer actual bytes reported by upload progress (e.loaded).
+	- If progress doesn't provide bytes (can happen in some environments),
+	  fall back to estimating bytes from the UTF-8 size of the JSON body.
+
+	Return values:
+	- resolve({ duration, bitsLoaded }) when the measurement is valid
+	- resolve(null) when the attempt should be ignored (failed request, non-200, unreliable timing, etc.)
+*/
+function sendUploadRequest(url, data) {
+	return new Promise(async (resolve) => {
+		// Using XHR because it gives us upload progress + upload lifecycle events.
+		const http = new XMLHttpRequest();
+		const token = await Promise.resolve(getAuthenticationToken());
+
+		// Async POST request.
+		http.open('POST', url, true);
+
+		// JSON body content type.
+		http.setRequestHeader('Content-Type', 'application/json');
+		http.setRequestHeader('token', token);
+
+		// Build request body once so we can:
+		// 1) send it
+		// 2) estimate payload size if progress events don't give us bytes
+		const body = JSON.stringify(data);
+
+		// Upload timestamps in milliseconds (performance.now()).
+		let uploadStart = null;
+		let uploadEnd = null;
+
+		// Bytes reported by upload progress.
+		// We'll store the latest value we see.
+		let loadedBytesFromProgress = 0;
+
+		http.upload.onloadstart = () => {
+			// Marks when the browser actually starts sending bytes to the network.
+			uploadStart = performance.now();
+		};
+
+		http.upload.onprogress = (e) => {
+			// Progress event gives us how many bytes have been uploaded so far.
+			// Some browsers / environments may not fire this consistently.
+			if (e?.loaded) loadedBytesFromProgress = e.loaded;
+		};
+
+		http.upload.onloadend = () => {
+			// Marks when the upload finishes sending bytes (before/while response is coming back).
+			uploadEnd = performance.now();
+		};
+
+		http.onreadystatechange = () => {
+			// readyState 4 means the full request/response cycle completed.
+			if (http.readyState !== 4) return;
+
+			// Only treat HTTP 200 as success (as per current logic).
+			// Anything else is considered a failed attempt and we let caller try the next payload size.
+			if (http.status !== 200) return resolve(null);
+
+			// If uploadEnd didn't get recorded (rare), fallback to now.
+			// If uploadStart never recorded, start=end -> duration becomes 0 and we reject below.
+			const end = uploadEnd ?? performance.now();
+			const start = uploadStart ?? end;
+
+			// Upload duration in seconds.
+			// NOTE: This measures upload time only, not total request time.
+			const duration = (end - start) / 1000;
+
+			// If uploadStart never fired or timing got collapsed, duration will be ~0.
+			// That reading is too unreliable, so ignore the attempt.
+			if (!duration || duration <= 0) return resolve(null);
+
+			// Byte calculation:
+			// - If progress reported bytes, use that (best case).
+			// - Otherwise, estimate bytes from the UTF-8 byte length of the JSON string.
+			const bytesLoaded =
+				loadedBytesFromProgress > 0 ? loadedBytesFromProgress : getUtf8ByteLength(body);
+
+			// Convert bytes to bits.
+			const bitsLoaded = bytesLoaded * 8;
+
+			// If bytes are still 0 for some reason, treat as invalid attempt.
+			if (!bitsLoaded) return resolve(null);
+
+			// Return the measurement to the caller.
+			resolve({ duration, bitsLoaded });
+		};
+
+		// Network-level failure:
+		// - blocked by proxy/VPN/firewall
+		// - offline / DNS issues
+		// - CORS/network error scenarios that surface as an XHR error
+		http.onerror = () => resolve(null);
+
+		// If timeout is configured elsewhere in the app/environment, treat it as a failed attempt.
+		http.ontimeout = () => resolve(null);
+
+		// Send the request body.
+		http.send(body);
+	});
+}
+
+function getUtf8ByteLength(str) {
 	try {
-		const myData = { 'test': 'a'.repeat(1024 * 1024) };
-		const startTime = new Date().getTime();
-
-		const response = await testUploadSpeed({ 'test': 'a'.repeat(1024 * 1024) });
-
-		if(response){
-			const endTime = new Date().getTime();
-			const duration = (endTime - startTime) / 1000;
-			const bitsLoaded = myData.test.length * 8;
-			const speedBps = (bitsLoaded / duration).toFixed(2);
-			const speedKbps = (speedBps / 1024).toFixed(2);
-			const speedMbps = (speedKbps / 1024).toFixed(2);
-
-			return { 	
-				speedBps,
-				speedKbps,
-				speedMbps 
-			};
-		}
-        
-	} catch (err) {
-		sentryExceptioMessage(err);
-		console.error(err);
-		return false;
+		return new TextEncoder().encode(str).length;
+	} catch (e) {
+		return str.length;
 	}
+}
+
+export const getNetworkDownloadSpeed = () => {
+	console.log('[mereos] Starting download speed test...');
+	logger.info('[mereos] Starting download speed test');
+
+	return (async () => {
+		try {
+			await warmUpDownload();
+
+			let bytes = 1_000_000;
+			let count = DOWNLOAD_INITIAL_SAMPLES;
+			let message = `Measured using ${count}×1MB samples after warm-up.`;
+
+			let bitsPerSecond = await sampleDownloadSpeed(bytes, count);
+			const initialMbps = bitsPerSecond / 1_000_000;
+
+			if (initialMbps > 50) {
+				bytes = 25_000_000;
+				count = DOWNLOAD_REFINED_SAMPLES;
+				message = `Measured using ${count}×25MB samples after warm-up.`;
+				bitsPerSecond = await sampleDownloadSpeed(bytes, count);
+			} else if (initialMbps > 10) {
+				bytes = 10_000_000;
+				count = DOWNLOAD_REFINED_SAMPLES;
+				message = `Measured using ${count}×10MB samples after warm-up.`;
+				bitsPerSecond = await sampleDownloadSpeed(bytes, count);
+			}
+
+			if (!bitsPerSecond) {
+				throw new Error('No valid download samples');
+			}
+
+			const result = formatNetworkSpeed(bitsPerSecond, {
+				isRefined: initialMbps > 10,
+				message,
+				sampleBytes: bytes,
+				sampleCount: count,
+			});
+
+			console.log('[mereos] Download speed:', result);
+			logger.info('[mereos] Download speed', result);
+			return result;
+		} catch (err) {
+			console.error('[mereos] Download speed test failed:', err);
+			logger.error('[mereos] Download speed test failed', err);
+			sentryExceptioMessage(err, { type: 'error', message: 'Error measuring download speed' });
+			throw new Error('Error measuring download speed: ' + err.message);
+		}
+	})();
 };
 
 export const checkPermissionStatus = async () => {
@@ -2075,16 +2312,16 @@ export const handleBackendError = (t, error) => {
 
 	if (!error) {
 		message = t('something_went_wrong_please_try_again_later');
-	} 
+	}
 	else if (typeof error === 'string') {
 		const translated = t(error);
 		message = translated !== error ? translated : error;
-	} 
+	}
 	else if (typeof error === 'object') {
 		if (error && typeof error === 'string') {
 			const translated = t(error);
 			message = translated !== error ? translated : error;
-		} 
+		}
 		else if (typeof error === 'object') {
 			const firstKey = Object.keys(error)[0];
 			const firstMsgArray = error[firstKey];
@@ -2170,13 +2407,13 @@ export const enumerateByKind = async () => {
 export const isDevicePresent = async (kind, deviceId) => {
 	const byKind = await enumerateByKind();
 	const list = kind === 'audio' ? byKind.audioinput : byKind.videoinput;
-	if (!deviceId) return list.length > 0; 
+	if (!deviceId) return list.length > 0;
 	return list.some(d => d.deviceId === deviceId);
 };
 
 export const probeExactDevice = async (kind, deviceId) => {
 	const constraints =
-    kind === 'video' ? { video: deviceId ? { deviceId: { exact: deviceId } } : true } : { audio: deviceId ? { deviceId: { exact: deviceId } } : true };
+		kind === 'video' ? { video: deviceId ? { deviceId: { exact: deviceId } } : true } : { audio: deviceId ? { deviceId: { exact: deviceId } } : true };
 
 	const stream = await navigator.mediaDevices.getUserMedia(constraints);
 	const track = stream.getTracks()[0];
@@ -2201,7 +2438,7 @@ const routeToPrecheckKey = {
 	ExamPreparation: 'examPreparation',
 	runSystemDiagnostics: 'diagnosticStep',
 	SystemRequirements: 'requirementStep',
-	BrowserSecurity:'browserSecurity',
+	BrowserSecurity: 'browserSecurity',
 	Prevalidationinstruction: 'preValidation',
 
 	IdentityVerificationScreenOne: 'userPhoto',
@@ -2227,7 +2464,7 @@ const stepToVideoId = {
 	ExamPreparation: 'full-demo',
 	runSystemDiagnostics: 'system-diagnostic',
 	SystemRequirements: 'system-requirement',
-	
+
 	IdentityVerificationScreenOne: 'candidate-photo',
 	IdentityVerificationScreenTwo: 'identity-card',
 	IdentityVerificationScreenThree: 'detect-microphone',
@@ -2265,19 +2502,19 @@ export const detectBrowserActions = async () => {
 		localStorage.removeItem('examLeaveTime');
 	}
 
-	window.mereos.startRecordingCallBack({ 
+	window.mereos.startRecordingCallBack({
 		type: 'error',
-		message: navType === 'navigate' ? 'candidate_came_back_to_assessment_page': navType === 'back_forward'? 'candidate_move_back_or_forward_from_the_page': 'candidate_refreshed_the_assessment_page',
+		message: navType === 'navigate' ? 'candidate_came_back_to_assessment_page' : navType === 'back_forward' ? 'candidate_move_back_or_forward_from_the_page' : 'candidate_refreshed_the_assessment_page',
 		code: 40019
 	});
 
-	if(session?.quizStartTime > 1 && session?.sessionStatus === 'Attending'){
+	if (session?.quizStartTime > 1 && session?.sessionStatus === 'Attending') {
 		registerEvent({
 			eventType: 'error',
 			notify: false,
-			eventName:navType === 'navigate' ? 'candidate_came_back_to_assessment_page': navType === 'back_forward'? 'candidate_move_back_or_forward_from_the_page': 'candidate_refreshed_the_assessment_page',
-			duration:timeDiff,
-			eventValue:navType
+			eventName: navType === 'navigate' ? 'candidate_came_back_to_assessment_page' : navType === 'back_forward' ? 'candidate_move_back_or_forward_from_the_page' : 'candidate_refreshed_the_assessment_page',
+			duration: timeDiff,
+			eventValue: navType
 		});
 	}
 

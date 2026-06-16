@@ -1,15 +1,15 @@
 import i18next from 'i18next';
 
-import { 
-	getCPUInfo, 
-	getNetworkDownloadSpeed, 
-	getNetworkUploadSpeed, 
-	getRAMInfo, 
-	getSecureFeatures, 
-	logger, 
-	registerEvent, 
-	sentryExceptioMessage, 
-	updatePersistData 
+import {
+	getCPUInfo,
+	getNetworkDownloadSpeed,
+	getNetworkUploadSpeed,
+	getRAMInfo,
+	getSecureFeatures,
+	logger,
+	registerEvent,
+	sentryExceptioMessage,
+	updatePersistData
 } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
@@ -161,7 +161,7 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 	if (!element) {
 		return;
 	}
-	
+
 	// Check if element already has success status
 	const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
 	if (statusIcon && statusIcon.src.includes(successIconMap[id].split('/').pop())) {
@@ -180,12 +180,12 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 		if (!statusIcon || !statusLoading) {
 			return;
 		}
-		
+
 		// Check if already in success state
 		if (statusIcon.src.includes(successIconMap[id].split('/').pop())) {
 			return;
 		}
-		
+
 		continueButton.disabled = true;
 		if (refreshButton) {
 			refreshButton.disabled = true;
@@ -194,42 +194,52 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 		statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
 		statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
 
-		const resp = await checkFunction();
+		try {
+			const resp = await checkFunction();
 
-		const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
-		const isGoodRam = Number(ram_info) >= profileSettings?.ram_size;
+			const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
+			const isGoodRam = Number(ram_info) >= profileSettings?.ram_size;
 
-		const isGoodCpu = Number(resp?.noOfPrcessor) >= profileSettings?.cpu_size;
+			const isGoodCpu = Number(resp?.noOfPrcessor) >= profileSettings?.cpu_size;
 
-		const isGoodUpload = Number(resp?.speedMbps) >= profileSettings?.upload_speed;
-		const isGoodDownload = Number(resp?.speedMbps) >= profileSettings?.download_speed;
+			const isGoodUpload = Number(resp?.speedMbps) >= profileSettings?.upload_speed;
+			const isGoodDownload = Number(resp?.speedMbps) >= profileSettings?.download_speed;
 
-		let finalResult;
-		switch (id) {
-			case 'ram':
-				finalResult = isGoodRam;
-				break;
-			case 'cpu':
-				finalResult = isGoodCpu;
-				break;
-			case 'upload_speed':
-				finalResult = isGoodUpload;
-				break;
-			case 'download_speed':
-				finalResult = isGoodDownload;
-				break;
-			default:
-				finalResult = resp;
+			let finalResult;
+			switch (id) {
+				case 'ram':
+					finalResult = isGoodRam;
+					break;
+				case 'cpu':
+					finalResult = isGoodCpu;
+					break;
+				case 'upload_speed':
+					finalResult = isGoodUpload;
+					break;
+				case 'download_speed':
+					finalResult = isGoodDownload;
+					break;
+				default:
+					finalResult = resp;
+			}
+
+			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
+		} catch (error) {
+			logger.error(`Error checking ${id} requirement:`, error);
+			sentryExceptioMessage(error, { type: 'error', message: `Error checking ${id} requirement` });
+			setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, false);
+			if (id === 'download_speed') {
+				registerEvent({ notify: false, eventName: 'download_speed_insufficient', eventValue: 'speed_test_failed' });
+			}
 		}
 
-		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
 		updateContinueButtonState();
 		updateRefreshButtonVisibility();
 		if (refreshButton) refreshButton.disabled = false;
 	};
 
 	element.addEventListener('click', clickHandler);
-	
+
 	// Store reference to the handler for removal
 	element._clickHandler = clickHandler;
 };
@@ -237,50 +247,50 @@ const handleDiagnosticItemClick = (id, checkFunction) => {
 const retryAllFailedRequirements = async () => {
 	const refreshBtn = window.mereos.shadowRoot.getElementById('requirementRefreshBtn');
 	const continueBtn = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
-	
+
 	if (refreshBtn && continueBtn) {
 		refreshBtn.disabled = true;
 		refreshBtn.style.display = 'none'; // Hide refresh button during batch retry processing
 		continueBtn.disabled = true;
-		
+
 		const originalText = refreshBtn.textContent;
 		refreshBtn.textContent = i18next.t('retrying');
-		
+
 		try {
 			const candidateAssessment = await getSecureFeatures();
 			const secureFeatures = candidateAssessment?.entities || [];
 			const profileSettings = candidateAssessment?.settings;
-			
+
 			const failedRequirements = getFailedRequirements();
-			
+
 			const retryPromises = [];
-			
+
 			if (failedRequirements.includes('ram') && secureFeatures.find(entity => entity.key === 'verify_ram')) {
 				retryPromises.push(retryRequirementItem('ram', getRAMInfo, profileSettings));
 			}
-			
+
 			if (failedRequirements.includes('cpu') && secureFeatures.find(entity => entity.key === 'verify_cpu')) {
 				retryPromises.push(retryRequirementItem('cpu', getCPUInfo, profileSettings));
 			}
-			
+
 			if (failedRequirements.includes('upload_speed') && secureFeatures.find(entity => entity.key === 'verify_upload_speed')) {
 				retryPromises.push(retryRequirementItem('upload_speed', getNetworkUploadSpeed, profileSettings));
 			}
-			
+
 			if (failedRequirements.includes('download_speed') && secureFeatures.find(entity => entity.key === 'verify_download_speed')) {
 				retryPromises.push(retryRequirementItem('download_speed', getNetworkDownloadSpeed, profileSettings));
 			}
-			
+
 			await Promise.all(retryPromises);
-			
-			registerEvent({ 
-				eventType: 'info', 
-				notify: false, 
-				eventName: 'requirements_retry_attempted' 
+
+			registerEvent({
+				eventType: 'info',
+				notify: false,
+				eventName: 'requirements_retry_attempted'
 			});
-			
+
 		} catch (error) {
-			sentryExceptioMessage(error,{type:'error',message:`Error retrying requirements`});
+			sentryExceptioMessage(error, { type: 'error', message: `Error retrying requirements` });
 			logger.error('Error retrying requirements:', error);
 		} finally {
 			refreshBtn.textContent = originalText;
@@ -294,18 +304,18 @@ const retryAllFailedRequirements = async () => {
 const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 	const statusIcon = window.mereos.shadowRoot.getElementById(`${id}StatusIcon`);
 	const statusLoading = window.mereos.shadowRoot.getElementById(`${id}StatusLoading`);
-	
+
 	if (!statusIcon || !statusLoading) {
 		return false;
 	}
-	
+
 	statusIcon.src = `${ASSET_URL}/${statusIconMap[id]}`;
 	statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
-	
+
 	try {
 		const resp = await checkFunction();
 		const ram_info = (parseInt(resp?.capacity) / (1024 ** 3)).toFixed(0);
-		
+
 		let finalResult;
 		switch (id) {
 			case 'ram':
@@ -323,42 +333,42 @@ const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 			default:
 				finalResult = false;
 		}
-		
+
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, finalResult);
-		
+
 		if (finalResult) {
-			if(window.mereos.globalCallback) {
-				window.mereos.globalCallback({ 
-					type:'success',
-					message: `system_requirement_retry_success` ,
-					code:50011
+			if (window.mereos.globalCallback) {
+				window.mereos.globalCallback({
+					type: 'success',
+					message: `system_requirement_retry_success`,
+					code: 50011
 				});
 			}
-			registerEvent({ 
-				eventType: 'success', 
-				notify: false, 
-				eventName: `${id}_requirement_retry_success` 
+			registerEvent({
+				eventType: 'success',
+				notify: false,
+				eventName: `${id}_requirement_retry_success`
 			});
 		} else {
-			if(window.mereos.globalCallback) {
-				window.mereos.globalCallback({ 
-					type:'error',
-					message: `system_requirement_retry_failed` ,
-					code:40041
+			if (window.mereos.globalCallback) {
+				window.mereos.globalCallback({
+					type: 'error',
+					message: `system_requirement_retry_failed`,
+					code: 40041
 				});
 			}
-			registerEvent({ 
-				eventType: 'error', 
-				notify: false, 
-				eventName: `${id}_requirement_retry_failed` 
+			registerEvent({
+				eventType: 'error',
+				notify: false,
+				eventName: `${id}_requirement_retry_failed`
 			});
 		}
-		
+
 		return finalResult;
 	} catch (error) {
 		logger.error(`Error retrying ${id} requirement:`, error);
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, false);
-		sentryExceptioMessage(error,{type:'error',message:`Error retrying ${id} requirement:`});
+		sentryExceptioMessage(error, { type: 'error', message: `Error retrying ${id} requirement:` });
 		return false;
 	}
 };
@@ -366,19 +376,19 @@ const retryRequirementItem = async (id, checkFunction, profileSettings) => {
 const getFailedRequirements = () => {
 	const failedItems = [];
 	const requirementItems = ['ram', 'cpu', 'upload_speed', 'download_speed'];
-	
+
 	requirementItems.forEach(itemId => {
 		const statusIcon = window.mereos.shadowRoot.getElementById(`${itemId}StatusIcon`);
 		if (!statusIcon) return;
-		
+
 		const currentIconPathname = new URL(statusIcon.src).pathname;
 		const failureIconPathname = new URL(failureIconMap[itemId] || '').pathname;
-		
+
 		if (currentIconPathname === failureIconPathname) {
 			failedItems.push(itemId);
 		}
 	});
-	
+
 	return failedItems;
 };
 
@@ -405,11 +415,11 @@ const updateContinueButtonState = () => {
 const updateRefreshButtonVisibility = () => {
 	const refreshBtn = window.mereos.shadowRoot.getElementById('requirementRefreshBtn');
 	const continueBtn = window.mereos.shadowRoot.getElementById('requirementContinueBtn');
-	
+
 	if (!refreshBtn || !continueBtn) return;
-	
+
 	const failedRequirements = getFailedRequirements();
-	
+
 	if (failedRequirements.length > 0) {
 		refreshBtn.style.display = 'block';
 		continueBtn.style.display = 'none';
@@ -462,24 +472,50 @@ export const SystemRequirement = async (tab1Content) => {
 		}
 
 		if (verifyUploadSpeed) {
-			promises.push(getNetworkUploadSpeed().then(network => {
-				updatePersistData('session', { uploadSpeed: network });
-				const isGoodUpload = Number(network.speedMbps) >= profileSettings?.upload_speed;
-				setElementStatus('upload_speed', { success: uploadSpeedGreen, failure: uploadSpeedRed }, isGoodUpload);
-				return isGoodUpload;
-			}));
+			console.log('[mereos] Running upload speed check, minimum Mbps:', profileSettings?.upload_speed);
+			promises.push(
+				getNetworkUploadSpeed()
+					.then(network => {
+						console.log('[mereos] Upload speed result:', network, 'minimum:', profileSettings?.upload_speed);
+						updatePersistData('session', { uploadSpeed: network });
+						const isGoodUpload = Number(network?.speedMbps) >= profileSettings?.upload_speed;
+						setElementStatus('upload_speed', { success: uploadSpeedGreen, failure: uploadSpeedRed }, isGoodUpload);
+						return isGoodUpload;
+					})
+					.catch(error => {
+						console.error('[mereos] Upload speed check failed:', error);
+						logger.error('Error checking upload speed:', error);
+						setElementStatus('upload_speed', { success: uploadSpeedGreen, failure: uploadSpeedRed }, false);
+						return false;
+					}),
+			);
 		} else {
+			console.log('[mereos] Upload speed check skipped (not enabled in profile)');
 			setElementStatus('upload_speed', { success: uploadSpeedGreen, failure: uploadSpeedRed }, true);
 		}
 
 		if (verifyDownloadSpeed) {
-			promises.push(getNetworkDownloadSpeed().then(network => {
-				updatePersistData('session', { downloadSpeed: network });
-				const isGoodDownload = Number(network.speedMbps) >= profileSettings?.download_speed;
-				setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, isGoodDownload);
-				return isGoodDownload;
-			}));
+			console.log('[mereos] Running download speed check, minimum Mbps:', profileSettings?.download_speed);
+			promises.push(
+				getNetworkDownloadSpeed()
+					.then(network => {
+						console.log('[mereos] Download speed result:', network, 'minimum:', profileSettings?.download_speed);
+						updatePersistData('session', { downloadSpeed: network });
+						const isGoodDownload = Number(network.speedMbps) >= profileSettings?.download_speed;
+						setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, isGoodDownload);
+						return isGoodDownload;
+					})
+					.catch(error => {
+						console.error('[mereos] Download speed check failed:', error);
+						logger.error('Error checking download speed:', error);
+						sentryExceptioMessage(error, { type: 'error', message: 'Error checking download speed' });
+						setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, false);
+						registerEvent({ notify: false, eventName: 'download_speed_insufficient', eventValue: 'speed_test_failed' });
+						return false;
+					}),
+			);
 		} else {
+			console.log('[mereos] Download speed check skipped (not enabled in profile)');
 			setElementStatus('download_speed', { success: downloadSpeedGreen, failure: downloadSpeedRed }, true);
 		}
 
@@ -489,7 +525,7 @@ export const SystemRequirement = async (tab1Content) => {
 		updateRefreshButtonVisibility();
 
 	} catch (error) {
-		sentryExceptioMessage(error,{type:'error',message:`Error running system requirement`});
+		sentryExceptioMessage(error, { type: 'error', message: `Error running system requirement` });
 		logger.error('Error running system requirement:', error);
 	}
 };
@@ -518,7 +554,7 @@ const updateDiagnosticText = () => {
 	if (btnText) {
 		btnText.textContent = i18next.t('continue');
 	}
-	
+
 	const refreshBtn = window.mereos.shadowRoot.getElementById('requirementRefreshBtn');
 	if (refreshBtn) {
 		refreshBtn.textContent = i18next.t('refresh');

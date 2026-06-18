@@ -31,7 +31,6 @@
 		"@babel/plugin-transform-optional-chaining": "^7.28.6",
 		"@babel/preset-env": "^7.29.0",
 		"@sentry/browser": "^10.38.0",
-		"@sentry/replay": "^7.116.0",
 		"@tensorflow-models/coco-ssd": "2.2.3",
 		"@tensorflow/tfjs": "4.21.0",
 		"@twilio/rtc-diagnostics": "^1.0.1",

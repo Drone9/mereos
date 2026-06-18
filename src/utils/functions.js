@@ -2732,13 +2732,22 @@ export const detectBrowserActions = async () => {
 		localStorage.removeItem('examLeaveTime');
 	}
 
-	window.mereos.startRecordingCallBack({
-		type: 'error',
-		message: navType === 'navigate' ? 'candidate_came_back_to_assessment_page' : navType === 'back_forward' ? 'candidate_move_back_or_forward_from_the_page' : 'candidate_refreshed_the_assessment_page',
-		code: 40019
-	});
+	/*
+	 * Only notify LMS on real return to an in-progress exam (reload/back/leave), not on
+	 * first page load where navType is typically "navigate" without examLeaveTime.
+	 */
+	const isActiveSession = session?.quizStartTime > 1 && session?.sessionStatus === 'Attending';
+	const isNavigationReturn = navType === 'reload' || navType === 'back_forward' || (navType === 'navigate' && leaveTime);
 
-	if (session?.quizStartTime > 1 && session?.sessionStatus === 'Attending') {
+	if (isActiveSession && isNavigationReturn && typeof window.mereos?.startRecordingCallBack === 'function') {
+		window.mereos.startRecordingCallBack({
+			type: 'error',
+			message: navType === 'navigate' ? 'candidate_came_back_to_assessment_page' : navType === 'back_forward' ? 'candidate_move_back_or_forward_from_the_page' : 'candidate_refreshed_the_assessment_page',
+			code: 40019
+		});
+	}
+
+	if (isActiveSession && isNavigationReturn) {
 		registerEvent({
 			eventType: 'error',
 			notify: false,

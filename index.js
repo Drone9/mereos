@@ -7,13 +7,13 @@
  * LICENSE file in the root directory of this source tree.
 */
 window.mereos = window.mereos || {};
+import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBrowserActions, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, releaseAllMediaStreams, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
 import { initShadowDOM, openModal, startSession } from './src/ExamsPrechecks';
 import { getRoomToken } from './src/services/twilio.services';
-import { createCandidate } from './src/services/candidate.services'; 
+import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
-import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBrowserActions, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
@@ -29,7 +29,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 		let logonResp;
 
 		const checkMobile = isMobileDevice();
-		if(checkMobile === 'mobile'){
+		if (checkMobile === 'mobile') {
 			return callback({
 				type: 'error',
 				message: 'mobile_devices_are_not_supported_use_desktop',
@@ -37,7 +37,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			});
 		}
 		const info = detectBrowser();
-		let detectedBrowser = { ...info };	
+		let detectedBrowser = { ...info };
 
 		if (detectedBrowser?.browser.toLowerCase() === 'chrome' || detectedBrowser?.browser.toLowerCase() === 'edge' || detectedBrowser?.browser.toLowerCase() === 'firefox') {
 			if (detectedBrowser.version && browserMinVersions[detectedBrowser.browser] && detectedBrowser.version < browserMinVersions[detectedBrowser.browser]) {
@@ -45,7 +45,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 					type: 'error',
 					message: 'your_browser_version_is_not_compatible',
 					code: 40025,
-					details:detectedBrowser
+					details: detectedBrowser
 				});
 			}
 		}
@@ -53,7 +53,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 		try {
 			logonResp = await logonSchool(credentials);
 		} catch (error) {
-			sentryExceptioMessage(error,{
+			sentryExceptioMessage(error, {
 				type: 'error',
 				message: 'Error in logon school',
 				code: 40020,
@@ -77,8 +77,8 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			try {
 				resp = await createCandidate(candidateData);
 			} catch (error) {
-				const message = handleBackendError(i18next.t,error?.response?.data?.message);
-				sentryExceptioMessage(error,{
+				const message = handleBackendError(i18next.t, error?.response?.data?.message);
+				sentryExceptioMessage(error, {
 					type: 'error',
 					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 					code: 40021,
@@ -117,9 +117,9 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			try {
 				assessmentResp = await createCandidateAssessment(data);
 			} catch (error) {
-				const message = handleBackendError(i18next.t,error?.response?.data?.message);
+				const message = handleBackendError(i18next.t, error?.response?.data?.message);
 				localStorage.removeItem('mereosToken');
-				sentryExceptioMessage(error,{
+				sentryExceptioMessage(error, {
 					type: 'error',
 					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 					code: 40021,
@@ -145,9 +145,9 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 				try {
 					candidateAssessmentResp = await customCandidateAssessmentStatus(candidateAssessmentData);
 				} catch (error) {
-					const message = handleBackendError(i18next.t,error?.response?.data?.message);
+					const message = handleBackendError(i18next.t, error?.response?.data?.message);
 					localStorage.removeItem('mereosToken');
-					sentryExceptioMessage(error,{
+					sentryExceptioMessage(error, {
 						type: 'error',
 						message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 						code: 40021,
@@ -161,7 +161,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 					});
 				}
 
-				Sentry.setUser({ id: resp?.data?.id, email: resp?.data?.email,name: resp?.data?.name });
+				Sentry.setUser({ id: resp?.data?.id, email: resp?.data?.email, name: resp?.data?.name });
 
 				updatePersistData('session', {
 					candidate_assessment: candidateAssessmentResp?.data?.id,
@@ -180,7 +180,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			});
 		}
 	} catch (error) {
-		sentryExceptioMessage(error,{
+		sentryExceptioMessage(error, {
 			type: 'error',
 			message: 'Error in init function',
 			code: 40022,
@@ -195,7 +195,7 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 	}
 }
 
-async function start_prechecks(callback,setting) {
+async function start_prechecks(callback, setting) {
 	try {
 		window.mereos.globalCallback = callback;
 		const tokenData = localStorage.getItem('mereosToken');
@@ -203,29 +203,29 @@ async function start_prechecks(callback,setting) {
 			localStorage.removeItem('mereosToken');
 			return callback(tokenExpiredError);
 		}
-		
-		if(!setting){
+
+		if (!setting) {
 			localStorage.removeItem('navHistory');
 		}
 
 		localStorage.setItem('precheckSetting', setting);
 		initShadowDOM();
-		window.mereos.precheckCompleted=false;
+		window.mereos.precheckCompleted = false;
 		const savedData = await startSession();
-		if(savedData === 'data_saved'){
+		if (savedData === 'data_saved') {
 			openModal(callback);
 		}
 	} catch (error) {
-		sentryExceptioMessage(error,{
+		sentryExceptioMessage(error, {
 			type: 'error',
 			message: 'Error in prechecks setup',
-			code:40000,
+			code: 40000,
 			details: error,
 		});
 		callback({
 			type: 'error',
 			message: 'error_in_prechecks_setup',
-			code:40000,
+			code: 40000,
 			details: error,
 		});
 	}
@@ -239,30 +239,11 @@ async function stop_prechecks(callback) {
 		const chatIcons = window.mereos.shadowRoot.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = window.mereos.shadowRoot.getElementById('talkjs-container');
 
-		if (window.mereos.globalStream) {
-			window.mereos.globalStream.getTracks().forEach(track => {
-				track.stop();
-				track.enabled = false;
-				track.onended = null;
-				track.onmute = null;
-				track.onunmute = null;
-			});
-			const videoElements = [
-				...document.querySelectorAll('video'),
-				...window.mereos.shadowRoot.querySelectorAll('video')
-			];
-			
-			videoElements.forEach(video => {
-				if (video.srcObject === window.mereos.globalStream) {
-					video.srcObject = null;
-				}
-			});
-			window.mereos.globalStream = null;
-		}
-		
-		if(sessionSetting !== 'session_resume'){
+		await releaseAllMediaStreams();
+
+		if (sessionSetting !== 'session_resume') {
 			localStorage.removeItem('preChecksSteps');
-			localStorage.setItem('navHistory',JSON.stringify([]));
+			localStorage.setItem('navHistory', JSON.stringify([]));
 		}
 		if (chatIcons.length > 0) {
 			chatIcons.forEach(icon => {
@@ -289,7 +270,7 @@ async function stop_prechecks(callback) {
 			code: 50002
 		});
 	} catch (error) {
-		sentryExceptioMessage(error,{
+		sentryExceptioMessage(error, {
 			type: 'error',
 			message: 'Error in stop prechecks',
 			details: error,
@@ -304,15 +285,38 @@ async function stop_prechecks(callback) {
 	}
 }
 
+/**
+ * Starts the proctored exam session and notifies the LMS via callback.
+ *
+ * Flow:
+ * 1. Store LMS callback → detectBrowserActions (navigation violations on active session)
+ * 2. Validate token and prechecks
+ * 3. If Twilio room already connected → success callback only
+ * 4. Reset stale recordingStart flag from a prior failed attempt
+ * 5. Preserve quizStartTime; on session_resume reuse stored Twilio tokens
+ * 6. await startRecording() — final success/error callback fires inside that function
+ */
 async function start_session(callback) {
+	/*
+	 * LMS callback helper: always notify the integrator even if startRecordingCallBack
+	 * was cleared elsewhere. Falls back to the callback argument passed into start_session.
+	 */
+	const invokeCallback = (payload) => {
+		const cb = window.mereos.startRecordingCallBack || callback;
+		if (typeof cb === 'function') {
+			cb(payload);
+		}
+	};
+
 	try {
+		// Store callback for async paths inside startRecording (Twilio, media, etc.).
 		window.mereos.startRecordingCallBack = callback;
 		await detectBrowserActions();
 		const secureFeatures = getSecureFeatures();
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');
-			return callback(tokenExpiredError);
+			return invokeCallback(tokenExpiredError);
 		}
 		const hasRecordScreen = findConfigs(['record_screen'], secureFeatures?.entities).length > 0;
 		const hasMobileProctoring = findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0;
@@ -321,14 +325,14 @@ async function start_session(callback) {
 		const mobileStream = !window.mereos?.mobileStream;
 
 		if (
-			(hasRecordScreen && screenShareStream && notCompleted) || 
+			(hasRecordScreen && screenShareStream && notCompleted) ||
 			(hasMobileProctoring && notCompleted && !mobileStream)
 		) {
-			updatePersistData('preChecksSteps', { 
+			updatePersistData('preChecksSteps', {
 				mobileConnection: false,
 				screenSharing: false
 			});
-			window.mereos.startRecordingCallBack({ 
+			invokeCallback({
 				type: 'error',
 				message: 'please_complete_your_prechecks',
 				code: 40019
@@ -336,134 +340,204 @@ async function start_session(callback) {
 			return;
 		}
 
-		if(!window.mereos.roomInstance && !window.mereos.recordingStart){
-			window.mereos.recordingStart = true;
-			const dateTime = new Date();
-			const currentTimeInSeconds = Math.abs(getTimeInSeconds({ isUTC: true, inputDate: dateTime }));
-            
-			const previousSessionData = convertDataIntoParse('session') || {};
-			
-			let quizStartTime = previousSessionData.quizStartTime;
-			if (!quizStartTime || quizStartTime <= 0) {
-				quizStartTime = currentTimeInSeconds;
-			}
-	
-			updatePersistData('session', {
-				quizStartTime: quizStartTime,
-				lastUpdated: currentTimeInSeconds
+		// Twilio room is already live — report success without creating a duplicate room.
+		if (window.mereos.roomInstance) {
+			invokeCallback({
+				type: 'success',
+				message: 'recording_started_successfully',
+				code: 50000,
 			});
+			return;
+		}
 
-			if (secureFeatures?.entities?.length > 0) {
-				const mobileRoomSessionId = v4();
-				const newRoomSessionId = v4();
-				
-				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length) {
-					try {
-						const resp = await getRoomToken({ room_name: mobileRoomSessionId, identity: mobileRoomSessionId });
-						const mobileTwilioToken = resp?.data?.token;
-	
-						updatePersistData('session', {
-							mobileRoomId: resp.data.room_sid,
-							mobileRoomSessionId: mobileRoomSessionId,
-							mobileTwilioToken:mobileTwilioToken
-						});
-	
-						if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
-							window.mereos.socket.send(
-								JSON.stringify({
-									event: 'twilioToken',
-									message:mobileTwilioToken,
-								})
-							);
-						}
-					} catch (err) {
-						sentryExceptioMessage(err,{
-							type: 'error',
-							message: 'Error in mobile proctoring setup',
-							details: err,
-							code:40002
-						});
-						if(window.mereos.startRecordingCallBack){
-							window.mereos.startRecordingCallBack({
-								type: 'error',
-								message: 'error_in_mobile_proctoring_setup',
-								details: err,
-								code:40002
-							});
-						}
-						return;
+		/*
+		 * recordingStart can remain true after a failed/interrupted attempt while roomInstance
+		 * is null. Reset so the flow below can run again instead of exiting silently.
+		 */
+		if (window.mereos.recordingStart) {
+			window.mereos.recordingStart = false;
+		}
+
+		window.mereos.recordingStart = true;
+		const dateTime = new Date();
+		const currentTimeInSeconds = Math.abs(getTimeInSeconds({ isUTC: true, inputDate: dateTime }));
+
+		const previousSessionData = convertDataIntoParse('session') || {};
+		// session_resume is set by start_prechecks(callback, 'session_resume') after reload/interruption.
+		const sessionSetting = localStorage.getItem('precheckSetting');
+
+		// Preserve quiz start time across resume; only set on first start.
+		let quizStartTime = previousSessionData.quizStartTime;
+		if (!quizStartTime || quizStartTime <= 0) {
+			quizStartTime = currentTimeInSeconds;
+		}
+
+		updatePersistData('session', {
+			quizStartTime: quizStartTime,
+			lastUpdated: currentTimeInSeconds
+		});
+
+		if (secureFeatures?.entities?.length > 0) {
+			const mobileRoomSessionId = v4();
+			const newRoomSessionId = v4();
+			/*
+			 * On session_resume only: reuse Twilio tokens from localStorage instead of new rooms.
+			 * Fresh starts always fetch new tokens below.
+			 */
+			const canReuseMobileToken = sessionSetting === 'session_resume' && previousSessionData.mobileTwilioToken;
+			const canReuseTwilioToken = sessionSetting === 'session_resume' && previousSessionData.twilioToken;
+
+			// Mobile proctoring room token
+			if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length && !canReuseMobileToken) {
+				try {
+					const resp = await getRoomToken({ room_name: mobileRoomSessionId, identity: mobileRoomSessionId });
+					const mobileTwilioToken = resp?.data?.token;
+
+					updatePersistData('session', {
+						mobileRoomId: resp.data.room_sid,
+						mobileRoomSessionId: mobileRoomSessionId,
+						mobileTwilioToken: mobileTwilioToken
+					});
+
+					if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+						window.mereos.socket.send(
+							JSON.stringify({
+								event: 'twilioToken',
+								message: mobileTwilioToken,
+							})
+						);
 					}
+				} catch (err) {
+					window.mereos.recordingStart = false;
+					sentryExceptioMessage(err, {
+						type: 'error',
+						message: 'Error in mobile proctoring setup',
+						details: err,
+						code: 40002
+					});
+					invokeCallback({
+						type: 'error',
+						message: 'error_in_mobile_proctoring_setup',
+						details: err,
+						code: 40002
+					});
+					return;
 				}
-	
-				const roomCreation = ['record_screen', 'record_audio', 'record_video', 'mobile_proctoring'];
-				if (secureFeatures?.entities.filter((entity) => roomCreation.includes(entity.key)).length > 0) {
-					try {
-						const resp = await getRoomToken({ room_name: newRoomSessionId, identity: newRoomSessionId });
-						const twilioToken = resp?.data?.token;
-	
-						if (twilioToken) {
-							updatePersistData('session', {
-								twilioToken: twilioToken,
-								sessionId: newRoomSessionId,
-							});
-						}
-					} catch (err) {
-						sentryExceptioMessage(err,{
-							type: 'error',
-							message: 'Error in web room creation',
-							details: err,
-							code:40003
+				// session_resume: re-send stored mobile token to the signaling socket.
+			} else if (canReuseMobileToken && window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+				window.mereos.socket.send(
+					JSON.stringify({
+						event: 'twilioToken',
+						message: previousSessionData.mobileTwilioToken,
+					})
+				);
+			}
+
+			const roomCreation = ['record_screen', 'record_audio', 'record_video', 'mobile_proctoring'];
+			const needsWebRoom = secureFeatures?.entities.filter((entity) => roomCreation.includes(entity.key)).length > 0;
+			// Web recording room token (skip fetch when resuming with stored token)
+			if (needsWebRoom && !canReuseTwilioToken) {
+				try {
+					const resp = await getRoomToken({ room_name: newRoomSessionId, identity: newRoomSessionId });
+					const twilioToken = resp?.data?.token;
+
+					if (twilioToken) {
+						updatePersistData('session', {
+							twilioToken: twilioToken,
+							sessionId: newRoomSessionId,
 						});
-						window.mereos.startRecordingCallBack({
+						// No token in API response and none stored — cannot connect.
+					} else if (!previousSessionData.twilioToken) {
+						window.mereos.recordingStart = false;
+						invokeCallback({
 							type: 'error',
 							message: 'error_in_web_room_creation',
-							details: err,
-							code:40003
+							code: 40003,
+							details: 'Twilio token missing from room creation response',
 						});
 						return;
 					}
+				} catch (err) {
+					window.mereos.recordingStart = false;
+					sentryExceptioMessage(err, {
+						type: 'error',
+						message: 'Error in web room creation',
+						details: err,
+						code: 40003
+					});
+					invokeCallback({
+						type: 'error',
+						message: 'error_in_web_room_creation',
+						details: err,
+						code: 40003
+					});
+					return;
 				}
-	
-				startRecording();
-			} else {
-				window.mereos.startRecordingCallBack({ 
-					type:'success',
-					message: 'recording_started_successfully',
-					code:50000
-				});
 			}
+
+			// Final guard before Twilio connect inside startRecording.
+			if (needsWebRoom) {
+				const sessionWithToken = convertDataIntoParse('session');
+				if (!sessionWithToken?.twilioToken) {
+					window.mereos.recordingStart = false;
+					invokeCallback({
+						type: 'error',
+						message: 'error_in_web_room_creation',
+						code: 40003,
+						details: 'Twilio token is missing',
+					});
+					return;
+				}
+			}
+
+			/*
+			 * Await so errors propagate here and invokeCallback runs in the catch below.
+			 * Success/error callbacks for recording also fire inside startRecording.
+			 */
+			await startRecording();
+		} else {
+			// No proctoring features — session starts immediately with success callback.
+			invokeCallback({
+				type: 'success',
+				message: 'recording_started_successfully',
+				code: 50000
+			});
 		}
 	} catch (err) {
-		console.log('err_________',err);
+		// Allow retry after unexpected failure in this function.
+		window.mereos.recordingStart = false;
+		console.log('err_________', err);
 		if (typeof registerEvent !== 'undefined' && typeof registerEvent === 'function') {
-			registerEvent({ 
-				eventType: 'success', 
-				notify: false, 
+			registerEvent({
+				eventType: 'success',
+				notify: false,
 				eventName: 'error_starting_session',
 			});
 		}
-		sentryExceptioMessage(err,{
+		sentryExceptioMessage(err, {
 			type: 'error',
 			message: 'Error in starting the session',
 			details: err,
-			code:40004
+			code: 40004
 		});
-		callback({
+		invokeCallback({
 			type: 'error',
 			message: 'error_in_starting_the_session',
 			details: err,
-			code:40004
+			code: 40004
 		});
 	}
 }
 
 async function stop_session(callback) {
 	try {
+		await releaseAllMediaStreams();
+
 		if (window.mereos.checkTokenInterval) {
 			clearInterval(window.mereos.checkTokenInterval);
 			window.mereos.checkTokenInterval = null;
 		}
-		window.mereos.stopRecordingCallBack=callback;
+		window.mereos.stopRecordingCallBack = callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');
@@ -474,7 +548,7 @@ async function stop_session(callback) {
 		if (stopSessionResp === 'stop_recording') {
 			const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
 			const session = convertDataIntoParse('session');
-							
+
 			const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 
 			if (resp) {
@@ -485,10 +559,10 @@ async function stop_session(callback) {
 				];
 				keysToRemove.forEach((key) => localStorage.removeItem(key));
 
-				callback({ 
-					type: 'success', 
-					message: 'session_finished_successfully', 
-					code: 50003 
+				callback({
+					type: 'success',
+					message: 'session_finished_successfully',
+					code: 50003
 				});
 			} else {
 				throw new Error('Session can\'t be added');
@@ -497,18 +571,18 @@ async function stop_session(callback) {
 			throw 'session can\'t add';
 		}
 	} catch (err) {
-		sentryExceptioMessage(err,{
-			type: 'error', 
-			message: 'Error in stopping the session' , 
-			code:40016 
+		sentryExceptioMessage(err, {
+			type: 'error',
+			message: 'Error in stopping the session',
+			code: 40016
 		});
 		callback({
-			type: 'error', 
-			message: 'error_in_stopping_the_session' , 
-			code:40016 
+			type: 'error',
+			message: 'error_in_stopping_the_session',
+			code: 40016
 		});
 	}
 }
 
 // window.mereos.mereos = {init, start_prechecks, start_session, stop_session};
-export {init, start_prechecks,stop_prechecks, start_session, stop_session };
+export { init, start_prechecks, stop_prechecks, start_session, stop_session };

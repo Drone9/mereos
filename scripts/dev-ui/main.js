@@ -107,9 +107,9 @@ function setStep(step, statusText) {
 }
 
 function updateButtons() {
-	btnPrechecks.disabled = !initSucceeded;
-	btnStopPrechecks.disabled = !initSucceeded;
-	btnSession.disabled = !initSucceeded || !prechecksCompleted;
+	btnPrechecks.disabled = !initSucceeded || sessionStarted;
+	btnStopPrechecks.disabled = !initSucceeded || sessionStarted;
+	btnSession.disabled = !initSucceeded || !prechecksCompleted || sessionStarted;
 	btnStopSession.disabled = !sessionStarted;
 }
 

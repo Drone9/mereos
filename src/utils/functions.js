@@ -705,15 +705,33 @@ export const cleanupZendeskWidget = () => {
 
 const activeMediaTracks = new Set();
 
+const registerManagedMediaStreamTrack = (track) => {
+	if (!track || typeof track.stop !== 'function') return;
+	const mereos = window.mereos || (window.mereos = {});
+	if (!mereos.managedMediaStreamTracks) {
+		mereos.managedMediaStreamTracks = new Set();
+	}
+	mereos.managedMediaStreamTracks.add(track);
+	if (!mereos.allSessionMediaStreamTracks) {
+		mereos.allSessionMediaStreamTracks = new Set();
+	}
+	mereos.allSessionMediaStreamTracks.add(track);
+};
+
 const registerActiveTracks = (...sources) => {
 	for (const source of sources) {
 		if (!source) continue;
 		if (typeof source.getTracks === 'function') {
-			source.getTracks().forEach((track) => activeMediaTracks.add(track));
+			source.getTracks().forEach((track) => {
+				activeMediaTracks.add(track);
+				registerManagedMediaStreamTrack(track);
+			});
 		} else if (source.mediaStreamTrack) {
 			activeMediaTracks.add(source.mediaStreamTrack);
+			registerManagedMediaStreamTrack(source.mediaStreamTrack);
 		} else if (source.kind && typeof source.stop === 'function') {
 			activeMediaTracks.add(source);
+			registerManagedMediaStreamTrack(source);
 		}
 	}
 };
@@ -724,6 +742,14 @@ const installActiveMediaTrackRegistry = () => {
 
 	const captureStream = (stream) => {
 		registerActiveTracks(stream);
+		registerAcquiredMediaStream(stream);
+		stream?.getTracks?.().forEach((track) => {
+			const mereos = window.mereos || (window.mereos = {});
+			if (!mereos.allSessionMediaStreamTracks) {
+				mereos.allSessionMediaStreamTracks = new Set();
+			}
+			mereos.allSessionMediaStreamTracks.add(track);
+		});
 		return stream;
 	};
 
@@ -769,6 +795,96 @@ const stopMediaStreamTrack = (track) => {
 	}
 };
 
+const forceStopMediaStreamTrack = (track) => {
+	if (!track || typeof track.stop !== 'function') return;
+	try {
+		track.enabled = false;
+		track.stop();
+	} catch (error) {
+		logger.error('Failed to force-stop media track:', error);
+	}
+};
+
+export const registerAcquiredMediaStream = (stream) => {
+	if (!stream) return;
+	const mereos = window.mereos || (window.mereos = {});
+	if (!mereos.acquiredMediaStreams) {
+		mereos.acquiredMediaStreams = new Set();
+	}
+	mereos.acquiredMediaStreams.add(stream);
+};
+
+export const registerManagedLocalTrack = (track) => {
+	if (!track) return;
+	const mereos = window.mereos || (window.mereos = {});
+	if (!mereos.managedLocalTracks) {
+		mereos.managedLocalTracks = new Set();
+	}
+	mereos.managedLocalTracks.add(track);
+	registerManagedMediaStreamTrack(track.mediaStreamTrack);
+};
+
+export const registerTwilioRoom = (room) => {
+	if (!room) return;
+	const mereos = window.mereos || (window.mereos = {});
+	if (!mereos.allTwilioRooms) {
+		mereos.allTwilioRooms = new Set();
+	}
+	mereos.allTwilioRooms.add(room);
+};
+
+export const stopMediaStreamTracks = (tracks = []) => {
+	tracks.filter(Boolean).forEach(stopMediaStreamTrack);
+};
+
+export const stopUnusedMediaStreamTracks = (stream, usedTracks = []) => {
+	const used = new Set(usedTracks.filter(Boolean));
+	stream?.getTracks?.().forEach((track) => {
+		if (!used.has(track)) {
+			stopMediaStreamTrack(track);
+		}
+	});
+};
+
+const stopAllAcquiredMediaStreams = () => {
+	const mereos = window.mereos || {};
+	mereos.acquiredMediaStreams?.forEach((stream) => {
+		stream.getTracks?.().forEach(forceStopMediaStreamTrack);
+	});
+	mereos.acquiredMediaStreams?.clear();
+};
+
+const stopManagedLocalTracks = () => {
+	const mereos = window.mereos || {};
+	mereos.managedLocalTracks?.forEach((track) => {
+		try {
+			registerActiveTracks(track);
+			track.disable?.();
+			stopMediaStreamTrack(track.mediaStreamTrack);
+			track.stop?.();
+		} catch (error) {
+			logger.error('Failed to stop managed local track:', error);
+		}
+	});
+	mereos.managedLocalTracks?.clear();
+};
+
+const stopAllManagedMediaStreamTracks = () => {
+	const mereos = window.mereos || {};
+	mereos.managedMediaStreamTracks?.forEach((track) => {
+		forceStopMediaStreamTrack(track);
+	});
+	mereos.managedMediaStreamTracks?.clear();
+};
+
+const stopAllSessionMediaStreamTracks = () => {
+	const mereos = window.mereos || {};
+	mereos.allSessionMediaStreamTracks?.forEach((track) => {
+		forceStopMediaStreamTrack(track);
+	});
+	mereos.allSessionMediaStreamTracks?.clear();
+};
+
 const collectLocalTwilioTracks = (localParticipant) => {
 	if (!localParticipant) return [];
 	const tracks = new Set();
@@ -795,7 +911,7 @@ const unbindMediaElements = () => {
 			try {
 				element.pause?.();
 				if (element.srcObject?.getTracks) {
-					element.srcObject.getTracks().forEach(stopMediaStreamTrack);
+					element.srcObject.getTracks().forEach(forceStopMediaStreamTrack);
 				}
 				element.srcObject = null;
 				element.removeAttribute('src');
@@ -810,15 +926,337 @@ const unbindMediaElements = () => {
 let releasingMediaStreams = null;
 
 const stopAllActiveTracks = () => {
-	Array.from(activeMediaTracks).forEach(stopMediaStreamTrack);
+	Array.from(activeMediaTracks).forEach(forceStopMediaStreamTrack);
 	activeMediaTracks.clear();
 };
 
-export const releaseAllMediaStreams = async () => {
-	if (releasingMediaStreams) return releasingMediaStreams;
+const detachTwilioRoomListeners = (room) => {
+	if (!room) return;
+	try {
+		room.removeAllListeners?.();
+		room.localParticipant?.removeAllListeners?.();
+		room.participants?.forEach((participant) => participant.removeAllListeners?.());
+	} catch (error) {
+		logger.error('Failed to detach Twilio room listeners:', error);
+	}
+};
+
+const stopManagedTwilioTrack = (track) => {
+	if (!track) return;
+	try {
+		(track.detach?.() || []).forEach((element) => {
+			element.pause?.();
+			if (element.srcObject?.getTracks) {
+				element.srcObject.getTracks().forEach(forceStopMediaStreamTrack);
+			}
+			element.srcObject = null;
+			element.remove?.();
+		});
+	} catch (error) {
+		logger.error('Failed to detach Twilio track elements:', error);
+	}
+	try {
+		track.disable?.();
+		forceStopMediaStreamTrack(track.mediaStreamTrack);
+		track.stop?.();
+	} catch (error) {
+		logger.error('Failed to stop managed Twilio track:', error);
+	}
+};
+
+const forceStopLiveMediaTracks = (mereos) => {
+	const liveTracks = new Set();
+
+	const collectLive = (stream) => {
+		stream?.getTracks?.().forEach((track) => {
+			if (track?.readyState === 'live') {
+				liveTracks.add(track);
+			}
+		});
+	};
+
+	const addTrack = (track) => {
+		if (track?.readyState === 'live') {
+			liveTracks.add(track);
+		}
+	};
+
+	[
+		mereos.sessionAudioMediaTrack,
+		mereos.sessionVideoMediaTrack,
+	].forEach(addTrack);
+	[
+		mereos.sessionTwilioAudioTrack,
+		mereos.sessionTwilioVideoTrack,
+	].forEach((twilioTrack) => addTrack(twilioTrack?.mediaStreamTrack));
+	[
+		mereos.sessionAudioStream,
+		mereos.sessionVideoStream,
+	].forEach(collectLive);
+	mereos.acquiredMediaStreams?.forEach(collectLive);
+	[
+		mereos.globalStream,
+		mereos.newStream,
+		mereos.mobileStream,
+		mereos.audioStream,
+	].forEach(collectLive);
+	mereos.managedMediaStreamTracks?.forEach(addTrack);
+	mereos.allSessionMediaStreamTracks?.forEach(addTrack);
+	mereos.managedLocalTracks?.forEach((track) => addTrack(track?.mediaStreamTrack));
+
+	const roots = [document];
+	if (mereos.shadowRoot) roots.push(mereos.shadowRoot);
+	const host = document.getElementById('mereos-library');
+	if (host?.shadowRoot && !roots.includes(host.shadowRoot)) {
+		roots.push(host.shadowRoot);
+	}
+
+	roots.forEach((root) => {
+		root.querySelectorAll('video, audio').forEach((element) => collectLive(element.srcObject));
+	});
+
+	liveTracks.forEach((track) => {
+		try {
+			track.enabled = false;
+			track.stop();
+		} catch (error) {
+			logger.error('Failed to force-stop live media track:', error);
+		}
+	});
+};
+
+const snapshotAllMediaStreamTracks = (mereos) => {
+	const tracks = new Set();
+
+	const addTrack = (track) => {
+		if (track?.kind && typeof track.stop === 'function') {
+			tracks.add(track);
+		}
+	};
+
+	const addStream = (stream) => {
+		stream?.getTracks?.().forEach(addTrack);
+	};
+
+	[
+		mereos.sessionAudioMediaTrack,
+		mereos.sessionVideoMediaTrack,
+	].forEach(addTrack);
+	[
+		mereos.sessionTwilioAudioTrack,
+		mereos.sessionTwilioVideoTrack,
+	].forEach((twilioTrack) => addTrack(twilioTrack?.mediaStreamTrack));
+	[
+		mereos.sessionAudioStream,
+		mereos.sessionVideoStream,
+	].forEach(addStream);
+	mereos.allSessionMediaStreamTracks?.forEach(addTrack);
+	mereos.managedLocalTracks?.forEach((twilioTrack) => {
+		addTrack(twilioTrack?.mediaStreamTrack);
+	});
+	mereos.managedMediaStreamTracks?.forEach(addTrack);
+	mereos.acquiredMediaStreams?.forEach(addStream);
+	[
+		mereos.globalStream,
+		mereos.newStream,
+		mereos.mobileStream,
+		mereos.audioStream,
+	].forEach(addStream);
+
+	if (mereos.aiProcessingVideo?.srcObject) {
+		addStream(mereos.aiProcessingVideo.srcObject);
+	}
+
+	const rooms = new Set([
+		...(mereos.allTwilioRooms || []),
+		mereos.roomInstance,
+		mereos.mobileRoomInstance,
+	].filter(Boolean));
+
+	rooms.forEach((room) => {
+		collectLocalTwilioTracks(room?.localParticipant).forEach((twilioTrack) => {
+			addTrack(twilioTrack?.mediaStreamTrack);
+		});
+	});
+
+	const roots = [document];
+	if (mereos.shadowRoot) roots.push(mereos.shadowRoot);
+	const host = document.getElementById('mereos-library');
+	if (host?.shadowRoot && !roots.includes(host.shadowRoot)) {
+		roots.push(host.shadowRoot);
+	}
+
+	roots.forEach((root) => {
+		root.querySelectorAll('video, audio').forEach((element) => addStream(element.srcObject));
+	});
+
+	activeMediaTracks.forEach(addTrack);
+
+	return tracks;
+};
+
+const forceStopTrackedMediaStreamTracks = (tracks) => {
+	tracks.forEach((track) => forceStopMediaStreamTrack(track));
+};
+
+const stopTwilioLocalTrack = async (room, track) => {
+	if (!track) return;
+
+	const localParticipant = room?.localParticipant;
+	if (localParticipant) {
+		try {
+			await localParticipant.unpublishTrack(track);
+		} catch (error) {
+			logger.error('Failed to unpublish Twilio track during session stop:', error);
+		}
+	}
+
+	try {
+		track.disable?.();
+		forceStopMediaStreamTrack(track.mediaStreamTrack);
+		track.stop?.();
+	} catch (error) {
+		logger.error('Failed to stop Twilio local track:', error);
+	}
+};
+
+const stopSessionCapturedMedia = async (mereos) => {
+	const rooms = new Set([
+		...(mereos.allTwilioRooms || []),
+		mereos.roomInstance,
+		mereos.mobileRoomInstance,
+	].filter(Boolean));
+
+	const twilioTracks = new Set();
+	[
+		mereos.sessionTwilioAudioTrack,
+		mereos.sessionTwilioVideoTrack,
+	].forEach((track) => {
+		if (track) twilioTracks.add(track);
+	});
+
+	rooms.forEach((room) => {
+		collectLocalTwilioTracks(room?.localParticipant).forEach((track) => twilioTracks.add(track));
+	});
+
+	for (const room of rooms) {
+		for (const track of twilioTracks) {
+			await stopTwilioLocalTrack(room, track);
+		}
+		try {
+			room.disconnect();
+		} catch (error) {
+			logger.error('Failed to disconnect Twilio room during session stop:', error);
+		}
+	}
+
+	for (const track of twilioTracks) {
+		try {
+			track.disable?.();
+			forceStopMediaStreamTrack(track.mediaStreamTrack);
+			track.stop?.();
+		} catch (error) {
+			logger.error('Failed to stop pinned Twilio track:', error);
+		}
+	}
+
+	[
+		mereos.sessionAudioStream,
+		mereos.sessionVideoStream,
+	].forEach((stream) => {
+		stream?.getTracks?.().forEach(forceStopMediaStreamTrack);
+	});
+
+	[
+		mereos.sessionAudioMediaTrack,
+		mereos.sessionVideoMediaTrack,
+	].forEach(forceStopMediaStreamTrack);
+};
+
+const unpublishAndStopLocalTwilioTracks = async (room) => {
+	const tracks = collectLocalTwilioTracks(room?.localParticipant);
+	const localParticipant = room?.localParticipant;
+
+	for (const track of tracks) {
+		try {
+			(track.detach?.() || []).forEach((element) => {
+				element.pause?.();
+				if (element.srcObject?.getTracks) {
+					element.srcObject.getTracks().forEach(forceStopMediaStreamTrack);
+				}
+				element.srcObject = null;
+				element.remove?.();
+			});
+		} catch (error) {
+			logger.error('Failed to detach Twilio track:', error);
+		}
+
+		if (localParticipant) {
+			try {
+				await localParticipant.unpublishTrack(track);
+			} catch (error) {
+				logger.error('Failed to unpublish Twilio track:', error);
+			}
+		}
+
+		try {
+			registerActiveTracks(track);
+			track.disable?.();
+			forceStopMediaStreamTrack(track.mediaStreamTrack);
+			track.stop?.();
+		} catch (error) {
+			logger.error('Failed to stop Twilio track:', error);
+		}
+	}
+
+	return tracks;
+};
+
+export const stopRoomMediaAndDisconnect = async (room) => {
+	if (!room) return;
+
+	try {
+		detachTwilioRoomListeners(room);
+		await unpublishAndStopLocalTwilioTracks(room);
+		try {
+			room.disconnect();
+		} catch (error) {
+			logger.error('Failed to disconnect Twilio room:', error);
+		}
+	} catch (error) {
+		logger.error('Failed to stop room media and disconnect:', error);
+	}
+
+	window.mereos?.allTwilioRooms?.delete(room);
+};
+
+export const forceReleaseSessionMedia = async () => {
+	await releaseAllMediaStreams({ force: true });
+};
+
+export const releaseAllMediaStreams = async (options = {}) => {
+	if (releasingMediaStreams) {
+		await releasingMediaStreams;
+		if (!options.force && !window.mereos?.isStoppingSession) {
+			return;
+		}
+		releasingMediaStreams = null;
+	}
+
+	const mereos = window.mereos || (window.mereos = {});
+	mereos.isReleasingMedia = true;
 
 	releasingMediaStreams = (async () => {
-		const mereos = window.mereos || {};
+		const snapshottedTracks = snapshotAllMediaStreamTracks(mereos);
+		const managedTwilioTracks = [...(mereos.managedLocalTracks || [])];
+		const acquiredStreams = [...(mereos.acquiredMediaStreams || [])];
+		const sessionTracks = [...(mereos.allSessionMediaStreamTracks || [])];
+
+		const rooms = new Set([
+			...(mereos.allTwilioRooms || []),
+			mereos.roomInstance,
+			mereos.mobileRoomInstance,
+		].filter(Boolean));
 
 		if (mereos.aiProcessingInterval) {
 			clearInterval(mereos.aiProcessingInterval);
@@ -827,80 +1265,54 @@ export const releaseAllMediaStreams = async () => {
 
 		if (mereos.aiProcessingVideo) {
 			mereos.aiProcessingVideo.pause?.();
-			registerActiveTracks(mereos.aiProcessingVideo.srcObject);
 			if (mereos.aiProcessingVideo.srcObject?.getTracks) {
-				mereos.aiProcessingVideo.srcObject.getTracks().forEach(stopMediaStreamTrack);
+				mereos.aiProcessingVideo.srcObject.getTracks().forEach(forceStopMediaStreamTrack);
 			}
 			mereos.aiProcessingVideo.srcObject = null;
 			mereos.aiProcessingVideo = null;
 		}
 
-		const rooms = [mereos.roomInstance, mereos.mobileRoomInstance].filter(Boolean);
-		const twilioTracks = rooms.flatMap((room) =>
-			collectLocalTwilioTracks(room.localParticipant)
-		);
-
-		registerActiveTracks(
-			mereos.globalStream,
-			mereos.newStream,
-			mereos.mobileStream,
-			mereos.audioStream,
-			mereos.screenTrackPublished?.track,
-			...twilioTracks
-		);
-
-		unbindMediaElements();
+		for (const room of rooms) {
+			detachTwilioRoomListeners(room);
+		}
 
 		for (const room of rooms) {
+			await unpublishAndStopLocalTwilioTracks(room);
 			try {
-				for (const track of collectLocalTwilioTracks(room.localParticipant)) {
-					try {
-						(track.detach?.() || []).forEach((element) => {
-							element.pause?.();
-							if (element.srcObject?.getTracks) {
-								element.srcObject.getTracks().forEach(stopMediaStreamTrack);
-							}
-							element.srcObject = null;
-							element.remove?.();
-						});
-					} catch (error) {
-						logger.error('Failed to detach Twilio track:', error);
-					}
-				}
-
-				room.participants?.forEach((participant) => participant.removeAllListeners?.());
-				room.removeAllListeners?.();
 				room.disconnect();
 			} catch (error) {
-				logger.error('Failed to disconnect Twilio room:', error);
+				logger.error('Failed to disconnect Twilio room during teardown:', error);
 			}
+			mereos.allTwilioRooms?.delete(room);
 		}
 
-		for (const track of twilioTracks) {
-			try {
-				track.disable?.();
-				stopMediaStreamTrack(track.mediaStreamTrack);
-				track.stop?.();
-			} catch (error) {
-				logger.error('Failed to stop Twilio track:', error);
-			}
+		for (const track of managedTwilioTracks) {
+			stopManagedTwilioTrack(track);
 		}
+
+		[
+			mereos.sessionTwilioAudioTrack,
+			mereos.sessionTwilioVideoTrack,
+		].forEach(stopManagedTwilioTrack);
+
+		unbindMediaElements();
 
 		[
 			mereos.globalStream,
 			mereos.newStream,
 			mereos.mobileStream,
 			mereos.audioStream,
-		].forEach((stream) => stream?.getTracks?.().forEach(stopMediaStreamTrack));
+			mereos.sessionAudioStream,
+			mereos.sessionVideoStream,
+		].forEach((stream) => stream?.getTracks?.().forEach(forceStopMediaStreamTrack));
+
+		acquiredStreams.forEach((stream) => {
+			stream?.getTracks?.().forEach(forceStopMediaStreamTrack);
+		});
 
 		const screenTrack = mereos.screenTrackPublished?.track;
 		if (screenTrack) {
-			try {
-				stopMediaStreamTrack(screenTrack.mediaStreamTrack);
-				screenTrack.stop?.();
-			} catch (error) {
-				logger.error('Failed to stop screen share track:', error);
-			}
+			stopManagedTwilioTrack(screenTrack);
 		}
 
 		try {
@@ -910,7 +1322,17 @@ export const releaseAllMediaStreams = async () => {
 		}
 
 		unbindMediaElements();
-		stopAllActiveTracks();
+
+		[
+			mereos.sessionAudioMediaTrack,
+			mereos.sessionVideoMediaTrack,
+		].forEach(forceStopMediaStreamTrack);
+
+		sessionTracks.forEach(forceStopMediaStreamTrack);
+		forceStopTrackedMediaStreamTracks(snapshottedTracks);
+		Array.from(activeMediaTracks).forEach(forceStopMediaStreamTrack);
+		activeMediaTracks.clear();
+		forceStopLiveMediaTracks(mereos);
 
 		mereos.roomInstance = null;
 		mereos.mobileRoomInstance = null;
@@ -920,11 +1342,27 @@ export const releaseAllMediaStreams = async () => {
 		mereos.audioStream = null;
 		mereos.screenTrackPublished = null;
 		mereos.peerInstance = null;
+		mereos.pendingSessionStart = false;
+		mereos.onTrackPublishedMonitor = null;
+		mereos.acquiredMediaStreams = null;
+		mereos.managedLocalTracks = null;
+		mereos.managedMediaStreamTracks = null;
+		mereos.allTwilioRooms = null;
+		mereos.lostPermissionTypes = null;
+		mereos.activePermissionModalType = null;
+		mereos.sessionAudioMediaTrack = null;
+		mereos.sessionVideoMediaTrack = null;
+		mereos.sessionTwilioAudioTrack = null;
+		mereos.sessionTwilioVideoTrack = null;
+		mereos.sessionAudioStream = null;
+		mereos.sessionVideoStream = null;
+		mereos.allSessionMediaStreamTracks = null;
 	})();
 
 	try {
 		await releasingMediaStreams;
 	} finally {
+		mereos.isReleasingMedia = false;
 		releasingMediaStreams = null;
 	}
 };
@@ -1244,14 +1682,6 @@ export const addSectionSessionRecord = async (session) => {
 					code: 40018
 				});
 			}
-		}
-
-		if (window.mereos?.startRecordingCallBack) {
-			window.mereos.startRecordingCallBack({
-				type: 'error',
-				message: 'error_saving_session_info',
-				code: 40018
-			});
 		}
 
 		throw err;

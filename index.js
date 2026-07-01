@@ -11,7 +11,7 @@ import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBro
 import { initShadowDOM, openModal, startSession } from './src/ExamsPrechecks';
 import { getRoomToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services';
-import { startRecording, stopAllRecordings } from './src/StartRecording';
+import { startRecording, stopAllRecordings, cleanupSessionMediaMonitoring } from './src/StartRecording';
 import { logonSchool } from './src/services/auth.services';
 import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
 import { createCandidateAssessment } from './src/services/assessment.services';
@@ -340,12 +340,12 @@ async function start_session(callback) {
 			return;
 		}
 
-		// Twilio room is already live — report success without creating a duplicate room.
-		if (window.mereos.roomInstance) {
+		// Session already running — block duplicate start_session calls.
+		if (window.mereos?.sessionActive) {
 			invokeCallback({
-				type: 'success',
-				message: 'recording_started_successfully',
-				code: 50000,
+				type: 'error',
+				message: 'session_already_in_progress',
+				code: 40066,
 			});
 			return;
 		}
@@ -506,6 +506,7 @@ async function start_session(callback) {
 	} catch (err) {
 		// Allow retry after unexpected failure in this function.
 		window.mereos.recordingStart = false;
+		window.mereos.sessionActive = false;
 		console.log('err_________', err);
 		if (typeof registerEvent !== 'undefined' && typeof registerEvent === 'function') {
 			registerEvent({
@@ -531,7 +532,12 @@ async function start_session(callback) {
 
 async function stop_session(callback) {
 	try {
-		await releaseAllMediaStreams();
+		window.mereos.isStoppingSession = true;
+		window.mereos.isReleasingMedia = true;
+		window.mereos.sessionActive = false;
+		window.mereos.recordingStart = false;
+		cleanupSessionMediaMonitoring();
+		await releaseAllMediaStreams({ force: true });
 
 		if (window.mereos.checkTokenInterval) {
 			clearInterval(window.mereos.checkTokenInterval);
@@ -581,6 +587,8 @@ async function stop_session(callback) {
 			message: 'error_in_stopping_the_session',
 			code: 40016
 		});
+	} finally {
+		window.mereos.isStoppingSession = false;
 	}
 }
 

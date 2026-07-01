@@ -198,6 +198,20 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 async function start_prechecks(callback, setting) {
 	try {
 		window.mereos.globalCallback = callback;
+
+		if (
+			window.mereos?.sessionActive ||
+			window.mereos?.recordingStart ||
+			window.mereos?.pendingSessionStart ||
+			window.mereos?.roomInstance
+		) {
+			return callback({
+				type: 'error',
+				message: 'session_already_in_progress',
+				code: 40066,
+			});
+		}
+
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
 			localStorage.removeItem('mereosToken');

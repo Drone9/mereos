@@ -7,8 +7,8 @@
  * LICENSE file in the root directory of this source tree.
 */
 window.mereos = window.mereos || {};
-import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBrowserActions, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, releaseAllMediaStreams, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
-import { initShadowDOM, openModal, startSession } from './src/ExamsPrechecks';
+import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBrowserActions, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, releaseAllMediaStreams, resetSessionAttemptFlags, sentryExceptioMessage, showToast, updatePersistData } from './src/utils/functions';
+import { destroyPrechecksUi, initShadowDOM, openModal, startSession } from './src/ExamsPrechecks';
 import { getRoomToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings, cleanupSessionMediaMonitoring } from './src/StartRecording';
@@ -25,6 +25,8 @@ initSentry('production');
 
 async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
 		localStorage.clear();
 		let logonResp;
 
@@ -228,8 +230,15 @@ async function start_prechecks(callback, setting) {
 		const savedData = await startSession();
 		if (savedData === 'data_saved') {
 			openModal(callback);
+			return;
 		}
+
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
 	} catch (error) {
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
+		showToast('error', 'error_in_prechecks_setup');
 		sentryExceptioMessage(error, {
 			type: 'error',
 			message: 'Error in prechecks setup',
@@ -249,53 +258,42 @@ async function stop_prechecks(callback) {
 	try {
 		window.mereos.stopPrecheckCallBack = callback;
 		const sessionSetting = localStorage.getItem('precheckSetting');
-		const modal = window.mereos.shadowRoot.getElementById('precheck-modal');
-		const chatIcons = window.mereos.shadowRoot.querySelectorAll('[id="chat-icon"]');
-		const chatContainer = window.mereos.shadowRoot.getElementById('talkjs-container');
 
 		await releaseAllMediaStreams();
+		resetSessionAttemptFlags();
 
 		if (sessionSetting !== 'session_resume') {
 			localStorage.removeItem('preChecksSteps');
 			localStorage.setItem('navHistory', JSON.stringify([]));
 		}
-		if (chatIcons.length > 0) {
-			chatIcons.forEach(icon => {
-				icon.style.display = 'none';
-				icon.remove();
-			});
-		}
-
-		if (chatContainer) {
-			chatContainer.style.display = 'none';
-			chatContainer.remove();
-		}
-
-		if (modal) {
-			modal.style.display = 'none';
-			modal.remove();
-		}
 
 		hideZendeskWidget();
+		destroyPrechecksUi();
 
-		callback({
-			type: 'success',
-			message: 'prechecks_stopped',
-			code: 50002
-		});
+		if (typeof callback === 'function') {
+			callback({
+				type: 'success',
+				message: 'prechecks_stopped',
+				code: 50002
+			});
+		}
 	} catch (error) {
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
 		sentryExceptioMessage(error, {
 			type: 'error',
 			message: 'Error in stop prechecks',
 			details: error,
 			code: 40001
 		});
-		callback({
-			type: 'error',
-			message: 'error_in_stop_prechecks',
-			details: error,
-			code: 40001
-		});
+		if (typeof callback === 'function') {
+			callback({
+				type: 'error',
+				message: 'error_in_stop_prechecks',
+				details: error,
+				code: 40001
+			});
+		}
 	}
 }
 
@@ -521,7 +519,9 @@ async function start_session(callback) {
 		// Allow retry after unexpected failure in this function.
 		window.mereos.recordingStart = false;
 		window.mereos.sessionActive = false;
+		window.mereos.pendingSessionStart = false;
 		console.log('err_________', err);
+		showToast('error', 'error_in_starting_the_session');
 		if (typeof registerEvent !== 'undefined' && typeof registerEvent === 'function') {
 			registerEvent({
 				eventType: 'success',

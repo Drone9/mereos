@@ -1,8 +1,5 @@
 export const defaultInitPayload = {
-	host: {
-		client_id: '3425fefd731c4ab3856a8a265698ad49',
-		client_secret: 'HZuIPfKLQYlBVYW_4iZAc6WJf862Mu6F_hTzeC5k8wA',
-	},
+	token: 'PASTE_TOKEN_FROM_BACKEND_OR_POSTMAN',
 	profileID: 216,
 	candidateData: {
 		name: 'John Doe',

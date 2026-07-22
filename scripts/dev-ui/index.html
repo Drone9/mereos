@@ -159,23 +159,23 @@
 <body>
 	<h1>Init JSON Input</h1>
 
-	<p id="flowStatus">Step 1: Click Login to authenticate and open prechecks.</p>
+	<p id="flowStatus">Step 1: Click Init with a valid token to open prechecks.</p>
 
 	<div class="steps" id="stepIndicator">
-		<span class="step active" data-step="login">1. Login (init)</span>
+		<span class="step active" data-step="login">1. Init</span>
 		<span class="step" data-step="prechecks">2. Prechecks</span>
 		<span class="step" data-step="session">3. Start session</span>
 		<span class="step" data-step="stop">4. Stop session</span>
 	</div>
 
 	<div class="hint-box">
-		<strong>How the library works:</strong> Login only calls the API — it does not show UI.
-		After a successful login, prechecks open automatically in a modal overlay.
+		<strong>How the library works:</strong> Init stores the token and sets up the session — it does not show UI.
+		After a successful init, prechecks open automatically in a modal overlay.
 		Complete every step in that modal, then use <strong>Start Session</strong> to begin recording.
 	</div>
 
 	<nav class="nav">
-		<button id="btnInit" class="primary" type="button">Login</button>
+		<button id="btnInit" class="primary" type="button">Init</button>
 		<button id="btnPrechecks" type="button" disabled>Start Prechecks</button>
 		<button id="btnStopPrechecks" type="button" disabled>Stop Prechecks</button>
 		<button id="btnSession" type="button" disabled>Start Session</button>
@@ -227,7 +227,7 @@
 	<div class="panel">
 		<label class="json-label">Requirements for the full flow</label>
 		<ul class="requirements">
-			<li><strong>Valid API credentials</strong> — active Mereos <code>client_id</code> / <code>client_secret</code></li>
+			<li><strong>Valid API token</strong> — obtain from your backend or Postman via <code>/auth/logon/</code> (not from the browser)</li>
 			<li><strong>Valid profile ID</strong> — proctoring profile configured in the Mereos admin panel</li>
 			<li><strong>Desktop browser</strong> — Chrome, Edge, or Firefox (mobile is blocked)</li>
 			<li><strong>Camera &amp; microphone</strong> — browser permission when prechecks ask for them</li>

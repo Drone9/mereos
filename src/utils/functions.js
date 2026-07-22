@@ -1400,7 +1400,7 @@ export const getAuthenticationToken = () => {
 		try {
 			const { token, expiresAt } = JSON.parse(tokenData);
 
-			if (Date.now() > expiresAt) {
+			if (expiresAt && Date.now() > expiresAt) {
 				localStorage.removeItem('mereosToken');
 				notifyTokenExpired();
 				return null;

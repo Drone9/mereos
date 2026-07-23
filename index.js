@@ -7,12 +7,11 @@
  * LICENSE file in the root directory of this source tree.
 */
 window.mereos = window.mereos || {};
-import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBrowserActions, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, releaseAllMediaStreams, sentryExceptioMessage, updatePersistData } from './src/utils/functions';
-import { initShadowDOM, openModal, startSession } from './src/ExamsPrechecks';
+import { addSectionSessionRecord, convertDataIntoParse, detectBrowser, detectBrowserActions, findConfigs, getSecureFeatures, getTimeInSeconds, handleBackendError, hideZendeskWidget, isMobileDevice, registerEvent, releaseAllMediaStreams, resetSessionAttemptFlags, sentryExceptioMessage, showToast, updatePersistData } from './src/utils/functions';
+import { destroyPrechecksUi, initShadowDOM, openModal, startSession } from './src/ExamsPrechecks';
 import { getRoomToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services';
-import { startRecording, stopAllRecordings } from './src/StartRecording';
-import { logonSchool } from './src/services/auth.services';
+import { startRecording, stopAllRecordings, cleanupSessionMediaMonitoring } from './src/StartRecording';
 import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
@@ -23,10 +22,11 @@ import * as Sentry from '@sentry/browser';
 
 initSentry('production');
 
-async function init(credentials, candidateData, profileId, assessmentData, schoolTheme, callback) {
+async function init(token, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	try {
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
 		localStorage.clear();
-		let logonResp;
 
 		const checkMobile = isMobileDevice();
 		if (checkMobile === 'mobile') {
@@ -50,135 +50,120 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 			}
 		}
 
-		try {
-			logonResp = await logonSchool(credentials);
-		} catch (error) {
-			sentryExceptioMessage(error, {
-				type: 'error',
-				message: 'Error in logon school',
-				code: 40020,
-			});
+		if (!token || typeof token !== 'string') {
 			return callback({
 				type: 'error',
-				message: 'error_in_logon_school',
+				message: 'invalid_or_missing_token',
 				code: 40020,
+			});
+		}
+
+		localStorage.setItem('mereosToken', JSON.stringify({ token }));
+
+		let resp;
+		try {
+			resp = await createCandidate(candidateData);
+		} catch (error) {
+			const message = handleBackendError(i18next.t, error?.response?.data?.message);
+			sentryExceptioMessage(error, {
+				type: 'error',
+				message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
+				code: 40021,
+			});
+			localStorage.removeItem('mereosToken');
+			return callback({
+				type: 'error',
+				message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
+				code: 40021,
 				details: error,
 			});
 		}
 
-		if (logonResp.data) {
-			const token = logonResp.data.token;
-			const expiresInSeconds = logonResp.data.expires_in;
-			const expiresAt = Date.now() + expiresInSeconds * 1000;
+		const updateData = {
+			school: resp?.data?.school,
+			candidate: resp?.data,
+		};
 
-			localStorage.setItem('mereosToken', JSON.stringify({ token, expiresAt }));
+		localStorage.setItem('candidateAssessment', JSON.stringify(updateData));
+		localStorage.setItem('session', JSON.stringify(initialSessionData));
+		localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
+		localStorage.setItem('socketGroupId', JSON.stringify({ groupName: v4() }));
+		localStorage.setItem('schoolTheme', schoolTheme ? JSON.stringify(schoolTheme) : '{}');
+		localStorage.setItem('conversationId', v4());
 
-			let resp;
-			try {
-				resp = await createCandidate(candidateData);
-			} catch (error) {
-				const message = handleBackendError(i18next.t, error?.response?.data?.message);
-				sentryExceptioMessage(error, {
-					type: 'error',
-					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
-					code: 40021,
-				});
-				localStorage.removeItem('mereosToken');
-				return callback({
-					type: 'error',
-					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
-					code: 40021,
-					details: error,
-				});
-			}
+		const data = {
+			name: assessmentData?.name,
+			description: assessmentData?.description,
+			external_id: assessmentData?.external_id,
+			course_id: assessmentData?.course_id,
+			others: { test: 'value' },
+			branch: assessmentData?.branch
+		};
 
-			const updateData = {
-				school: logonResp?.data?.school,
-				candidate: resp?.data,
-			};
-
-			localStorage.setItem('candidateAssessment', JSON.stringify(updateData));
-			localStorage.setItem('session', JSON.stringify(initialSessionData));
-			localStorage.setItem('preChecksSteps', JSON.stringify(preChecksSteps));
-			localStorage.setItem('socketGroupId', JSON.stringify({ groupName: v4() }));
-			localStorage.setItem('schoolTheme', schoolTheme ? JSON.stringify(schoolTheme) : '{}');
-			localStorage.setItem('conversationId', v4());
-
-			const data = {
-				name: assessmentData?.name,
-				description: assessmentData?.description,
-				external_id: assessmentData?.external_id,
-				course_id: assessmentData?.course_id,
-				others: { test: 'value' },
-				branch: assessmentData?.branch
-			};
-
-			let assessmentResp;
-			try {
-				assessmentResp = await createCandidateAssessment(data);
-			} catch (error) {
-				const message = handleBackendError(i18next.t, error?.response?.data?.message);
-				localStorage.removeItem('mereosToken');
-				sentryExceptioMessage(error, {
-					type: 'error',
-					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
-					code: 40021,
-					details: error,
-				});
-				return callback({
-					type: 'error',
-					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
-					code: 40021,
-					details: error,
-				});
-			}
-
-			if (assessmentResp?.data) {
-				const candidateAssessmentData = {
-					status: 'Initiated',
-					candidate: resp?.data?.id,
-					assessment: assessmentResp?.data?.id,
-					profile: profileId,
-				};
-
-				let candidateAssessmentResp;
-				try {
-					candidateAssessmentResp = await customCandidateAssessmentStatus(candidateAssessmentData);
-				} catch (error) {
-					const message = handleBackendError(i18next.t, error?.response?.data?.message);
-					localStorage.removeItem('mereosToken');
-					sentryExceptioMessage(error, {
-						type: 'error',
-						message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
-						code: 40021,
-						details: error,
-					});
-					return callback({
-						type: 'error',
-						message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
-						code: 40021,
-						details: error,
-					});
-				}
-
-				Sentry.setUser({ id: resp?.data?.id, email: resp?.data?.email, name: resp?.data?.name });
-
-				updatePersistData('session', {
-					candidate_assessment: candidateAssessmentResp?.data?.id,
-					assessment: assessmentResp?.data,
-					candidate: resp?.data?.id,
-				});
-
-				localStorage.setItem('secureFeatures', JSON.stringify(candidateAssessmentResp?.data?.profile));
-			}
-
-			callback({
-				type: 'success',
-				message: 'init_function_complete',
-				code: 50004,
-				details: logonResp.data,
+		let assessmentResp;
+		try {
+			assessmentResp = await createCandidateAssessment(data);
+		} catch (error) {
+			const message = handleBackendError(i18next.t, error?.response?.data?.message);
+			localStorage.removeItem('mereosToken');
+			sentryExceptioMessage(error, {
+				type: 'error',
+				message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
+				code: 40021,
+				details: error,
+			});
+			return callback({
+				type: 'error',
+				message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
+				code: 40021,
+				details: error,
 			});
 		}
+
+		if (assessmentResp?.data) {
+			const candidateAssessmentData = {
+				status: 'Initiated',
+				candidate: resp?.data?.id,
+				assessment: assessmentResp?.data?.id,
+				profile: profileId,
+			};
+
+			let candidateAssessmentResp;
+			try {
+				candidateAssessmentResp = await customCandidateAssessmentStatus(candidateAssessmentData);
+			} catch (error) {
+				const message = handleBackendError(i18next.t, error?.response?.data?.message);
+				localStorage.removeItem('mereosToken');
+				sentryExceptioMessage(error, {
+					type: 'error',
+					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
+					code: 40021,
+					details: error,
+				});
+				return callback({
+					type: 'error',
+					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
+					code: 40021,
+					details: error,
+				});
+			}
+
+			Sentry.setUser({ id: resp?.data?.id, email: resp?.data?.email, name: resp?.data?.name });
+
+			updatePersistData('session', {
+				candidate_assessment: candidateAssessmentResp?.data?.id,
+				assessment: assessmentResp?.data,
+				candidate: resp?.data?.id,
+			});
+
+			localStorage.setItem('secureFeatures', JSON.stringify(candidateAssessmentResp?.data?.profile));
+		}
+
+		callback({
+			type: 'success',
+			message: 'init_function_complete',
+			code: 50004,
+		});
 	} catch (error) {
 		sentryExceptioMessage(error, {
 			type: 'error',
@@ -198,8 +183,26 @@ async function init(credentials, candidateData, profileId, assessmentData, schoo
 async function start_prechecks(callback, setting) {
 	try {
 		window.mereos.globalCallback = callback;
+
+		if (
+			window.mereos?.sessionActive ||
+			window.mereos?.recordingStart ||
+			window.mereos?.pendingSessionStart ||
+			window.mereos?.roomInstance
+		) {
+			return callback({
+				type: 'error',
+				message: 'session_already_in_progress',
+				code: 40066,
+			});
+		}
+
 		const tokenData = localStorage.getItem('mereosToken');
-		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
+		if (!tokenData) {
+			return callback(tokenExpiredError);
+		}
+		const { expiresAt } = JSON.parse(tokenData);
+		if (expiresAt && Date.now() > expiresAt) {
 			localStorage.removeItem('mereosToken');
 			return callback(tokenExpiredError);
 		}
@@ -214,8 +217,15 @@ async function start_prechecks(callback, setting) {
 		const savedData = await startSession();
 		if (savedData === 'data_saved') {
 			openModal(callback);
+			return;
 		}
+
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
 	} catch (error) {
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
+		showToast('error', 'error_in_prechecks_setup');
 		sentryExceptioMessage(error, {
 			type: 'error',
 			message: 'Error in prechecks setup',
@@ -235,53 +245,42 @@ async function stop_prechecks(callback) {
 	try {
 		window.mereos.stopPrecheckCallBack = callback;
 		const sessionSetting = localStorage.getItem('precheckSetting');
-		const modal = window.mereos.shadowRoot.getElementById('precheck-modal');
-		const chatIcons = window.mereos.shadowRoot.querySelectorAll('[id="chat-icon"]');
-		const chatContainer = window.mereos.shadowRoot.getElementById('talkjs-container');
 
 		await releaseAllMediaStreams();
+		resetSessionAttemptFlags();
 
 		if (sessionSetting !== 'session_resume') {
 			localStorage.removeItem('preChecksSteps');
 			localStorage.setItem('navHistory', JSON.stringify([]));
 		}
-		if (chatIcons.length > 0) {
-			chatIcons.forEach(icon => {
-				icon.style.display = 'none';
-				icon.remove();
-			});
-		}
-
-		if (chatContainer) {
-			chatContainer.style.display = 'none';
-			chatContainer.remove();
-		}
-
-		if (modal) {
-			modal.style.display = 'none';
-			modal.remove();
-		}
 
 		hideZendeskWidget();
+		destroyPrechecksUi();
 
-		callback({
-			type: 'success',
-			message: 'prechecks_stopped',
-			code: 50002
-		});
+		if (typeof callback === 'function') {
+			callback({
+				type: 'success',
+				message: 'prechecks_stopped',
+				code: 50002
+			});
+		}
 	} catch (error) {
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
 		sentryExceptioMessage(error, {
 			type: 'error',
 			message: 'Error in stop prechecks',
 			details: error,
 			code: 40001
 		});
-		callback({
-			type: 'error',
-			message: 'error_in_stop_prechecks',
-			details: error,
-			code: 40001
-		});
+		if (typeof callback === 'function') {
+			callback({
+				type: 'error',
+				message: 'error_in_stop_prechecks',
+				details: error,
+				code: 40001
+			});
+		}
 	}
 }
 
@@ -314,7 +313,11 @@ async function start_session(callback) {
 		await detectBrowserActions();
 		const secureFeatures = getSecureFeatures();
 		const tokenData = localStorage.getItem('mereosToken');
-		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
+		if (!tokenData) {
+			return invokeCallback(tokenExpiredError);
+		}
+		const { expiresAt } = JSON.parse(tokenData);
+		if (expiresAt && Date.now() > expiresAt) {
 			localStorage.removeItem('mereosToken');
 			return invokeCallback(tokenExpiredError);
 		}
@@ -340,12 +343,12 @@ async function start_session(callback) {
 			return;
 		}
 
-		// Twilio room is already live — report success without creating a duplicate room.
-		if (window.mereos.roomInstance) {
+		// Session already running — block duplicate start_session calls.
+		if (window.mereos?.sessionActive) {
 			invokeCallback({
-				type: 'success',
-				message: 'recording_started_successfully',
-				code: 50000,
+				type: 'error',
+				message: 'session_already_in_progress',
+				code: 40066,
 			});
 			return;
 		}
@@ -506,7 +509,10 @@ async function start_session(callback) {
 	} catch (err) {
 		// Allow retry after unexpected failure in this function.
 		window.mereos.recordingStart = false;
+		window.mereos.sessionActive = false;
+		window.mereos.pendingSessionStart = false;
 		console.log('err_________', err);
+		showToast('error', 'error_in_starting_the_session');
 		if (typeof registerEvent !== 'undefined' && typeof registerEvent === 'function') {
 			registerEvent({
 				eventType: 'success',
@@ -531,7 +537,12 @@ async function start_session(callback) {
 
 async function stop_session(callback) {
 	try {
-		await releaseAllMediaStreams();
+		window.mereos.isStoppingSession = true;
+		window.mereos.isReleasingMedia = true;
+		window.mereos.sessionActive = false;
+		window.mereos.recordingStart = false;
+		cleanupSessionMediaMonitoring();
+		await releaseAllMediaStreams({ force: true });
 
 		if (window.mereos.checkTokenInterval) {
 			clearInterval(window.mereos.checkTokenInterval);
@@ -539,7 +550,11 @@ async function stop_session(callback) {
 		}
 		window.mereos.stopRecordingCallBack = callback;
 		const tokenData = localStorage.getItem('mereosToken');
-		if (!tokenData || Date.now() > JSON.parse(tokenData).expiresAt) {
+		if (!tokenData) {
+			return callback(tokenExpiredError);
+		}
+		const { expiresAt } = JSON.parse(tokenData);
+		if (expiresAt && Date.now() > expiresAt) {
 			localStorage.removeItem('mereosToken');
 			return callback(tokenExpiredError);
 		}
@@ -581,6 +596,8 @@ async function stop_session(callback) {
 			message: 'error_in_stopping_the_session',
 			code: 40016
 		});
+	} finally {
+		window.mereos.isStoppingSession = false;
 	}
 }
 

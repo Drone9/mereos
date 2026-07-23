@@ -128,17 +128,14 @@ function parseInitPayload() {
 	const raw = initJsonEl.value.trim();
 	const payload = raw ? JSON.parse(raw) : defaultInitPayload;
 
-	const credentials = payload.host || payload.credentials || {
-		client_id: payload.client_id,
-		client_secret: payload.client_secret,
-	};
+	const token = payload.token;
 
 	const profileId = payload.profileID ?? payload.profileId ?? payload.profile_id;
 	const candidateData = payload.candidateData ?? payload.candidate_object ?? payload.candidate;
 	const assessmentData = payload.assessmentData ?? payload.assessment_object ?? payload.assessment;
 
-	if (!credentials?.client_id || !credentials?.client_secret) {
-		throw new Error('host.client_id and host.client_secret are required');
+	if (!token || typeof token !== 'string') {
+		throw new Error('token is required (obtain from backend/Postman logon, not from the browser)');
 	}
 	if (profileId === undefined || profileId === null || profileId === '') {
 		throw new Error('profileID is required');
@@ -151,7 +148,7 @@ function parseInitPayload() {
 	}
 
 	return {
-		credentials,
+		token,
 		profileId: Number(profileId),
 		candidateData,
 		assessmentData,
@@ -190,30 +187,30 @@ async function runPrechecks(resume = false) {
 
 async function runInit() {
 	const { init } = await getMereos();
-	const { credentials, profileId, candidateData, assessmentData, schoolTheme } = parseInitPayload();
+	const { token, profileId, candidateData, assessmentData, schoolTheme } = parseInitPayload();
 
 	log('Calling init...', { profileId, schoolTheme });
-	setStep(FLOW.login, 'Logging in...');
+	setStep(FLOW.login, 'Initializing...');
 
-	init(credentials, candidateData, profileId, assessmentData, schoolTheme, async (result) => {
+	init(token, candidateData, profileId, assessmentData, schoolTheme, async (result) => {
 		log('init callback', result);
 
 		if (result?.type !== 'success') {
 			initSucceeded = false;
-			setStep(FLOW.login, `Login failed: ${result?.message || 'unknown error'}. Check credentials and payload.`);
+			setStep(FLOW.login, `Init failed: ${result?.message || 'unknown error'}. Check token and payload.`);
 			return;
 		}
 
 		initSucceeded = true;
 		prechecksCompleted = false;
 		sessionStarted = false;
-		setStep(FLOW.prechecks, 'Login successful — opening prechecks...');
+		setStep(FLOW.prechecks, 'Init successful — opening prechecks...');
 
 		try {
 			await runPrechecks(false);
 		} catch (error) {
-			log('Failed to start prechecks after login', { message: error.message });
-			setStep(FLOW.prechecks, 'Login OK but prechecks failed to open. Click Start Prechecks.');
+			log('Failed to start prechecks after init', { message: error.message });
+			setStep(FLOW.prechecks, 'Init OK but prechecks failed to open. Click Start Prechecks.');
 		}
 	});
 }
@@ -230,7 +227,7 @@ btnInit.addEventListener('click', async () => {
 btnPrechecks.addEventListener('click', async () => {
 	try {
 		if (!initSucceeded) {
-			log('Run Login first before prechecks');
+			log('Run Init first before prechecks');
 			return;
 		}
 		await runPrechecks(true);
@@ -285,7 +282,7 @@ btnStopSession.addEventListener('click', async () => {
 			sessionStarted = false;
 			initSucceeded = false;
 			prechecksCompleted = false;
-			setStep(FLOW.login, 'Session ended. Click Login to start again.');
+			setStep(FLOW.login, 'Session ended. Click Init to start again.');
 			updateButtons();
 		});
 	} catch (error) {
@@ -293,5 +290,5 @@ btnStopSession.addEventListener('click', async () => {
 	}
 });
 
-setStep(FLOW.login, 'Step 1: Click Login to authenticate and open prechecks.');
-log('Dev playground ready. Login will auto-open prechecks on success.');
+setStep(FLOW.login, 'Step 1: Click Init with a valid token to open prechecks.');
+log('Dev playground ready. Init will auto-open prechecks on success.');

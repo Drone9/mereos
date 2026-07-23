@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfCss, loadZendeskWidget, logger, normalizeLanguage, registerEvent, sentryExceptioMessage, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfCss, loadZendeskWidget, logger, normalizeLanguage, registerEvent, resetSessionAttemptFlags, sentryExceptioMessage, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
 import { browserSecurityCss, examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, systemDiagnosticSteps, preChecksSteps, BROWSER_SECURTIY_STEP } from '../utils/constant';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
@@ -15,11 +15,35 @@ import { ExamPreparation } from '../ExamPreparation';
 import Talk from 'talkjs';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import { SystemRequirement } from '../SystemRequirement';
-import { stop_prechecks } from '../..';
 import interact from 'interactjs';
 import { BrowserSecurity } from '../BrowserSecurity';
 
+export const destroyPrechecksUi = () => {
+	const library = document.getElementById('mereos-library');
+	if (library) {
+		library.remove();
+	}
+	if (window.mereos) {
+		window.mereos.dom = null;
+		window.mereos.shadowRoot = null;
+	}
+	document.body.classList.remove('modal-active');
+	if (window.mereos?.cleanupLanguageDropdown) {
+		window.mereos.cleanupLanguageDropdown();
+		window.mereos.cleanupLanguageDropdown = null;
+	}
+};
+
 export const initShadowDOM = () => {
+	const existingLibrary = document.getElementById('mereos-library');
+	if (existingLibrary) {
+		const hasModal = window.mereos?.shadowRoot?.getElementById('precheck-modal');
+		if (hasModal && window.mereos?.dom?.modal) {
+			return;
+		}
+		destroyPrechecksUi();
+	}
+
 	if (!document.getElementById('mereos-library')) {
 		const libraryDOM = document.createElement('div');
 		libraryDOM.className = 'mereos-library';
@@ -862,20 +886,31 @@ export const startSession = async () => {
 		return 'data_saved';
 	} catch (e) {
 		sentryExceptioMessage(e);
-		const callBackFunc = () => {
-			if(e.response?.data?.detail === 'Token not found'){
-				if(window.mereos.globalCallback){
-					window.mereos.globalCallback({
-						type: 'error',
-						code: 40023,
-						message: 'token_expired_login_again_to_perform_this_action',
-					});
-				}
-			}
-		};
-		stop_prechecks(callBackFunc);
-		showToast('error',e.response?.data?.detail || 'something_went_wrong_please_contact_support');
-		logger.error('Error in start Session', e.response?.data?.detail);
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
+
+		const detail = e.response?.data?.detail;
+		const isTokenExpired = detail === 'Token not found';
+		const errorMessage = detail || 'something_went_wrong_please_contact_support';
+
+		showToast('error', errorMessage);
+
+		if (isTokenExpired) {
+			localStorage.removeItem('mereosToken');
+		}
+
+		if (window.mereos.globalCallback) {
+			window.mereos.globalCallback({
+				type: 'error',
+				code: isTokenExpired ? 40023 : 40018,
+				message: isTokenExpired
+					? 'token_expired_login_again_to_perform_this_action'
+					: 'error_saving_session_info',
+				details: e,
+			});
+		}
+
+		logger.error('Error in start Session', detail);
 	}
 };
 

@@ -1400,7 +1400,7 @@ export const getAuthenticationToken = () => {
 		try {
 			const { token, expiresAt } = JSON.parse(tokenData);
 
-			if (Date.now() > expiresAt) {
+			if (expiresAt && Date.now() > expiresAt) {
 				localStorage.removeItem('mereosToken');
 				notifyTokenExpired();
 				return null;
@@ -1675,6 +1675,7 @@ export const addSectionSessionRecord = async (session) => {
 		logger.error('Error in addSectionSessionRecord:', err);
 
 		if (err.response?.status === 403) {
+			showToast('error', 'error_saving_session_info');
 			if (window.mereos?.globalCallback) {
 				window.mereos.globalCallback({
 					type: 'error',
@@ -2554,6 +2555,17 @@ export const initializeI18next = () => {
 	}, (err) => {
 		if (err) return logger.error('Error in language', err);
 	});
+};
+
+export const resetSessionAttemptFlags = () => {
+	if (!window.mereos) {
+		return;
+	}
+	window.mereos.recordingStart = false;
+	window.mereos.sessionActive = false;
+	window.mereos.pendingSessionStart = false;
+	window.mereos.roomInstance = null;
+	window.mereos.precheckCompleted = false;
 };
 
 export const showToast = (type, message) => {

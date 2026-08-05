@@ -1119,7 +1119,7 @@ font-style:var(--font-style);}
 
 @media (max-width: 720px) {
   .system-diagnostic-test-screen .button-section button {
-    width: 50% !important;
+    width: 100% !important;
   }
 }
 
@@ -1753,6 +1753,33 @@ export const preValidationCss = `.pvi-container {
   color: #ffffff;
   margin: auto;
   cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .pvi-header-img {
+    height: 180px;
+    overflow: hidden;
+  }
+  .my-recorded-video {
+    width: 100%;
+    max-height: 100%;
+  }
+  .pvi-instructions-container {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+  .multi-device-block {
+    flex-wrap: wrap;
+  }
+  .camera-container, .microphone-container {
+    width: 100% !important;
+  }
+  .pvi-btn-container {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    margin-bottom: 15px;
+  }
 }
 `;
 
@@ -2414,7 +2441,6 @@ export const IdentityVerificationScreenFourCss = `.screen-four-container {
 	.my-recorded-video {
 		width: 98%;
 		margin: 0;
-		height: 100%;
 	}
 }
 
@@ -3402,6 +3428,35 @@ body{
 .zoom-btns:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.pause-resume-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid #ccd5e2;
+  background: white;
+  color: #333;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.pause-resume-btn:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.pause-resume-btn:active {
+  background: #e9e9e9;
+}
+
+.recording-badge-container-header--paused {
+  background-color: #6b7280;
 }
 `;
 

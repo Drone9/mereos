@@ -23,6 +23,10 @@ export const destroyPrechecksUi = () => {
 	if (library) {
 		library.remove();
 	}
+	if (window.mereos?.cleanupPrevalidationTimers) {
+		window.mereos.cleanupPrevalidationTimers();
+		window.mereos.cleanupPrevalidationTimers = null;
+	}
 	if (window.mereos) {
 		window.mereos.dom = null;
 		window.mereos.shadowRoot = null;

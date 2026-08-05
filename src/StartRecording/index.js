@@ -200,50 +200,6 @@ const finalizeSuccessfulSessionStart = async (session) => {
 	});
 };
 
-/*
- * Waits for Twilio to publish a local video track (natural event-based wait, no timeout).
- * Rejects immediately if the room has no participant — avoids a promise that never settles.
- */
-const waitForParticipantVideoTracks = (room) => {
-	return new Promise((resolve, reject) => {
-		const localParticipant = room?.localParticipant;
-		const videoTracks = localParticipant?.videoTracks;
-
-		if (!localParticipant || !videoTracks) {
-			reject(new Error('Twilio room has no local participant video tracks'));
-			return;
-		}
-
-		if (videoTracks.size > 0) {
-			resolve();
-			return;
-		}
-
-		const onTrackPublished = () => {
-			if (videoTracks.size > 0) {
-				localParticipant.off('trackPublished', onTrackPublished);
-				localParticipant.off('trackPublicationFailed', onTrackPublicationFailed);
-				resolve();
-			}
-		};
-
-		const onTrackPublicationFailed = (error, publication) => {
-			if (!publication || publication.kind === 'video') {
-				localParticipant.off('trackPublished', onTrackPublished);
-				localParticipant.off('trackPublicationFailed', onTrackPublicationFailed);
-				reject(error || new Error('Camera video track was not published'));
-			}
-		};
-
-		localParticipant.on('trackPublished', onTrackPublished);
-		localParticipant.on('trackPublicationFailed', onTrackPublicationFailed);
-	});
-};
-
-/*
- * Determines whether camera or microphone permission caused a start/reconnect failure.
- * Twilio/browser errors are often generic, so we fall back to Permissions API + getUserMedia probes.
- */
 const resolveStartPermissionType = async (error = null, hint = null) => {
 	const secureFeatures = getSecureFeatures();
 	const hasVideo = findConfigs(['record_video'], secureFeatures?.entities).length > 0;
@@ -1215,24 +1171,6 @@ const buildReconnectMediaConstraints = (reconnectType, secureFeatures) => {
 	return { mediaConstraints, needsVideo, needsAudio };
 };
 
-const acquireReconnectMediaStream = async (mediaConstraints, needsVideo, needsAudio) => {
-	try {
-		const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-		registerAcquiredMediaStream(stream);
-		return stream;
-	} catch (error) {
-		if (error.name === 'OverconstrainedError') {
-			const fallback = {};
-			if (needsVideo) fallback.video = true;
-			if (needsAudio) fallback.audio = true;
-			const stream = await navigator.mediaDevices.getUserMedia(fallback);
-			registerAcquiredMediaStream(stream);
-			return stream;
-		}
-		throw error;
-	}
-};
-
 const ensureActiveRoom = async (session) => {
 	const existing = window.mereos?.roomInstance;
 	if (existing?.state === 'connected') {
@@ -1972,8 +1910,38 @@ const updatePauseResumeUI = (isPaused) => {
 
 	const button = container.querySelector('#pause-resume-btn');
 	if (button) {
-		button.textContent = i18next.t(isPaused ? 'resume' : 'pause');
+		const isStandalone = button.classList.contains('pause-resume-btn--standalone');
+		button.textContent = isStandalone
+			? i18next.t(isPaused ? 'resume_recording' : 'pause_recording')
+			: i18next.t(isPaused ? 'resume' : 'pause');
 	}
+};
+
+const setupStandalonePauseResumeButton = () => {
+	const container = window.mereos?.shadowRoot;
+	if (!container || container.getElementById('pause-resume-btn')) return;
+
+	const button = document.createElement('button');
+	button.id = 'pause-resume-btn';
+	button.className = 'pause-resume-btn pause-resume-btn--standalone';
+	const initiallyPaused = Boolean(window.mereos.pauseCanvasState?.isPaused);
+	button.textContent = i18next.t(initiallyPaused ? 'resume_recording' : 'pause_recording');
+
+	button.addEventListener('click', (e) => {
+		e.stopPropagation();
+		if (window.mereos.pauseCanvasState?.isPaused) {
+			resumeRecording();
+		} else {
+			pauseRecording();
+		}
+	});
+
+	container.appendChild(button);
+};
+
+const removeStandalonePauseResumeButton = () => {
+	const button = window.mereos?.shadowRoot?.querySelector('#pause-resume-btn.pause-resume-btn--standalone');
+	if (button) button.remove();
 };
 
 const pauseRecording = async () => {
@@ -2034,12 +2002,26 @@ const setupWebcam = async (mediaStream) => {
 				initializeI18next();
 			}
 
+			const cameraViewEnabled = findConfigs(['camera_view'], secureFeatures?.entities)?.length > 0;
+			const pauseAndResumeEnabled = findConfigs(['pause_and_resume'], secureFeatures?.entities)?.length > 0;
+
+			/*
+			 * camera_view off means the candidate shouldn't see their own camera at all -- but
+			 * pause_and_resume still needs a way to trigger pause/resume, so give it its own
+			 * standalone button (top-left, outside the camera badge) instead of the in-badge one.
+			 */
+			if (!cameraViewEnabled && pauseAndResumeEnabled) {
+				setupStandalonePauseResumeButton();
+			} else {
+				removeStandalonePauseResumeButton();
+			}
+
 			let webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
 			if (!webcamContainer) {
 				webcamContainer = document.createElement('div');
 				webcamContainer.id = 'webcam-container';
 				webcamContainer.className = 'user-videos-remote';
-				if (findConfigs(['camera_view'], secureFeatures?.entities)?.length) {
+				if (cameraViewEnabled) {
 					window.mereos.shadowRoot.appendChild(webcamContainer);
 				}
 			}
@@ -2124,15 +2106,13 @@ const setupWebcam = async (mediaStream) => {
 				height: '100%'
 			});
 
-			webcamContainer.appendChild(videoHeaderContainer);
 			mediaWrapper.appendChild(videoElement);
 			if (secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length) {
 				mediaWrapper.appendChild(canvas);
 			}
-			webcamContainer.appendChild(mediaWrapper);
 
 			let videoFooterContainer = webcamContainer.querySelector('#user-video-footer');
-			if (!videoFooterContainer && findConfigs(['camera_view'], secureFeatures?.entities)?.length) {
+			if (!videoFooterContainer && cameraViewEnabled) {
 				videoFooterContainer = document.createElement('div');
 				videoFooterContainer.className = 'user-view-footer';
 				videoFooterContainer.id = 'user-video-footer';
@@ -2212,7 +2192,7 @@ const setupWebcam = async (mediaStream) => {
 				videoFooterContainer.appendChild(zoomOutBtn);
 				videoFooterContainer.appendChild(zoomInBtn);
 
-				if (findConfigs(['pause_and_resume'], secureFeatures?.entities)?.length) {
+				if (pauseAndResumeEnabled) {
 					const pauseResumeBtn = document.createElement('button');
 					pauseResumeBtn.id = 'pause-resume-btn';
 					pauseResumeBtn.className = 'pause-resume-btn';
@@ -2557,6 +2537,8 @@ export const cleanupLocalVideo = () => {
 
 			webcamContainer.remove();
 		}
+
+		removeStandalonePauseResumeButton();
 	}
 };
 

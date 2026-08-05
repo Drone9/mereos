@@ -8,6 +8,16 @@ import { ASSET_URL } from '../utils/constant';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
+		/*
+		 * Revisiting this tab re-runs this whole function with fresh closures/intervals, but a
+		 * prior visit's lightingIntervalId/timerInterval are only reachable through this hook --
+		 * overwriting it below without stopping them first would leak one setInterval per revisit.
+		 */
+		if (window.mereos?.cleanupPrevalidationTimers) {
+			window.mereos.cleanupPrevalidationTimers();
+			window.mereos.cleanupPrevalidationTimers = null;
+		}
+
 		let currentCaptureMode = null;
 		let cameras = [];
 		let microphones = [];
@@ -120,7 +130,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		};
 
 		const updateTimerDisplay = () => {
-			const timerElement = window.mereos.shadowRoot.getElementById('timer-element');
+			const timerElement = window.mereos.shadowRoot?.getElementById('timer-element');
 			if (timerElement) {
 				if (timerVisible && seconds > 0) {
 					timerElement.textContent = `${seconds}s`;
@@ -131,7 +141,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 			}
 		};
 		const updateLightingUI = () => {
-			const lightingEl = window.mereos.shadowRoot.getElementById('lighting-status');
+			const lightingEl = window.mereos.shadowRoot?.getElementById('lighting-status');
 			if (!lightingEl) return;
 
 			if (lightingStatus === 'idle') {
@@ -170,7 +180,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 		 * permission state (mirrors the React disabled logic).
 		 */
 		const updateCheckButtonState = () => {
-			const checkButton = window.mereos.shadowRoot.getElementById('check-btn');
+			const checkButton = window.mereos.shadowRoot?.getElementById('check-btn');
 			if (!checkButton) return;
 
 			const isLightingPoor = lightingStatus === 'dark' || lightingStatus === 'bright';
@@ -209,6 +219,12 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 			lightingIntervalId = setInterval(() => {
 				try {
+					if (!window.mereos?.shadowRoot) {
+						clearInterval(lightingIntervalId);
+						lightingIntervalId = null;
+						return;
+					}
+
 					const video = window.mereos.shadowRoot.getElementById('myVideo');
 					if (!video || video.readyState < 2) return;
 
@@ -755,8 +771,26 @@ export const PrevalidationInstructions = async (tabContent) => {
 			updateUI();
 		};
 
+		/*
+		 * lightingIntervalId/timerInterval are closure-local, so nothing outside this function
+		 * could ever clear them. If the precheck UI gets torn down (stop_prechecks/init resetting
+		 * window.mereos.shadowRoot to null) while either interval is still ticking, the next tick
+		 * dereferences a null shadowRoot and throws. Register a cleanup hook, mirroring
+		 * cleanupLanguageDropdown, so destroyPrechecksUi can stop both before nulling shadowRoot.
+		 */
+		window.mereos.cleanupPrevalidationTimers = () => {
+			if (timerInterval) {
+				clearInterval(timerInterval);
+				timerInterval = null;
+			}
+			if (lightingIntervalId) {
+				clearInterval(lightingIntervalId);
+				lightingIntervalId = null;
+			}
+		};
+
 		init();
-            
+
 		i18next.on('languageChanged', handleLanguageChange);
 	} catch (error) {
 		sentryExceptioMessage(error, { type: 'error', message: 'Failed to initialize Language' });

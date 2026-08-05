@@ -3455,6 +3455,30 @@ body{
   background: #e9e9e9;
 }
 
+.pause-resume-btn--standalone {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 9999;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 1px 1px 5px 1px #f1f1f1;
+  background: var(--theme-color);
+  color: #ffffff;
+}
+
+.pause-resume-btn--standalone:hover {
+  background: var(--theme-color);
+  box-shadow: 1px 1px 2px rgb(32 33 36 / 28%);
+}
+
+.pause-resume-btn--standalone:active {
+  background: var(--theme-color);
+  opacity: 0.9;
+}
+
 .recording-badge-container-header--paused {
   background-color: #6b7280;
 }

@@ -4,7 +4,6 @@
 	"description": "This is an ai-empowered proctoring solution for online assessments.",
 	"main": "index.js",
 	"scripts": {
-		"dev": "node scripts/dev.mjs",
 		"test": "jest --silent=false --verbose",
 		"lint": "eslint ./**/*.js",
 		"lint:fix": "eslint --fix ./**/*.js"
@@ -57,7 +56,6 @@
 		"eslint-plugin-promise": "^6.0.0",
 		"identity-obj-proxy": "^3.0.0",
 		"jest": "^30.2.0",
-		"jest-environment-jsdom": "^29.7.0",
-		"vite": "^6.3.5"
+		"jest-environment-jsdom": "^29.7.0"
 	}
 }

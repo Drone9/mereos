@@ -1309,14 +1309,20 @@ const reconnectCamera = async () => {
 
 		if (needsVideo) {
 			await cleanupCameraTracks(room, 'video');
-			const { publication, localVideoTrack, videoStream, rawVideoTrack } = await publishIndependentVideoTrack(
-				room,
-				preAcquiredVideoStream
-			);
+
+			const pauseAndResumeEnabled = findConfigs(['pause_and_resume'], secureFeatures?.entities).length > 0;
+			/*
+			 * publishIndependentVideoTrack alone would leave window.mereos.pauseCanvasState null
+			 * after this reconnect (handleDeviceLost tore it down when the permission was lost),
+			 * silently breaking the pause/resume button's guard checks from here on.
+			 */
+			const { publication, localVideoTrack, videoStream, rawVideoTrack, canvasStream } = pauseAndResumeEnabled
+				? await publishCanvasVideoTrack(room, preAcquiredVideoStream)
+				: await publishIndependentVideoTrack(room, preAcquiredVideoStream);
 			newVideoTrackPublication = publication;
 			cameraRecordings.push(publication.trackSid);
 
-			const twilioStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
+			const twilioStream = canvasStream || new MediaStream([localVideoTrack.mediaStreamTrack]);
 			if (secureFeatures?.entities?.filter((entity) => aiEventsFeatures?.includes(entity.key))?.length) {
 				await startAIWebcam(room, twilioStream);
 			} else {

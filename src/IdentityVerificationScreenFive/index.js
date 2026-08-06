@@ -16,6 +16,7 @@ import {
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
+import { startRecording } from '../StartRecording';
 import { v4 } from 'uuid';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
@@ -251,7 +252,33 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					});
 				}
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
-			}else{
+			} else if (session?.sessionStatus === 'Attending') {
+				/*
+				 * sessionStatus is persisted to localStorage as soon as startRecording() begins
+				 * connecting, so it survives a page reload even though window.mereos.roomInstance
+				 * (in-memory only) doesn't. Seeing 'Attending' with no live room here means the
+				 * candidate reloaded mid-session and just reshared their screen -- nothing else
+				 * has retried the room connect, so without this the session (and with it the
+				 * camera/mic tracks and the webcam badge's pause/resume button) never comes back.
+				 */
+				registerEvent({
+					eventType: 'success',
+					notify: false,
+					eventName: 'screen_recording_window_shared',
+					eventValue: getDateTime()
+				});
+				/*
+				 * startRecordingCallBack is normally set by start_session() -- calling
+				 * startRecording() directly here (start_session() was never invoked this time
+				 * around) leaves it unset after a reload, so finalizeSuccessfulSessionStart's
+				 * 'recording_started_successfully' callback would silently go nowhere and the
+				 * host would never learn recording is live again (e.g. to re-enable its Stop
+				 * button). Fall back to globalCallback, the same handler the host already
+				 * supplied for this precheck flow.
+				 */
+				window.mereos.startRecordingCallBack = window.mereos.startRecordingCallBack || window.mereos.globalCallback;
+				await startRecording();
+			} else {
 				registerEvent({
 					eventType: 'success',
 					notify: false,

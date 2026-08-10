@@ -16,7 +16,7 @@ import {
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { startRecording } from '../StartRecording';
+import { waitForActiveRecordingStart } from '../StartRecording';
 import { v4 } from 'uuid';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
@@ -194,7 +194,17 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 			const session = convertDataIntoParse('session');
 
-			if (window?.mereos?.roomInstance) {
+			/*
+			 * showTab(...) above always closes the modal and fires precheck_completed, even on a
+			 * mid-session reshare -- if the host reacts to that by calling start_session() again,
+			 * it would race this function's direct use of window.mereos.roomInstance below
+			 * (startRecording() disconnects and replaces roomInstance when one already exists).
+			 * Wait out anything already in flight so we read a settled room reference.
+			 */
+			await waitForActiveRecordingStart();
+
+			const room = window?.mereos?.roomInstance;
+			if (room) {
 				const videoTrack = window?.mereos?.newStream?.getVideoTracks()[0];
 
 				if (!videoTrack) {
@@ -206,7 +216,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 				if (window.mereos?.screenTrackPublished?.track) {
 					try {
-						await window.mereos.roomInstance.localParticipant.unpublishTrack(
+						await room.localParticipant.unpublishTrack(
 							window.mereos.screenTrackPublished.track
 						);
 					} catch (unpublishError) {
@@ -215,9 +225,15 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					}
 				}
 
+				if (room !== window.mereos.roomInstance) {
+					showToast('error', 'screen_share_publish_failed');
+					sentryExceptioMessage(new Error('roomInstance changed during screen reshare'));
+					return;
+				}
+
 				let publishedScreenTrack;
 				try {
-					publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(
+					publishedScreenTrack = await room.localParticipant.publishTrack(
 						videoTrack,
 						{ name: `screen-share-${v4()}` }
 					);
@@ -252,33 +268,17 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					});
 				}
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
-			} else if (session?.sessionStatus === 'Attending') {
-				/*
-				 * sessionStatus is persisted to localStorage as soon as startRecording() begins
-				 * connecting, so it survives a page reload even though window.mereos.roomInstance
-				 * (in-memory only) doesn't. Seeing 'Attending' with no live room here means the
-				 * candidate reloaded mid-session and just reshared their screen -- nothing else
-				 * has retried the room connect, so without this the session (and with it the
-				 * camera/mic tracks and the webcam badge's pause/resume button) never comes back.
-				 */
-				registerEvent({
-					eventType: 'success',
-					notify: false,
-					eventName: 'screen_recording_window_shared',
-					eventValue: getDateTime()
-				});
-				/*
-				 * startRecordingCallBack is normally set by start_session() -- calling
-				 * startRecording() directly here (start_session() was never invoked this time
-				 * around) leaves it unset after a reload, so finalizeSuccessfulSessionStart's
-				 * 'recording_started_successfully' callback would silently go nowhere and the
-				 * host would never learn recording is live again (e.g. to re-enable its Stop
-				 * button). Fall back to globalCallback, the same handler the host already
-				 * supplied for this precheck flow.
-				 */
-				window.mereos.startRecordingCallBack = window.mereos.startRecordingCallBack || window.mereos.globalCallback;
-				await startRecording();
 			} else {
+				/*
+				 * No live room here -- either a genuine first-time completion, or the candidate
+				 * reloaded mid-session (sessionStatus would still read 'Attending' in that case,
+				 * persisted from before the reload) and just reshared their screen. Either way,
+				 * this deliberately does NOT call startRecording() itself: recording must only
+				 * ever begin from an explicit start_session() call (candidate/host clicking
+				 * Start Session), never automatically as a side effect of resharing. Calling it
+				 * here previously started recording silently and left the host's Start Session
+				 * button in a confusing "already in progress" state.
+				 */
 				registerEvent({
 					eventType: 'success',
 					notify: false,

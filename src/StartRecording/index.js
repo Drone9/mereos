@@ -953,6 +953,14 @@ const publishCanvasVideoTrack = async (room, preAcquiredStream = null) => {
 	videoEl.srcObject = videoStream;
 	videoEl.style.display = 'none';
 	document.body.appendChild(videoEl);
+	/*
+	 * The autoplay attribute alone isn't reliably enough to start playback for a srcObject-fed
+	 * element on every browser/privacy mode (autoplay policies can be stricter in incognito) --
+	 * when it silently doesn't kick in, this video element never advances past its first (black)
+	 * frame, and since the canvas below draws from it every tick, both the published recording
+	 * and the local badge preview end up permanently black instead of just missing one frame.
+	 */
+	videoEl.play().catch((error) => logger.error('publishCanvasVideoTrack: video.play() failed', error));
 
 	const settings = rawVideoTrack.getSettings?.() || {};
 	const width = settings.width || 640;
@@ -1434,7 +1442,7 @@ if (typeof document !== 'undefined') {
  * Called by start_session after room tokens are ready.
  * LMS success callback fires only after candidate_session is saved; API failure aborts the session.
  */
-export const startRecording = async () => {
+const startRecordingInternal = async () => {
 	let screenTrack = null;
 	let cameraRecordings = [];
 	let audioRecordings = [];
@@ -1901,6 +1909,42 @@ export const startRecording = async () => {
 	}
 };
 
+/*
+ * Wraps startRecordingInternal with reentrancy protection. Nothing here previously stopped two
+ * overlapping calls (e.g. the host's own start_session(), triggered by the precheck_completed
+ * callback that fires unconditionally when a precheck screen finishes, racing against a direct
+ * startRecording() call made from within that same screen -- as happens when reshare-after-reload
+ * needs to retry the room connect itself) from both trying to connect to Twilio and publish
+ * tracks at the same time, corrupting window.mereos.roomInstance/track state with no visible
+ * error. A concurrent call now just awaits the same in-flight attempt instead of starting a
+ * second, competing one.
+ */
+let recordingStartInFlight = null;
+
+export const startRecording = async () => {
+	if (recordingStartInFlight) {
+		return recordingStartInFlight;
+	}
+
+	recordingStartInFlight = startRecordingInternal().finally(() => {
+		recordingStartInFlight = null;
+	});
+
+	return recordingStartInFlight;
+};
+
+/*
+ * For callers that touch window.mereos.roomInstance directly (e.g. re-publishing just the
+ * screen track after a mid-session reshare) instead of going through startRecording() -- lets
+ * them wait out any startRecording() already in flight before reading roomInstance, so they
+ * don't race a concurrent reconnect that's about to replace it.
+ */
+export const waitForActiveRecordingStart = async () => {
+	if (recordingStartInFlight) {
+		await recordingStartInFlight.catch(() => {});
+	}
+};
+
 const PREDICTION = ['cell phone', 'book', 'laptop'];
 
 const updatePauseResumeUI = (isPaused) => {
@@ -2113,6 +2157,9 @@ const setupWebcam = async (mediaStream) => {
 			});
 
 			mediaWrapper.appendChild(videoElement);
+			// See publishCanvasVideoTrack's videoEl.play() call for why this can't rely on the
+			// autoplay attribute alone -- same badge-shows-black-frame failure mode.
+			videoElement.play().catch((error) => logger.error('setupWebcam: video.play() failed', error));
 			if (secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length) {
 				mediaWrapper.appendChild(canvas);
 			}
@@ -2355,6 +2402,10 @@ const startAIWebcam = async (room, mediaStream) => {
 		processingVideo.autoplay = true;
 		processingVideo.playsInline = true;
 		window.mereos.aiProcessingVideo = processingVideo;
+		// Same autoplay-attribute-alone unreliability as the other dynamically created video
+		// elements in this file -- without this, detection would silently run on a black/stale
+		// frame forever instead of throwing.
+		processingVideo.play().catch((error) => logger.error('startAIWebcam: video.play() failed', error));
 
 		await new Promise((resolve) => {
 			processingVideo.onloadedmetadata = () => {

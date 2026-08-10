@@ -437,7 +437,19 @@ export const initializeForceFullscreen = () => {
 	
 	const cleanupMonitor = initializeFullscreenMonitor();
 
+	/*
+	 * If something already put the browser into fullscreen before this ran (e.g. the host
+	 * page prompting for fullscreen at the end of prechecks, before calling start_session),
+	 * showing "Fullscreen Required" again here is a redundant second modal for a requirement
+	 * that's already satisfied.
+	 */
+	const isAlreadyFullscreen = () => !!(document.fullscreenElement ||
+		document.webkitFullscreenElement ||
+		document.mozFullScreenElement ||
+		document.msFullscreenElement);
+
 	const showInitialModal = () => {
+		if (isAlreadyFullscreen()) return;
 		showForceFullscreenModal({ isInitialWarning: true });
 	};
 

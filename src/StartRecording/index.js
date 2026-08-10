@@ -450,7 +450,6 @@ const cleanupCameraTracks = async (room, trackKind) => {
 	}
 };
 
-// ============= MODAL FUNCTIONS =============
 
 export const showPermissionModal = (permissionType = 'camera') => {
 	let container, existingModal;
@@ -472,7 +471,6 @@ export const showPermissionModal = (permissionType = 'camera') => {
 	modalDiv.className = 'permission-modal-overlay';
 	modalDiv.setAttribute('data-permission-type', permissionType);
 
-	// Set content based on permission type
 	const modalTitle = permissionType === 'camera'
 		? i18next.t('camera_access_lost')
 		: i18next.t('microphone_access_lost');
@@ -1437,11 +1435,6 @@ if (typeof document !== 'undefined') {
 	document.head.appendChild(styleElement);
 }
 
-/**
- * Connects Twilio, publishes tracks, and persists session to the backend.
- * Called by start_session after room tokens are ready.
- * LMS success callback fires only after candidate_session is saved; API failure aborts the session.
- */
 const startRecordingInternal = async () => {
 	let screenTrack = null;
 	let cameraRecordings = [];
@@ -1872,11 +1865,9 @@ const startRecordingInternal = async () => {
 					code: 40004,
 					details: error,
 				});
-				// Return so addSectionSessionRecord is not called after a failed recording start.
 				return;
 			}
 		} else {
-			// Lockdown-only profile (no Twilio recording entities).
 			updatePersistData('session', {
 				sessionStatus: 'Attending'
 			});
@@ -2157,8 +2148,7 @@ const setupWebcam = async (mediaStream) => {
 			});
 
 			mediaWrapper.appendChild(videoElement);
-			// See publishCanvasVideoTrack's videoEl.play() call for why this can't rely on the
-			// autoplay attribute alone -- same badge-shows-black-frame failure mode.
+
 			videoElement.play().catch((error) => logger.error('setupWebcam: video.play() failed', error));
 			if (secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length) {
 				mediaWrapper.appendChild(canvas);
@@ -2402,9 +2392,7 @@ const startAIWebcam = async (room, mediaStream) => {
 		processingVideo.autoplay = true;
 		processingVideo.playsInline = true;
 		window.mereos.aiProcessingVideo = processingVideo;
-		// Same autoplay-attribute-alone unreliability as the other dynamically created video
-		// elements in this file -- without this, detection would silently run on a black/stale
-		// frame forever instead of throwing.
+
 		processingVideo.play().catch((error) => logger.error('startAIWebcam: video.play() failed', error));
 
 		await new Promise((resolve) => {

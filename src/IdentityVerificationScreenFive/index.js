@@ -226,8 +226,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				}
 
 				if (room !== window.mereos.roomInstance) {
-					// A concurrent reconnect swapped the room out from under us -- fail loudly
-					// instead of publishing to (or hanging on) a room that's already disconnected.
 					showToast('error', 'screen_share_publish_failed');
 					sentryExceptioMessage(new Error('roomInstance changed during screen reshare'));
 					return;

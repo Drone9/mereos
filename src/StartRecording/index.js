@@ -926,22 +926,16 @@ const publishIndependentVideoTrack = async (room, preAcquiredStream = null) => {
 	return { publication, localVideoTrack, videoStream, rawVideoTrack };
 };
 
-/*
- * Same publish contract as publishIndependentVideoTrack, but the track actually sent to Twilio
- * is a canvas' captureStream() instead of the raw camera track. The canvas is redrawn every
- * frame from a hidden <video> fed by the real camera -- live frames while running, a static
- * "Recording Paused" placeholder while window.mereos.pauseCanvasState.isPaused is true. This
- * keeps the Twilio track continuously published (no unpublish/republish) across a pause, so the
- * recording never has a gap and clearly shows the paused interval instead of silently freezing
- * or dropping the last live frame. Device-loss monitoring is attached to the raw camera track's
- * native 'ended' event (not the synthetic canvas track, which never ends on its own) so a real
- * camera disconnect is still caught while this publish path is active.
- */
 const publishCanvasVideoTrack = async (room, preAcquiredStream = null) => {
 	const videoStream = preAcquiredStream || await acquireIndependentMediaStream('video');
 	const rawVideoTrack = videoStream.getVideoTracks()[0];
 	if (!rawVideoTrack) {
 		throw new Error('No video track available');
+	}
+
+	if (window.mereos.pauseCanvasState) {
+		window.mereos.pauseCanvasState.cleanup?.();
+		window.mereos.pauseCanvasState = null;
 	}
 
 	const videoEl = document.createElement('video');
@@ -969,12 +963,12 @@ const publishCanvasVideoTrack = async (room, preAcquiredStream = null) => {
 	canvas.height = height;
 	const ctx = canvas.getContext('2d');
 
-	const pauseState = { isPaused: false, canvasStream: null, cleanup: null };
+	const pauseState = { canvasStream: null, cleanup: null };
 	window.mereos.pauseCanvasState = pauseState;
 
 	let rafId = null;
 	const renderLoop = () => {
-		drawPausedFrame(ctx, videoEl, width, height, pauseState.isPaused, i18next.t('recording_paused'));
+		drawPausedFrame(ctx, videoEl, width, height, Boolean(window.mereos.recordingPaused), i18next.t('recording_paused'));
 		rafId = requestAnimationFrame(renderLoop);
 	};
 	renderLoop();
@@ -1014,6 +1008,65 @@ const publishCanvasVideoTrack = async (room, preAcquiredStream = null) => {
 	};
 
 	return { publication, localVideoTrack, videoStream, rawVideoTrack, canvasStream };
+};
+
+export const publishCanvasScreenTrack = async (room, screenStream) => {
+	const rawScreenTrack = screenStream.getVideoTracks()[0];
+	if (!rawScreenTrack) {
+		throw new Error('No screen track available');
+	}
+
+	if (window.mereos.pauseScreenCanvasState) {
+		window.mereos.pauseScreenCanvasState.cleanup?.();
+		window.mereos.pauseScreenCanvasState = null;
+	}
+
+	const videoEl = document.createElement('video');
+	videoEl.autoplay = true;
+	videoEl.muted = true;
+	videoEl.playsInline = true;
+	videoEl.srcObject = screenStream;
+	videoEl.style.display = 'none';
+	document.body.appendChild(videoEl);
+	videoEl.play().catch((error) => logger.error('publishCanvasScreenTrack: video.play() failed', error));
+
+	const settings = rawScreenTrack.getSettings?.() || {};
+	const width = settings.width || 1280;
+	const height = settings.height || 720;
+
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext('2d');
+
+	const pauseState = { canvasStream: null, cleanup: null };
+	window.mereos.pauseScreenCanvasState = pauseState;
+
+	let rafId = null;
+	const renderLoop = () => {
+		drawPausedFrame(ctx, videoEl, width, height, Boolean(window.mereos.recordingPaused), i18next.t('recording_paused'));
+		rafId = requestAnimationFrame(renderLoop);
+	};
+	renderLoop();
+
+	const canvasStream = canvas.captureStream(15);
+	const canvasScreenTrack = canvasStream.getVideoTracks()[0];
+	const twilioScreenTrack = new TwilioVideo.LocalVideoTrack(canvasScreenTrack, {
+		name: `screen-share-${v4()}`,
+	});
+	registerManagedLocalTrack(twilioScreenTrack);
+	const publication = await room.localParticipant.publishTrack(twilioScreenTrack);
+	registerManagedLocalTrack(publication.track || twilioScreenTrack);
+
+	pauseState.canvasStream = canvasStream;
+	pauseState.cleanup = () => {
+		if (rafId) cancelAnimationFrame(rafId);
+		videoEl.pause();
+		videoEl.srcObject = null;
+		videoEl.remove();
+	};
+
+	return { publication, canvasStream };
 };
 
 const publishIndependentAudioTrack = async (room, preAcquiredStream = null) => {
@@ -1670,10 +1723,15 @@ const startRecordingInternal = async () => {
 
 				if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
 					if (window.mereos?.newStream?.getTracks()[0]) {
-						screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0], {
-							name: `screen-share-${v4()}`
-						});
-						window.mereos.screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
+						if (pauseAndResumeEnabled) {
+							const { publication } = await publishCanvasScreenTrack(room, window.mereos.newStream);
+							window.mereos.screenTrackPublished = publication;
+						} else {
+							screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0], {
+								name: `screen-share-${v4()}`
+							});
+							window.mereos.screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
+						}
 						screenRecordings = [...session.screen_sharing_video_name, window.mereos.screenTrackPublished.trackSid];
 						updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 					} else {
@@ -1965,12 +2023,11 @@ const setupStandalonePauseResumeButton = () => {
 	const button = document.createElement('button');
 	button.id = 'pause-resume-btn';
 	button.className = 'pause-resume-btn pause-resume-btn--standalone';
-	const initiallyPaused = Boolean(window.mereos.pauseCanvasState?.isPaused);
-	button.textContent = i18next.t(initiallyPaused ? 'resume_recording' : 'pause_recording');
+	button.textContent = i18next.t(window.mereos.recordingPaused ? 'resume_recording' : 'pause_recording');
 
 	button.addEventListener('click', (e) => {
 		e.stopPropagation();
-		if (window.mereos.pauseCanvasState?.isPaused) {
+		if (window.mereos.recordingPaused) {
 			resumeRecording();
 		} else {
 			pauseRecording();
@@ -1988,12 +2045,12 @@ const removeStandalonePauseResumeButton = () => {
 const pauseRecording = async () => {
 	if (isPauseResumeBusy) return;
 	const room = window.mereos?.roomInstance;
-	const pauseState = window.mereos?.pauseCanvasState;
-	if (!room || !pauseState || pauseState.isPaused) return;
+	const canPause = window.mereos?.pauseCanvasState || window.mereos?.pauseScreenCanvasState;
+	if (!room || !canPause || window.mereos.recordingPaused) return;
 
 	isPauseResumeBusy = true;
 	try {
-		pauseState.isPaused = true;
+		window.mereos.recordingPaused = true;
 		room.localParticipant.audioTracks.forEach(({ track }) => {
 			if (!track || track.name?.includes('screen-share')) return;
 			track.disable();
@@ -2001,7 +2058,7 @@ const pauseRecording = async () => {
 		updatePauseResumeUI(true);
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_paused' });
 	} catch (error) {
-		pauseState.isPaused = false;
+		window.mereos.recordingPaused = false;
 		sentryExceptioMessage(error, { type: 'error', message: 'Failed to pause recording' });
 		registerEvent({ eventType: 'error', notify: false, eventName: 'recording_pause_failed', sentryError: true });
 		showToast('error', 'recording_pause_failed');
@@ -2013,12 +2070,12 @@ const pauseRecording = async () => {
 const resumeRecording = async () => {
 	if (isPauseResumeBusy) return;
 	const room = window.mereos?.roomInstance;
-	const pauseState = window.mereos?.pauseCanvasState;
-	if (!room || !pauseState || !pauseState.isPaused) return;
+	const canPause = window.mereos?.pauseCanvasState || window.mereos?.pauseScreenCanvasState;
+	if (!room || !canPause || !window.mereos.recordingPaused) return;
 
 	isPauseResumeBusy = true;
 	try {
-		pauseState.isPaused = false;
+		window.mereos.recordingPaused = false;
 		room.localParticipant.audioTracks.forEach(({ track }) => {
 			if (!track || track.name?.includes('screen-share')) return;
 			track.enable();
@@ -2026,7 +2083,7 @@ const resumeRecording = async () => {
 		updatePauseResumeUI(false);
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_resumed' });
 	} catch (error) {
-		pauseState.isPaused = true;
+		window.mereos.recordingPaused = true;
 		sentryExceptioMessage(error, { type: 'error', message: 'Failed to resume recording' });
 		registerEvent({ eventType: 'error', notify: false, eventName: 'recording_resume_failed', sentryError: true });
 		showToast('error', 'recording_resume_failed');
@@ -2239,12 +2296,11 @@ const setupWebcam = async (mediaStream) => {
 					const pauseResumeBtn = document.createElement('button');
 					pauseResumeBtn.id = 'pause-resume-btn';
 					pauseResumeBtn.className = 'pause-resume-btn';
-					const initiallyPaused = Boolean(window.mereos.pauseCanvasState?.isPaused);
-					pauseResumeBtn.textContent = i18next.t(initiallyPaused ? 'resume' : 'pause');
+					pauseResumeBtn.textContent = i18next.t(window.mereos.recordingPaused ? 'resume' : 'pause');
 
 					pauseResumeBtn.addEventListener('click', (e) => {
 						e.stopPropagation();
-						if (window.mereos.pauseCanvasState?.isPaused) {
+						if (window.mereos.recordingPaused) {
 							resumeRecording();
 						} else {
 							pauseRecording();
@@ -2416,7 +2472,7 @@ const startAIWebcam = async (room, mediaStream) => {
 			try {
 				seconds = seconds + 1;
 				if (processingVideo.readyState !== 4) return;
-				if (window.mereos.pauseCanvasState?.isPaused) return;
+				if (window.mereos.recordingPaused) return;
 
 				const image = tf.browser.fromPixels(processingVideo);
 				const predictions = await window.mereos.net.detect(image);
@@ -2919,6 +2975,13 @@ export const stopAllRecordings = async () => {
 		window.mereos.pauseCanvasState.cleanup?.();
 		window.mereos.pauseCanvasState = null;
 	}
+
+	if (window.mereos.pauseScreenCanvasState) {
+		window.mereos.pauseScreenCanvasState.cleanup?.();
+		window.mereos.pauseScreenCanvasState = null;
+	}
+
+	window.mereos.recordingPaused = false;
 
 	cleanupLocalVideo();
 	detachAllTrackStoppedListeners();

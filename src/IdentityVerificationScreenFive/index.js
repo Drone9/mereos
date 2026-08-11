@@ -16,7 +16,7 @@ import {
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { waitForActiveRecordingStart } from '../StartRecording';
+import { publishCanvasScreenTrack, waitForActiveRecordingStart } from '../StartRecording';
 import { v4 } from 'uuid';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
@@ -231,12 +231,18 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					return;
 				}
 
+				const pauseAndResumeEnabled = secureFeatures.some(entity => entity.key === 'pause_and_resume');
+
 				let publishedScreenTrack;
 				try {
-					publishedScreenTrack = await room.localParticipant.publishTrack(
-						videoTrack,
-						{ name: `screen-share-${v4()}` }
-					);
+					if (pauseAndResumeEnabled) {
+						({ publication: publishedScreenTrack } = await publishCanvasScreenTrack(room, window.mereos.newStream));
+					} else {
+						publishedScreenTrack = await room.localParticipant.publishTrack(
+							videoTrack,
+							{ name: `screen-share-${v4()}` }
+						);
+					}
 				} catch (publishError) {
 					console.error('Error publishing screen track:', publishError);
 					showToast('error', 'screen_share_publish_failed');

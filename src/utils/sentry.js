@@ -12,12 +12,6 @@ const isSentryAlreadyInitialized = () => {
 	return false;
 };
 
-/*
- * There's no bundler/build step in this repo that could inject a build-time NODE_ENV (dist/*.js
- * is built externally), so "local vs. production" has to be inferred at runtime instead. The
- * mereos widget always runs on whatever page embeds it, so the embedding page's own hostname is
- * the only signal available -- treat the common local/dev-server hostnames as non-production.
- */
 const isLocalHost = () => {
 	if (typeof window === 'undefined' || !window.location) return false;
 
@@ -38,10 +32,6 @@ const isLocalHost = () => {
 };
 
 const initSentry = (environment = 'production') => {
-	/*
-	 * Session Replay allows only one instance per page. Skip init when Sentry is
-	 * already set up (second mereos load, or LMS host app initialized Sentry first).
-	 */
 	if (isSentryAlreadyInitialized()) {
 		return;
 	}

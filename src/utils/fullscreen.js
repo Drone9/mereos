@@ -9,12 +9,6 @@ const RESIZE_COOLDOWN = 500; // ms between resize checks
 let resizeCheckPending = false;
 let resizeListenerActive = false;
 
-/*
- * F11 (native browser-window fullscreen) never goes through the Fullscreen API -- it doesn't set
- * document.fullscreenElement and it never fires 'fullscreenchange', so the checks below can't see
- * it directly. Falls back to a dimension heuristic: once browser chrome/taskbar are hidden, the
- * viewport fills the physical screen, which in practice only happens in some flavor of fullscreen.
- */
 const isEffectivelyFullscreen = () => {
 	const apiFullscreen = !!(document.fullscreenElement ||
 		document.webkitFullscreenElement ||
@@ -32,14 +26,6 @@ const isEffectivelyFullscreen = () => {
 };
 
 export const initializeFullscreenMonitor = () => {
-	/*
-	 * Previously bailed out entirely (no listeners, no polling) when document.fullscreenEnabled
-	 * was false -- which happens in contexts like a nested iframe without an `allow="fullscreen"`
-	 * permissions policy. But isEffectivelyFullscreen()'s F11 detection is a plain dimension
-	 * check, not a Fullscreen API call, so it works fine regardless of that flag; bailing out here
-	 * meant F11 could never be detected (or a modal auto-dismissed) in exactly the environments
-	 * where the Fullscreen API itself is unavailable and F11 is the only option candidates have.
-	 */
 	let fullscreenCheckInterval = null;
 	window.mereos = window.mereos || {};
 	window.mereos.lastFullscreenState = false;
@@ -88,12 +74,6 @@ export const initializeFullscreenMonitor = () => {
 
 		if (isCurrentlyFullscreen) {
 			window.mereos.lastFullscreenState = true;
-			/*
-			 * Covers F11: it satisfies the requirement but never fires 'fullscreenchange', so
-			 * nothing else would ever close a modal that was already showing (the initial
-			 * "Fullscreen Required" prompt, or a reopened "Fullscreen Exit Detected" one) once
-			 * the candidate presses F11 instead of clicking the modal's own button.
-			 */
 			if (window.mereos.forceFullscreenModal?.isOpen) {
 				window.mereos.forceFullscreenModal.remove();
 			}

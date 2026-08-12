@@ -1089,13 +1089,6 @@ export const publishCanvasScreenTrack = async (room, screenStream) => {
 		videoEl.remove();
 	};
 
-	/*
-	 * The pause/resume button is otherwise only ever created inside setupWebcam(), which only
-	 * runs when record_video is enabled -- a screen-share-only setup (no camera) would get a
-	 * fully working pauseScreenCanvasState with no button anywhere to trigger it. Safe to call
-	 * unconditionally: it already no-ops if a #pause-resume-btn exists (e.g. camera_view's
-	 * in-badge button, when both video and screen are enabled together).
-	 */
 	setupStandalonePauseResumeButton();
 
 	return { publication, canvasStream };
@@ -1347,15 +1340,6 @@ const completePendingSessionStart = async (room, secureFeatures) => {
 };
 
 const reconnectCamera = async () => {
-	/*
-	 * Nothing previously stopped a second click on Reconnect (or a rapid double-click before the
-	 * modal/button were removed) from starting a second, concurrent reconnectCamera() run. The two
-	 * would race on cleanupCameraTracks/publishTrack against the same room -- one run's cleanup
-	 * could unpublish the other's freshly published track -- and whichever run's error path lost
-	 * the race would call showPermissionModal() only for the modal to be removed again moments
-	 * later by hidePermissionModal() in the other run. Net result: modal gone, but the device was
-	 * never actually reconnected, with no error surfaced anywhere.
-	 */
 	if (isReconnectingDevice) return;
 	isReconnectingDevice = true;
 
@@ -2094,11 +2078,6 @@ const removeStandalonePauseResumeButton = () => {
 	if (button) button.remove();
 };
 
-/*
- * Blocking overlay shown for the duration of a pause: the candidate is expected to do nothing
- * else while paused, so unlike the permission modal there's deliberately no close button, no
- * click-outside-to-dismiss, and no Escape handling -- Resume Recording is the only way out.
- */
 const showPauseModal = () => {
 	const container = window.mereos?.shadowRoot || document.body;
 	if (container.querySelector?.('#pauseRecordingModal') || document.getElementById('pauseRecordingModal')) {

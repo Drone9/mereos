@@ -9,28 +9,35 @@ const RESIZE_COOLDOWN = 500; // ms between resize checks
 let resizeCheckPending = false;
 let resizeListenerActive = false;
 
-export const initializeFullscreenMonitor = () => {
-	if (!document.fullscreenEnabled) {
-		return () => {};
-	}
+const isEffectivelyFullscreen = () => {
+	const apiFullscreen = !!(document.fullscreenElement ||
+		document.webkitFullscreenElement ||
+		document.mozFullScreenElement ||
+		document.msFullscreenElement);
+	if (apiFullscreen) return true;
 
+	const screenWidth = window.screen?.width || 0;
+	const screenHeight = window.screen?.height || 0;
+	if (!screenWidth || !screenHeight) return false;
+
+	const widthMatches = Math.abs(window.innerWidth - screenWidth) <= 2;
+	const heightMatches = Math.abs(window.innerHeight - screenHeight) <= 2;
+	return widthMatches && heightMatches;
+};
+
+export const initializeFullscreenMonitor = () => {
 	let fullscreenCheckInterval = null;
 	window.mereos = window.mereos || {};
 	window.mereos.lastFullscreenState = false;
 
 	const handleFullscreenChange = () => {
-		const isCurrentlyFullscreen = document.fullscreenElement || 
-		document.webkitFullscreenElement || 
-		document.mozFullScreenElement || 
-		document.msFullscreenElement;
-		
+		const isCurrentlyFullscreen = isEffectivelyFullscreen();
+
 		window.mereos.lastFullscreenState = isCurrentlyFullscreen;
-		
+
 		if (!isCurrentlyFullscreen) {
 			setTimeout(() => {
-				if (!document.fullscreenElement && !document.webkitFullscreenElement && 
-					!document.mozFullScreenElement && !document.msFullscreenElement) {
-					
+				if (!isEffectivelyFullscreen()) {
 					if (fullscreenExitCallback) {
 						fullscreenExitCallback();
 					} else {
@@ -63,12 +70,17 @@ export const initializeFullscreenMonitor = () => {
 	document.addEventListener('keydown', handleKeydown);
 
 	fullscreenCheckInterval = setInterval(() => {
-		const isCurrentlyFullscreen = !!(document.fullscreenElement || 
-			document.webkitFullscreenElement || 
-			document.mozFullScreenElement || 
-			document.msFullscreenElement);
-		
-		if (!isCurrentlyFullscreen && window.mereos.lastFullscreenState) {
+		const isCurrentlyFullscreen = isEffectivelyFullscreen();
+
+		if (isCurrentlyFullscreen) {
+			window.mereos.lastFullscreenState = true;
+			if (window.mereos.forceFullscreenModal?.isOpen) {
+				window.mereos.forceFullscreenModal.remove();
+			}
+			return;
+		}
+
+		if (window.mereos.lastFullscreenState) {
 			window.mereos.lastFullscreenState = false;
 			if (fullscreenExitCallback) {
 				fullscreenExitCallback();
@@ -438,18 +450,13 @@ export const initializeForceFullscreen = () => {
 	const cleanupMonitor = initializeFullscreenMonitor();
 
 	/*
-	 * If something already put the browser into fullscreen before this ran (e.g. the host
-	 * page prompting for fullscreen at the end of prechecks, before calling start_session),
-	 * showing "Fullscreen Required" again here is a redundant second modal for a requirement
-	 * that's already satisfied.
+	 * If something already put the browser into fullscreen before this ran -- the host page
+	 * prompting for fullscreen at the end of prechecks before calling start_session, or the
+	 * candidate having pressed F11 -- showing "Fullscreen Required" again here is a redundant
+	 * second modal for a requirement that's already satisfied.
 	 */
-	const isAlreadyFullscreen = () => !!(document.fullscreenElement ||
-		document.webkitFullscreenElement ||
-		document.mozFullScreenElement ||
-		document.msFullscreenElement);
-
 	const showInitialModal = () => {
-		if (isAlreadyFullscreen()) return;
+		if (isEffectivelyFullscreen()) return;
 		showForceFullscreenModal({ isInitialWarning: true });
 	};
 
@@ -485,7 +492,35 @@ export const initializeForceFullscreen = () => {
 	};
 };
 
-export const cleanupForceFullscreen = () => {	
+/*
+ * Only undoes fullscreen entered through the Fullscreen API (the modal's own button, or the host
+ * page calling requestFullscreen()) -- document.exitFullscreen() has no effect on F11's native
+ * browser-window fullscreen, since that was never routed through the API to begin with. There is
+ * no JS-callable way to force a browser out of F11; only the candidate pressing F11 again can.
+ */
+const exitApiFullscreenIfActive = () => {
+	const el = document.fullscreenElement || document.webkitFullscreenElement ||
+		document.mozFullScreenElement || document.msFullscreenElement;
+	if (!el) return;
+
+	try {
+		if (document.exitFullscreen) {
+			document.exitFullscreen().catch(() => {});
+		} else if (document.webkitExitFullscreen) {
+			document.webkitExitFullscreen();
+		} else if (document.mozCancelFullScreen) {
+			document.mozCancelFullScreen();
+		} else if (document.msExitFullscreen) {
+			document.msExitFullscreen();
+		}
+	} catch (error) {
+		logger.error('Failed to exit fullscreen during cleanup:', error);
+	}
+};
+
+export const cleanupForceFullscreen = () => {
+	exitApiFullscreenIfActive();
+
 	if (window.mereos.cleanupForceFullscreen) {
 		window.mereos.cleanupForceFullscreen();
 		window.mereos.cleanupForceFullscreen = null;

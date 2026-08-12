@@ -2478,7 +2478,7 @@ export const handlePreChecksRedirection = () => {
 			return 'IdentityVerificationScreenFour';
 		} else if (!preChecksStep?.mobileConnection && hasFeature('mobile_proctoring') || !window.mereos?.mobileStream) {
 			return 'MobileProctoring';
-		} else if (!preChecksStep?.screenSharing || hasFeature('record_screen')) {
+		} else if (!preChecksStep?.screenSharing && hasFeature('record_screen')) {
 			return 'IdentityVerificationScreenFive';
 		} else {
 			closeModal();

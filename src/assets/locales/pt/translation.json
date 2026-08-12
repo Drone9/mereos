@@ -708,6 +708,7 @@
 	"recording": "Gravando",
 	"recording_pause_failed": "Falha ao pausar a gravação. Por favor, tente novamente.",
 	"recording_paused": "Gravação pausada",
+	"recording_paused_modal_message": "Sua gravação está pausada. Clique em \"Retomar gravação\" para continuar sua avaliação.",
 	"recording_resume_failed": "Falha ao retomar a gravação. Por favor, tente novamente.",
 	"recording_started_successfully": "Gravação iniciada com sucesso",
 	"recording_stopped_successfully": "Gravação interrompida com sucesso",

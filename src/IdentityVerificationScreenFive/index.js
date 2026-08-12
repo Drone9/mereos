@@ -194,13 +194,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 			const session = convertDataIntoParse('session');
 
-			/*
-			 * showTab(...) above always closes the modal and fires precheck_completed, even on a
-			 * mid-session reshare -- if the host reacts to that by calling start_session() again,
-			 * it would race this function's direct use of window.mereos.roomInstance below
-			 * (startRecording() disconnects and replaces roomInstance when one already exists).
-			 * Wait out anything already in flight so we read a settled room reference.
-			 */
 			await waitForActiveRecordingStart();
 
 			const room = window?.mereos?.roomInstance;
@@ -275,16 +268,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				}
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
 			} else {
-				/*
-				 * No live room here -- either a genuine first-time completion, or the candidate
-				 * reloaded mid-session (sessionStatus would still read 'Attending' in that case,
-				 * persisted from before the reload) and just reshared their screen. Either way,
-				 * this deliberately does NOT call startRecording() itself: recording must only
-				 * ever begin from an explicit start_session() call (candidate/host clicking
-				 * Start Session), never automatically as a side effect of resharing. Calling it
-				 * here previously started recording silently and left the host's Start Session
-				 * button in a confusing "already in progress" state.
-				 */
 				registerEvent({
 					eventType: 'success',
 					notify: false,
@@ -371,21 +354,23 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const prevStepsEntities = ['verify_candidate', 'verify_id', 'record_audio', 'record_room'];
 		const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
 
+		const isSessionResume = convertDataIntoParse('session')?.room_id;
+
 		let buttonsHTML = '';
-	
-		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance) {
+
+		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance && !isSessionResume) {
 			buttonsHTML += `<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>`;
 		}
-	
+
 		if (mode === 'startScreenRecording') {
 			buttonsHTML += `<button class="orange-filled-btn" ${multipleScreens ? 'disabled' : ''}>${i18next.t('done')}</button>`;
 		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again') {
 			buttonsHTML += `<button class="orange-filled-btn">${i18next.t('reshare_screen')}</button>`;
 		}
-	
+
 		btnContainer.insertAdjacentHTML('beforeend', buttonsHTML);
-	
-		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance) {
+
+		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance && !isSessionResume) {
 			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
 		}
 	

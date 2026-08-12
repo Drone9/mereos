@@ -2255,14 +2255,14 @@ export const IdentityVerificationScreenThreeCss = `.ivst-container {
   flex-direction: column;
 }
 
-.ivst-container #audio-wave {
-  width: 600px;
-  height: 140px;
+.ivst-container #audio-wavesform-canvas {
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
 }
 
 @media (max-width: 720px) {
-  .ivst-container #audio-wave {
+  .ivst-container #audio-wavesform-canvas {
       width: 100%;
       height: 150px;
   }
@@ -3481,6 +3481,56 @@ body{
 
 .recording-badge-container-header--paused {
   background-color: #6b7280;
+}
+
+.pause-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999999;
+  backdrop-filter: blur(5px);
+}
+
+.pause-modal {
+  background-color: var(--theme-mode);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 420px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.pause-modal-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  color:var(--text-color);
+}
+
+.pause-modal-title {
+  margin: 0 0 16px 0;
+  color: var(--text-color);
+  font-size: 22px;
+  font-weight: 600;
+  font-style: var(--font-style);
+}
+
+.pause-modal-message {
+  margin: 0 0 28px 0;
+  color: var(--text-color);
+  font-size: 15px;
+  line-height: 1.6;
+  font-style: var(--font-style);
+}
+
+.pause-modal-button {
+  width: 100%;
 }
 `;
 

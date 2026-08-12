@@ -54,6 +54,7 @@ const deviceChangeHandlers = new WeakMap();
 let isMediaError = false;
 let isSignalingError = false;
 let isPauseResumeBusy = false;
+let isReconnectingDevice = false;
 
 const resolvePermissionType = (trackType, kind) => {
 	if (trackType === 'microphone' || kind === 'audio') return 'microphone';
@@ -451,6 +452,21 @@ const cleanupCameraTracks = async (room, trackKind) => {
 };
 
 
+/*
+ * The camera badge (.user-videos-remote, z-index 9999999) renders well above the permission
+ * modal overlay (z-index 10000), so it would otherwise float on top of the modal for as long as
+ * permission is lost -- confusing at best, and showing a frozen/stale frame from before access
+ * was lost at worst. Hidden for the duration of the modal, restored once reconnect actually
+ * succeeds (not just when the modal closes -- showPermissionModal/hidePermissionModal also run on
+ * the not-yet-successful path at the top of reconnectCamera()).
+ */
+const setCameraBadgeVisibility = (visible) => {
+	const badge = window.mereos?.shadowRoot?.getElementById('webcam-container');
+	if (badge) {
+		badge.style.display = visible ? '' : 'none';
+	}
+};
+
 export const showPermissionModal = (permissionType = 'camera') => {
 	let container, existingModal;
 
@@ -549,6 +565,7 @@ export const showPermissionModal = (permissionType = 'camera') => {
 
 	document.body.style.overflow = 'hidden';
 	window.mereos.activePermissionModalType = permissionType;
+	setCameraBadgeVisibility(false);
 
 	addModalEventListeners();
 };
@@ -583,7 +600,13 @@ const addModalEventListeners = () => {
 	const reconnectBtn = modal.querySelector('#reconnectBtn');
 
 	if (reconnectBtn) {
-		reconnectBtn.addEventListener('click', reconnectCamera);
+		reconnectBtn.addEventListener('click', () => {
+			// Belt-and-suspenders alongside reconnectCamera()'s own isReconnectingDevice guard --
+			// this stops a second click from even registering during the brief window before
+			// reconnectCamera() removes the modal (and this button with it).
+			reconnectBtn.disabled = true;
+			reconnectCamera();
+		});
 	}
 
 	modal.addEventListener('click', function (e) {
@@ -1066,6 +1089,15 @@ export const publishCanvasScreenTrack = async (room, screenStream) => {
 		videoEl.remove();
 	};
 
+	/*
+	 * The pause/resume button is otherwise only ever created inside setupWebcam(), which only
+	 * runs when record_video is enabled -- a screen-share-only setup (no camera) would get a
+	 * fully working pauseScreenCanvasState with no button anywhere to trigger it. Safe to call
+	 * unconditionally: it already no-ops if a #pause-resume-btn exists (e.g. camera_view's
+	 * in-badge button, when both video and screen are enabled together).
+	 */
+	setupStandalonePauseResumeButton();
+
 	return { publication, canvasStream };
 };
 
@@ -1315,6 +1347,18 @@ const completePendingSessionStart = async (room, secureFeatures) => {
 };
 
 const reconnectCamera = async () => {
+	/*
+	 * Nothing previously stopped a second click on Reconnect (or a rapid double-click before the
+	 * modal/button were removed) from starting a second, concurrent reconnectCamera() run. The two
+	 * would race on cleanupCameraTracks/publishTrack against the same room -- one run's cleanup
+	 * could unpublish the other's freshly published track -- and whichever run's error path lost
+	 * the race would call showPermissionModal() only for the modal to be removed again moments
+	 * later by hidePermissionModal() in the other run. Net result: modal gone, but the device was
+	 * never actually reconnected, with no error surfaced anywhere.
+	 */
+	if (isReconnectingDevice) return;
+	isReconnectingDevice = true;
+
 	let reconnectType = 'camera';
 
 	try {
@@ -1428,7 +1472,13 @@ const reconnectCamera = async () => {
 
 		const remainingLost = [...(window.mereos.lostPermissionTypes || [])];
 		if (remainingLost.length > 0) {
+			// Still missing another permission (e.g. camera fixed, mic still lost) -- keep the
+			// badge hidden, the modal's about to reopen for that one.
 			showPermissionModal(remainingLost[0]);
+		} else if (!window.mereos.recordingPaused) {
+			// Don't reveal the badge if the candidate was already paused when permission was
+			// lost -- pausing hides it too, and it should stay hidden until they hit Resume.
+			setCameraBadgeVisibility(true);
 		}
 
 		if (window.mereos.startRecordingCallBack) {
@@ -1478,6 +1528,8 @@ const reconnectCamera = async () => {
 				errorMessage: error.message
 			});
 		}
+	} finally {
+		isReconnectingDevice = false;
 	}
 };
 
@@ -2042,6 +2094,52 @@ const removeStandalonePauseResumeButton = () => {
 	if (button) button.remove();
 };
 
+/*
+ * Blocking overlay shown for the duration of a pause: the candidate is expected to do nothing
+ * else while paused, so unlike the permission modal there's deliberately no close button, no
+ * click-outside-to-dismiss, and no Escape handling -- Resume Recording is the only way out.
+ */
+const showPauseModal = () => {
+	const container = window.mereos?.shadowRoot || document.body;
+	if (container.querySelector?.('#pauseRecordingModal') || document.getElementById('pauseRecordingModal')) {
+		return;
+	}
+
+	const modalDiv = document.createElement('div');
+	modalDiv.id = 'pauseRecordingModal';
+	modalDiv.className = 'pause-modal-overlay';
+	modalDiv.innerHTML = `
+		<div class="pause-modal">
+			<div class="pause-modal-icon">⏸</div>
+			<h3 class="pause-modal-title">${i18next.t('recording_paused')}</h3>
+			<p class="pause-modal-message">${i18next.t('recording_paused_modal_message')}</p>
+			<button class="orange-filled-btn pause-modal-button" type="button" id="resumeRecordingBtn">
+				${i18next.t('resume_recording')}
+			</button>
+		</div>
+	`;
+
+	try {
+		container.appendChild(modalDiv);
+	} catch (error) {
+		document.body.appendChild(modalDiv);
+	}
+
+	const resumeBtn = modalDiv.querySelector('#resumeRecordingBtn');
+	if (resumeBtn) {
+		resumeBtn.addEventListener('click', () => {
+			resumeBtn.disabled = true;
+			resumeRecording();
+		});
+	}
+};
+
+const hidePauseModal = () => {
+	const modal = window.mereos?.shadowRoot?.getElementById('pauseRecordingModal')
+		|| document.getElementById('pauseRecordingModal');
+	if (modal) modal.remove();
+};
+
 const pauseRecording = async () => {
 	if (isPauseResumeBusy) return;
 	const room = window.mereos?.roomInstance;
@@ -2056,9 +2154,13 @@ const pauseRecording = async () => {
 			track.disable();
 		});
 		updatePauseResumeUI(true);
+		showPauseModal();
+		setCameraBadgeVisibility(false);
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_paused' });
 	} catch (error) {
 		window.mereos.recordingPaused = false;
+		hidePauseModal();
+		setCameraBadgeVisibility(true);
 		sentryExceptioMessage(error, { type: 'error', message: 'Failed to pause recording' });
 		registerEvent({ eventType: 'error', notify: false, eventName: 'recording_pause_failed', sentryError: true });
 		showToast('error', 'recording_pause_failed');
@@ -2081,9 +2183,12 @@ const resumeRecording = async () => {
 			track.enable();
 		});
 		updatePauseResumeUI(false);
+		hidePauseModal();
+		setCameraBadgeVisibility(true);
 		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_resumed' });
 	} catch (error) {
 		window.mereos.recordingPaused = true;
+		setCameraBadgeVisibility(false);
 		sentryExceptioMessage(error, { type: 'error', message: 'Failed to resume recording' });
 		registerEvent({ eventType: 'error', notify: false, eventName: 'recording_resume_failed', sentryError: true });
 		showToast('error', 'recording_resume_failed');
@@ -2982,6 +3087,7 @@ export const stopAllRecordings = async () => {
 	}
 
 	window.mereos.recordingPaused = false;
+	hidePauseModal();
 
 	cleanupLocalVideo();
 	detachAllTrackStoppedListeners();

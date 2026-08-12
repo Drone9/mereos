@@ -708,6 +708,7 @@
 	"recording": "Opnemen",
 	"recording_pause_failed": "Kan opname niet pauzeren. Probeer het opnieuw.",
 	"recording_paused": "Opname gepauzeerd",
+	"recording_paused_modal_message": "Uw opname is gepauzeerd. Klik op \"Opname hervatten\" om verder te gaan met uw beoordeling.",
 	"recording_resume_failed": "Kan opname niet hervatten. Probeer het opnieuw.",
 	"recording_started_successfully": "Opname succesvol gestart",
 	"recording_stopped_successfully": "Opname succesvol gestopt",

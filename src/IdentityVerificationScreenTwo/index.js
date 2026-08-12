@@ -344,10 +344,15 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				const isFourthTry = failedAttempts >= 3;
 				
 				if (userImageData && !isFourthTry) {
-					const isValidID = acceptableLabels(userImageData?.label, 80) && 
-									acceptableText(userImageData?.text, 59) && 
-									userImageData?.face?.FaceDetails.length > 0;
-					
+					// Exactly one face is required -- ">0" alone let a photo/PDF containing two
+					// different ID cards (two faces) through as "valid", since Rekognition still
+					// finds acceptable ID-like labels/text either way.
+					const faceCount = userImageData?.face?.FaceDetails?.length || 0;
+					const hasMultipleFaces = faceCount > 1;
+					const isValidID = acceptableLabels(userImageData?.label, 80) &&
+									acceptableText(userImageData?.text, 59) &&
+									faceCount === 1;
+
 					if (isValidID) {
 						currentState = {
 							...currentState,
@@ -359,7 +364,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						};
 						disabledBtn = false;
 						if(window.mereos.globalCallback) {
-							window.mereos.globalCallback({ 
+							window.mereos.globalCallback({
 								type:'success',
 								message: 'id_successfully_verified',
 								code:50008
@@ -368,24 +373,24 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
 					} else {
 						failedAttempts++;
-						
+
 						currentState = {
 							...currentState,
 							captureMode: 'retake',
 							msg: {
 								type: 'unsuccessful',
-								text: 'id_not_verified'
+								text: hasMultipleFaces ? 'multiple_face_detected' : 'id_not_verified'
 							}
 						};
 						disabledBtn = false;
 						if(window.mereos.globalCallback) {
-							window.mereos.globalCallback({ 
+							window.mereos.globalCallback({
 								type:'error',
-								message: 'id_not_verified',
-								code:40031
+								message: hasMultipleFaces ? 'multiple_face_detected' : 'id_not_verified',
+								code: hasMultipleFaces ? 40067 : 40031
 							});
 						}
-						registerEvent({eventType: 'error', notify: false, eventName: 'id_not_verified'});
+						registerEvent({eventType: 'error', notify: false, eventName: hasMultipleFaces ? 'multiple_face_detected' : 'id_not_verified'});
 					}
 				} else if (isFourthTry) {
 					currentState = {

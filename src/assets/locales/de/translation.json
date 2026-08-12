@@ -708,6 +708,7 @@
 	"recording": "Aufzeichnung",
 	"recording_pause_failed": "Aufnahme konnte nicht pausiert werden. Bitte versuchen Sie es erneut.",
 	"recording_paused": "Aufnahme pausiert",
+	"recording_paused_modal_message": "Ihre Aufnahme ist pausiert. Klicken Sie auf „Aufnahme fortsetzen“, um mit Ihrer Prüfung fortzufahren.",
 	"recording_resume_failed": "Aufnahme konnte nicht fortgesetzt werden. Bitte versuchen Sie es erneut.",
 	"recording_started_successfully": "Aufzeichnung erfolgreich gestartet",
 	"recording_stopped_successfully": "Aufnahme erfolgreich gestoppt",

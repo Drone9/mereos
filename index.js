@@ -412,6 +412,7 @@ async function start_session(callback) {
 					}
 				} catch (err) {
 					window.mereos.recordingStart = false;
+					showToast('error', 'something_went_wrong_please_contact_support');
 					sentryExceptioMessage(err, {
 						type: 'error',
 						message: 'Error in mobile proctoring setup',
@@ -452,6 +453,7 @@ async function start_session(callback) {
 						// No token in API response and none stored — cannot connect.
 					} else if (!previousSessionData.twilioToken) {
 						window.mereos.recordingStart = false;
+						showToast('error', 'something_went_wrong_please_contact_support');
 						invokeCallback({
 							type: 'error',
 							message: 'error_in_web_room_creation',
@@ -462,6 +464,7 @@ async function start_session(callback) {
 					}
 				} catch (err) {
 					window.mereos.recordingStart = false;
+					showToast('error', 'something_went_wrong_please_contact_support');
 					sentryExceptioMessage(err, {
 						type: 'error',
 						message: 'Error in web room creation',

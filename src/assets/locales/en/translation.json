@@ -709,6 +709,7 @@
 	"recording": "Recording",
 	"recording_pause_failed": "Failed to pause recording. Please try again.",
 	"recording_paused": "Recording Paused",
+	"recording_paused_modal_message": "Your recording is paused. Click Resume Recording to continue your assessment.",
 	"recording_resume_failed": "Failed to resume recording. Please try again.",
 	"recording_started_successfully": "Recording is started successfully",
 	"recording_stopped_successfully": "Recording is stopped successfully",

@@ -705,6 +705,7 @@
 	"recording": "Cofnodi",
 	"recording_pause_failed": "Methwyd oedi'r recordiad. Rhowch gynnig arall arni.",
 	"recording_paused": "Recordiad wedi'i Oedi",
+	"recording_paused_modal_message": "Mae'ch recordiad wedi'i oedi. Cliciwch \"Ailddechrau'r Recordiad\" i barhau â'ch asesiad.",
 	"recording_resume_failed": "Methwyd ailddechrau'r recordiad. Rhowch gynnig arall arni.",
 	"recording_started_successfully": "Cofnodi wedi dechrau’n llwyddiannus",
 	"recording_stopped_successfully": "Mae recordio wedi stopio’n llwyddiannus",

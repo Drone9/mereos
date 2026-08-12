@@ -708,6 +708,7 @@
 	"recording": "Registrazione",
 	"recording_pause_failed": "Impossibile mettere in pausa la registrazione. Riprova.",
 	"recording_paused": "Registrazione in pausa",
+	"recording_paused_modal_message": "La registrazione è in pausa. Fai clic su \"Riprendi la registrazione\" per continuare la tua valutazione.",
 	"recording_resume_failed": "Impossibile riprendere la registrazione. Riprova.",
 	"recording_started_successfully": "Registrazione avviata con successo",
 	"recording_stopped_successfully": "Registrazione interrotta con successo",

@@ -191,9 +191,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 			checkButton.style.cursor    = shouldDisable ? 'not-allowed' : 'pointer';
 		};
 
-		/**
-		 * Stops the lighting sampling interval and resets status to idle.
-		 */
 		const stopLightingCheck = () => {
 			if (lightingIntervalId) {
 				clearInterval(lightingIntervalId);
@@ -203,11 +200,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 			updateLightingUI();
 		};
 
-		/**
-		 * Starts a 1 500 ms interval that reads a 64×48 thumbnail of the live
-		 * video, computes luminance-weighted average brightness, and classifies
-		 * the result as 'dark', 'bright', or 'ok' — identical to the React impl.
-		 */
 		const startLightingCheck = () => {
 			stopLightingCheck();
 
@@ -385,15 +377,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 					try {
 						window.mereos.net = await cocoSsd.load();
 					} catch (cocoError) {
-						/*
-						 * Previously swallowed and the check kept going, so it could report
-						 * "media_check_success" and let the candidate continue into the exam with
-						 * object/multiple-people/person-missing detection silently never running,
-						 * since window.mereos.net stayed null. Since the candidate's secure
-						 * profile requires one of those AI checks, a model load failure here means
-						 * the exam can't be properly proctored -- surface it as a real failure
-						 * instead of a background warning.
-						 */
 						window.mereos.net = null;
 						stopTimer();
 						isCheckingMedia = false;
@@ -800,14 +783,7 @@ export const PrevalidationInstructions = async (tabContent) => {
             
 			updateUI();
 		};
-
-		/*
-		 * lightingIntervalId/timerInterval are closure-local, so nothing outside this function
-		 * could ever clear them. If the precheck UI gets torn down (stop_prechecks/init resetting
-		 * window.mereos.shadowRoot to null) while either interval is still ticking, the next tick
-		 * dereferences a null shadowRoot and throws. Register a cleanup hook, mirroring
-		 * cleanupLanguageDropdown, so destroyPrechecksUi can stop both before nulling shadowRoot.
-		 */
+		
 		window.mereos.cleanupPrevalidationTimers = () => {
 			if (timerInterval) {
 				clearInterval(timerInterval);

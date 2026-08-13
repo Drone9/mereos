@@ -353,18 +353,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						return box.Width * box.Height;
 					};
 
-					/*
-					 * Some ID cards legitimately show two photos of the same person (e.g. a
-					 * small "ghost"/hologram photo alongside the main one), which Rekognition
-					 * reports as two separate faces -- the same face count as a scan/PDF
-					 * containing two different people's ID cards. DetectFaces doesn't compare
-					 * faces for identity, so face count alone can't tell these apart;
-					 * bounding-box size is the best signal available without that: a genuine
-					 * secondary photo is typically much smaller than the primary one, while two
-					 * separate cards' photos tend to be similarly sized. When bounding-box data
-					 * isn't present, don't guess -- allow it rather than risk rejecting a
-					 * legitimate card.
-					 */
 					const twoFacesLookLikeSameCard = () => {
 						if (faceCount !== 2) return false;
 						const areas = faceDetails.map(getFaceArea);

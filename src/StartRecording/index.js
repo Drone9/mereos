@@ -61,11 +61,6 @@ const resolvePermissionType = (trackType, kind) => {
 	return 'camera';
 };
 
-/*
- * Draws either the live camera frame or a static "Recording Paused" placeholder into the
- * publish canvas, so the Twilio recording stays continuous (no track republish/gap) while
- * clearly showing the paused interval instead of silently keeping the camera live.
- */
 const drawPausedFrame = (ctx, videoEl, width, height, isPaused, label) => {
 	if (isPaused) {
 		const iconSize = Math.round(height * 0.14);
@@ -123,10 +118,6 @@ const acquireIndependentMediaStream = async (kind) => {
 	}
 };
 
-/*
- * Notifies the LMS callback stored by start_session. Used at every success/error exit
- * in this module so the integrator always receives a final result.
- */
 const invokeStartSessionCallback = (payload) => {
 	if (payload?.type === 'success' && payload?.message === 'recording_started_successfully') {
 		window.mereos.sessionActive = true;
@@ -451,15 +442,6 @@ const cleanupCameraTracks = async (room, trackKind) => {
 	}
 };
 
-
-/*
- * The camera badge (.user-videos-remote, z-index 9999999) renders well above the permission
- * modal overlay (z-index 10000), so it would otherwise float on top of the modal for as long as
- * permission is lost -- confusing at best, and showing a frozen/stale frame from before access
- * was lost at worst. Hidden for the duration of the modal, restored once reconnect actually
- * succeeds (not just when the modal closes -- showPermissionModal/hidePermissionModal also run on
- * the not-yet-successful path at the top of reconnectCamera()).
- */
 const setCameraBadgeVisibility = (visible) => {
 	const badge = window.mereos?.shadowRoot?.getElementById('webcam-container');
 	if (badge) {
@@ -601,21 +583,12 @@ const addModalEventListeners = () => {
 
 	if (reconnectBtn) {
 		reconnectBtn.addEventListener('click', () => {
-			// Belt-and-suspenders alongside reconnectCamera()'s own isReconnectingDevice guard --
-			// stops a second click from doing anything while a reconnect attempt is in flight.
 			reconnectBtn.disabled = true;
 			reconnectBtn.textContent = i18next.t('reconnecting_signaling_connection');
 			reconnectCamera();
 		});
 	}
 
-	/*
-	 * Deliberately no click-outside-to-dismiss here (unlike showPauseModal, this used to have
-	 * one) -- camera/mic access is actually broken while this is up, so letting the candidate
-	 * dismiss it by clicking the backdrop let them continue the assessment completely
-	 * unrecorded, with no verification anything was ever reconnected. Reconnect succeeding is
-	 * the only way out.
-	 */
 };
 
 const refreshSessionAudioPins = () => {
@@ -970,13 +943,6 @@ const publishCanvasVideoTrack = async (room, preAcquiredStream = null) => {
 	videoEl.srcObject = videoStream;
 	videoEl.style.display = 'none';
 	document.body.appendChild(videoEl);
-	/*
-	 * The autoplay attribute alone isn't reliably enough to start playback for a srcObject-fed
-	 * element on every browser/privacy mode (autoplay policies can be stricter in incognito) --
-	 * when it silently doesn't kick in, this video element never advances past its first (black)
-	 * frame, and since the canvas below draws from it every tick, both the published recording
-	 * and the local badge preview end up permanently black instead of just missing one frame.
-	 */
 	videoEl.play().catch((error) => logger.error('publishCanvasVideoTrack: video.play() failed', error));
 
 	const settings = rawVideoTrack.getSettings?.() || {};
@@ -1366,7 +1332,6 @@ const reconnectCamera = async () => {
 		let preAcquiredVideoStream = null;
 		let preAcquiredAudioStream = null;
 
-		// Request media immediately while the button-click user gesture is still active.
 		if (needsVideo) {
 			preAcquiredVideoStream = await acquireIndependentMediaStream('video');
 		}
@@ -1374,16 +1339,6 @@ const reconnectCamera = async () => {
 			preAcquiredAudioStream = await acquireIndependentMediaStream('audio');
 		}
 
-		/*
-		 * Previously hidden here, before reconnection was actually confirmed -- meaning the
-		 * "you must reconnect to continue" gate disappeared the instant the button was clicked,
-		 * regardless of whether anything downstream (room, publishTrack, etc.) actually
-		 * succeeded. The candidate could end up continuing the assessment completely unrecorded
-		 * with no gate blocking them, for however long this async work took (or indefinitely, on
-		 * a failure path that didn't correctly re-show it). The modal now stays up (with the
-		 * button already disabled and showing "Reconnecting...") until success is confirmed
-		 * further down, where hidePermissionModal() is called explicitly.
-		 */
 		const room = await ensureActiveRoom(session);
 		if (!room) {
 			stopMediaStreamTracks(preAcquiredVideoStream?.getVideoTracks() || []);
@@ -1408,11 +1363,6 @@ const reconnectCamera = async () => {
 			await cleanupCameraTracks(room, 'video');
 
 			const pauseAndResumeEnabled = findConfigs(['pause_and_resume'], secureFeatures?.entities).length > 0;
-			/*
-			 * publishIndependentVideoTrack alone would leave window.mereos.pauseCanvasState null
-			 * after this reconnect (handleDeviceLost tore it down when the permission was lost),
-			 * silently breaking the pause/resume button's guard checks from here on.
-			 */
 			const { publication, localVideoTrack, videoStream, rawVideoTrack, canvasStream } = pauseAndResumeEnabled
 				? await publishCanvasVideoTrack(room, preAcquiredVideoStream)
 				: await publishIndependentVideoTrack(room, preAcquiredVideoStream);
@@ -1462,15 +1412,6 @@ const reconnectCamera = async () => {
 			});
 		}
 
-		/*
-		 * Re-check actual browser permission state for both device types here, instead of
-		 * trusting window.mereos.lostPermissionTypes alone. When camera and microphone are lost
-		 * together (e.g. resetting all site permissions at once) and reconnected one at a time,
-		 * that bookkeeping needs every handleDeviceLost/reconnectCamera call to stay perfectly in
-		 * step with each other across two independent tracks -- if it drifts for any reason, the
-		 * badge gets restored (or the modal dismissed) while a permission is still actually
-		 * denied. Querying the ground truth removes that whole class of desync.
-		 */
 		const stillDeniedTypes = [];
 		try {
 			const camStatus = await navigator.permissions.query({ name: 'camera' });
@@ -1608,10 +1549,6 @@ const startRecordingInternal = async () => {
 		return;
 	}
 
-	/*
-	 * Outer try/catch: lockdown, fullscreen, and addSectionSessionRecord were previously
-	 * outside the inner Twilio try — failures there never invoked the LMS callback.
-	 */
 	try {
 		const fullscreenRequired = secureFeatures?.entities?.some(entity => entity.key === 'force_full_screen');
 
@@ -1665,10 +1602,6 @@ const startRecordingInternal = async () => {
 			window.mereos.globalStream = null;
 			window.mereos.audioStream = null;
 
-			/*
-			 * Re-read session from localStorage so connect uses the token set by start_session
-			 * (new fetch or session_resume reuse). `session` above is kept for recording history arrays.
-			 */
 			const persistedSession = convertDataIntoParse('session');
 			if (!persistedSession?.twilioToken) {
 				window.mereos.recordingStart = false;
@@ -2030,16 +1963,6 @@ const startRecordingInternal = async () => {
 	}
 };
 
-/*
- * Wraps startRecordingInternal with reentrancy protection. Nothing here previously stopped two
- * overlapping calls (e.g. the host's own start_session(), triggered by the precheck_completed
- * callback that fires unconditionally when a precheck screen finishes, racing against a direct
- * startRecording() call made from within that same screen -- as happens when reshare-after-reload
- * needs to retry the room connect itself) from both trying to connect to Twilio and publish
- * tracks at the same time, corrupting window.mereos.roomInstance/track state with no visible
- * error. A concurrent call now just awaits the same in-flight attempt instead of starting a
- * second, competing one.
- */
 let recordingStartInFlight = null;
 
 export const startRecording = async () => {
@@ -2054,12 +1977,6 @@ export const startRecording = async () => {
 	return recordingStartInFlight;
 };
 
-/*
- * For callers that touch window.mereos.roomInstance directly (e.g. re-publishing just the
- * screen track after a mid-session reshare) instead of going through startRecording() -- lets
- * them wait out any startRecording() already in flight before reading roomInstance, so they
- * don't race a concurrent reconnect that's about to replace it.
- */
 export const waitForActiveRecordingStart = async () => {
 	if (recordingStartInFlight) {
 		await recordingStartInFlight.catch(() => {});
@@ -2223,11 +2140,6 @@ const setupWebcam = async (mediaStream) => {
 			const cameraViewEnabled = findConfigs(['camera_view'], secureFeatures?.entities)?.length > 0;
 			const pauseAndResumeEnabled = findConfigs(['pause_and_resume'], secureFeatures?.entities)?.length > 0;
 
-			/*
-			 * camera_view off means the candidate shouldn't see their own camera at all -- but
-			 * pause_and_resume still needs a way to trigger pause/resume, so give it its own
-			 * standalone button (top-left, outside the camera badge) instead of the in-badge one.
-			 */
 			if (!cameraViewEnabled && pauseAndResumeEnabled) {
 				setupStandalonePauseResumeButton();
 			} else {

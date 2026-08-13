@@ -874,7 +874,6 @@ export const startSession = async () => {
 						code:50018
 					});
 				}
-				registerEvent({ eventType: 'success', notify: false, eventName: 'session_started' });
 			}
 		}
 		updatePersistData('session',

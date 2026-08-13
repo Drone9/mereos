@@ -191,9 +191,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 			checkButton.style.cursor    = shouldDisable ? 'not-allowed' : 'pointer';
 		};
 
-		/**
-		 * Stops the lighting sampling interval and resets status to idle.
-		 */
 		const stopLightingCheck = () => {
 			if (lightingIntervalId) {
 				clearInterval(lightingIntervalId);
@@ -203,11 +200,6 @@ export const PrevalidationInstructions = async (tabContent) => {
 			updateLightingUI();
 		};
 
-		/**
-		 * Starts a 1 500 ms interval that reads a 64×48 thumbnail of the live
-		 * video, computes luminance-weighted average brightness, and classifies
-		 * the result as 'dark', 'bright', or 'ok' — identical to the React impl.
-		 */
 		const startLightingCheck = () => {
 			stopLightingCheck();
 
@@ -385,8 +377,29 @@ export const PrevalidationInstructions = async (tabContent) => {
 					try {
 						window.mereos.net = await cocoSsd.load();
 					} catch (cocoError) {
-						console.warn('COCO-SSD model failed to load, but continuing with media check:', cocoError);
 						window.mereos.net = null;
+						stopTimer();
+						isCheckingMedia = false;
+
+						sentryExceptioMessage(cocoError, { type: 'error', message: 'COCO-SSD model failed to load' });
+						registerEvent({ notify: false, eventName: 'ai_model_failed_to_load' });
+						if (window.mereos.globalCallback) {
+							window.mereos.globalCallback({
+								type: 'error',
+								message: 'ai_model_failed_to_load',
+								code: 40068
+							});
+						}
+
+						if (messageElement) {
+							messageElement.textContent = i18next.t('ai_model_failed_to_load');
+							messageElement.style.color = '#ff4444';
+						}
+						if (checkButton) checkButton.style.display = 'block';
+						if (cameraDropdown)    cameraDropdown.disabled    = false;
+						if (microphoneDropdown) microphoneDropdown.disabled = false;
+
+						return;
 					}
 				}
 
@@ -770,14 +783,7 @@ export const PrevalidationInstructions = async (tabContent) => {
             
 			updateUI();
 		};
-
-		/*
-		 * lightingIntervalId/timerInterval are closure-local, so nothing outside this function
-		 * could ever clear them. If the precheck UI gets torn down (stop_prechecks/init resetting
-		 * window.mereos.shadowRoot to null) while either interval is still ticking, the next tick
-		 * dereferences a null shadowRoot and throws. Register a cleanup hook, mirroring
-		 * cleanupLanguageDropdown, so destroyPrechecksUi can stop both before nulling shadowRoot.
-		 */
+		
 		window.mereos.cleanupPrevalidationTimers = () => {
 			if (timerInterval) {
 				clearInterval(timerInterval);

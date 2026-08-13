@@ -602,18 +602,20 @@ const addModalEventListeners = () => {
 	if (reconnectBtn) {
 		reconnectBtn.addEventListener('click', () => {
 			// Belt-and-suspenders alongside reconnectCamera()'s own isReconnectingDevice guard --
-			// this stops a second click from even registering during the brief window before
-			// reconnectCamera() removes the modal (and this button with it).
+			// stops a second click from doing anything while a reconnect attempt is in flight.
 			reconnectBtn.disabled = true;
+			reconnectBtn.textContent = i18next.t('reconnecting_signaling_connection');
 			reconnectCamera();
 		});
 	}
 
-	modal.addEventListener('click', function (e) {
-		if (e.target === modal) {
-			hidePermissionModal();
-		}
-	});
+	/*
+	 * Deliberately no click-outside-to-dismiss here (unlike showPauseModal, this used to have
+	 * one) -- camera/mic access is actually broken while this is up, so letting the candidate
+	 * dismiss it by clicking the backdrop let them continue the assessment completely
+	 * unrecorded, with no verification anything was ever reconnected. Reconnect succeeding is
+	 * the only way out.
+	 */
 };
 
 const refreshSessionAudioPins = () => {
@@ -1372,8 +1374,16 @@ const reconnectCamera = async () => {
 			preAcquiredAudioStream = await acquireIndependentMediaStream('audio');
 		}
 
-		hidePermissionModal();
-
+		/*
+		 * Previously hidden here, before reconnection was actually confirmed -- meaning the
+		 * "you must reconnect to continue" gate disappeared the instant the button was clicked,
+		 * regardless of whether anything downstream (room, publishTrack, etc.) actually
+		 * succeeded. The candidate could end up continuing the assessment completely unrecorded
+		 * with no gate blocking them, for however long this async work took (or indefinitely, on
+		 * a failure path that didn't correctly re-show it). The modal now stays up (with the
+		 * button already disabled and showing "Reconnecting...") until success is confirmed
+		 * further down, where hidePermissionModal() is called explicitly.
+		 */
 		const room = await ensureActiveRoom(session);
 		if (!room) {
 			stopMediaStreamTracks(preAcquiredVideoStream?.getVideoTracks() || []);
@@ -1452,17 +1462,43 @@ const reconnectCamera = async () => {
 			});
 		}
 
-		window.mereos.lostPermissionTypes?.delete(reconnectType);
+		/*
+		 * Re-check actual browser permission state for both device types here, instead of
+		 * trusting window.mereos.lostPermissionTypes alone. When camera and microphone are lost
+		 * together (e.g. resetting all site permissions at once) and reconnected one at a time,
+		 * that bookkeeping needs every handleDeviceLost/reconnectCamera call to stay perfectly in
+		 * step with each other across two independent tracks -- if it drifts for any reason, the
+		 * badge gets restored (or the modal dismissed) while a permission is still actually
+		 * denied. Querying the ground truth removes that whole class of desync.
+		 */
+		const stillDeniedTypes = [];
+		try {
+			const camStatus = await navigator.permissions.query({ name: 'camera' });
+			if (camStatus.state === 'denied') stillDeniedTypes.push('camera');
+		} catch { /* Permissions API camera query unsupported -- fall back to bookkeeping below */ }
+		try {
+			const micStatus = await navigator.permissions.query({ name: 'microphone' });
+			if (micStatus.state === 'denied') stillDeniedTypes.push('microphone');
+		} catch { /* Permissions API microphone query unsupported -- fall back to bookkeeping below */ }
 
-		const remainingLost = [...(window.mereos.lostPermissionTypes || [])];
-		if (remainingLost.length > 0) {
+		window.mereos.lostPermissionTypes = new Set(stillDeniedTypes.length
+			? stillDeniedTypes
+			: [...(window.mereos.lostPermissionTypes || [])].filter((type) => type !== reconnectType));
+
+		if (window.mereos.lostPermissionTypes.size > 0) {
 			// Still missing another permission (e.g. camera fixed, mic still lost) -- keep the
-			// badge hidden, the modal's about to reopen for that one.
-			showPermissionModal(remainingLost[0]);
-		} else if (!window.mereos.recordingPaused) {
-			// Don't reveal the badge if the candidate was already paused when permission was
-			// lost -- pausing hides it too, and it should stay hidden until they hit Resume.
-			setCameraBadgeVisibility(true);
+			// modal up (refreshed for the remaining type) and the badge hidden.
+			showPermissionModal([...window.mereos.lostPermissionTypes][0]);
+		} else {
+			// Confirmed: nothing is still denied. Only now is it safe to actually dismiss the
+			// modal -- see the comment above ensureActiveRoom for why this moved out of the top
+			// of the function.
+			hidePermissionModal();
+			if (!window.mereos.recordingPaused) {
+				// Don't reveal the badge if the candidate was already paused when permission was
+				// lost -- pausing hides it too, and it should stay hidden until they hit Resume.
+				setCameraBadgeVisibility(true);
+			}
 		}
 
 		if (window.mereos.startRecordingCallBack) {

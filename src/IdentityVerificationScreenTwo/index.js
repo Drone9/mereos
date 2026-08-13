@@ -344,14 +344,40 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				const isFourthTry = failedAttempts >= 3;
 				
 				if (userImageData && !isFourthTry) {
-					// Exactly one face is required -- ">0" alone let a photo/PDF containing two
-					// different ID cards (two faces) through as "valid", since Rekognition still
-					// finds acceptable ID-like labels/text either way.
-					const faceCount = userImageData?.face?.FaceDetails?.length || 0;
-					const hasMultipleFaces = faceCount > 1;
+					const faceDetails = userImageData?.face?.FaceDetails || [];
+					const faceCount = faceDetails.length;
+
+					const getFaceArea = (face) => {
+						const box = face?.BoundingBox;
+						if (!box || typeof box.Width !== 'number' || typeof box.Height !== 'number') return null;
+						return box.Width * box.Height;
+					};
+
+					/*
+					 * Some ID cards legitimately show two photos of the same person (e.g. a
+					 * small "ghost"/hologram photo alongside the main one), which Rekognition
+					 * reports as two separate faces -- the same face count as a scan/PDF
+					 * containing two different people's ID cards. DetectFaces doesn't compare
+					 * faces for identity, so face count alone can't tell these apart;
+					 * bounding-box size is the best signal available without that: a genuine
+					 * secondary photo is typically much smaller than the primary one, while two
+					 * separate cards' photos tend to be similarly sized. When bounding-box data
+					 * isn't present, don't guess -- allow it rather than risk rejecting a
+					 * legitimate card.
+					 */
+					const twoFacesLookLikeSameCard = () => {
+						if (faceCount !== 2) return false;
+						const areas = faceDetails.map(getFaceArea);
+						if (areas.some((area) => area === null)) return true;
+						const smaller = Math.min(areas[0], areas[1]);
+						const larger = Math.max(areas[0], areas[1]);
+						return larger > 0 && smaller / larger <= 0.5;
+					};
+
+					const hasTooManyFaces = faceCount > 2 || (faceCount === 2 && !twoFacesLookLikeSameCard());
 					const isValidID = acceptableLabels(userImageData?.label, 80) &&
 									acceptableText(userImageData?.text, 59) &&
-									faceCount === 1;
+									faceCount >= 1 && !hasTooManyFaces;
 
 					if (isValidID) {
 						currentState = {
@@ -379,18 +405,18 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 							captureMode: 'retake',
 							msg: {
 								type: 'unsuccessful',
-								text: hasMultipleFaces ? 'multiple_face_detected' : 'id_not_verified'
+								text: hasTooManyFaces ? 'multiple_id_card_detected' : 'id_not_verified'
 							}
 						};
 						disabledBtn = false;
 						if(window.mereos.globalCallback) {
 							window.mereos.globalCallback({
 								type:'error',
-								message: hasMultipleFaces ? 'multiple_face_detected' : 'id_not_verified',
-								code: hasMultipleFaces ? 40067 : 40031
+								message: hasTooManyFaces ? 'multiple_id_card_detected' : 'id_not_verified',
+								code: hasTooManyFaces ? 40067 : 40031
 							});
 						}
-						registerEvent({eventType: 'error', notify: false, eventName: hasMultipleFaces ? 'multiple_face_detected' : 'id_not_verified'});
+						registerEvent({eventType: 'error', notify: false, eventName: hasTooManyFaces ? 'multiple_id_card_detected' : 'id_not_verified'});
 					}
 				} else if (isFourthTry) {
 					currentState = {

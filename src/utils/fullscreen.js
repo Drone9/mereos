@@ -8,6 +8,14 @@ let lastResizeTime = 0;
 const RESIZE_COOLDOWN = 500; // ms between resize checks
 let resizeCheckPending = false;
 let resizeListenerActive = false;
+/*
+ * Set for a couple seconds after an Escape press. The auto-dismiss interval below checks this
+ * before removing the modal, as a guard against isEffectivelyFullscreen()'s dimension heuristic
+ * reading a false "still fullscreen" during the brief window the browser chrome is transitioning
+ * back in right after an Escape-triggered exit -- the modal must never disappear as a side effect
+ * of Escape, under any circumstance.
+ */
+let escapeGuardUntil = 0;
 
 const isEffectivelyFullscreen = () => {
 	const apiFullscreen = !!(document.fullscreenElement ||
@@ -56,7 +64,16 @@ export const initializeFullscreenMonitor = () => {
 		}
 		
 		if (event.key === 'Escape' && window.mereos.forceFullscreenModal?.isOpen) {
+			/*
+			 * stopPropagation/stopImmediatePropagation on top of preventDefault -- without them
+			 * this keydown still bubbles up to document, where a host page's own "Escape closes
+			 * overlays" handler (a common enough pattern) could act on this modal independently,
+			 * regardless of anything mereos does here.
+			 */
 			event.preventDefault();
+			event.stopPropagation();
+			event.stopImmediatePropagation();
+			escapeGuardUntil = Date.now() + 2000;
 			forceFullScreen().catch(error => {
 				logger.error('Failed to force fullscreen on Escape:', error);
 			});
@@ -74,7 +91,7 @@ export const initializeFullscreenMonitor = () => {
 
 		if (isCurrentlyFullscreen) {
 			window.mereos.lastFullscreenState = true;
-			if (window.mereos.forceFullscreenModal?.isOpen) {
+			if (window.mereos.forceFullscreenModal?.isOpen && Date.now() >= escapeGuardUntil) {
 				window.mereos.forceFullscreenModal.remove();
 			}
 			return;
@@ -251,7 +268,20 @@ export const showForceFullscreenModal = (options = {}) => {
 	modalContent.appendChild(buttonContainer);
 	modalContainer.appendChild(modalContent);
 
-	document.body.appendChild(modalContainer);
+	/*
+	 * Previously always appended to document.body -- unlike the permission modal, which already
+	 * prefers the closed shadow root. Living in the light DOM meant the host page's own JS had
+	 * full, unobstructed access to this modal: any generic "Escape closes overlays" handler the
+	 * host happens to have could match and remove a document.body-level
+	 * .force-fullscreen-modal-overlay div without mereos ever being involved. All of this modal's
+	 * styling is inline (style.cssText), so there's no external stylesheet dependency blocking the
+	 * move into the shadow root.
+	 */
+	try {
+		(window.mereos?.shadowRoot || document.body).appendChild(modalContainer);
+	} catch (error) {
+		document.body.appendChild(modalContainer);
+	}
 
 	const updateModalText = () => {
 		if (title) {

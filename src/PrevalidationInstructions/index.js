@@ -385,8 +385,38 @@ export const PrevalidationInstructions = async (tabContent) => {
 					try {
 						window.mereos.net = await cocoSsd.load();
 					} catch (cocoError) {
-						console.warn('COCO-SSD model failed to load, but continuing with media check:', cocoError);
+						/*
+						 * Previously swallowed and the check kept going, so it could report
+						 * "media_check_success" and let the candidate continue into the exam with
+						 * object/multiple-people/person-missing detection silently never running,
+						 * since window.mereos.net stayed null. Since the candidate's secure
+						 * profile requires one of those AI checks, a model load failure here means
+						 * the exam can't be properly proctored -- surface it as a real failure
+						 * instead of a background warning.
+						 */
 						window.mereos.net = null;
+						stopTimer();
+						isCheckingMedia = false;
+
+						sentryExceptioMessage(cocoError, { type: 'error', message: 'COCO-SSD model failed to load' });
+						registerEvent({ notify: false, eventName: 'ai_model_failed_to_load' });
+						if (window.mereos.globalCallback) {
+							window.mereos.globalCallback({
+								type: 'error',
+								message: 'ai_model_failed_to_load',
+								code: 40068
+							});
+						}
+
+						if (messageElement) {
+							messageElement.textContent = i18next.t('ai_model_failed_to_load');
+							messageElement.style.color = '#ff4444';
+						}
+						if (checkButton) checkButton.style.display = 'block';
+						if (cameraDropdown)    cameraDropdown.disabled    = false;
+						if (microphoneDropdown) microphoneDropdown.disabled = false;
+
+						return;
 					}
 				}
 

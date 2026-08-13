@@ -9,6 +9,8 @@ const RESIZE_COOLDOWN = 500; // ms between resize checks
 let resizeCheckPending = false;
 let resizeListenerActive = false;
 
+let escapeGuardUntil = 0;
+
 const isEffectivelyFullscreen = () => {
 	const apiFullscreen = !!(document.fullscreenElement ||
 		document.webkitFullscreenElement ||
@@ -57,6 +59,9 @@ export const initializeFullscreenMonitor = () => {
 		
 		if (event.key === 'Escape' && window.mereos.forceFullscreenModal?.isOpen) {
 			event.preventDefault();
+			event.stopPropagation();
+			event.stopImmediatePropagation();
+			escapeGuardUntil = Date.now() + 2000;
 			forceFullScreen().catch(error => {
 				logger.error('Failed to force fullscreen on Escape:', error);
 			});
@@ -74,7 +79,7 @@ export const initializeFullscreenMonitor = () => {
 
 		if (isCurrentlyFullscreen) {
 			window.mereos.lastFullscreenState = true;
-			if (window.mereos.forceFullscreenModal?.isOpen) {
+			if (window.mereos.forceFullscreenModal?.isOpen && Date.now() >= escapeGuardUntil) {
 				window.mereos.forceFullscreenModal.remove();
 			}
 			return;
@@ -251,7 +256,11 @@ export const showForceFullscreenModal = (options = {}) => {
 	modalContent.appendChild(buttonContainer);
 	modalContainer.appendChild(modalContent);
 
-	document.body.appendChild(modalContainer);
+	try {
+		(window.mereos?.shadowRoot || document.body).appendChild(modalContainer);
+	} catch (error) {
+		document.body.appendChild(modalContainer);
+	}
 
 	const updateModalText = () => {
 		if (title) {
@@ -449,12 +458,6 @@ export const initializeForceFullscreen = () => {
 	
 	const cleanupMonitor = initializeFullscreenMonitor();
 
-	/*
-	 * If something already put the browser into fullscreen before this ran -- the host page
-	 * prompting for fullscreen at the end of prechecks before calling start_session, or the
-	 * candidate having pressed F11 -- showing "Fullscreen Required" again here is a redundant
-	 * second modal for a requirement that's already satisfied.
-	 */
 	const showInitialModal = () => {
 		if (isEffectivelyFullscreen()) return;
 		showForceFullscreenModal({ isInitialWarning: true });
@@ -492,12 +495,6 @@ export const initializeForceFullscreen = () => {
 	};
 };
 
-/*
- * Only undoes fullscreen entered through the Fullscreen API (the modal's own button, or the host
- * page calling requestFullscreen()) -- document.exitFullscreen() has no effect on F11's native
- * browser-window fullscreen, since that was never routed through the API to begin with. There is
- * no JS-callable way to force a browser out of F11; only the candidate pressing F11 again can.
- */
 const exitApiFullscreenIfActive = () => {
 	const el = document.fullscreenElement || document.webkitFullscreenElement ||
 		document.mozFullScreenElement || document.msFullscreenElement;

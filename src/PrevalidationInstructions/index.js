@@ -8,11 +8,6 @@ import { ASSET_URL } from '../utils/constant';
 
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
-		/*
-		 * Revisiting this tab re-runs this whole function with fresh closures/intervals, but a
-		 * prior visit's lightingIntervalId/timerInterval are only reachable through this hook --
-		 * overwriting it below without stopping them first would leak one setInterval per revisit.
-		 */
 		if (window.mereos?.cleanupPrevalidationTimers) {
 			window.mereos.cleanupPrevalidationTimers();
 			window.mereos.cleanupPrevalidationTimers = null;
@@ -398,6 +393,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 						if (checkButton) checkButton.style.display = 'block';
 						if (cameraDropdown)    cameraDropdown.disabled    = false;
 						if (microphoneDropdown) microphoneDropdown.disabled = false;
+						const continueBtnOnCocoFail = window.mereos.shadowRoot.getElementById('continue-btn');
+						if (continueBtnOnCocoFail) continueBtnOnCocoFail.style.display = 'none';
 
 						return;
 					}
@@ -424,6 +421,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 					}
 
 					if (checkButton) checkButton.style.display = 'block';
+					const continueBtnOnError = window.mereos.shadowRoot.getElementById('continue-btn');
+					if (continueBtnOnError) continueBtnOnError.style.display = 'none';
 				} else if (result.message === 'media_check_success') {
 					registerEvent({ notify: false, eventName: result.message });
 					registerEvent({ notify: false, eventName: 'candidate_selected_microphone_camera' });
@@ -470,6 +469,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 					checkButton.style.display  = 'block';
 					checkButton.textContent    = i18next.t('check_camera_mic');
 				}
+				const continueBtnOnException = window.mereos.shadowRoot.getElementById('continue-btn');
+				if (continueBtnOnException) continueBtnOnException.style.display = 'none';
 				sentryExceptioMessage(error, { type: 'error', message: 'Media check exception' });
 			}
 		};
@@ -801,5 +802,5 @@ export const PrevalidationInstructions = async (tabContent) => {
 	} catch (error) {
 		sentryExceptioMessage(error, { type: 'error', message: 'Failed to initialize Language' });
 		logger.error('Failed to initialize; error: ' + error);
-	}
+	} 
 };

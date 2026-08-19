@@ -9,28 +9,37 @@ const RESIZE_COOLDOWN = 500; // ms between resize checks
 let resizeCheckPending = false;
 let resizeListenerActive = false;
 
-export const initializeFullscreenMonitor = () => {
-	if (!document.fullscreenEnabled) {
-		return () => {};
-	}
+let escapeGuardUntil = 0;
 
+const isEffectivelyFullscreen = () => {
+	const apiFullscreen = !!(document.fullscreenElement ||
+		document.webkitFullscreenElement ||
+		document.mozFullScreenElement ||
+		document.msFullscreenElement);
+	if (apiFullscreen) return true;
+
+	const screenWidth = window.screen?.width || 0;
+	const screenHeight = window.screen?.height || 0;
+	if (!screenWidth || !screenHeight) return false;
+
+	const widthMatches = Math.abs(window.innerWidth - screenWidth) <= 2;
+	const heightMatches = Math.abs(window.innerHeight - screenHeight) <= 2;
+	return widthMatches && heightMatches;
+};
+
+export const initializeFullscreenMonitor = () => {
 	let fullscreenCheckInterval = null;
 	window.mereos = window.mereos || {};
 	window.mereos.lastFullscreenState = false;
 
 	const handleFullscreenChange = () => {
-		const isCurrentlyFullscreen = document.fullscreenElement || 
-		document.webkitFullscreenElement || 
-		document.mozFullScreenElement || 
-		document.msFullscreenElement;
-		
+		const isCurrentlyFullscreen = isEffectivelyFullscreen();
+
 		window.mereos.lastFullscreenState = isCurrentlyFullscreen;
-		
+
 		if (!isCurrentlyFullscreen) {
 			setTimeout(() => {
-				if (!document.fullscreenElement && !document.webkitFullscreenElement && 
-					!document.mozFullScreenElement && !document.msFullscreenElement) {
-					
+				if (!isEffectivelyFullscreen()) {
 					if (fullscreenExitCallback) {
 						fullscreenExitCallback();
 					} else {
@@ -50,6 +59,9 @@ export const initializeFullscreenMonitor = () => {
 		
 		if (event.key === 'Escape' && window.mereos.forceFullscreenModal?.isOpen) {
 			event.preventDefault();
+			event.stopPropagation();
+			event.stopImmediatePropagation();
+			escapeGuardUntil = Date.now() + 2000;
 			forceFullScreen().catch(error => {
 				logger.error('Failed to force fullscreen on Escape:', error);
 			});
@@ -63,12 +75,17 @@ export const initializeFullscreenMonitor = () => {
 	document.addEventListener('keydown', handleKeydown);
 
 	fullscreenCheckInterval = setInterval(() => {
-		const isCurrentlyFullscreen = !!(document.fullscreenElement || 
-			document.webkitFullscreenElement || 
-			document.mozFullScreenElement || 
-			document.msFullscreenElement);
-		
-		if (!isCurrentlyFullscreen && window.mereos.lastFullscreenState) {
+		const isCurrentlyFullscreen = isEffectivelyFullscreen();
+
+		if (isCurrentlyFullscreen) {
+			window.mereos.lastFullscreenState = true;
+			if (window.mereos.forceFullscreenModal?.isOpen && Date.now() >= escapeGuardUntil) {
+				window.mereos.forceFullscreenModal.remove();
+			}
+			return;
+		}
+
+		if (window.mereos.lastFullscreenState) {
 			window.mereos.lastFullscreenState = false;
 			if (fullscreenExitCallback) {
 				fullscreenExitCallback();
@@ -239,7 +256,11 @@ export const showForceFullscreenModal = (options = {}) => {
 	modalContent.appendChild(buttonContainer);
 	modalContainer.appendChild(modalContent);
 
-	document.body.appendChild(modalContainer);
+	try {
+		(window.mereos?.shadowRoot || document.body).appendChild(modalContainer);
+	} catch (error) {
+		document.body.appendChild(modalContainer);
+	}
 
 	const updateModalText = () => {
 		if (title) {
@@ -438,6 +459,7 @@ export const initializeForceFullscreen = () => {
 	const cleanupMonitor = initializeFullscreenMonitor();
 
 	const showInitialModal = () => {
+		if (isEffectivelyFullscreen()) return;
 		showForceFullscreenModal({ isInitialWarning: true });
 	};
 
@@ -473,7 +495,29 @@ export const initializeForceFullscreen = () => {
 	};
 };
 
-export const cleanupForceFullscreen = () => {	
+const exitApiFullscreenIfActive = () => {
+	const el = document.fullscreenElement || document.webkitFullscreenElement ||
+		document.mozFullScreenElement || document.msFullscreenElement;
+	if (!el) return;
+
+	try {
+		if (document.exitFullscreen) {
+			document.exitFullscreen().catch(() => {});
+		} else if (document.webkitExitFullscreen) {
+			document.webkitExitFullscreen();
+		} else if (document.mozCancelFullScreen) {
+			document.mozCancelFullScreen();
+		} else if (document.msExitFullscreen) {
+			document.msExitFullscreen();
+		}
+	} catch (error) {
+		logger.error('Failed to exit fullscreen during cleanup:', error);
+	}
+};
+
+export const cleanupForceFullscreen = () => {
+	exitApiFullscreenIfActive();
+
 	if (window.mereos.cleanupForceFullscreen) {
 		window.mereos.cleanupForceFullscreen();
 		window.mereos.cleanupForceFullscreen = null;

@@ -1,81 +1,335 @@
+import {
+	addSectionSessionRecord,
+	checkForceClosureViolation,
+	cleanupZendeskWidget,
+	convertDataIntoParse,
+	detectBackButton,
+	detectBackButtonCallback,
+	detectPageRefresh,
+	enableCopyPasteCut,
+	enableTextHighlighting,
+	findConfigs,
+	forceClosure,
+	getDateTime,
+	getSecureFeatures,
+	getTimeInSeconds,
+	getTrackDeviceId,
+	initializeI18next,
+	isDevicePresent,
+	loadZendeskWidget,
+	lockBrowserFromContent,
+	logger,
+	probeExactDevice,
+	registerAIEvent,
+	registerEvent,
+	releaseAllMediaStreams,
+	registerAcquiredMediaStream,
+	registerManagedLocalTrack,
+	registerTwilioRoom,
+	restoreRightClick,
+	sentryExceptioMessage,
+	showToast,
+	stopMediaStreamTracks,
+	stopRoomMediaAndDisconnect,
+	stopUnusedMediaStreamTracks,
+	unlockBrowserFromContent,
+	updatePersistData,
+	updateThemeColor
+} from '../utils/functions';
 import * as TwilioVideo from 'twilio-video';
 import i18next from 'i18next';
 import { v4 } from 'uuid';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
-import { 
-	addSectionSessionRecord, 
-	checkForceClosureViolation, 
-	cleanupZendeskWidget, 
-	convertDataIntoParse, 
-	detectBackButton, 
-	detectBackButtonCallback, 
-	detectPageRefresh, 
-	enableCopyPasteCut, 
-	enableTextHighlighting, 
-	findConfigs, 
-	forceClosure, 
-	getDateTime, 
-	getSecureFeatures, 
-	getTimeInSeconds, 
-	getTrackDeviceId, 
-	initializeI18next, 
-	isDevicePresent, 
-	loadZendeskWidget, 
-	lockBrowserFromContent, 
-	logger, 
-	probeExactDevice, 
-	registerAIEvent, 
-	registerEvent, 
-	restoreRightClick, 
-	sentryExceptioMessage, 
-	showToast, 
-	unlockBrowserFromContent, 
-	updatePersistData, 
-	updateThemeColor
-} from '../utils/functions';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import { initializeLiveChat, initShadowDOM, openModal } from '../ExamsPrechecks';
 import { cleanupForceFullscreen, initializeForceFullscreen } from '../utils/fullscreen';
+import { permissionModalStyle } from '../utils/styles';
 
 let aiEvents = [];
-let mediaStream = null;
 const trackStoppedListeners = new WeakMap();
 const deviceChangeHandlers = new WeakMap();
 let isMediaError = false;
 let isSignalingError = false;
+let isPauseResumeBusy = false;
+let isReconnectingDevice = false;
+
+const resolvePermissionType = (trackType, kind) => {
+	if (trackType === 'microphone' || kind === 'audio') return 'microphone';
+	return 'camera';
+};
+
+const drawPausedFrame = (ctx, videoEl, width, height, isPaused, label) => {
+	if (isPaused) {
+		const iconSize = Math.round(height * 0.14);
+		const textSize = Math.round(height * 0.07);
+
+		ctx.fillStyle = '#1a1a1a';
+		ctx.fillRect(0, 0, width, height);
+		ctx.fillStyle = '#ffffff';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.font = `bold ${iconSize}px sans-serif`;
+		ctx.fillText('❚❚', width / 2, height / 2 - iconSize * 0.7);
+		ctx.font = `${textSize}px sans-serif`;
+		ctx.fillText(label, width / 2, height / 2 + textSize);
+	} else {
+		ctx.drawImage(videoEl, 0, 0, width, height);
+	}
+};
+
+const buildIndependentMediaConstraints = (kind) => {
+	if (kind === 'video') {
+		return {
+			video: localStorage.getItem('deviceId')
+				? { deviceId: { exact: localStorage.getItem('deviceId') } }
+				: true,
+			audio: false,
+		};
+	}
+
+	return {
+		audio: localStorage.getItem('microphoneID')
+			? { deviceId: { exact: localStorage.getItem('microphoneID') } }
+			: true,
+		video: false,
+	};
+};
+
+const acquireIndependentMediaStream = async (kind) => {
+	const constraints = buildIndependentMediaConstraints(kind);
+
+	try {
+		const stream = await navigator.mediaDevices.getUserMedia(constraints);
+		registerAcquiredMediaStream(stream);
+		return stream;
+	} catch (error) {
+		if (error.name === 'OverconstrainedError') {
+			const fallback = kind === 'video'
+				? { video: true, audio: false }
+				: { audio: true, video: false };
+			const stream = await navigator.mediaDevices.getUserMedia(fallback);
+			registerAcquiredMediaStream(stream);
+			return stream;
+		}
+		throw error;
+	}
+};
+
+const invokeStartSessionCallback = (payload) => {
+	if (payload?.type === 'success' && payload?.message === 'recording_started_successfully') {
+		window.mereos.sessionActive = true;
+	}
+	if (typeof window.mereos?.startRecordingCallBack === 'function') {
+		window.mereos.startRecordingCallBack(payload);
+	}
+};
+
+const abortFailedSessionStart = async (error) => {
+	logger.error('Aborting session start after candidate_session API failure:', error);
+
+	window.mereos.isStoppingSession = true;
+	window.mereos.isReleasingMedia = true;
+
+	cleanupSessionMediaMonitoring();
+	cleanupLocalVideo();
+
+	const room = window.mereos?.roomInstance;
+	if (room) {
+		try {
+			await stopRoomMediaAndDisconnect(room);
+		} catch (disconnectError) {
+			logger.error('Failed to disconnect room after session start failure:', disconnectError);
+		}
+		window.mereos.roomInstance = null;
+	}
+
+	const secureFeatures = getSecureFeatures();
+	if (secureFeatures?.entities?.filter((entity) => LockDownOptions.includes(entity.key))?.length) {
+		unlockBrowserFromContent();
+	}
+	cleanupForceFullscreen();
+
+	await releaseAllMediaStreams({ force: true });
+
+	window.mereos.recordingStart = false;
+	window.mereos.sessionActive = false;
+	window.mereos.pendingSessionStart = false;
+
+	updatePersistData('session', { sessionStatus: 'Terminated' });
+
+	window.mereos.isReleasingMedia = false;
+	window.mereos.isStoppingSession = false;
+
+	showToast('error', 'something_went_wrong_please_contact_support');
+	invokeStartSessionCallback({
+		type: 'error',
+		message: 'error_saving_session_info',
+		code: 40018,
+		details: error,
+	});
+};
+
+const finalizeSuccessfulSessionStart = async (session) => {
+	registerEvent({
+		eventType: 'success',
+		notify: false,
+		eventName: 'recording_started_successfully',
+	});
+
+	const dateTime = new Date();
+	if (!session?.browserEvents?.filter((item) => item.name === 'session_started')?.length) {
+		registerEvent({ eventType: 'success', notify: false, eventName: 'session_started', startAt: dateTime });
+	}
+
+	window.mereos.recordingStart = true;
+	invokeStartSessionCallback({
+		type: 'success',
+		message: 'recording_started_successfully',
+		code: 50000,
+	});
+};
+
+const resolveStartPermissionType = async (error = null, hint = null) => {
+	const secureFeatures = getSecureFeatures();
+	const hasVideo = findConfigs(['record_video'], secureFeatures?.entities).length > 0;
+	const hasAudio = findConfigs(['record_audio'], secureFeatures?.entities).length > 0;
+	const errorText = `${error?.message || ''} ${error?.name || ''} ${error?.constraint || ''}`.toLowerCase();
+
+	if (/audio|microphone/.test(errorText)) return 'microphone';
+	if (/video|camera/.test(errorText)) return 'camera';
+
+	const isMediaPermissionDenied = async (kind) => {
+		const permissionName = kind === 'audio' ? 'microphone' : 'camera';
+
+		try {
+			const status = await navigator.permissions.query({ name: permissionName });
+			if (status.state === 'denied') return true;
+			if (status.state === 'granted') return false;
+		} catch { /* Permissions API may be unavailable */ }
+
+		try {
+			const constraints = kind === 'audio'
+				? {
+					audio: localStorage.getItem('microphoneID')
+						? { deviceId: { exact: localStorage.getItem('microphoneID') } }
+						: true,
+					video: false,
+				}
+				: {
+					video: localStorage.getItem('deviceId')
+						? { deviceId: { exact: localStorage.getItem('deviceId') } }
+						: true,
+					audio: false,
+				};
+			const stream = await navigator.mediaDevices.getUserMedia(constraints);
+			stream.getTracks().forEach((track) => track.stop());
+			return false;
+		} catch (probeError) {
+			return probeError?.name === 'NotAllowedError' || probeError?.name === 'PermissionDeniedError';
+		}
+	};
+
+	if (hasAudio && await isMediaPermissionDenied('audio')) return 'microphone';
+	if (hasVideo && await isMediaPermissionDenied('video')) return 'camera';
+
+	if (hint === 'microphone' || hint === 'camera') return hint;
+	if (hasAudio && !hasVideo) return 'microphone';
+	if (hasVideo && !hasAudio) return 'camera';
+	return 'camera';
+};
+
+const unpublishDisturbedTracks = async (permissionType) => {
+	const room = window.mereos?.roomInstance;
+	if (!room) return;
+	await cleanupCameraTracks(room, permissionType === 'microphone' ? 'audio' : 'video');
+};
+
+const showMediaPermissionError = async (permissionType, duringSession = false) => {
+	if (!i18next.isInitialized) {
+		initializeI18next();
+	}
+	if (!document.getElementById('mereos-library') && !window.mereos?.shadowRoot) {
+		initShadowDOM();
+		updateThemeColor();
+	}
+
+	if (duringSession) {
+		await unpublishDisturbedTracks(permissionType);
+		if (permissionType === 'camera') {
+			cleanupLocalVideo();
+		}
+		updatePersistData('session', { sessionStatus: 'Attending' });
+		window.mereos.recordingStart = true;
+	} else {
+		detachAllTrackStoppedListeners();
+		await unpublishDisturbedTracks(permissionType);
+
+		const room = window.mereos?.roomInstance;
+		const hasPublishedVideo = Array.from(room?.localParticipant?.videoTracks?.values() || [])
+			.some(({ track }) => track && !track.name?.includes('screen-share'));
+		const micOnlyFailureWithVideo = permissionType === 'microphone' && hasPublishedVideo;
+
+		if (permissionType === 'camera') {
+			cleanupLocalVideo();
+		}
+		hidePermissionModal();
+
+		if (!micOnlyFailureWithVideo) {
+			if (room) {
+				await stopRoomMediaAndDisconnect(room);
+				window.mereos.roomInstance = null;
+			}
+			await releaseAllMediaStreams();
+			window.mereos.pendingSessionStart = false;
+		} else {
+			window.mereos.pendingSessionStart = true;
+		}
+
+		window.mereos.recordingStart = false;
+		window.mereos.sessionActive = false;
+	}
+
+	showToast('error', permissionType === 'camera' ? 'enable_camera_permissions' : 'enable_microphone_permissions');
+	showPermissionModal(permissionType);
+	invokeStartSessionCallback({
+		type: 'error',
+		message: permissionType === 'camera' ? 'camera_permission_denied' : 'microphone_permission_denied',
+		code: 40019,
+	});
+};
 
 export const initMobileConnection = () => {
 	const session = convertDataIntoParse('session');
-    
+
 	if (window.mereos.mobileRoomInstance) {
 		window.mereos.mobileRoomInstance.disconnect();
 		window.mereos.mobileRoomInstance = null;
 	}
-    
+
 	getCreateRoom({
 		room_name: session?.mobileRoomSessionId,
 		auto_record: false
-	}).then(async (twilioTokens) => {    
+	}).then(async (twilioTokens) => {
 		const twilioRoom = await TwilioVideo.connect(twilioTokens?.data?.token, {
 			audio: false,
 			video: false
 		});
 		window.mereos.mobileRoomInstance = twilioRoom;
-		if(twilioRoom){
+		if (twilioRoom) {
 			VideoChat(twilioRoom);
 		}
 	}).catch((error) => {
 		logger.error('Mobile reconnection failed:', error);
-		registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_failed',eventValue:error });
-		sentryExceptioMessage(error,{type:'error',message:'Mobile connection failed'});
-		if(window.mereos.startRecordingCallBack){
-			window.mereos.startRecordingCallBack({ 
-				type:'error',
+		registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_connection_failed', eventValue: error });
+		sentryExceptioMessage(error, { type: 'error', message: 'Mobile connection failed' });
+		if (window.mereos.startRecordingCallBack) {
+			window.mereos.startRecordingCallBack({
+				type: 'error',
 				message: 'mobile_connection_failed',
-				code:40016
+				code: 40016
 			});
 		}
 	});
@@ -83,15 +337,15 @@ export const initMobileConnection = () => {
 
 export const connectSocketConnection = () => {
 	if (!window.mereos?.socket) {
-		updatePersistData('preChecksSteps', { 
+		updatePersistData('preChecksSteps', {
 			mobileConnection: false,
 			screenSharing: false
 		});
-		if(window.mereos.startRecordingCallBack){
-			window.mereos.startRecordingCallBack({ 
-				type:'error',
-				message: 'mobile_connection_disconnected' ,
-				code:40008
+		if (window.mereos.startRecordingCallBack) {
+			window.mereos.startRecordingCallBack({
+				type: 'error',
+				message: 'mobile_connection_disconnected',
+				code: 40008
 			});
 		}
 		logger.error('Socket not initialized');
@@ -108,32 +362,32 @@ export const connectSocketConnection = () => {
 			}
 
 			case 'violation':
-				if(eventData?.message?.message === 'Violation'){
-					updatePersistData('preChecksSteps', { 
+				if (eventData?.message?.message === 'Violation') {
+					updatePersistData('preChecksSteps', {
 						mobileConnection: false,
 						screenSharing: false
 					});
-					showToast('error','mobile_phone_disconnected');
+					showToast('error', 'mobile_phone_disconnected');
 					const moileElement = document.getElementById('remote-video');
-					if(moileElement){
+					if (moileElement) {
 						moileElement.remove();
 					}
-					if(window.mereos.mobileRoomInstance){
+					if (window.mereos.mobileRoomInstance) {
 						window.mereos.mobileRoomInstance.removeAllListeners();
 						window.mereos.mobileRoomInstance.disconnect();
 						window.mereos.mobileRoomInstance = null;
 					}
-					window.mereos.mobileProctoring=true;
-					if(window.mereos.startRecordingCallBack){
-						window.mereos.startRecordingCallBack({ 
-							type:'error',
+					window.mereos.mobileProctoring = true;
+					if (window.mereos.startRecordingCallBack) {
+						window.mereos.startRecordingCallBack({
+							type: 'error',
 							message: 'mobile_phone_disconnected',
-							code:40010
+							code: 40010
 						});
 					}
 					openModal();
 				}
-				registerEvent({ eventType: 'error', notify: false, eventName:'mobile_phone_disconnected' , eventValue: getDateTime() });
+				registerEvent({ eventType: 'error', notify: false, eventName: 'mobile_phone_disconnected', eventValue: getDateTime() });
 				break;
 
 			default:
@@ -141,7 +395,7 @@ export const connectSocketConnection = () => {
 				break;
 		}
 	};
-		
+
 	window.mereos.socket.onerror = (error) => {
 		logger.error('WebSocket error:', error);
 	};
@@ -149,27 +403,38 @@ export const connectSocketConnection = () => {
 
 const cleanupCameraTracks = async (room, trackKind) => {
 	const existingTracks = Array.from(
-		trackKind === 'video' 
-			? room.localParticipant.videoTracks.values() 
+		trackKind === 'video'
+			? room.localParticipant.videoTracks.values()
 			: room.localParticipant.audioTracks.values()
 	);
-    
+
 	for (const trackPublication of existingTracks) {
 		if (trackPublication.track && trackPublication.track.kind === trackKind) {
 			if (trackKind === 'video' && (
-				trackPublication.track.name?.includes('screen') || 
-                trackPublication === window.mereos?.screenTrackPublished
+				trackPublication.track.name?.includes('screen') ||
+				trackPublication === window.mereos?.screenTrackPublished
 			)) {
 				continue;
 			}
-            
+
 			if (typeof trackStoppedListeners !== 'undefined' && trackStoppedListeners.has(trackPublication.track)) {
-				trackStoppedListeners.delete(trackPublication.track);
+				removeStoppedListener(trackPublication.track);
 			}
-            
+
 			try {
 				await room.localParticipant.unpublishTrack(trackPublication.track);
 				trackPublication.track.stop();
+				const mediaStreamTrack = trackPublication.track.mediaStreamTrack;
+				if (trackKind === 'audio' && mediaStreamTrack === window.mereos?.sessionAudioMediaTrack) {
+					window.mereos.sessionAudioMediaTrack = null;
+					window.mereos.sessionTwilioAudioTrack = null;
+					window.mereos.sessionAudioStream = null;
+				}
+				if (trackKind === 'video' && mediaStreamTrack === window.mereos?.sessionVideoMediaTrack) {
+					window.mereos.sessionVideoMediaTrack = null;
+					window.mereos.sessionTwilioVideoTrack = null;
+					window.mereos.sessionVideoStream = null;
+				}
 			} catch (error) {
 				console.error('Error cleaning up camera track:', error);
 			}
@@ -177,12 +442,16 @@ const cleanupCameraTracks = async (room, trackKind) => {
 	}
 };
 
-// ============= MODAL FUNCTIONS =============
+const setCameraBadgeVisibility = (visible) => {
+	const badge = window.mereos?.shadowRoot?.getElementById('webcam-container');
+	if (badge) {
+		badge.style.display = visible ? '' : 'none';
+	}
+};
 
 export const showPermissionModal = (permissionType = 'camera') => {
-	logger.success('permissionType',permissionType);
 	let container, existingModal;
-    
+
 	if (window.mereos?.shadowRoot) {
 		container = window.mereos.shadowRoot;
 		existingModal = container.getElementById('permissionModal');
@@ -190,7 +459,7 @@ export const showPermissionModal = (permissionType = 'camera') => {
 		container = document.body;
 		existingModal = document.getElementById('permissionModal');
 	}
-    
+
 	if (existingModal) {
 		existingModal.remove();
 	}
@@ -199,45 +468,44 @@ export const showPermissionModal = (permissionType = 'camera') => {
 	modalDiv.id = 'permissionModal';
 	modalDiv.className = 'permission-modal-overlay';
 	modalDiv.setAttribute('data-permission-type', permissionType);
-    
-	// Set content based on permission type
-	const modalTitle = permissionType === 'camera' 
-		? i18next.t('camera_access_lost') 
+
+	const modalTitle = permissionType === 'camera'
+		? i18next.t('camera_access_lost')
 		: i18next.t('microphone_access_lost');
-    
+
 	const modalDescription = permissionType === 'camera'
 		? i18next.t('your_camera_access_has_been_disabled_during_the_session')
 		: i18next.t('your_microphone_access_has_been_disabled_during_the_session');
-    
+
 	const step1Text = permissionType === 'camera'
 		? i18next.t('click_the_camera_icon')
 		: i18next.t('click_the_microphone_icon');
-    
+
 	const step2Text = permissionType === 'camera'
 		? i18next.t('select_allow_for_camera_access')
 		: i18next.t('select_allow_for_microphone_access');
-    
+
 	const buttonText = permissionType === 'camera'
 		? i18next.t('reconnect_camera')
 		: i18next.t('reconnect_microphone');
-    
+
 	const alternativeMethodTitle = permissionType === 'camera'
 		? i18next.t('alternative_method')
 		: i18next.t('alternative_method_microphone');
-    
+
 	// Browser instructions based on permission type
 	const chromeInstructions = permissionType === 'camera'
 		? i18next.t('settings_camera_steps')
 		: i18next.t('settings_microphone_steps');
-    
+
 	const firefoxInstructions = permissionType === 'camera'
 		? i18next.t('firefox_camera_steps')
 		: i18next.t('firefox_microphone_steps');
-    
+
 	const safariInstructions = permissionType === 'camera'
 		? i18next.t('safari_camera_step')
 		: i18next.t('safari_microphone_step');
-    
+
 	modalDiv.innerHTML = `
         <div class="permission-modal">
             <div class="permission-modal-header">
@@ -249,7 +517,7 @@ export const showPermissionModal = (permissionType = 'camera') => {
                     <ol>
                         <li>${step1Text}</li>
                         <li>${step2Text}</li>
-                        <li>${permissionType === 'camera' ? i18next.t('click_reconnect_camera'): i18next.t('click_reconnect_microphone')}</li>
+                        <li>${permissionType === 'camera' ? i18next.t('click_reconnect_camera') : i18next.t('click_reconnect_microphone')}</li>
                     </ol>
                     
                     <div class="browser-instructions">
@@ -270,101 +538,184 @@ export const showPermissionModal = (permissionType = 'camera') => {
             </div>
         </div>
     `;
-    
+
 	try {
 		container.appendChild(modalDiv);
 	} catch (error) {
 		document.body.appendChild(modalDiv);
 	}
-    
+
 	document.body.style.overflow = 'hidden';
-    
+	window.mereos.activePermissionModalType = permissionType;
+	setCameraBadgeVisibility(false);
+
 	addModalEventListeners();
 };
 
 const hidePermissionModal = () => {
 	let modal;
-    
+
 	if (window.mereos?.shadowRoot) {
 		modal = window.mereos.shadowRoot.getElementById('permissionModal');
 	} else {
 		modal = document.getElementById('permissionModal');
 	}
-    
+
 	if (modal) {
 		modal.remove();
 	}
 	document.body.style.overflow = 'auto';
+	window.mereos.activePermissionModalType = null;
 };
 
 const addModalEventListeners = () => {
 	let modal;
-    
+
 	if (window.mereos?.shadowRoot) {
 		modal = window.mereos.shadowRoot.getElementById('permissionModal');
 	} else {
 		modal = document.getElementById('permissionModal');
 	}
-    
+
 	if (!modal) return;
 
 	const reconnectBtn = modal.querySelector('#reconnectBtn');
-    
+
 	if (reconnectBtn) {
-		reconnectBtn.addEventListener('click', reconnectCamera);
+		reconnectBtn.addEventListener('click', () => {
+			reconnectBtn.disabled = true;
+			reconnectBtn.textContent = i18next.t('reconnecting_signaling_connection');
+			reconnectCamera();
+		});
 	}
-    
-	modal.addEventListener('click', function(e) {
-		if (e.target === modal) {
-			hidePermissionModal();
+
+};
+
+const refreshSessionAudioPins = () => {
+	const room = window.mereos?.roomInstance;
+	if (!room?.localParticipant) return;
+
+	for (const { track } of room.localParticipant.audioTracks.values()) {
+		if (!track || track.name?.includes('screen-share')) continue;
+
+		window.mereos.sessionTwilioAudioTrack = track;
+		if (track.mediaStreamTrack) {
+			window.mereos.sessionAudioMediaTrack = track.mediaStreamTrack;
+			window.mereos.sessionAudioStream = new MediaStream([track.mediaStreamTrack]);
+			registerAcquiredMediaStream(window.mereos.sessionAudioStream);
 		}
-	});
+		return;
+	}
 };
 
 // ============= DEVICE HANDLING FUNCTIONS =============
 
-const handleDeviceLost = (kind, isUserDisabled = false, track,trackType) => {
-	if (track.name.includes('screen-share')) return;
+const handleDeviceLost = async (kind, isUserDisabled = false, track, trackType) => {
+	if (track?.name?.includes('screen-share')) return;
+	if (window.mereos?.isReleasingMedia) return;
 
+	const permissionType = resolvePermissionType(trackType, kind);
+	if (!window.mereos.lostPermissionTypes) {
+		window.mereos.lostPermissionTypes = new Set();
+	}
+	if (window.mereos.lostPermissionTypes.has(permissionType)) {
+		return;
+	}
+	window.mereos.lostPermissionTypes.add(permissionType);
+
+	const isVideo = permissionType === 'camera';
 	const container = window.mereos?.shadowRoot || document;
 	const session = convertDataIntoParse('session');
 
-	const userRemoteVideo = container.querySelector('#webcam-container');
-	if (userRemoteVideo) {
-		userRemoteVideo.style.display = 'none';
-		userRemoteVideo.remove();
-	}
+	try {
+		await unpublishDisturbedTracks(permissionType);
 
-	// Show appropriate modal based on device kind
-	if (typeof showPermissionModal === 'function' && 
-        session?.sessionStatus === 'Attending') {
-		showPermissionModal(trackType);
-	}
+		if (isVideo) {
+			if (window.mereos.aiProcessingInterval) {
+				clearInterval(window.mereos.aiProcessingInterval);
+				window.mereos.aiProcessingInterval = null;
+			}
+			if (window.mereos.aiProcessingVideo) {
+				window.mereos.aiProcessingVideo.pause?.();
+				stopMediaStreamTracks(window.mereos.aiProcessingVideo.srcObject?.getTracks?.() || []);
+				window.mereos.aiProcessingVideo.srcObject = null;
+				window.mereos.aiProcessingVideo = null;
+			}
+			window.mereos.sessionVideoMediaTrack = null;
+			window.mereos.sessionTwilioVideoTrack = null;
+			window.mereos.sessionVideoStream = null;
 
-	if (window.mereos?.startRecordingCallBack) {
-		window.mereos.startRecordingCallBack({
-			type: 'error',
-			message: kind === 'video' ? 'camera_is_stopped' : 'microphone_is_stopped',
-			code: 40019,
-		});
-	}
+			if (window.mereos.pauseCanvasState) {
+				window.mereos.pauseCanvasState.cleanup?.();
+				window.mereos.pauseCanvasState = null;
+			}
 
-	if (typeof registerEvent === 'function' && session.sessionStatus === 'Attending') {
-		let eventName;
-        
-		if (isUserDisabled) {
-			eventName = kind === 'video' ? 'camera_permission_denied_hardware' : 'microphone_permission_denied_hardware';
-		} else {
-			eventName = kind === 'video' ? 'camera_permission_disabled' : 'microphone_permission_denied';
+			const userRemoteVideo = container.querySelector('#webcam-container');
+			if (userRemoteVideo) {
+				userRemoteVideo.style.display = 'none';
+				userRemoteVideo.remove();
+			}
+
+			refreshSessionAudioPins();
 		}
-        
-		registerEvent({
-			eventType: 'error',
-			notify: false,
-			eventName: eventName,
-			eventValue: new Date(),
-		});
+
+		if (session?.sessionStatus === 'Attending') {
+			showToast('error', isVideo ? 'enable_camera_permissions' : 'enable_microphone_permissions');
+			showPermissionModal(permissionType);
+		}
+
+		if (window.mereos?.startRecordingCallBack) {
+			window.mereos.startRecordingCallBack({
+				type: 'error',
+				message: isVideo ? 'camera_is_stopped' : 'microphone_is_stopped',
+				code: 40019,
+			});
+		}
+
+		if (typeof registerEvent === 'function' && session.sessionStatus === 'Attending') {
+			const eventName = isUserDisabled
+				? (isVideo ? 'camera_permission_denied_hardware' : 'microphone_permission_denied_hardware')
+				: (isVideo ? 'camera_permission_disabled' : 'microphone_permission_denied');
+
+			registerEvent({
+				eventType: 'error',
+				notify: false,
+				eventName: eventName,
+				eventValue: new Date(),
+			});
+		}
+
+		if (!isVideo) {
+			await restoreIndependentVideoTrackIfNeeded();
+		}
+	} catch (error) {
+		window.mereos.lostPermissionTypes.delete(permissionType);
+		logger.error(`Failed to handle ${permissionType} device loss:`, error);
 	}
+};
+
+const handlePermissionDeniedDuringSession = async (permissionType) => {
+	if (window.mereos?.isReleasingMedia) return;
+
+	const session = convertDataIntoParse('session');
+	if (session?.sessionStatus !== 'Attending') return;
+
+	const trackKind = permissionType === 'camera' ? 'video' : 'audio';
+	const room = window.mereos?.roomInstance;
+	let localTrack;
+
+	room?.localParticipant?.[trackKind === 'video' ? 'videoTracks' : 'audioTracks']?.forEach?.(({ track }) => {
+		if (track && !track.name?.includes('screen-share') && !localTrack) {
+			localTrack = track;
+		}
+	});
+
+	await handleDeviceLost(
+		trackKind,
+		false,
+		localTrack || { name: '', kind: trackKind },
+		permissionType
+	);
 };
 
 const detachDeviceChangeWatcher = (track) => {
@@ -375,148 +726,665 @@ const detachDeviceChangeWatcher = (track) => {
 	}
 };
 
-const setupTrackStoppedListeners = (track,trackType) => {
-	const session = convertDataIntoParse('session');
-	const stoppedListener = async () => {
-		const kind = track.kind;
-		const mst = track.mediaStreamTrack;
-		const deviceId = getTrackDeviceId(track);
+const clearSessionPermissionWatchers = () => {
+	window.mereos?.permissionWatchers?.forEach(({ status, onChange }) => {
+		try {
+			status.removeEventListener('change', onChange);
+		} catch { }
+	});
+	if (window.mereos) {
+		window.mereos.permissionWatchers = [];
+	}
+};
+
+const watchSessionMediaPermissions = () => {
+	if (window.mereos?.permissionWatchers?.length) return;
+
+	const secureFeatures = getSecureFeatures();
+	const watchers = [];
+
+	const watchPermission = async (permissionName) => {
+		const needsMic = permissionName === 'microphone'
+			&& findConfigs(['record_audio'], secureFeatures?.entities).length;
+		const needsCam = permissionName === 'camera'
+			&& findConfigs(['record_video'], secureFeatures?.entities).length;
+		if (!needsMic && !needsCam) return;
 
 		try {
-			if (mst && mst.readyState === 'ended') {
-				const present = await isDevicePresent(kind, deviceId);
-				if (!present) {
-					handleDeviceLost(kind, false, track,trackType);
-					return;
-				}
-			}
+			const status = await navigator.permissions.query({ name: permissionName });
+			const onChange = async () => {
+				if (status.state !== 'denied') return;
+				await handlePermissionDeniedDuringSession(permissionName);
+			};
 
-			await probeExactDevice(kind, deviceId);
-			handleDeviceLost(kind, true, track,trackType);
-		} catch (probeError) {
-			logger?.error?.(`Exact-device probe failed for ${kind}`, probeError);
-			if (probeError.name === 'NotAllowedError') {
-				handleDeviceLost(kind, false, track,trackType);
-			} else if (probeError.name === 'NotReadableError') {
-				handleDeviceLost(kind, true, track,trackType);
-			}
-			sentryExceptioMessage(probeError, { type: 'error', message: probeError.name });
-		} finally {
-			detachDeviceChangeWatcher(track);
+			status.addEventListener('change', onChange);
+			watchers.push({ status, onChange });
+		} catch (error) {
+			logger?.error?.(`Permission watcher unavailable for ${permissionName}`, error);
 		}
 	};
 
-	if (session.sessionStatus === 'Attending' && !track.name.includes('screen-share')) {
-		track.on('stopped', stoppedListener);
+	watchPermission('microphone');
+	watchPermission('camera');
+	window.mereos.permissionWatchers = watchers;
+};
+
+const runDeviceLostCheck = async (track, trackType) => {
+	const session = convertDataIntoParse('session');
+	if (session?.sessionStatus !== 'Attending' || window.mereos?.isReleasingMedia) return;
+
+	const kind = track.kind;
+	const permissionType = resolvePermissionType(trackType, kind);
+
+	try {
+		const permissionName = permissionType === 'camera' ? 'camera' : 'microphone';
+		const status = await navigator.permissions.query({ name: permissionName });
+		if (status.state === 'denied') {
+			await handlePermissionDeniedDuringSession(permissionType);
+			return;
+		}
+	} catch { }
+
+	const mst = track.mediaStreamTrack;
+	const deviceId = getTrackDeviceId(track);
+
+	if (mst && mst.readyState === 'ended') {
+		if (permissionType === 'camera') {
+			try {
+				const camStatus = await navigator.permissions.query({ name: 'camera' });
+				if (camStatus.state !== 'denied') {
+					await probeExactDevice(kind, deviceId);
+					await restoreIndependentVideoTrack(track);
+					return;
+				}
+			} catch (restoreError) {
+				if (restoreError?.name === 'NotAllowedError' || restoreError?.name === 'PermissionDeniedError') {
+					await handlePermissionDeniedDuringSession('camera');
+					return;
+				}
+			}
+		}
+
+		const present = await isDevicePresent(kind, deviceId);
+		if (!present) {
+			await handleDeviceLost(kind, false, track, trackType);
+			return;
+		}
 	}
 
-	trackStoppedListeners.set(track, stoppedListener);
+	try {
+		await probeExactDevice(kind, deviceId);
+		return;
+	} catch (probeError) {
+		logger?.error?.(`Exact-device probe failed for ${kind}`, probeError);
+		if (probeError.name === 'NotAllowedError' || probeError.name === 'PermissionDeniedError') {
+			await handlePermissionDeniedDuringSession(permissionType);
+		} else if (probeError.name === 'NotReadableError' || probeError.message === 'DeviceUnavailable') {
+			await handleDeviceLost(kind, true, track, trackType);
+		}
+		sentryExceptioMessage(probeError, { type: 'error', message: probeError.name });
+	}
+};
+
+const setupTrackStoppedListeners = (track, trackType) => {
+	if (track.name?.includes('screen-share') || trackStoppedListeners.has(track)) return;
+
+	registerManagedLocalTrack(track);
+
+	const onDeviceIssue = () => {
+		void runDeviceLostCheck(track, trackType);
+	};
+
+	track.on('stopped', onDeviceIssue);
+	track.on('disabled', onDeviceIssue);
+
+	const mst = track.mediaStreamTrack;
+	let onMstEnded;
+	if (mst) {
+		onMstEnded = () => onDeviceIssue();
+		mst.addEventListener('ended', onMstEnded);
+	}
+
+	trackStoppedListeners.set(track, { onDeviceIssue, onMstEnded });
 };
 
 const removeStoppedListener = (track) => {
-	const fn = trackStoppedListeners.get(track);
-	if (fn) {
-		try { track.off('stopped', fn); } catch {}
+	const handlers = trackStoppedListeners.get(track);
+	if (handlers) {
+		if (typeof handlers === 'function') {
+			try { track.off('stopped', handlers); } catch { }
+		} else {
+			try { track.off('stopped', handlers.onDeviceIssue); } catch { }
+			try { track.off('disabled', handlers.onDeviceIssue); } catch { }
+			if (handlers.onMstEnded && track.mediaStreamTrack) {
+				try {
+					track.mediaStreamTrack.removeEventListener('ended', handlers.onMstEnded);
+				} catch { }
+			}
+		}
 		trackStoppedListeners.delete(track);
 	}
 	detachDeviceChangeWatcher(track);
 };
 
+const attachTrackMonitoring = (room) => {
+	watchSessionMediaPermissions();
+
+	const localParticipant = room.localParticipant;
+	const onTrackPublished = (publication) => {
+		const track = publication.track;
+		if (!track || track.name?.includes('screen-share')) return;
+		const publishedTrackType = track.kind === 'video' ? 'camera' : 'microphone';
+		setupTrackStoppedListeners(track, publishedTrackType);
+	};
+
+	if (window.mereos?.onTrackPublishedMonitor) {
+		try {
+			localParticipant.off('trackPublished', window.mereos.onTrackPublishedMonitor);
+		} catch { }
+	}
+
+	localParticipant.on('trackPublished', onTrackPublished);
+	window.mereos.onTrackPublishedMonitor = onTrackPublished;
+
+	localParticipant.videoTracks.forEach(({ track }) => {
+		if (track && track.kind === 'video') {
+			setupTrackStoppedListeners(track, 'camera');
+		}
+	});
+
+	localParticipant.audioTracks.forEach(({ track }) => {
+		if (track && track.kind === 'audio') {
+			setupTrackStoppedListeners(track, 'microphone');
+		}
+	});
+};
+
+const publishIndependentVideoTrack = async (room, preAcquiredStream = null) => {
+	const videoStream = preAcquiredStream || await acquireIndependentMediaStream('video');
+	const rawVideoTrack = videoStream.getVideoTracks()[0];
+	if (!rawVideoTrack) {
+		throw new Error('No video track available');
+	}
+
+	const twilioVideoTrack = new TwilioVideo.LocalVideoTrack(rawVideoTrack);
+	registerManagedLocalTrack(twilioVideoTrack);
+	const publication = await room.localParticipant.publishTrack(twilioVideoTrack);
+	const localVideoTrack = publication.track || twilioVideoTrack;
+	registerManagedLocalTrack(localVideoTrack);
+	setupTrackStoppedListeners(localVideoTrack, 'camera');
+	window.mereos.sessionVideoMediaTrack = rawVideoTrack;
+	window.mereos.sessionTwilioVideoTrack = localVideoTrack;
+	window.mereos.sessionVideoStream = videoStream;
+	if (!window.mereos.allSessionMediaStreamTracks) {
+		window.mereos.allSessionMediaStreamTracks = new Set();
+	}
+	window.mereos.allSessionMediaStreamTracks.add(rawVideoTrack);
+
+	return { publication, localVideoTrack, videoStream, rawVideoTrack };
+};
+
+const publishCanvasVideoTrack = async (room, preAcquiredStream = null) => {
+	const videoStream = preAcquiredStream || await acquireIndependentMediaStream('video');
+	const rawVideoTrack = videoStream.getVideoTracks()[0];
+	if (!rawVideoTrack) {
+		throw new Error('No video track available');
+	}
+
+	if (window.mereos.pauseCanvasState) {
+		window.mereos.pauseCanvasState.cleanup?.();
+		window.mereos.pauseCanvasState = null;
+	}
+
+	const videoEl = document.createElement('video');
+	videoEl.autoplay = true;
+	videoEl.muted = true;
+	videoEl.playsInline = true;
+	videoEl.srcObject = videoStream;
+	videoEl.style.display = 'none';
+	document.body.appendChild(videoEl);
+	videoEl.play().catch((error) => logger.error('publishCanvasVideoTrack: video.play() failed', error));
+
+	const settings = rawVideoTrack.getSettings?.() || {};
+	const width = settings.width || 640;
+	const height = settings.height || 480;
+
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext('2d');
+
+	const pauseState = { canvasStream: null, cleanup: null };
+	window.mereos.pauseCanvasState = pauseState;
+
+	let rafId = null;
+	const renderLoop = () => {
+		drawPausedFrame(ctx, videoEl, width, height, Boolean(window.mereos.recordingPaused), i18next.t('recording_paused'));
+		rafId = requestAnimationFrame(renderLoop);
+	};
+	renderLoop();
+
+	const canvasStream = canvas.captureStream(15);
+	const canvasVideoTrack = canvasStream.getVideoTracks()[0];
+	const twilioVideoTrack = new TwilioVideo.LocalVideoTrack(canvasVideoTrack, {
+		name: `camera-${v4()}`,
+	});
+	registerManagedLocalTrack(twilioVideoTrack);
+	const publication = await room.localParticipant.publishTrack(twilioVideoTrack);
+	const localVideoTrack = publication.track || twilioVideoTrack;
+	registerManagedLocalTrack(localVideoTrack);
+	setupTrackStoppedListeners(localVideoTrack, 'camera');
+
+	const onRawTrackEnded = () => {
+		const publishedTrack = window.mereos.sessionTwilioVideoTrack;
+		if (publishedTrack) void runDeviceLostCheck(publishedTrack, 'camera');
+	};
+	rawVideoTrack.addEventListener('ended', onRawTrackEnded);
+
+	window.mereos.sessionVideoMediaTrack = rawVideoTrack;
+	window.mereos.sessionTwilioVideoTrack = localVideoTrack;
+	window.mereos.sessionVideoStream = videoStream;
+	if (!window.mereos.allSessionMediaStreamTracks) {
+		window.mereos.allSessionMediaStreamTracks = new Set();
+	}
+	window.mereos.allSessionMediaStreamTracks.add(rawVideoTrack);
+
+	pauseState.canvasStream = canvasStream;
+	pauseState.cleanup = () => {
+		if (rafId) cancelAnimationFrame(rafId);
+		rawVideoTrack.removeEventListener('ended', onRawTrackEnded);
+		videoEl.pause();
+		videoEl.srcObject = null;
+		videoEl.remove();
+	};
+
+	return { publication, localVideoTrack, videoStream, rawVideoTrack, canvasStream };
+};
+
+export const publishCanvasScreenTrack = async (room, screenStream) => {
+	const rawScreenTrack = screenStream.getVideoTracks()[0];
+	if (!rawScreenTrack) {
+		throw new Error('No screen track available');
+	}
+
+	if (window.mereos.pauseScreenCanvasState) {
+		window.mereos.pauseScreenCanvasState.cleanup?.();
+		window.mereos.pauseScreenCanvasState = null;
+	}
+
+	const videoEl = document.createElement('video');
+	videoEl.autoplay = true;
+	videoEl.muted = true;
+	videoEl.playsInline = true;
+	videoEl.srcObject = screenStream;
+	videoEl.style.display = 'none';
+	document.body.appendChild(videoEl);
+	videoEl.play().catch((error) => logger.error('publishCanvasScreenTrack: video.play() failed', error));
+
+	const settings = rawScreenTrack.getSettings?.() || {};
+	const width = settings.width || 1280;
+	const height = settings.height || 720;
+
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext('2d');
+
+	const pauseState = { canvasStream: null, cleanup: null };
+	window.mereos.pauseScreenCanvasState = pauseState;
+
+	let rafId = null;
+	const renderLoop = () => {
+		drawPausedFrame(ctx, videoEl, width, height, Boolean(window.mereos.recordingPaused), i18next.t('recording_paused'));
+		rafId = requestAnimationFrame(renderLoop);
+	};
+	renderLoop();
+
+	const canvasStream = canvas.captureStream(15);
+	const canvasScreenTrack = canvasStream.getVideoTracks()[0];
+	const twilioScreenTrack = new TwilioVideo.LocalVideoTrack(canvasScreenTrack, {
+		name: `screen-share-${v4()}`,
+	});
+	registerManagedLocalTrack(twilioScreenTrack);
+	const publication = await room.localParticipant.publishTrack(twilioScreenTrack);
+	registerManagedLocalTrack(publication.track || twilioScreenTrack);
+
+	pauseState.canvasStream = canvasStream;
+	pauseState.cleanup = () => {
+		if (rafId) cancelAnimationFrame(rafId);
+		videoEl.pause();
+		videoEl.srcObject = null;
+		videoEl.remove();
+	};
+
+	setupStandalonePauseResumeButton();
+
+	return { publication, canvasStream };
+};
+
+const publishIndependentAudioTrack = async (room, preAcquiredStream = null) => {
+	const audioStream = preAcquiredStream || await acquireIndependentMediaStream('audio');
+	const rawAudioTrack = audioStream.getAudioTracks()[0];
+	if (!rawAudioTrack) {
+		throw new Error('No audio track available');
+	}
+
+	const twilioAudioTrack = new TwilioVideo.LocalAudioTrack(rawAudioTrack);
+	registerManagedLocalTrack(twilioAudioTrack);
+	const publication = await room.localParticipant.publishTrack(twilioAudioTrack);
+	const localAudioTrack = publication.track || twilioAudioTrack;
+	registerManagedLocalTrack(localAudioTrack);
+	setupTrackStoppedListeners(localAudioTrack, 'microphone');
+	window.mereos.sessionAudioMediaTrack = rawAudioTrack;
+	window.mereos.sessionTwilioAudioTrack = localAudioTrack;
+	window.mereos.sessionAudioStream = audioStream;
+	if (!window.mereos.allSessionMediaStreamTracks) {
+		window.mereos.allSessionMediaStreamTracks = new Set();
+	}
+	window.mereos.allSessionMediaStreamTracks.add(rawAudioTrack);
+
+	return { publication, localAudioTrack, audioStream, rawAudioTrack };
+};
+
+const restoreIndependentVideoTrack = async (deadTrack = null) => {
+	if (window.mereos?.isRestoringVideoTrack || window.mereos?.isReleasingMedia) return;
+
+	const session = convertDataIntoParse('session');
+	if (session?.sessionStatus !== 'Attending') return;
+
+	const room = window.mereos?.roomInstance;
+	if (!room) return;
+
+	const secureFeatures = getSecureFeatures();
+	if (!findConfigs(['record_video'], secureFeatures?.entities).length) return;
+
+	try {
+		const camStatus = await navigator.permissions.query({ name: 'camera' });
+		if (camStatus.state === 'denied') return;
+	} catch {
+		return;
+	}
+
+	window.mereos.isRestoringVideoTrack = true;
+
+	try {
+		if (deadTrack) {
+			removeStoppedListener(deadTrack);
+			try {
+				await room.localParticipant.unpublishTrack(deadTrack);
+				deadTrack.stop?.();
+			} catch { }
+		} else {
+			await cleanupCameraTracks(room, 'video');
+		}
+
+		const pauseAndResumeEnabled = findConfigs(['pause_and_resume'], secureFeatures?.entities).length > 0;
+		const { publication, localVideoTrack, videoStream, rawVideoTrack, canvasStream } = pauseAndResumeEnabled
+			? await publishCanvasVideoTrack(room)
+			: await publishIndependentVideoTrack(room);
+		const twilioStream = canvasStream || new MediaStream([localVideoTrack.mediaStreamTrack]);
+
+		if (secureFeatures?.entities?.filter((entity) => aiEventsFeatures.includes(entity.key))?.length) {
+			await startAIWebcam(room, twilioStream);
+		} else {
+			await setupWebcam(twilioStream);
+		}
+
+		stopUnusedMediaStreamTracks(videoStream, [rawVideoTrack]);
+
+		const cameraRecordings = [
+			...(session.user_video_name || []),
+			publication.trackSid,
+		];
+		updatePersistData('session', { user_video_name: cameraRecordings });
+	} catch (error) {
+		logger.error('Failed to restore independent video track:', error);
+	} finally {
+		window.mereos.isRestoringVideoTrack = false;
+	}
+};
+
+const restoreIndependentVideoTrackIfNeeded = async () => {
+	const session = convertDataIntoParse('session');
+	if (session?.sessionStatus !== 'Attending' || window.mereos?.isReleasingMedia) return;
+
+	const room = window.mereos?.roomInstance;
+	if (!room) return;
+
+	const secureFeatures = getSecureFeatures();
+	if (!findConfigs(['record_video'], secureFeatures?.entities).length) return;
+
+	if (window.mereos?.lostPermissionTypes?.has('camera')) return;
+
+	try {
+		const camStatus = await navigator.permissions.query({ name: 'camera' });
+		if (camStatus.state === 'denied') return;
+	} catch {
+		return;
+	}
+
+	const videoPublication = Array.from(room.localParticipant.videoTracks.values())
+		.find(({ track }) => track && !track.name?.includes('screen-share'));
+	const videoMst = videoPublication?.track?.mediaStreamTrack;
+
+	if (videoMst?.readyState === 'live') {
+		await restoreCameraViewFromRoom(room, secureFeatures);
+		return;
+	}
+
+	await restoreIndependentVideoTrack(videoPublication?.track || null);
+};
+
+const detachAllTrackStoppedListeners = () => {
+	clearSessionPermissionWatchers();
+	window.mereos?.lostPermissionTypes?.clear();
+
+	[window.mereos?.roomInstance, window.mereos?.mobileRoomInstance]
+		.filter(Boolean)
+		.forEach((room) => {
+			if (window.mereos?.onTrackPublishedMonitor && room?.localParticipant) {
+				try {
+					room.localParticipant.off('trackPublished', window.mereos.onTrackPublishedMonitor);
+				} catch { }
+			}
+			room?.localParticipant?.videoTracks.forEach(({ track }) => {
+				if (track) removeStoppedListener(track);
+			});
+			room?.localParticipant?.audioTracks.forEach(({ track }) => {
+				if (track) removeStoppedListener(track);
+			});
+		});
+
+	window.mereos.onTrackPublishedMonitor = null;
+};
+
+export const cleanupSessionMediaMonitoring = () => {
+	hidePermissionModal();
+	detachAllTrackStoppedListeners();
+};
+
 // ============= RECONNECT FUNCTION =============
 
+const buildReconnectMediaConstraints = (reconnectType, secureFeatures) => {
+	let needsVideo = false;
+	let needsAudio = false;
+	const mediaConstraints = {};
+
+	if (reconnectType === 'camera' && findConfigs(['record_video'], secureFeatures?.entities).length) {
+		Object.assign(mediaConstraints, buildIndependentMediaConstraints('video'));
+		needsVideo = true;
+	}
+
+	if (reconnectType === 'microphone' && findConfigs(['record_audio'], secureFeatures?.entities).length) {
+		Object.assign(mediaConstraints, buildIndependentMediaConstraints('audio'));
+		needsAudio = true;
+	}
+
+	return { mediaConstraints, needsVideo, needsAudio };
+};
+
+const ensureActiveRoom = async (session) => {
+	const existing = window.mereos?.roomInstance;
+	if (existing?.state === 'connected') {
+		return existing;
+	}
+
+	if (existing) {
+		await stopRoomMediaAndDisconnect(existing);
+		window.mereos.roomInstance = null;
+		window.mereos.sessionTwilioAudioTrack = null;
+		window.mereos.sessionAudioMediaTrack = null;
+		window.mereos.sessionAudioStream = null;
+	}
+
+	if (!session?.twilioToken) return null;
+
+	const room = await TwilioVideo.connect(session.twilioToken, {
+		preferredVideoCodecs: 'auto',
+		audio: false,
+		video: false,
+	});
+
+	window.mereos.roomInstance = room;
+	registerTwilioRoom(room);
+	window.mereos.recordingStart = true;
+	updatePersistData('session', {
+		room_id: room?.sid,
+		sessionStatus: 'Attending',
+	});
+	attachTrackMonitoring(room);
+	return room;
+};
+
+const hasActiveVideoTrack = (room) => Array.from(room?.localParticipant?.videoTracks?.values() || [])
+	.some(({ track }) => track && !track.name?.includes('screen-share'));
+
+const restoreCameraViewFromRoom = async (room, secureFeatures) => {
+	if (!room || !findConfigs(['record_video'], secureFeatures?.entities).length) return;
+
+	const container = window.mereos?.shadowRoot;
+	if (container?.querySelector('#webcam-container video, #webcam-container canvas')) {
+		return;
+	}
+
+	const localVideoTrack = Array.from(room.localParticipant.videoTracks.values())
+		.find(({ track }) => track && !track.name?.includes('screen-share'))?.track;
+
+	if (!localVideoTrack) return;
+
+	const twilioStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
+	if (secureFeatures?.entities?.filter((entity) => aiEventsFeatures.includes(entity.key))?.length) {
+		await startAIWebcam(room, twilioStream);
+	} else {
+		await setupWebcam(twilioStream);
+	}
+};
+
+const completePendingSessionStart = async (room, secureFeatures) => {
+	if (!window.mereos?.pendingSessionStart) return;
+
+	const needsAudio = findConfigs(['record_audio'], secureFeatures?.entities).length > 0;
+	const needsVideo = findConfigs(['record_video'], secureFeatures?.entities).length > 0;
+
+	if (needsAudio && room.localParticipant.audioTracks.size === 0) return;
+	if (needsVideo && !hasActiveVideoTrack(room)) return;
+
+	window.mereos.pendingSessionStart = false;
+	attachTrackMonitoring(room);
+	updatePersistData('session', { sessionStatus: 'Attending', room_id: room?.sid });
+
+	try {
+		const updatedSession = convertDataIntoParse('session');
+		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+		const resp = await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+		if (!resp) {
+			throw new Error('Failed to save session information');
+		}
+		await finalizeSuccessfulSessionStart(updatedSession);
+	} catch (error) {
+		logger.error('Error saving candidate session after reconnect:', error);
+		await abortFailedSessionStart(error);
+	}
+};
+
 const reconnectCamera = async () => {
-	try {        
-		if (!window.mereos?.roomInstance) {
+	if (isReconnectingDevice) return;
+	isReconnectingDevice = true;
+
+	let reconnectType = 'camera';
+
+	try {
+		const modal = window.mereos?.shadowRoot?.getElementById('permissionModal')
+			|| document.getElementById('permissionModal');
+		reconnectType = modal?.getAttribute('data-permission-type') || 'camera';
+
+		const secureFeatures = getSecureFeatures();
+		const session = convertDataIntoParse('session');
+		const { needsVideo, needsAudio } = buildReconnectMediaConstraints(
+			reconnectType,
+			secureFeatures
+		);
+
+		if (!needsVideo && !needsAudio) {
+			return;
+		}
+
+		let preAcquiredVideoStream = null;
+		let preAcquiredAudioStream = null;
+
+		if (needsVideo) {
+			preAcquiredVideoStream = await acquireIndependentMediaStream('video');
+		}
+		if (needsAudio) {
+			preAcquiredAudioStream = await acquireIndependentMediaStream('audio');
+		}
+
+		const room = await ensureActiveRoom(session);
+		if (!room) {
+			stopMediaStreamTracks(preAcquiredVideoStream?.getVideoTracks() || []);
+			stopMediaStreamTracks(preAcquiredAudioStream?.getAudioTracks() || []);
 			if (window.mereos.startRecordingCallBack) {
-				window.mereos.startRecordingCallBack({ 
+				window.mereos.startRecordingCallBack({
 					type: 'error',
 					message: 'no_active_session_found',
 					code: 40021
 				});
 			}
+			showPermissionModal(reconnectType);
 			return;
 		}
-        
-		hidePermissionModal();
-        
-		const secureFeatures = getSecureFeatures();
-		const session = convertDataIntoParse('session');
-		const room = window.mereos.roomInstance;
-        
-		const mediaConstraints = {};
-		let needsVideo = false;
-		let needsAudio = false;
-        
-		if (findConfigs(['record_video'], secureFeatures?.entities).length) {
-			mediaConstraints.video = localStorage.getItem('deviceId') 
-				? { deviceId: { exact: localStorage.getItem('deviceId') } } 
-				: true;
-			needsVideo = true;
-		}
-        
-		if (findConfigs(['record_audio'], secureFeatures?.entities).length) {
-			mediaConstraints.audio = localStorage.getItem('microphoneID') 
-				? { deviceId: { exact: localStorage.getItem('microphoneID') } } 
-				: true;
-			needsAudio = true;
-		} else {
-			mediaConstraints.audio = false;
-		}
-        
-		if (!needsVideo && !needsAudio) {
-			return;
-		}
-        
-		const mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-        
-		if (needsVideo) {
-			await cleanupCameraTracks(room, 'video');
-		}
-		if (needsAudio) {
-			await cleanupCameraTracks(room, 'audio');
-		}
-        
-		const videoTrack = mediaStream.getVideoTracks()[0];
-		const audioTrack = mediaStream.getAudioTracks()[0];
-        
-		let newVideoTrackPublication, newAudioTrackPublication;
+
+		let newVideoTrackPublication;
+		let newAudioTrackPublication;
 		let cameraRecordings = [...(session.user_video_name || [])];
 		let audioRecordings = [...(session.user_audio_name || [])];
-        
-		if (videoTrack && needsVideo) {
-			const twilioVideoTrack = new TwilioVideo.LocalVideoTrack(videoTrack);
-			newVideoTrackPublication = await room.localParticipant.publishTrack(twilioVideoTrack);
-            
-			cameraRecordings.push(newVideoTrackPublication.trackSid);
-            
-			await new Promise(resolve => setTimeout(resolve, 100));
-			hidePermissionModal();
-			const localVideoTrack = Array.from(room.localParticipant.videoTracks.values())
-				.find(publication => publication.trackSid === newVideoTrackPublication.trackSid)?.track;
-            
-			if (localVideoTrack) {
-				const twilioStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
-				hidePermissionModal();
-				if (secureFeatures?.entities?.filter(entity => aiEventsFeatures?.includes(entity.key))?.length) {
-					await startAIWebcam(room, twilioStream);
-				} else {
-					await setupWebcam(twilioStream);
-				}
+
+		if (needsVideo) {
+			await cleanupCameraTracks(room, 'video');
+
+			const pauseAndResumeEnabled = findConfigs(['pause_and_resume'], secureFeatures?.entities).length > 0;
+			const { publication, localVideoTrack, videoStream, rawVideoTrack, canvasStream } = pauseAndResumeEnabled
+				? await publishCanvasVideoTrack(room, preAcquiredVideoStream)
+				: await publishIndependentVideoTrack(room, preAcquiredVideoStream);
+			newVideoTrackPublication = publication;
+			cameraRecordings.push(publication.trackSid);
+
+			const twilioStream = canvasStream || new MediaStream([localVideoTrack.mediaStreamTrack]);
+			if (secureFeatures?.entities?.filter((entity) => aiEventsFeatures?.includes(entity.key))?.length) {
+				await startAIWebcam(room, twilioStream);
+			} else {
+				await setupWebcam(twilioStream);
 			}
-            
-			setupTrackStoppedListeners(twilioVideoTrack);
+			stopUnusedMediaStreamTracks(videoStream, [rawVideoTrack]);
 		}
-        
-		if (audioTrack && needsAudio) {
-			const twilioAudioTrack = new TwilioVideo.LocalAudioTrack(audioTrack);
-			newAudioTrackPublication = await room.localParticipant.publishTrack(twilioAudioTrack);
-            
-			audioRecordings.push(newAudioTrackPublication.trackSid);
-            
-			setupTrackStoppedListeners(twilioAudioTrack);
-			console.log('Audio track reconnected with stopped listener');
+
+		if (needsAudio) {
+			await cleanupCameraTracks(room, 'audio');
+			const { publication } = await publishIndependentAudioTrack(room, preAcquiredAudioStream);
+			newAudioTrackPublication = publication;
+			audioRecordings.push(publication.trackSid);
 		}
-        
+
 		const updateData = {};
 		if (newVideoTrackPublication) {
 			updateData.user_video_name = cameraRecordings;
@@ -524,224 +1392,116 @@ const reconnectCamera = async () => {
 		if (newAudioTrackPublication) {
 			updateData.user_audio_name = audioRecordings;
 		}
-        
+
 		if (Object.keys(updateData).length > 0) {
 			updatePersistData('session', updateData);
 		}
-        
-		if (typeof registerEvent === 'function') {
-			registerEvent({ 
-				eventType: 'success', 
-				notify: false, 
-				eventName: 'permission_restored', 
-				eventValue: new Date() 
-			});
-			hidePermissionModal();
+
+		if (reconnectType === 'microphone') {
+			await restoreIndependentVideoTrackIfNeeded();
 		}
-        
+
+		await completePendingSessionStart(room, secureFeatures);
+
+		if (typeof registerEvent === 'function') {
+			registerEvent({
+				eventType: 'success',
+				notify: false,
+				eventName: 'permission_restored',
+				eventValue: new Date()
+			});
+		}
+
+		const stillDeniedTypes = [];
+		try {
+			const camStatus = await navigator.permissions.query({ name: 'camera' });
+			if (camStatus.state === 'denied') stillDeniedTypes.push('camera');
+		} catch { /* Permissions API camera query unsupported -- fall back to bookkeeping below */ }
+		try {
+			const micStatus = await navigator.permissions.query({ name: 'microphone' });
+			if (micStatus.state === 'denied') stillDeniedTypes.push('microphone');
+		} catch { /* Permissions API microphone query unsupported -- fall back to bookkeeping below */ }
+
+		window.mereos.lostPermissionTypes = new Set(stillDeniedTypes.length
+			? stillDeniedTypes
+			: [...(window.mereos.lostPermissionTypes || [])].filter((type) => type !== reconnectType));
+
+		if (window.mereos.lostPermissionTypes.size > 0) {
+			// Still missing another permission (e.g. camera fixed, mic still lost) -- keep the
+			// modal up (refreshed for the remaining type) and the badge hidden.
+			showPermissionModal([...window.mereos.lostPermissionTypes][0]);
+		} else {
+			// Confirmed: nothing is still denied. Only now is it safe to actually dismiss the
+			// modal -- see the comment above ensureActiveRoom for why this moved out of the top
+			// of the function.
+			hidePermissionModal();
+			if (!window.mereos.recordingPaused) {
+				// Don't reveal the badge if the candidate was already paused when permission was
+				// lost -- pausing hides it too, and it should stay hidden until they hit Resume.
+				setCameraBadgeVisibility(true);
+			}
+		}
+
 		if (window.mereos.startRecordingCallBack) {
-			window.mereos.startRecordingCallBack({ 
+			window.mereos.startRecordingCallBack({
 				type: 'success',
 				message: 'device_reconnected_successfully',
 				code: 50000
 			});
 		}
-        
+
 	} catch (error) {
-		// Determine which permission was denied
-		const errorMessage = error.message?.toLowerCase() || '';
-		const errorName = error.name?.toLowerCase() || '';
-        
-		let permissionType = 'camera'; // Default
-        
-		if (errorMessage.includes('audio') || errorMessage.includes('microphone') || 
-            errorName.includes('audio') || errorName.includes('microphone')) {
-			permissionType = 'microphone';
-		} else if (errorMessage.includes('video') || errorMessage.includes('camera') ||
-                   errorName.includes('video') || errorName.includes('camera')) {
-			permissionType = 'camera';
-		}
-        
+		logger.error('Device reconnect failed:', error);
+
 		if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-			setTimeout(() => {
-				showPermissionModal(permissionType);
-			}, 500);
-            
+			const permissionType = await resolveStartPermissionType(error, reconnectType);
+			showToast('error', permissionType === 'camera' ? 'enable_camera_permissions' : 'enable_microphone_permissions');
+			showPermissionModal(permissionType);
+
 			if (window.mereos.startRecordingCallBack) {
-				window.mereos.startRecordingCallBack({ 
+				window.mereos.startRecordingCallBack({
 					type: 'error',
 					message: permissionType === 'camera' ? 'camera_permission_denied' : 'microphone_permission_denied',
 					code: 40019
 				});
 			}
 			sentryExceptioMessage(error, { type: 'error', message: `${permissionType} permission denied` });
-		} else {
-			if (window.mereos.startRecordingCallBack) {
-				updatePersistData('session', {
-					sessionStatus: 'Terminated'
-				});
-				window.mereos.startRecordingCallBack({ 
-					type: 'error',
-					message: 'device_reconnection_failed',
-					code: 40022
-				});
-			}
+			return;
 		}
-        
+
+		showToast('error', reconnectType === 'camera' ? 'enable_camera_permissions' : 'enable_microphone_permissions');
+		showPermissionModal(reconnectType);
+
+		if (window.mereos.startRecordingCallBack) {
+			window.mereos.startRecordingCallBack({
+				type: 'error',
+				message: 'device_reconnection_failed',
+				code: 40022
+			});
+		}
+
 		if (typeof registerEvent === 'function') {
-			registerEvent({ 
-				eventType: 'error', 
-				notify: false, 
-				eventName: permissionType === 'camera' ? 'camera_reconnection_failed' : 'microphone_reconnection_failed', 
+			registerEvent({
+				eventType: 'error',
+				notify: false,
+				eventName: reconnectType === 'camera' ? 'camera_reconnection_failed' : 'microphone_reconnection_failed',
 				eventValue: new Date(),
 				errorMessage: error.message
 			});
 		}
+	} finally {
+		isReconnectingDevice = false;
 	}
 };
-
-// ============= CSS STYLES =============
-
-// Add these styles to your CSS file or inject them
-const modalStyles = `
-.permission-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
-
-.permission-modal {
-    background: white;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.permission-modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.permission-modal-header h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #111827;
-}
-
-.permission-modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #6b7280;
-    padding: 0;
-    line-height: 1;
-}
-
-.permission-modal-close:hover {
-    color: #111827;
-}
-
-.permission-modal-body {
-    padding: 24px;
-}
-
-.permission-instructions p {
-    margin: 0 0 16px;
-    color: #374151;
-    line-height: 1.5;
-}
-
-.permission-instructions ol,
-.permission-instructions ul {
-    margin: 0 0 20px;
-    padding-left: 20px;
-}
-
-.permission-instructions li {
-    margin-bottom: 8px;
-    color: #4b5563;
-    line-height: 1.5;
-}
-
-.browser-instructions {
-    background-color: #f9fafb;
-    padding: 16px;
-    border-radius: 6px;
-    margin: 16px 0;
-}
-
-.browser-instructions h4 {
-    margin: 0 0 12px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #111827;
-}
-
-.browser-instructions ul {
-    margin: 0;
-}
-
-.browser-instructions li {
-    margin-bottom: 8px;
-    font-size: 13px;
-}
-
-.browser-instructions strong {
-    color: #111827;
-    font-weight: 600;
-}
-
-.permission-modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 20px;
-}
-
-.orange-filled-btn {
-    background-color: #f97316;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.orange-filled-btn:hover {
-    background-color: #ea580c;
-}
-
-.orange-filled-btn:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.5);
-}
-`;
 
 // Inject styles if needed
 if (typeof document !== 'undefined') {
 	const styleElement = document.createElement('style');
-	styleElement.textContent = modalStyles;
+	styleElement.textContent = permissionModalStyle;
 	document.head.appendChild(styleElement);
 }
 
-export const startRecording = async () => {	
+const startRecordingInternal = async () => {
 	let screenTrack = null;
 	let cameraRecordings = [];
 	let audioRecordings = [];
@@ -749,12 +1509,12 @@ export const startRecording = async () => {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
 	const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-	
+
 	detectPageRefresh();
 	detectBackButton();
-	
+
 	let libraryDOM = document.getElementById('mereos-library');
-	if(!libraryDOM){
+	if (!libraryDOM) {
 		initShadowDOM();
 		updateThemeColor();
 	}
@@ -764,349 +1524,610 @@ export const startRecording = async () => {
 	}
 
 	loadZendeskWidget();
-	if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length && window?.mereos?.mobileStream){
+	if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length && window?.mereos?.mobileStream) {
 		connectSocketConnection();
 	}
 
 	if (
 		(!window.mereos?.newStream || window?.mereos?.newStream?.getTracks()?.length === 0) &&
 		findConfigs(['record_screen'], secureFeatures?.entities)?.length > 0
-	) {		
-		await registerEvent({ 
-			eventType: 'error', 
-			notify: false, 
-			eventName: 'screen_recording_not_started', 
+	) {
+		await registerEvent({
+			eventType: 'error',
+			notify: false,
+			eventName: 'screen_recording_not_started',
 		});
 		if (window.mereos.startRecordingCallBack) {
-			window.mereos.startRecordingCallBack({ 
-				type:'error',
-				message: 'please_share_your_screen' ,
-				code:40011
+			window.mereos.startRecordingCallBack({
+				type: 'error',
+				message: 'please_share_your_screen',
+				code: 40011
 			});
 		}
-		window.mereos.recordingStart=false;
-		window.mereos.precheckCompleted=false;
+		window.mereos.recordingStart = false;
+		window.mereos.precheckCompleted = false;
 		return;
 	}
 
-	const fullscreenRequired = secureFeatures?.entities?.some(entity => entity.key === 'force_full_screen');
+	try {
+		const fullscreenRequired = secureFeatures?.entities?.some(entity => entity.key === 'force_full_screen');
 
-	if(secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
-		await lockBrowserFromContent(secureFeatures?.entities || []);
-	}
+		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length) {
+			await lockBrowserFromContent(secureFeatures?.entities || []);
+		}
 
-	if (fullscreenRequired) {
-		const cleanupForceFullscreen = initializeForceFullscreen();
-    
-		window.mereos.cleanupForceFullscreen = cleanupForceFullscreen;
-	}
+		if (fullscreenRequired) {
+			const cleanupForceFullscreen = initializeForceFullscreen();
 
-	if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
+			window.mereos.cleanupForceFullscreen = cleanupForceFullscreen;
+		}
 
-		let twilioOptions = {
-			preferredVideoCodecs: 'auto', 
-			bandwidthProfile: { 
-				video: {
-					contentPreferencesMode: 'auto',
-					clientTrackSwitchOffControl: 'auto'
-				}
-			},
-			networkQuality: { 
-				local: 3, 
-				remote: 3 
-			},
-			audio: findConfigs(['record_audio'], secureFeatures?.entities).length ?
-				(localStorage.getItem('microphoneID') !== null ? {
-					deviceId: { exact: localStorage.getItem('microphoneID') },
-				} : true)
-				:
-				false,
-			video: findConfigs(['record_video'], secureFeatures?.entities).length ?
-				(localStorage.getItem('deviceId') !== null ? {
-					deviceId: { exact: localStorage.getItem('deviceId') },
-				} : true)
-				:
-				false
-		};
+		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
 
-		try {
-			const newRoomSessionId = v4();
-			const newSessionId = session?.sessionId ? session?.sessionId : v4();
-			
-			updatePersistData('session', {
-				roomSessionId: newRoomSessionId,
-				sessionId: newSessionId,
-				sessionStatus:'Attending'
-			});
-			let room;
+			let twilioOptions = {
+				preferredVideoCodecs: 'auto',
+				bandwidthProfile: {
+					video: {
+						contentPreferencesMode: 'auto',
+						clientTrackSwitchOffControl: 'auto'
+					}
+				},
+				networkQuality: {
+					local: 3,
+					remote: 3
+				},
+				audio: findConfigs(['record_audio'], secureFeatures?.entities).length ?
+					(localStorage.getItem('microphoneID') !== null ? {
+						deviceId: { exact: localStorage.getItem('microphoneID') },
+					} : true)
+					:
+					false,
+				video: findConfigs(['record_video'], secureFeatures?.entities).length ?
+					(localStorage.getItem('deviceId') !== null ? {
+						deviceId: { exact: localStorage.getItem('deviceId') },
+					} : true)
+					:
+					false
+			};
 
-			try{
-				room = await TwilioVideo.connect(session?.twilioToken, twilioOptions);
-				window.mereos.roomInstance = room;
-			}catch(error){
-				registerEvent({ eventType: 'success', notify: false, eventName: 'room_is_not_creating',eventValue:error });
-				sentryExceptioMessage(error,{type:'error',message:'Twilio room is not creating'});
-			}
-			
-			updatePersistData('session', { 
-				room_id: room?.sid 
-			});
-
-			const mediaConstraints = {};
-
-			if (findConfigs(['record_video'], secureFeatures?.entities).length) {
-				mediaConstraints.video = localStorage.getItem('deviceId') 
-					? { deviceId: { exact: localStorage.getItem('deviceId') } } 
-					: true;
-			}
-
-			if (findConfigs(['record_audio'], secureFeatures?.entities).length) {
-				mediaConstraints.audio = localStorage.getItem('microphoneID') 
-					? { deviceId: { exact: localStorage.getItem('microphoneID') } } 
-					: true;
-			} else {
-				mediaConstraints.audio = false;
-			}
-			
-			if(secureFeatures?.entities?.find(entity => entity.key === 'record_video')){
-				await new Promise((resolve) => {
-					if (room.localParticipant.videoTracks.size > 0) {
-						resolve();
-					} else {
-						const checkTracks = () => {
-							if (room.localParticipant.videoTracks.size > 0) {
-								room.localParticipant.off('trackPublished', checkTracks);
-								resolve();
-							}
-						};
-						room.localParticipant.on('trackPublished', checkTracks);
+			[window.mereos.globalStream, window.mereos.audioStream].forEach((stream) => {
+				stream?.getTracks?.().forEach((track) => {
+					try {
+						track.stop();
+					} catch (error) {
+						logger.error('Failed to stop precheck media track:', error);
 					}
 				});
+			});
+			window.mereos.globalStream = null;
+			window.mereos.audioStream = null;
 
-				const localVideoTrack = Array.from(room.localParticipant.videoTracks.values())[0]?.track;
-				
-				if (localVideoTrack) {
-					const twilioStream = new MediaStream([localVideoTrack.mediaStreamTrack]);
-					
-					if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length){
-						await startAIWebcam(room, twilioStream);
-					} else {
-						await setupWebcam(twilioStream);
-					}
-				} 
-
-				cameraRecordings = [
-					...session.user_video_name,
-					...Array.from(room?.localParticipant?.videoTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
-				];
-
-				updatePersistData('session', { 
-					user_video_name: cameraRecordings || [], 
+			const persistedSession = convertDataIntoParse('session');
+			if (!persistedSession?.twilioToken) {
+				window.mereos.recordingStart = false;
+				registerEvent({ eventType: 'success', notify: false, eventName: 'room_is_not_creating' });
+				invokeStartSessionCallback({
+					type: 'error',
+					message: 'room_is_not_creating',
+					code: 40065,
+					details: 'Twilio token is missing',
 				});
+				return;
 			}
 
-			if(findConfigs(['record_audio'], secureFeatures?.entities).length){
-				audioRecordings = [
-					...session.user_audio_name,
-					...Array.from(room?.localParticipant?.audioTracks, ([name, value]) => ({ name, value })).map(rt => rt.name)
-				];
-				updatePersistData('session', { user_audio_name: audioRecordings, room_id: room?.sid });
-			}
+			try {
+				const newRoomSessionId = v4();
+				const newSessionId = session?.sessionId ? session?.sessionId : v4();
 
-			if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
-				if(window.mereos?.newStream?.getTracks()[0]){
-					screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0],{
-						name: `screen-share-${v4()}`
-					});
-					window.mereos.screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
-					screenRecordings = [...session.screen_sharing_video_name, window.mereos.screenTrackPublished.trackSid];
-					updatePersistData('session', { screen_sharing_video_name: screenRecordings });
-				}else{
-					await registerEvent({ 
-						eventType: 'error', 
-						notify: false, 
-						eventName: 'screen_recording_not_started', 
-					});
-					if(window.mereos.startRecordingCallBack){
-						window.mereos.startRecordingCallBack({ 
-							type:'error',
-							message: 'please_share_your_screen',
-							code:40011 
-						});
+				updatePersistData('session', {
+					roomSessionId: newRoomSessionId,
+					sessionId: newSessionId,
+					sessionStatus: 'Attending'
+				});
+				let room;
+				try {
+					if (window.mereos?.roomInstance) {
+						try {
+							detachAllTrackStoppedListeners();
+							await stopRoomMediaAndDisconnect(window.mereos.roomInstance);
+						} catch (disconnectError) {
+							logger.error('Failed to disconnect stale room before new session:', disconnectError);
+						}
+						window.mereos.roomInstance = null;
 					}
-					window.mereos.precheckCompleted=false;
+					window.mereos.pendingSessionStart = false;
+
+					room = await TwilioVideo.connect(persistedSession.twilioToken, twilioOptions);
+					registerTwilioRoom(room);
+					window.mereos.roomInstance = room;
+				} catch (error) {
+					const isPermissionError = error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError';
+					if (isPermissionError) {
+						const permissionType = await resolveStartPermissionType(error);
+						await showMediaPermissionError(permissionType);
+						return;
+					}
+
+					await releaseAllMediaStreams();
+					if (error.code) {
+						logger.error('Twilio error code:', error.code);
+					}
+					if (error.message) {
+						logger.error('Twilio error message:', error.message);
+					}
+					registerEvent({ eventType: 'success', notify: false, eventName: 'room_is_not_creating' });
+					sentryExceptioMessage(error, { type: 'error', message: 'Twilio room is not creating' });
 					window.mereos.recordingStart = false;
+					invokeStartSessionCallback({
+						type: 'error',
+						message: 'room_is_not_creating',
+						code: 40065,
+					});
+					// Must return here — previously execution continued with room === undefined.
 					return;
 				}
-			}
-			
-			if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
-				window.mereos.socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
-			}
+				updatePersistData('session', {
+					room_id: room?.sid
+				});
 
-			const localParticipant = room.localParticipant;
+				const needsVideo = findConfigs(['record_video'], secureFeatures?.entities).length > 0;
+				const needsAudio = findConfigs(['record_audio'], secureFeatures?.entities).length > 0;
+				const pauseAndResumeEnabled = findConfigs(['pause_and_resume'], secureFeatures?.entities).length > 0;
 
-			localParticipant.on('networkQualityLevelChanged', (level) => {
-				if (level <= 2) {
-					if(window.mereos.startRecordingCallBack){
-						window.mereos.startRecordingCallBack({ 
-							type:'error',
-							message: 'session_is_terminated_due_to_slow_internet_connection',
-							code:40013
+				if (needsVideo) {
+					try {
+						const { publication, localVideoTrack, canvasStream } = pauseAndResumeEnabled
+							? await publishCanvasVideoTrack(room)
+							: await publishIndependentVideoTrack(room);
+						const twilioStream = canvasStream || new MediaStream([localVideoTrack.mediaStreamTrack]);
+
+						if (secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length) {
+							const aiResult = await startAIWebcam(room, twilioStream);
+							if (aiResult?.success === false) {
+								window.mereos.recordingStart = false;
+								return;
+							}
+						} else {
+							await setupWebcam(twilioStream);
+						}
+
+						cameraRecordings = [
+							...session.user_video_name,
+							publication.trackSid,
+						];
+
+						updatePersistData('session', {
+							user_video_name: cameraRecordings || [],
+						});
+					} catch (error) {
+						const permissionType = await resolveStartPermissionType(error, 'camera');
+						await showMediaPermissionError(permissionType);
+						return;
+					}
+				}
+
+				if (needsAudio) {
+					try {
+						const { publication } = await publishIndependentAudioTrack(room);
+						audioRecordings = [
+							...session.user_audio_name,
+							publication.trackSid,
+						];
+						updatePersistData('session', { user_audio_name: audioRecordings, room_id: room?.sid });
+					} catch (error) {
+						if (hasActiveVideoTrack(room)) {
+							window.mereos.pendingSessionStart = true;
+							await showMediaPermissionError('microphone');
+						} else {
+							const permissionType = await resolveStartPermissionType(error, 'microphone');
+							await showMediaPermissionError(permissionType);
+						}
+						return;
+					}
+				}
+
+				if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
+					if (window.mereos?.newStream?.getTracks()[0]) {
+						if (pauseAndResumeEnabled) {
+							const { publication } = await publishCanvasScreenTrack(room, window.mereos.newStream);
+							window.mereos.screenTrackPublished = publication;
+						} else {
+							screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0], {
+								name: `screen-share-${v4()}`
+							});
+							window.mereos.screenTrackPublished = await room.localParticipant.publishTrack(screenTrack);
+						}
+						screenRecordings = [...session.screen_sharing_video_name, window.mereos.screenTrackPublished.trackSid];
+						updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+					} else {
+						await registerEvent({
+							eventType: 'error',
+							notify: false,
+							eventName: 'screen_recording_not_started',
+						});
+						if (window.mereos.startRecordingCallBack) {
+							invokeStartSessionCallback({
+								type: 'error',
+								message: 'please_share_your_screen',
+								code: 40011
+							});
+						}
+						window.mereos.precheckCompleted = false;
+						window.mereos.recordingStart = false;
+						return;
+					}
+				}
+
+				if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
+					window.mereos.socket.send(JSON.stringify({ event: 'startRecording', data: 'Web video recording started' }));
+				}
+
+				const localParticipant = room?.localParticipant;
+
+				localParticipant.on('networkQualityLevelChanged', (level) => {
+					if (level <= 2) {
+						if (window.mereos.startRecordingCallBack) {
+							window.mereos.startRecordingCallBack({
+								type: 'error',
+								message: 'session_is_terminated_due_to_slow_internet_connection',
+								code: 40013
+							});
+						}
+
+						registerEvent({ eventType: 'error', notify: false, eventName: 'slow_internet_detected' });
+
+						// showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
+					}
+				});
+
+				attachTrackMonitoring(room);
+
+				const handleReconnecting = async (error) => {
+					if (
+						error?.message?.includes('Media connection failed') ||
+						error?.message?.includes('Media activity')
+					) {
+						registerEvent({
+							notify: false,
+							eventName: 'media_connection_failed',
+						});
+						if (window.mereos.startRecordingCallBack) {
+							window.mereos.startRecordingCallBack({
+								type: 'error',
+								message: 'media_connection_failed',
+								code: 40056
+							});
+						}
+						showToast('error', 'internet_connection_lost');
+						isMediaError = true;
+					} else if (
+						error?.message?.includes('Signaling connection disconnected')
+					) {
+						registerEvent({
+							notify: false,
+							eventName: 'signaling_connection_disconnected',
+						});
+						if (window.mereos.startRecordingCallBack) {
+							window.mereos.startRecordingCallBack({
+								type: 'error',
+								message: 'signaling_connection_disconnected',
+								code: 40057
+							});
+						}
+						showToast('error', 'reconnecting_signaling_connection');
+						isSignalingError = true;
+					} else {
+						if (window.mereos.startRecordingCallBack) {
+							window.mereos.startRecordingCallBack({
+								type: 'success',
+								message: 'video_recording_reconnecting',
+								code: 50019
+							});
+						}
+						registerEvent({
+							notify: false,
+							eventName: 'video_recording_reconnecting',
 						});
 					}
+				};
 
-					registerEvent({ eventType: 'success', notify: false, eventName: 'slow_internet_detected' });
-				
-					// showToast('error','your_internet_is_very_slow_please_make_sure_you_have_stable_network_quality');
-				}
-			});
-			
-			room.localParticipant.videoTracks.forEach(({ track }) => {
-				if (track && track.kind === 'video') {
-					setupTrackStoppedListeners(track, 'video');
-				}
-			});
+				const handleDisconnected = async () => {
+					if (window.mereos?.isReleasingMedia || window.mereos?.isStoppingSession) {
+						return;
+					}
 
-			room.localParticipant.audioTracks.forEach(({ track }) => {
-				if (track && track.kind === 'audio') {
-					setupTrackStoppedListeners(track, 'microphone');
-				}
-			});
+					if (window.mereos?.lostPermissionTypes?.size > 0) {
+						logger.warn('Twilio room disconnected during recoverable permission loss');
+						return;
+					}
 
-			const handleReconnecting = async (error) => {
-				if (
-					error?.message?.includes('Media connection failed') ||
-				error?.message?.includes('Media activity')
-				) {
+					cleanupLocalVideo();
 					registerEvent({
 						notify: false,
-						eventName: 'media_connection_failed',
+						eventName: 'video_recording_disconnected',
 					});
-					showToast('error','internet_connection_lost');
-					isMediaError = true;
-				} else if (
-					error?.message?.includes('Signaling connection disconnected')
-				) {
-					registerEvent({
-						notify: false,
-						eventName: 'signaling_connection_disconnected',
-					});
-					showToast('error','reconnecting_signaling_connection');
-					isSignalingError = true;
-				} else {
-					registerEvent({
-						notify: false,
-						eventName: 'video_recording_reconnecting',
-					});
-				}
-			};
 
-			const handleDisconnected = async () => {
-				cleanupLocalVideo();
-				registerEvent({
-					notify: false,
-					eventName: 'video_recording_disconnected',
-				});
-				updatePersistData('session', { 
+					updatePersistData('session', {
+						sessionStatus: 'Terminated'
+					});
+
+					if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0) {
+						updatePersistData('preChecksSteps', {
+							mobileConnection: false,
+							screenSharing: false
+						});
+						showToast('error', 'mobile_phone_disconnected');
+						if (window.mereos.startRecordingCallBack) {
+							window.mereos.startRecordingCallBack({
+								type: 'error',
+								message: 'mobile_phone_disconnected_during_assessment',
+								code: 40058
+							});
+						}
+					} else {
+						updatePersistData('preChecksSteps', {
+							screenSharing: false,
+						});
+					}
+					if (window.mereos.startRecordingCallBack) {
+						window.mereos.startRecordingCallBack({
+							type: 'error',
+							message: 'web_internet_connection_disconnected',
+							code: 40014
+						});
+						window.mereos.recordingStart = false;
+					}
+					forceClosure();
+				};
+
+				const handleReconnected = async () => {
+					if (room.state === 'connected' && isMediaError) {
+						showToast('success', 'internet_connection_recovered');
+						isMediaError = false;
+					}
+					if (room.state === 'connected' && isSignalingError) {
+						showToast('success', 'signaling_connection_reconnected');
+						isSignalingError = false;
+					}
+					registerEvent({
+						notify: false,
+						eventName: 'video_recording_reconnected',
+					});
+					if (window.mereos.startRecordingCallBack) {
+						window.mereos.startRecordingCallBack({
+							type: 'success',
+							message: 'video_recording_reconnected',
+							code: 50020
+						});
+					}
+				};
+
+				room.on('reconnected', handleReconnected);
+				room.on('disconnected', handleDisconnected);
+				room.on('reconnecting', handleReconnecting);
+
+			} catch (error) {
+				logger.error('error in startRecording', error);
+				const isPermissionError = error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError';
+				if (isPermissionError) {
+					const permissionType = await resolveStartPermissionType(error);
+					await showMediaPermissionError(permissionType);
+					return;
+				}
+
+				await releaseAllMediaStreams();
+				updatePersistData('session', {
 					sessionStatus: 'Terminated'
 				});
-		
-				if(findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0){
-					updatePersistData('preChecksSteps', { 
-						mobileConnection: false,
-						screenSharing: false
-					});
-					showToast('error','mobile_phone_disconnected');		
-				}else{
-					updatePersistData('preChecksSteps', { 
-						screenSharing: false,
-					});
-				}
-				if(window.mereos.startRecordingCallBack){
-					window.mereos.startRecordingCallBack({ 
-						type:'error',
-						message: 'web_internet_connection_disconnected',
-						code:40014
-					});
-					window.mereos.recordingStart = false;
-				}
-				forceClosure();
-			};
-
-			const handleReconnected = async () => {
-				if (room.state === 'connected' && isMediaError) {
-					showToast('success','internet_connection_recovered');		
-					isMediaError = false;
-				}
-				if (room.state === 'connected' && isSignalingError) {
-					showToast('success','signaling_connection_reconnected');		
-					isSignalingError = false;
-				}
-				registerEvent({
-					notify: false,
-					eventName: 'video_recording_reconnected',
+				registerEvent({ eventType: 'success', notify: false, eventName: 'camera_or_microphone_permission_is_denied' });
+				sentryExceptioMessage(error, { type: 'error', message: 'Camera or microphone permission is denied' });
+				window.mereos.recordingStart = false;
+				invokeStartSessionCallback({
+					type: 'error',
+					message: 'error_in_starting_the_session',
+					code: 40004,
+					details: error,
 				});
-			};
-
-			room.on('reconnected', handleReconnected);
-			room.on('disconnected', handleDisconnected);
-			room.on('reconnecting',handleReconnecting);
-
-			registerEvent({ 
-				eventType: 'success', 
-				notify: false, 
-				eventName: 'recording_started_successfully', 
-			});
-			
-			if(window.mereos.startRecordingCallBack){
-				window.mereos.startRecordingCallBack({ 
-					type:'success',
-					message: 'recording_started_successfully',
-					code:50000
-				});
+				return;
 			}
-			
-		} catch (error) {
-			logger.error('error in startRecording',error.message);
+		} else {
 			updatePersistData('session', {
-				sessionStatus:'Terminated'
+				sessionStatus: 'Attending'
 			});
-			registerEvent({ eventType: 'success', notify: false, eventName: 'camera_or_microphone_permission_is_denied' });
-			sentryExceptioMessage(error,{type:'error',message:'Camera or microphone permission is denied'});
-			window.mereos.recordingStart = false;
-			if(window.mereos.startRecordingCallBack){
-				window.mereos.startRecordingCallBack({ 
-					type:'success',
-					message: 'please_allow_camera_or_microphone_permission',
-					code:50000
-				});
+		}
+
+		try {
+			const updatedSession = convertDataIntoParse('session');
+			const resp = await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+			if (!resp) {
+				throw new Error('Failed to save session information');
 			}
+			await finalizeSuccessfulSessionStart(updatedSession);
+		} catch (error) {
+			logger.error('Error saving candidate session on start:', error);
+			await abortFailedSessionStart(error);
+			return;
 		}
-	}else{
-		updatePersistData('session', {
-			sessionStatus:'Attending'
+	} catch (error) {
+		// Catch-all for lockBrowser, fullscreen init, addSectionSessionRecord, etc.
+		logger.error('Unhandled error in startRecording:', error);
+		await releaseAllMediaStreams();
+		window.mereos.recordingStart = false;
+		sentryExceptioMessage(error, { type: 'error', message: 'Unhandled error in startRecording' });
+		invokeStartSessionCallback({
+			type: 'error',
+			message: 'error_in_starting_the_session',
+			code: 40004,
+			details: error,
 		});
-		if(window.mereos.startRecordingCallBack){
-			window.mereos.startRecordingCallBack({ 
-				type:'success',
-				code:50000,
-				message: 'recording_started_successfully' 
-			});
-		}
-		window.mereos.recordingStart = true;
 	}
-	const updatedSession = convertDataIntoParse('session');
-	let resp = await addSectionSessionRecord(updatedSession,candidateInviteAssessmentSection);
-	if(resp){
-		const dateTime = new Date();
-		if(!session?.browserEvents.filter(item => item.name === 'session_started')?.length){
-			registerEvent({ eventType: 'success', notify: false, eventName: 'session_started', startAt: dateTime });
-		}
+};
+
+let recordingStartInFlight = null;
+
+export const startRecording = async () => {
+	if (recordingStartInFlight) {
+		return recordingStartInFlight;
+	}
+
+	recordingStartInFlight = startRecordingInternal().finally(() => {
+		recordingStartInFlight = null;
+	});
+
+	return recordingStartInFlight;
+};
+
+export const waitForActiveRecordingStart = async () => {
+	if (recordingStartInFlight) {
+		await recordingStartInFlight.catch(() => {});
 	}
 };
 
 const PREDICTION = ['cell phone', 'book', 'laptop'];
+
+const updatePauseResumeUI = (isPaused) => {
+	const container = window.mereos?.shadowRoot;
+	if (!container) return;
+
+	const badge = container.querySelector('#user-video-header .recording-badge-container-header');
+	const badgeText = badge?.querySelector('.recording-text');
+	if (badge && badgeText) {
+		badge.classList.toggle('recording-badge-container-header--paused', isPaused);
+		badgeText.textContent = i18next.t(isPaused ? 'recording_paused' : 'recording');
+	}
+
+	const button = container.querySelector('#pause-resume-btn');
+	if (button) {
+		const isStandalone = button.classList.contains('pause-resume-btn--standalone');
+		button.textContent = isStandalone
+			? i18next.t(isPaused ? 'resume_recording' : 'pause_recording')
+			: i18next.t(isPaused ? 'resume' : 'pause');
+	}
+};
+
+const setupStandalonePauseResumeButton = () => {
+	const container = window.mereos?.shadowRoot;
+	if (!container || container.getElementById('pause-resume-btn')) return;
+
+	const button = document.createElement('button');
+	button.id = 'pause-resume-btn';
+	button.className = 'pause-resume-btn pause-resume-btn--standalone';
+	button.textContent = i18next.t(window.mereos.recordingPaused ? 'resume_recording' : 'pause_recording');
+
+	button.addEventListener('click', (e) => {
+		e.stopPropagation();
+		if (window.mereos.recordingPaused) {
+			resumeRecording();
+		} else {
+			pauseRecording();
+		}
+	});
+
+	container.appendChild(button);
+};
+
+const removeStandalonePauseResumeButton = () => {
+	const button = window.mereos?.shadowRoot?.querySelector('#pause-resume-btn.pause-resume-btn--standalone');
+	if (button) button.remove();
+};
+
+const showPauseModal = () => {
+	const container = window.mereos?.shadowRoot || document.body;
+	if (container.querySelector?.('#pauseRecordingModal') || document.getElementById('pauseRecordingModal')) {
+		return;
+	}
+
+	const modalDiv = document.createElement('div');
+	modalDiv.id = 'pauseRecordingModal';
+	modalDiv.className = 'pause-modal-overlay';
+	modalDiv.innerHTML = `
+		<div class="pause-modal">
+			<div class="pause-modal-icon">⏸</div>
+			<h3 class="pause-modal-title">${i18next.t('recording_paused')}</h3>
+			<p class="pause-modal-message">${i18next.t('recording_paused_modal_message')}</p>
+			<button class="orange-filled-btn pause-modal-button" type="button" id="resumeRecordingBtn">
+				${i18next.t('resume_recording')}
+			</button>
+		</div>
+	`;
+
+	try {
+		container.appendChild(modalDiv);
+	} catch (error) {
+		document.body.appendChild(modalDiv);
+	}
+
+	const resumeBtn = modalDiv.querySelector('#resumeRecordingBtn');
+	if (resumeBtn) {
+		resumeBtn.addEventListener('click', () => {
+			resumeBtn.disabled = true;
+			resumeRecording();
+		});
+	}
+};
+
+const hidePauseModal = () => {
+	const modal = window.mereos?.shadowRoot?.getElementById('pauseRecordingModal')
+		|| document.getElementById('pauseRecordingModal');
+	if (modal) modal.remove();
+};
+
+const pauseRecording = async () => {
+	if (isPauseResumeBusy) return;
+	const room = window.mereos?.roomInstance;
+	const canPause = window.mereos?.pauseCanvasState || window.mereos?.pauseScreenCanvasState;
+	if (!room || !canPause || window.mereos.recordingPaused) return;
+
+	isPauseResumeBusy = true;
+	try {
+		window.mereos.recordingPaused = true;
+		room.localParticipant.audioTracks.forEach(({ track }) => {
+			if (!track || track.name?.includes('screen-share')) return;
+			track.disable();
+		});
+		updatePauseResumeUI(true);
+		showPauseModal();
+		setCameraBadgeVisibility(false);
+		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_paused' });
+	} catch (error) {
+		window.mereos.recordingPaused = false;
+		hidePauseModal();
+		setCameraBadgeVisibility(true);
+		sentryExceptioMessage(error, { type: 'error', message: 'Failed to pause recording' });
+		registerEvent({ eventType: 'error', notify: false, eventName: 'recording_pause_failed', sentryError: true });
+		showToast('error', 'recording_pause_failed');
+	} finally {
+		isPauseResumeBusy = false;
+	}
+};
+
+const resumeRecording = async () => {
+	if (isPauseResumeBusy) return;
+	const room = window.mereos?.roomInstance;
+	const canPause = window.mereos?.pauseCanvasState || window.mereos?.pauseScreenCanvasState;
+	if (!room || !canPause || !window.mereos.recordingPaused) return;
+
+	isPauseResumeBusy = true;
+	try {
+		window.mereos.recordingPaused = false;
+		room.localParticipant.audioTracks.forEach(({ track }) => {
+			if (!track || track.name?.includes('screen-share')) return;
+			track.enable();
+		});
+		updatePauseResumeUI(false);
+		hidePauseModal();
+		setCameraBadgeVisibility(true);
+		registerEvent({ eventType: 'success', notify: false, eventName: 'recording_resumed' });
+	} catch (error) {
+		window.mereos.recordingPaused = true;
+		setCameraBadgeVisibility(false);
+		sentryExceptioMessage(error, { type: 'error', message: 'Failed to resume recording' });
+		registerEvent({ eventType: 'error', notify: false, eventName: 'recording_resume_failed', sentryError: true });
+		showToast('error', 'recording_resume_failed');
+	} finally {
+		isPauseResumeBusy = false;
+	}
+};
 
 const setupWebcam = async (mediaStream) => {
 	return new Promise((resolve, reject) => {
@@ -1115,19 +2136,28 @@ const setupWebcam = async (mediaStream) => {
 			if (!i18next.isInitialized) {
 				initializeI18next();
 			}
-            
+
+			const cameraViewEnabled = findConfigs(['camera_view'], secureFeatures?.entities)?.length > 0;
+			const pauseAndResumeEnabled = findConfigs(['pause_and_resume'], secureFeatures?.entities)?.length > 0;
+
+			if (!cameraViewEnabled && pauseAndResumeEnabled) {
+				setupStandalonePauseResumeButton();
+			} else {
+				removeStandalonePauseResumeButton();
+			}
+
 			let webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
 			if (!webcamContainer) {
 				webcamContainer = document.createElement('div');
 				webcamContainer.id = 'webcam-container';
 				webcamContainer.className = 'user-videos-remote';
-				if(findConfigs(['camera_view'], secureFeatures?.entities)?.length) {
+				if (cameraViewEnabled) {
 					window.mereos.shadowRoot.appendChild(webcamContainer);
 				}
 			}
-        
+
 			const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-            
+
 			let videoHeaderContainer = webcamContainer.querySelector('#user-video-header');
 			if (!videoHeaderContainer) {
 				videoHeaderContainer = document.createElement('div');
@@ -1153,16 +2183,16 @@ const setupWebcam = async (mediaStream) => {
 				videoHeaderContainer.appendChild(recordingIcon);
 				webcamContainer.appendChild(videoHeaderContainer);
 			}
-        
+
 			const remoteVideoRef = document.createElement('div');
 			remoteVideoRef.classList.add('remote-video');
 			remoteVideoRef.id = 'remote-video';
-			
+
 			// Initialize dimensions
 			let currentWidth = 200;
 			const MIN_WIDTH = 180;
 			const MAX_WIDTH = 600;
-			
+
 			let mediaWrapper = webcamContainer.querySelector('#user-video-element');
 			if (!mediaWrapper) {
 				mediaWrapper = document.createElement('div');
@@ -1182,7 +2212,7 @@ const setupWebcam = async (mediaStream) => {
 				mediaWrapper.innerHTML = '';
 				mediaWrapper.style.display = 'block';
 			}
-			
+
 			const videoElement = document.createElement('video');
 			videoElement.autoplay = true;
 			videoElement.muted = true;
@@ -1195,7 +2225,7 @@ const setupWebcam = async (mediaStream) => {
 				height: '100%',
 				objectFit: 'cover'
 			});
-        
+
 			const canvas = document.createElement('canvas');
 			canvas.id = 'canvas';
 			Object.assign(canvas.style, {
@@ -1205,16 +2235,16 @@ const setupWebcam = async (mediaStream) => {
 				width: '100%',
 				height: '100%'
 			});
-        
-			webcamContainer.appendChild(videoHeaderContainer);
+
 			mediaWrapper.appendChild(videoElement);
-			if(secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length) {
+
+			videoElement.play().catch((error) => logger.error('setupWebcam: video.play() failed', error));
+			if (secureFeatures?.entities?.filter(entity => aiEventsFeatures.includes(entity.key))?.length) {
 				mediaWrapper.appendChild(canvas);
 			}
-			webcamContainer.appendChild(mediaWrapper);
-			
+
 			let videoFooterContainer = webcamContainer.querySelector('#user-video-footer');
-			if (!videoFooterContainer && findConfigs(['camera_view'], secureFeatures?.entities)?.length) {
+			if (!videoFooterContainer && cameraViewEnabled) {
 				videoFooterContainer = document.createElement('div');
 				videoFooterContainer.className = 'user-view-footer';
 				videoFooterContainer.id = 'user-video-footer';
@@ -1259,11 +2289,11 @@ const setupWebcam = async (mediaStream) => {
 						currentWidth = Math.min(currentWidth + 64, MAX_WIDTH);
 						const aspectRatio = 142 / 180;
 						const newHeight = Math.round(currentWidth * aspectRatio);
-						
+
 						webcamContainer.style.width = `${currentWidth}px`;
 						mediaWrapper.style.width = `${currentWidth}px`;
 						mediaWrapper.style.height = `${newHeight}px`;
-						
+
 						const remoteVideo = webcamContainer.querySelector('#remote-video');
 						if (remoteVideo) {
 							remoteVideo.style.width = `${currentWidth}px`;
@@ -1278,11 +2308,11 @@ const setupWebcam = async (mediaStream) => {
 						currentWidth = Math.max(currentWidth - 64, MIN_WIDTH);
 						const aspectRatio = 142 / 180;
 						const newHeight = Math.round(currentWidth * aspectRatio);
-						
+
 						webcamContainer.style.width = `${currentWidth}px`;
 						mediaWrapper.style.width = `${currentWidth}px`;
 						mediaWrapper.style.height = `${newHeight}px`;
-						
+
 						const remoteVideo = webcamContainer.querySelector('#remote-video');
 						if (remoteVideo) {
 							remoteVideo.style.width = `${currentWidth}px`;
@@ -1293,9 +2323,28 @@ const setupWebcam = async (mediaStream) => {
 
 				videoFooterContainer.appendChild(zoomOutBtn);
 				videoFooterContainer.appendChild(zoomInBtn);
+
+				if (pauseAndResumeEnabled) {
+					const pauseResumeBtn = document.createElement('button');
+					pauseResumeBtn.id = 'pause-resume-btn';
+					pauseResumeBtn.className = 'pause-resume-btn';
+					pauseResumeBtn.textContent = i18next.t(window.mereos.recordingPaused ? 'resume' : 'pause');
+
+					pauseResumeBtn.addEventListener('click', (e) => {
+						e.stopPropagation();
+						if (window.mereos.recordingPaused) {
+							resumeRecording();
+						} else {
+							pauseRecording();
+						}
+					});
+
+					videoFooterContainer.appendChild(pauseResumeBtn);
+				}
+
 				webcamContainer.appendChild(videoFooterContainer);
 			}
-        
+
 			videoElement.addEventListener('loadedmetadata', () => {
 				canvas.width = videoElement.videoWidth;
 				canvas.height = videoElement.videoHeight;
@@ -1317,37 +2366,37 @@ const setupWebcam = async (mediaStream) => {
 			});
 
 			const handleMouseDown = (e) => {
-				if (e.target.classList.contains('zoom-btns')) {
+				if (e.target.classList.contains('zoom-btns') || e.target.classList.contains('pause-resume-btn')) {
 					return;
 				}
-				
+
 				isDragging = true;
 				webcamContainer.style.cursor = 'grabbing';
-                
+
 				startX = e.clientX;
 				startY = e.clientY;
-                
+
 				const rect = webcamContainer.getBoundingClientRect();
 				initialX = rect.left;
 				initialY = rect.top;
-                
+
 				e.preventDefault();
 				e.stopPropagation();
 			};
 
 			const handleMouseMove = (e) => {
 				if (!isDragging) return;
-                
+
 				const dx = e.clientX - startX;
 				const dy = e.clientY - startY;
-                
+
 				const newX = initialX + dx;
 				const newY = initialY + dy;
-                
+
 				webcamContainer.style.left = `${newX}px`;
 				webcamContainer.style.top = `${newY}px`;
 				webcamContainer.style.right = 'auto';
-                
+
 				e.preventDefault();
 				e.stopPropagation();
 			};
@@ -1367,12 +2416,12 @@ const setupWebcam = async (mediaStream) => {
 				document.removeEventListener('mouseup', handleMouseUp);
 			};
 
-			resolve({ 
-				videoElement, 
+			resolve({
+				videoElement,
 				canvas,
 				cleanupDrag
 			});
-		} catch(e) {
+		} catch (e) {
 			reject(e);
 		}
 	});
@@ -1409,19 +2458,19 @@ const startAIWebcam = async (room, mediaStream) => {
 			await tf.setBackend('cpu');
 			await tf.ready();
 		}
-		
 
-		if(!window.mereos.net){
+
+		if (!window.mereos.net) {
 			window.mereos.net = await cocoSsd.load();
 		}
-    
+
 		const localParticipant = room.localParticipant;
 		const videoTrackPublications = Array.from(localParticipant.videoTracks.values());
-			
+
 		if (videoTrackPublications.length === 0) {
 			throw new Error('No video track available from local participant');
 		}
-		
+
 		const { canvas } = await setupWebcam(mediaStream, window.mereos.shadowRoot);
 		const context = canvas.getContext('2d');
 
@@ -1430,7 +2479,10 @@ const startAIWebcam = async (room, mediaStream) => {
 		processingVideo.srcObject = new MediaStream([videoTrackPublications[0].track.mediaStreamTrack]);
 		processingVideo.autoplay = true;
 		processingVideo.playsInline = true;
-			
+		window.mereos.aiProcessingVideo = processingVideo;
+
+		processingVideo.play().catch((error) => logger.error('startAIWebcam: video.play() failed', error));
+
 		await new Promise((resolve) => {
 			processingVideo.onloadedmetadata = () => {
 				processingVideo.width = processingVideo.videoWidth;
@@ -1452,6 +2504,7 @@ const startAIWebcam = async (room, mediaStream) => {
 			try {
 				seconds = seconds + 1;
 				if (processingVideo.readyState !== 4) return;
+				if (window.mereos.recordingPaused) return;
 
 				const image = tf.browser.fromPixels(processingVideo);
 				const predictions = await window.mereos.net.detect(image);
@@ -1465,7 +2518,7 @@ const startAIWebcam = async (room, mediaStream) => {
 
 				let log = {}, person = {}, multiplePersonFound = false;
 				let detectedObjects = new Set();
-			
+
 				predictions.forEach(prediction => {
 					if (prediction.class === 'person' && (personMissingFeature || multiplePeopleFeature)) {
 						if (person?.class && multiplePeopleFeature) {
@@ -1501,7 +2554,7 @@ const startAIWebcam = async (room, mediaStream) => {
 								...(key === 'object_detected' && detectedObjects.size > 0 ? { detected_objects: Array.from(detectedObjects) } : {})
 							};
 							aiEvents.push({ ...activeViolations[key], [key]: log[key] });
-						} 
+						}
 						else {
 							activeViolations[key].time_span += 1;
 							if (key === 'object_detected' && detectedObjects.size > 0) {
@@ -1521,60 +2574,82 @@ const startAIWebcam = async (room, mediaStream) => {
 								message = 'multiple_people_detected_for_more_than_10_seconds';
 							}
 							showToast('error', message);
+							if (window.mereos.startRecordingCallBack) {
+								window.mereos.startRecordingCallBack({
+									type: 'error',
+									message: message,
+									code: 40059,
+									detail: activeViolations[key].time_span
+								});
+							}
 						}
 					}
 					else if (activeViolations[key]) {
 						const violation = activeViolations[key];
 
 						if (violation.time_span >= 2) {
-							const data = { 
-								eventType: 'success', 
-								notify: true, 
-								eventName: key, 
-								eventValue:violation?.detected_objects?.length > 0 ? violation?.detected_objects[0]?.replace(/\s+/g, '_') : key,
-								startTime: violation.start_time, 
+							const data = {
+								eventType: 'success',
+								notify: true,
+								eventName: key,
+								eventValue: violation?.detected_objects?.length > 0 ? violation?.detected_objects[0]?.replace(/\s+/g, '_') : key,
+								startTime: violation.start_time,
 								endTime: violation.start_time + violation.time_span
 							};
 							registerAIEvent(data);
+							if (window.mereos.startRecordingCallBack) {
+								window.mereos.startRecordingCallBack({
+									type: 'error',
+									message: key,
+									code: 40060,
+									detail: violation.start_time + violation.time_span
+								});
+							}
 							checkForceClosureViolation();
 						}
-            
+
 						activeViolations[key] = null;
 					}
 				});
 			} catch (error) {
-				sentryExceptioMessage(error,{type:'error',message:'Error in AI processing'});
+				sentryExceptioMessage(error, { type: 'error', message: 'Error in AI processing' });
 				logger.error('Error in AI processing:', error);
 			}
 		}, 1000);
 
 		return { success: true, message: 'AI webcam started successfully' };
 	} catch (error) {
-		sentryExceptioMessage(error,{type:'error',message:'Failed to start AI webcam'});
+		sentryExceptioMessage(error, { type: 'error', message: 'Failed to start AI webcam' });
 		logger.error('Failed to start AI webcam:', error);
-    
+		if (window.mereos.startRecordingCallBack) {
+			window.mereos.startRecordingCallBack({
+				type: 'error',
+				message: 'failed_to_start_ai_webcam',
+				code: 40061,
+			});
+		}
 		if (window.mereos.aiProcessingInterval) {
 			clearInterval(window.mereos.aiProcessingInterval);
 		}
-    
-		return { 
-			success: false, 
+
+		return {
+			success: false,
 			message: 'Failed to start AI webcam',
-			error: error.message 
+			error: error.message
 		};
 	}
 };
 
 export const cleanupLocalVideo = () => {
-	if(window.mereos.shadowRoot){
+	if (window.mereos.shadowRoot) {
 		const webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
 		const webVideoContainer = window.mereos.shadowRoot.querySelector('#user-video-header');
 		const imgContainer = document.querySelector('#chat-icon-wrapper');
 
-		if(imgContainer){
+		if (imgContainer) {
 			imgContainer.remove();
 		}
-		if(webVideoContainer){
+		if (webVideoContainer) {
 			webVideoContainer.remove();
 		}
 
@@ -1582,7 +2657,9 @@ export const cleanupLocalVideo = () => {
 			const videoElement = webcamContainer.querySelector('video');
 			if (videoElement) {
 				videoElement.pause();
-				videoElement.srcObject.getTracks().forEach(track => track.stop());
+				if (videoElement.srcObject?.getTracks) {
+					videoElement.srcObject.getTracks().forEach(track => track.stop());
+				}
 				videoElement.srcObject = null;
 			}
 
@@ -1593,26 +2670,28 @@ export const cleanupLocalVideo = () => {
 
 			webcamContainer.remove();
 		}
+
+		removeStandalonePauseResumeButton();
 	}
 };
 
 export function VideoChat(room) {
 	const secureFeatures = getSecureFeatures();
 	const session = convertDataIntoParse('session');
-    
+
 	let currentWidth = 200;
 	const aspectRatio = 142 / 180;
 	const initialHeight = Math.round(currentWidth * aspectRatio);
-    
+
 	let webcamContainer = window.mereos.shadowRoot.querySelector('#webcam-container');
 	let videoHeaderContainer = window.mereos.shadowRoot.querySelector('#user-video-header');
-    
+
 	if (!webcamContainer) {
 		webcamContainer = document.createElement('div');
 		webcamContainer.id = 'webcam-container';
 		webcamContainer.className = 'user-videos-remote';
 
-		if(findConfigs(['camera_view'], secureFeatures?.entities)?.length){
+		if (findConfigs(['camera_view'], secureFeatures?.entities)?.length) {
 			window.mereos.shadowRoot.appendChild(webcamContainer);
 		}
 
@@ -1635,34 +2714,34 @@ export function VideoChat(room) {
 			if (e.target.classList.contains('zoom-btns')) {
 				return;
 			}
-			
+
 			isDragging = true;
 			webcamContainer.style.cursor = 'grabbing';
-            
+
 			startX = e.clientX;
 			startY = e.clientY;
-            
+
 			const rect = webcamContainer.getBoundingClientRect();
 			initialX = rect.left;
 			initialY = rect.top;
-            
+
 			e.preventDefault();
 			e.stopPropagation();
 		};
 
 		const handleMouseMove = (e) => {
 			if (!isDragging) return;
-            
+
 			const dx = e.clientX - startX;
 			const dy = e.clientY - startY;
-            
+
 			const newX = initialX + dx;
 			const newY = initialY + dy;
-            
+
 			webcamContainer.style.left = `${newX}px`;
 			webcamContainer.style.top = `${newY}px`;
 			webcamContainer.style.right = 'auto';
-            
+
 			e.preventDefault();
 			e.stopPropagation();
 		};
@@ -1682,18 +2761,18 @@ export function VideoChat(room) {
 			document.removeEventListener('mouseup', handleMouseUp);
 		};
 	}
-    
-	if(!videoHeaderContainer){
+
+	if (!videoHeaderContainer) {
 		const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
-    
+
 		videoHeaderContainer = document.createElement('div');
 		videoHeaderContainer.className = 'user-video-header';
 		videoHeaderContainer.id = 'user-video-header';
-    
+
 		const videoHeading = document.createElement('p');
 		videoHeading.className = 'recording-heading';
 		videoHeading.textContent = `${candidateInviteAssessmentSection?.candidate?.name}`;
-        
+
 		const recordingIcon = document.createElement('div');
 		recordingIcon.className = 'recording-badge-container-header';
 		recordingIcon.innerHTML = `
@@ -1704,12 +2783,12 @@ export function VideoChat(room) {
             ></img>
             <p class='recording-text'>${i18next.t('recording')}</p>
         `;
-    
+
 		videoHeaderContainer.appendChild(videoHeading);
 		videoHeaderContainer.appendChild(recordingIcon);
 		webcamContainer.appendChild(videoHeaderContainer);
 	}
-    
+
 	let userVideoElement = window.mereos.shadowRoot.querySelector('#user-video-element');
 	if (!userVideoElement) {
 		userVideoElement = document.createElement('div');
@@ -1725,7 +2804,7 @@ export function VideoChat(room) {
 		});
 		webcamContainer.appendChild(userVideoElement);
 	}
-    
+
 	const localVideoRef = document.createElement('div');
 	localVideoRef.classList.add('local-video');
 	localVideoRef.id = 'local-video';
@@ -1734,9 +2813,9 @@ export function VideoChat(room) {
 		height: '100%'
 	});
 	userVideoElement.appendChild(localVideoRef);
-    
+
 	let videoFooterContainer = window.mereos.shadowRoot.querySelector('#user-video-footer');
-	
+
 	const remoteVideoRef = document.createElement('div');
 	remoteVideoRef.classList.add('remote-video');
 	remoteVideoRef.id = 'remote-video';
@@ -1751,7 +2830,7 @@ export function VideoChat(room) {
 		transition: 'width 0.3s ease, height 0.3s ease',
 		background: '#000'
 	});
-	
+
 	if (videoFooterContainer) {
 		webcamContainer.insertBefore(remoteVideoRef, videoFooterContainer);
 	} else {
@@ -1764,9 +2843,9 @@ export function VideoChat(room) {
 				const attachedElement = track?.attach();
 				if (attachedElement) {
 					attachedElement.classList.add('video-attached');
-					
+
 					const isRemoteVideo = container.id === 'remote-video';
-					
+
 					if (isRemoteVideo) {
 						Object.assign(attachedElement.style, {
 							width: '100%',
@@ -1784,11 +2863,18 @@ export function VideoChat(room) {
 							objectFit: 'cover'
 						});
 					}
-					
+
 					container.appendChild(attachedElement);
 				}
 			} catch (error) {
-				sentryExceptioMessage(error,{type:'error',message:'Error attaching video track'});
+				sentryExceptioMessage(error, { type: 'error', message: 'Error attaching video track' });
+				if (window.mereos.startRecordingCallBack) {
+					window.mereos.startRecordingCallBack({
+						type: 'error',
+						message: 'error_attaching_video_track',
+						code: 40062,
+					});
+				}
 				logger.error('Error attaching video track:', error);
 			}
 		} else {
@@ -1847,28 +2933,29 @@ export function VideoChat(room) {
 				handleParticipant(participant);
 			});
 
-			room.on('participantReconnecting', () => {
+			room.on('participantReconnecting', async () => {
 				if (findConfigs(['mobile_proctoring'], secureFeatures?.entities).length > 0) {
-					updatePersistData('preChecksSteps', { 
+					updatePersistData('preChecksSteps', {
 						mobileConnection: false,
 						screenSharing: false
 					});
 					updatePersistData('session', {
-						sessionStatus:'Terminated'
+						sessionStatus: 'Terminated'
 					});
-					showToast('error',i18next.t('mobile_phone_disconnected'));
+					showToast('error', i18next.t('mobile_phone_disconnected'));
 				} else {
-					updatePersistData('preChecksSteps', { 
+					updatePersistData('preChecksSteps', {
 						screenSharing: false
-					});	
-					showToast('error',i18next.t('internet_connection_not_working'));					
+					});
+					showToast('error', i18next.t('internet_connection_not_working'));
 				}
+				await releaseAllMediaStreams();
 				setTimeout(() => {
-					if(window.mereos.startRecordingCallBack){
-						window.mereos.startRecordingCallBack({ 
-							type:'error',
-							code:40015,
-							message: 'mobile_internet_connection_disconnected' 
+					if (window.mereos.startRecordingCallBack) {
+						window.mereos.startRecordingCallBack({
+							type: 'error',
+							code: 40015,
+							message: 'mobile_internet_connection_disconnected'
 						});
 					}
 				}, 4000);
@@ -1886,7 +2973,15 @@ export function VideoChat(room) {
 				});
 			});
 		} catch (error) {
-			sentryExceptioMessage(error,{type:'error',message:'Error connecting to Twilio room'});
+			void releaseAllMediaStreams();
+			sentryExceptioMessage(error, { type: 'error', message: 'Error connecting to Twilio room' });
+			if (window.mereos.startRecordingCallBack) {
+				window.mereos.startRecordingCallBack({
+					type: 'error',
+					message: 'error_on_starting_recording',
+					code: 40063,
+				});
+			}
 			logger.error('Error connecting to Twilio room:', error);
 		}
 	}
@@ -1903,32 +2998,54 @@ export function VideoChat(room) {
 }
 
 export const stopAllRecordings = async () => {
+	if (window.mereos.aiProcessingInterval) {
+		clearInterval(window.mereos.aiProcessingInterval);
+		window.mereos.aiProcessingInterval = null;
+	}
+
+	if (window.mereos.pauseCanvasState) {
+		window.mereos.pauseCanvasState.cleanup?.();
+		window.mereos.pauseCanvasState = null;
+	}
+
+	if (window.mereos.pauseScreenCanvasState) {
+		window.mereos.pauseScreenCanvasState.cleanup?.();
+		window.mereos.pauseScreenCanvasState = null;
+	}
+
+	window.mereos.recordingPaused = false;
+	hidePauseModal();
+
+	cleanupLocalVideo();
+	detachAllTrackStoppedListeners();
+
 	try {
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
+		const isManualStop = Boolean(window.mereos?.isStoppingSession);
+		const finalSessionStatus = isManualStop || session?.sessionStatus !== 'Terminated'
+			? 'Completed'
+			: 'Terminated';
 
-		document.removeEventListener('visibilitychange', () => {});
-		document.removeEventListener('beforeunload', ()=> {});
-		window.removeEventListener('beforeunload',  ()=> {});
+		document.removeEventListener('visibilitychange', () => { });
+		document.removeEventListener('beforeunload', () => { });
+		window.removeEventListener('beforeunload', () => { });
 		window.removeEventListener('popstate', detectBackButtonCallback);
 		enableCopyPasteCut();
 		enableTextHighlighting();
 		restoreRightClick();
 		cleanupForceFullscreen();
 
-		if(window?.mereos?.mobileStream){
-			window?.mereos?.mobileStream?.getTracks()?.forEach((track) => track.stop());
-		}
 		window.mereos.forceClosureTriggered = false;
 		if (window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 			window.mereos.socket.send(JSON.stringify({ event: 'stopRecording', data: 'Web video recording stopped' }));
 		}
-		
+
 		const chatIcons = document.querySelectorAll('[id="chat-icon"]');
 		const chatContainer = document.getElementById('talkjs-container');
 		const notificationBagde = document.getElementById('notification-badge');
 
-		if(notificationBagde){
+		if (notificationBagde) {
 			notificationBagde.style.display = 'none';
 			notificationBagde.remove();
 		}
@@ -1947,100 +3064,52 @@ export const stopAllRecordings = async () => {
 
 		updatePersistData('session', {
 			recordingEnded: true,
-			sessionStatus: session?.sessionStatus === 'Terminated'? 'Terminated':'Completed',
+			sessionStatus: finalSessionStatus,
 		});
 
 		cleanupZendeskWidget();
-		cleanupLocalVideo();
 
-		if(mediaStream){
-			mediaStream.getTracks().forEach(track => track.stop());
-			mediaStream=null;
+		window.mereos.recordingStart = false;
+		window.mereos.sessionActive = false;
+		window.mereos.pendingSessionStart = false;
+
+		if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0) {
+			registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully' });
 		}
 
-		if (window?.mereos?.newStream) {
-			window?.mereos?.newStream.getTracks().forEach(track => {
-				track.stop();
-				track.enabled = false;
-			});
-		}
-
-		if (window.mereos.globalStream) {
-			window.mereos.globalStream.getTracks().forEach(track => track.stop());
-			window.mereos.globalStream = null;
-		}
-
-		removeStoppedListener();
-
-		window.mereos.recordingStart=false;
-
-		if (window?.mereos?.roomInstance) {
-			const tracks = window?.mereos?.roomInstance?.localParticipant?.tracks;
-			if (!tracks) return;
-    
-			for (const publication of tracks) {
-				const track = publication.track;
-				if (!track) continue;
-        
-				try {
-					await window.mereos.roomInstance.localParticipant.unpublishTrack(track);
-            
-					track.stop();
-					const elements = track.detach();
-					elements.forEach(element => element.remove());
-            
-					if (track.disable) track.disable();
-				} catch (error) {
-					logger.error('Failed to cleanup track:', error);
-				}
-			}
-
-			window.mereos.roomInstance.participants.forEach(participant => {
-				participant.removeAllListeners();
-			});
-			if (secureFeatures?.entities.filter(entity => recordingEvents.includes(entity.key))?.length > 0){
-				registerEvent({ eventType: 'success', notify: false, eventName: 'recording_stopped_successfully' });
-			}
-			window.mereos.roomInstance.removeAllListeners();
-			window.mereos.roomInstance.disconnect();
-			window.mereos.roomInstance = null;
-		}
-
-		if (window.mereos.mobileRoomInstance) {
-			window.mereos.mobileRoomInstance.localParticipant.tracks.forEach(publication => {
-				const track = publication.track;
-				if (track) {
-					track.stop();
-					track.detach().forEach(element => element.remove());
-					track.disable();
-					window.mereos.mobileRoomInstance.localParticipant.unpublishTrack(track);
-				}
-			});
-			window.mereos.mobileRoomInstance.disconnect();
-			window.mereos.mobileRoomInstance = null;
-		}
-
-		if (window.mereos.aiProcessingInterval) {
-			clearInterval(window.mereos.aiProcessingInterval);
-			window.mereos.aiProcessingInterval = null;
-		}
-
-		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length){
+		if (secureFeatures?.entities?.filter(entity => LockDownOptions.includes(entity.key))?.length) {
 			unlockBrowserFromContent();
 		}
-		
+
 		await changeCandidateAssessmentStatus({
-			status: session?.sessionStatus === 'Terminated'? 'Terminated':'Completed',
+			status: finalSessionStatus,
 			id: session?.candidate_assessment
 		});
 
-		registerEvent({ eventType: 'success', notify: false, eventName: session?.sessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed'});
-		
-		showToast(session?.sessionStatus === 'Terminated' ? 'error' :'success', session?.sessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed');
-		
+		registerEvent({
+			eventType: 'success',
+			notify: false,
+			eventName: finalSessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed',
+		});
+
+		showToast(
+			finalSessionStatus === 'Terminated' ? 'error' : 'success',
+			finalSessionStatus === 'Terminated' ? 'session_is_terminated' : 'session_completed'
+		);
+
 		return 'stop_recording';
 	} catch (e) {
-		sentryExceptioMessage(e,{type:'error',message:'Error in stop recording'});
+		if (window.mereos.startRecordingCallBack) {
+			window.mereos.startRecordingCallBack({
+				type: 'error',
+				message: 'error_on_stop_recording',
+				code: 40064,
+			});
+		}
+		sentryExceptioMessage(e, { type: 'error', message: 'Error in stop recording' });
 		logger.error('Error in stop recording:', e);
+	} finally {
+		window.mereos.isStoppingSession = false;
+		await releaseAllMediaStreams({ force: true });
 	}
 };

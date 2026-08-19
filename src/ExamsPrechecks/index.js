@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfCss, loadZendeskWidget, logger, normalizeLanguage, registerEvent, sentryExceptioMessage, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
+import { addSectionSessionRecord, cleanupZendeskWidget, convertDataIntoParse, getAuthenticationToken, getSecureFeatures, getVideoIdForStep, handlePreChecksRedirection, initializeI18next, loadNotyfCss, loadZendeskWidget, logger, normalizeLanguage, registerEvent, resetSessionAttemptFlags, sentryExceptioMessage, setChatOpenState, showToast, updatePersistData, updateThemeColor } from '../utils/functions';
 import { browserSecurityCss, examPreprationCss,identityCardCss,identityStepsCss,IdentityVerificationScreenFiveCss,IdentityVerificationScreenFourCss,IdentityVerificationScreenOneCss,IdentityVerificationScreenThreeCss,IdentityVerificationScreenTwoCss,  MobileProctoringCss,  modalCss, preValidationCss, spinner, startRecordingCSS, systemDiagnosticCss, systemRequirementCss } from '../utils/styles';
 import { ASSET_URL, SYSTEM_REQUIREMENT_STEP, examPreparationSteps, languages, systemDiagnosticSteps, preChecksSteps, BROWSER_SECURTIY_STEP } from '../utils/constant';
 import { IdentityCardRequirement } from '../IdentityCardRequirement';
@@ -15,11 +15,39 @@ import { ExamPreparation } from '../ExamPreparation';
 import Talk from 'talkjs';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
 import { SystemRequirement } from '../SystemRequirement';
-import { stop_prechecks } from '../..';
 import interact from 'interactjs';
 import { BrowserSecurity } from '../BrowserSecurity';
 
+export const destroyPrechecksUi = () => {
+	const library = document.getElementById('mereos-library');
+	if (library) {
+		library.remove();
+	}
+	if (window.mereos?.cleanupPrevalidationTimers) {
+		window.mereos.cleanupPrevalidationTimers();
+		window.mereos.cleanupPrevalidationTimers = null;
+	}
+	if (window.mereos) {
+		window.mereos.dom = null;
+		window.mereos.shadowRoot = null;
+	}
+	document.body.classList.remove('modal-active');
+	if (window.mereos?.cleanupLanguageDropdown) {
+		window.mereos.cleanupLanguageDropdown();
+		window.mereos.cleanupLanguageDropdown = null;
+	}
+};
+
 export const initShadowDOM = () => {
+	const existingLibrary = document.getElementById('mereos-library');
+	if (existingLibrary) {
+		const hasModal = window.mereos?.shadowRoot?.getElementById('precheck-modal');
+		if (hasModal && window.mereos?.dom?.modal) {
+			return;
+		}
+		destroyPrechecksUi();
+	}
+
 	if (!document.getElementById('mereos-library')) {
 		const libraryDOM = document.createElement('div');
 		libraryDOM.className = 'mereos-library';
@@ -341,6 +369,10 @@ const createLanguageDropdown = (currentStep) => {
 	const hasVideo = !!videoId;
 	const themeColor = schoolTheme?.theming || '#FF961B';
 	
+	const VIDEO_URL = videoId
+		? `https://d3ia9qn5swl78e.cloudfront.net/help-videos/${videoId}.mp4`
+		: null;
+	
 	const headerHTML = `
     <div class="header">
       <section class="dropdown">
@@ -389,29 +421,20 @@ const createLanguageDropdown = (currentStep) => {
         <div class="help-dropdown" style="display: none;">
           <div class="help-dropdown-content">
             <h3>${i18next.t('need_help')}</h3>
-            <div class="video-wrapper">
-              <div class="new-spinner video-spinner">
-								<div class='bounce1'></div>
-								<div class='bounce2'></div>
-								<div class='bounce3'></div>
+            <div class="video-wrapper" style="position: relative;">
+              <div class="new-spinner video-spinner" style="display: flex;">
+                <div class='bounce1'></div>
+                <div class='bounce2'></div>
+                <div class='bounce3'></div>
               </div>
-              <iframe
-                class="help-video-iframe"
-                src=""
+              <video
+                class="help-video"
+                src="${VIDEO_URL || ''}"
                 title="Help Video"
-                frameborder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-                style="display: none;"
-              ></iframe>
+                controls
+                style="width: 100%; max-height: 300px; display: none;"
+              ></video>
             </div>
-            <button class="open-tab-btn" type="button">
-              <span>${i18next.t('open_in_new_tab')}</span>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="display: inline-block; margin-left: 8px; vertical-align: middle;">
-                <path d="M12 8.667V12.667C12 13.0203 11.8595 13.3594 11.6095 13.6095C11.3594 13.8595 11.0203 14 10.667 14H3.33301C2.97967 14 2.64058 13.8595 2.39053 13.6095C2.14048 13.3594 2 13.0203 2 12.667V5.33301C2 4.97967 2.14048 4.64058 2.39053 4.39053C2.64058 4.14048 2.97967 4 3.33301 4H7.33301M10 2H14M14 2V6M14 2L6.66699 9.33301" 
-                      stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
           </div>
         </div>
       </div>
@@ -465,22 +488,14 @@ const createLanguageDropdown = (currentStep) => {
 						}
 					});
                 
-					// Update "Need Help" button text
 					const helpButtonText = modalContent.querySelector('.help-btn p');
 					if (helpButtonText) {
 						helpButtonText.textContent = i18next.t('need_help');
 					}
                 
-					// Update help dropdown title
 					const helpDropdownTitle = modalContent.querySelector('.help-dropdown-content h3');
 					if (helpDropdownTitle) {
 						helpDropdownTitle.textContent = i18next.t('need_help');
-					}
-                
-					// Update "Open in new tab" button text
-					const openTabButtonSpan = modalContent.querySelector('.open-tab-btn span');
-					if (openTabButtonSpan) {
-						openTabButtonSpan.textContent = i18next.t('open_in_new_tab');
 					}
 				})
 				.catch(err => logger.error(err));
@@ -503,93 +518,119 @@ const createLanguageDropdown = (currentStep) => {
 		e.stopPropagation();
 	});
 
-	if (hasVideo) {
+	if (hasVideo && VIDEO_URL) {
 		const helpButton = modalContent.querySelector('.help-btn');
 		const helpDropdown = modalContent.querySelector('.help-dropdown');
-		const helpIframe = modalContent.querySelector('.help-video-iframe');
+		const helpVideo = modalContent.querySelector('.help-video');
 		const videoSpinner = modalContent.querySelector('.video-spinner');
-		const openTabButton = modalContent.querySelector('.open-tab-btn');
 		let isHelpDropdownOpen = false;
 		let isVideoLoaded = false;
 
-		const stopVideo = () => {
-			if (helpIframe.src && helpIframe.contentWindow) {
-				helpIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+		const playVideo = () => {
+			if (helpVideo && helpVideo.paused && helpVideo.readyState >= 2) {
+				helpVideo.play().catch(err => logger.error('Video play failed:', err));
+			}
+		};
+
+		const pauseVideo = () => {
+			if (helpVideo && !helpVideo.paused) {
+				helpVideo.pause();
+			}
+		};
+
+		const resetAndCloseDropdown = () => {
+			if (isHelpDropdownOpen) {
+				pauseVideo();
+				helpDropdown.style.display = 'none';
+				isHelpDropdownOpen = false;
+			}
+		};
+
+		const openDropdown = () => {
+			if (!isHelpDropdownOpen) {
+				isHelpDropdownOpen = true;
+				helpDropdown.style.display = 'block';
+				
+				if (!isVideoLoaded) {
+					videoSpinner.style.display = 'flex';
+					helpVideo.style.display = 'none';
+					helpVideo.load();
+				} else {
+					videoSpinner.style.display = 'none';
+					helpVideo.style.display = 'block';
+					playVideo();
+				}
 			}
 		};
 
 		helpButton.addEventListener('click', (e) => {
 			e.stopPropagation();
-			isHelpDropdownOpen = !isHelpDropdownOpen;
-			helpDropdown.style.display = isHelpDropdownOpen ? 'block' : 'none';
-			
 			if (isHelpDropdownOpen) {
-				if (!isVideoLoaded) {
-					videoSpinner.style.display = 'flex';
-					helpIframe.style.display = 'none';
-					helpIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
-				} else {
-					videoSpinner.style.display = 'flex';
-					helpIframe.style.display = 'none';
-					setTimeout(() => {
-						videoSpinner.style.display = 'none';
-						helpIframe.style.display = 'block';
-					}, 300);
-				}
+				resetAndCloseDropdown();
+			} else {
+				openDropdown();
 			}
 		});
 
-		helpIframe.addEventListener('load', () => {
-			if (helpIframe.src) {
-				setTimeout(() => {
-					videoSpinner.style.display = 'none';
-					helpIframe.style.display = 'block';
-					isVideoLoaded = true;
-				}, 500);
+		helpVideo.addEventListener('loadstart', () => {
+			videoSpinner.style.display = 'flex';
+			helpVideo.style.display = 'none';
+		});
+
+		helpVideo.addEventListener('canplay', () => {
+			videoSpinner.style.display = 'none';
+			helpVideo.style.display = 'block';
+			isVideoLoaded = true;
+			if (isHelpDropdownOpen) {
+				playVideo();
 			}
 		});
 
-		openTabButton.addEventListener('mousedown', (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			e.stopImmediatePropagation();
-			
-			setTimeout(() => {
-				window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank', 'noopener,noreferrer');
-			}, 0);
+		helpVideo.addEventListener('waiting', () => {
+			if (isHelpDropdownOpen) {
+				videoSpinner.style.display = 'flex';
+				helpVideo.style.display = 'none';
+			}
 		});
 
-		openTabButton.addEventListener('click', (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			e.stopImmediatePropagation();
-			return false;
+		helpVideo.addEventListener('playing', () => {
+			if (isHelpDropdownOpen) {
+				videoSpinner.style.display = 'none';
+				helpVideo.style.display = 'block';
+			}
 		});
 
-		let closeTimeout;
+		helpVideo.addEventListener('error', () => {
+			videoSpinner.style.display = 'none';
+			helpVideo.style.display = 'block';
+			isVideoLoaded = true;
+			logger.error('Video failed to load');
+		});
+
 		const handleOutsideClick = (event) => {
 			const helpContainer = modalContent.querySelector('.help-container');
 			if (helpContainer && !helpContainer.contains(event.target) && isHelpDropdownOpen) {
-				if (closeTimeout) clearTimeout(closeTimeout);
-				
-				closeTimeout = setTimeout(() => {
-					isHelpDropdownOpen = false;
-					helpDropdown.style.display = 'none';
-					stopVideo();
-				}, 10);
+				resetAndCloseDropdown();
 			}
 		};
 
-		document.addEventListener('mousedown', handleOutsideClick, true);
+		document.addEventListener('click', handleOutsideClick);
 
-		helpDropdown.addEventListener('mousedown', (e) => {
+		helpDropdown.addEventListener('click', (e) => {
 			e.stopPropagation();
 		});
 
 		const cleanup = () => {
 			document.removeEventListener('click', closeLanguageDropdown);
-			document.removeEventListener('mousedown', handleOutsideClick, true);
-			stopVideo();
+			document.removeEventListener('click', handleOutsideClick);
+			if (helpVideo) {
+				pauseVideo();
+				helpVideo.removeEventListener('loadstart', null);
+				helpVideo.removeEventListener('canplay', null);
+				helpVideo.removeEventListener('waiting', null);
+				helpVideo.removeEventListener('playing', null);
+				helpVideo.removeEventListener('error', null);
+			}
 		};
 
 		if (window.mereos) {
@@ -816,10 +857,23 @@ export const startSession = async () => {
 		if (resp?.data) {
 			updatePersistData('session', { sessionId: resp?.data?.session_id, id: resp?.data?.id });
 			if(!session?.browserEvents.filter(item => item.name === 'session_initiated')?.length){
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'session_initiated',
+						code:50017
+					});
+				}
 				registerEvent({ eventType: 'success', notify: false, eventName: 'session_initiated' });
 			}
 			if(!session?.browserEvents.filter(item => item.name === 'session_started')?.length){
-				registerEvent({ eventType: 'success', notify: false, eventName: 'session_started' });
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'session_started',
+						code:50018
+					});
+				}
 			}
 		}
 		updatePersistData('session',
@@ -835,18 +889,31 @@ export const startSession = async () => {
 		return 'data_saved';
 	} catch (e) {
 		sentryExceptioMessage(e);
-		const callBackFunc = () => {
-			if(e.response?.data?.detail === 'Token not found'){
-				window.mereos.globalCallback({
-					type: 'error',
-					code: 40023,
-					message: 'token_expired_login_again_to_perform_this_action',
-				});
-			}
-		};
-		stop_prechecks(callBackFunc);
-		showToast('error',e.response?.data?.detail || 'something_went_wrong_please_contact_support');
-		logger.error('Error in start Session', e.response?.data?.detail);
+		resetSessionAttemptFlags();
+		destroyPrechecksUi();
+
+		const detail = e.response?.data?.detail;
+		const isTokenExpired = detail === 'Token not found';
+		const errorMessage = detail || 'something_went_wrong_please_contact_support';
+
+		showToast('error', errorMessage);
+
+		if (isTokenExpired) {
+			localStorage.removeItem('mereosToken');
+		}
+
+		if (window.mereos.globalCallback) {
+			window.mereos.globalCallback({
+				type: 'error',
+				code: isTokenExpired ? 40023 : 40018,
+				message: isTokenExpired
+					? 'token_expired_login_again_to_perform_this_action'
+					: 'error_saving_session_info',
+				details: e,
+			});
+		}
+
+		logger.error('Error in start Session', detail);
 	}
 };
 

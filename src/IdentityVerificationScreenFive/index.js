@@ -16,6 +16,7 @@ import {
 import { ASSET_URL } from '../utils/constant';
 import { showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
+import { publishCanvasScreenTrack, waitForActiveRecordingStart } from '../StartRecording';
 import { v4 } from 'uuid';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
@@ -45,6 +46,13 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const resp = await detectMultipleScreens();
 		if (resp) {
 			multipleScreens = true;
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'multiple_screens_detected',
+					code:40037
+				});
+			}
 			registerEvent({ eventType: 'error', notify: false, eventName: 'multiple_screens_detected' });
 		} else {
 			multipleScreens = false;
@@ -57,7 +65,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				mobileConnection: false,
 				screenSharing: false
 			});
-			window.mereos.globalCallback({ type:'error', message: 'mobile_phone_disconnected', code:40017 });
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ type:'error', message: 'mobile_phone_disconnected', code:40017 });
+			}
 			showToast('error','mobile_phone_disconnected');
 			logger.error('Socket not initialized');
 			return;
@@ -77,6 +87,13 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 							showTab('MobileProctoring');
 						}
 						registerEvent({ eventType: 'error', notify: false, eventName: eventData?.message?.message, eventValue: getDateTime() });
+						if(window.mereos.globalCallback){
+							window.mereos.globalCallback({ 
+								type:'error',
+								message:'mobile_phone_disconnected_in_screen_share_screen',
+								code:40052
+							});
+						}
 						break;
 
 					default:
@@ -165,19 +182,22 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	const nextStep = async () => {
 		try {
 			updatePersistData('preChecksSteps', { screenSharing: true });
-			registerEvent({
-				eventType: 'success',
-				notify: false,
-				eventName: 'screen_recording_window_shared',
-				eventValue: getDateTime()
-			});
-
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ 
+					type:'success',
+					message: 'screen_recording_window_shared',
+					code:50015
+				});
+			}
 			showTab('IdentityVerificationScreenSix');
 			window.mereos.isScreenShare = false;
 
 			const session = convertDataIntoParse('session');
 
-			if (window?.mereos?.roomInstance) {
+			await waitForActiveRecordingStart();
+
+			const room = window?.mereos?.roomInstance;
+			if (room) {
 				const videoTrack = window?.mereos?.newStream?.getVideoTracks()[0];
 
 				if (!videoTrack) {
@@ -189,7 +209,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 				if (window.mereos?.screenTrackPublished?.track) {
 					try {
-						await window.mereos.roomInstance.localParticipant.unpublishTrack(
+						await room.localParticipant.unpublishTrack(
 							window.mereos.screenTrackPublished.track
 						);
 					} catch (unpublishError) {
@@ -198,12 +218,24 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					}
 				}
 
+				if (room !== window.mereos.roomInstance) {
+					showToast('error', 'screen_share_publish_failed');
+					sentryExceptioMessage(new Error('roomInstance changed during screen reshare'));
+					return;
+				}
+
+				const pauseAndResumeEnabled = secureFeatures.some(entity => entity.key === 'pause_and_resume');
+
 				let publishedScreenTrack;
 				try {
-					publishedScreenTrack = await window.mereos.roomInstance.localParticipant.publishTrack(
-						videoTrack,
-						{ name: `screen-share-${v4()}` }
-					);
+					if (pauseAndResumeEnabled) {
+						({ publication: publishedScreenTrack } = await publishCanvasScreenTrack(room, window.mereos.newStream));
+					} else {
+						publishedScreenTrack = await room.localParticipant.publishTrack(
+							videoTrack,
+							{ name: `screen-share-${v4()}` }
+						);
+					}
 				} catch (publishError) {
 					console.error('Error publishing screen track:', publishError);
 					showToast('error', 'screen_share_publish_failed');
@@ -220,7 +252,28 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					...(session.screen_sharing_video_name || []),
 					publishedScreenTrack.trackSid
 				];
+
+				registerEvent({
+					eventType: 'success', 
+					notify: false, 
+					eventName: 'screen_shared_again', 
+					eventValue: getDateTime()
+				});
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'screen_shared_again',
+						code:50015
+					});
+				}
 				updatePersistData('session', { screen_sharing_video_name: screenRecordings });
+			} else {
+				registerEvent({
+					eventType: 'success',
+					notify: false,
+					eventName: 'screen_recording_window_shared',
+					eventValue: getDateTime()
+				});
 			}
 		} catch (error) {
 			console.error('Error starting screen share:', error);
@@ -301,21 +354,23 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		const prevStepsEntities = ['verify_candidate', 'verify_id', 'record_audio', 'record_room'];
 		const showPrevButton = secureFeatures.filter(entity => prevStepsEntities.includes(entity.key))?.length > 0;
 
+		const isSessionResume = convertDataIntoParse('session')?.room_id;
+
 		let buttonsHTML = '';
-	
-		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance) {
+
+		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance && !isSessionResume) {
 			buttonsHTML += `<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>`;
 		}
-	
+
 		if (mode === 'startScreenRecording') {
 			buttonsHTML += `<button class="orange-filled-btn" ${multipleScreens ? 'disabled' : ''}>${i18next.t('done')}</button>`;
 		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again') {
 			buttonsHTML += `<button class="orange-filled-btn">${i18next.t('reshare_screen')}</button>`;
 		}
-	
+
 		btnContainer.insertAdjacentHTML('beforeend', buttonsHTML);
-	
-		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance) {
+
+		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance && !isSessionResume) {
 			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
 		}
 	

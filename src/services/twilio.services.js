@@ -40,3 +40,11 @@ export const fetchIceServers = async () => {
 		axiosInstance.get('/twilio/fetch_ice_servers/',config)
 	);
 };
+
+
+export const getRoomToken = async (params) => {
+	return authenticatedRequest(config => 
+		axiosInstance.get('/twilio/candidate_room_token/',config),
+	params
+	);
+};

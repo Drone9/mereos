@@ -1119,7 +1119,7 @@ font-style:var(--font-style);}
 
 @media (max-width: 720px) {
   .system-diagnostic-test-screen .button-section button {
-    width: 50% !important;
+    width: 100% !important;
   }
 }
 
@@ -1613,8 +1613,22 @@ export const preValidationCss = `.pvi-container {
 }
 
 .pvi-header-img {
-  margin: 20px auto 0px;
-  height: 230px;
+  margin: 0px auto 0px;
+  height: 250px;
+  position: relative;
+}
+.lighting-status{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0px;
+  font-size: 11px;
+  color: white;
+  position: absolute;
+  top: 7px;
+  left: 6px;
+  padding: 3px;
+  border-radius: 5px;
 }
 .pvi-instruction-img{
   width: 40px;
@@ -1739,6 +1753,33 @@ export const preValidationCss = `.pvi-container {
   color: #ffffff;
   margin: auto;
   cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .pvi-header-img {
+    height: 180px;
+    overflow: hidden;
+  }
+  .my-recorded-video {
+    width: 100%;
+    max-height: 100%;
+  }
+  .pvi-instructions-container {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+  .multi-device-block {
+    flex-wrap: wrap;
+  }
+  .camera-container, .microphone-container {
+    width: 100% !important;
+  }
+  .pvi-btn-container {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    margin-bottom: 15px;
+  }
 }
 `;
 
@@ -2214,14 +2255,14 @@ export const IdentityVerificationScreenThreeCss = `.ivst-container {
   flex-direction: column;
 }
 
-.ivst-container #audio-wave {
-  width: 600px;
-  height: 140px;
+.ivst-container #audio-wavesform-canvas {
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
 }
 
 @media (max-width: 720px) {
-  .ivst-container #audio-wave {
+  .ivst-container #audio-wavesform-canvas {
       width: 100%;
       height: 150px;
   }
@@ -2400,7 +2441,6 @@ export const IdentityVerificationScreenFourCss = `.screen-four-container {
 	.my-recorded-video {
 		width: 98%;
 		margin: 0;
-		height: 100%;
 	}
 }
 
@@ -2894,6 +2934,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	justify-content: center;
 	margin-top: 5px;
 	margin-bottom: 5px;
+  filter:var(--filter-color);
 }
 
 @media (max-width: 720px) {
@@ -3133,7 +3174,7 @@ body{
   background: white;
   border-radius: 12px;
   padding: 0;
-  max-width: 550px;
+  max-width: 500px;
   width: 90%;
   max-height: 90vh;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -3387,5 +3428,240 @@ body{
 .zoom-btns:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.pause-resume-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid #ccd5e2;
+  background: white;
+  color: #333;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.pause-resume-btn:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.pause-resume-btn:active {
+  background: #e9e9e9;
+}
+
+.pause-resume-btn--standalone {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 9999;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 1px 1px 5px 1px #f1f1f1;
+  background: var(--theme-color);
+  color: #ffffff;
+}
+
+.pause-resume-btn--standalone:hover {
+  background: var(--theme-color);
+  box-shadow: 1px 1px 2px rgb(32 33 36 / 28%);
+}
+
+.pause-resume-btn--standalone:active {
+  background: var(--theme-color);
+  opacity: 0.9;
+}
+
+.recording-badge-container-header--paused {
+  background-color: #6b7280;
+}
+
+.pause-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999999;
+  backdrop-filter: blur(5px);
+}
+
+.pause-modal {
+  background-color: var(--theme-mode);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 420px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.pause-modal-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  color:var(--text-color);
+}
+
+.pause-modal-title {
+  margin: 0 0 16px 0;
+  color: var(--text-color);
+  font-size: 22px;
+  font-weight: 600;
+  font-style: var(--font-style);
+}
+
+.pause-modal-message {
+  margin: 0 0 28px 0;
+  color: var(--text-color);
+  font-size: 15px;
+  line-height: 1.6;
+  font-style: var(--font-style);
+}
+
+.pause-modal-button {
+  width: 100%;
+}
+`;
+
+
+export const permissionModalStyle = `
+.permission-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.permission-modal {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.permission-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.permission-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.permission-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    line-height: 1;
+}
+
+.permission-modal-close:hover {
+    color: #111827;
+}
+
+.permission-modal-body {
+    padding: 24px;
+}
+
+.permission-instructions p {
+    margin: 0 0 16px;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.permission-instructions ol,
+.permission-instructions ul {
+    margin: 0 0 20px;
+    padding-left: 20px;
+}
+
+.permission-instructions li {
+    margin-bottom: 8px;
+    color: #4b5563;
+    line-height: 1.5;
+}
+
+.browser-instructions {
+    background-color: #f9fafb;
+    padding: 16px;
+    border-radius: 6px;
+    margin: 16px 0;
+}
+
+.browser-instructions h4 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.browser-instructions ul {
+    margin: 0;
+}
+
+.browser-instructions li {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.browser-instructions strong {
+    color: #111827;
+    font-weight: 600;
+}
+
+.permission-modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.orange-filled-btn {
+    background-color: #f97316;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.orange-filled-btn:hover {
+    background-color: #ea580c;
+}
+
+.orange-filled-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.5);
 }
 `;

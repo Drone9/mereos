@@ -2,11 +2,11 @@ import i18next from 'i18next';
 
 import { showTab } from '../ExamsPrechecks';
 
-import { acceptableLabels, acceptableText, dataURIToBlob, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, sentryExceptioMessage, srcToData, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, sentryExceptioMessage, srcToData, updatePersistData, convertDataIntoParse, logger, addSectionSessionRecord } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 
-import { uploadFileInS3Folder } from '../services/general.services.js';
+import { uploadFileInS3Folder, userRekognitionInfo } from '../services/general.services.js';
 
 export const IdentityVerificationScreenTwo = async (tabContent) => {
 	let photo;
@@ -28,14 +28,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
 	
-	// Store timeout reference for cleanup
 	let cameraInitTimeout;
 
 	const videoConstraints = {
 		width: 350,
 		height: 280,
 		facingMode: 'user',
-		deviceId: localStorage.getItem('deviceId') || undefined,
+		deviceId: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
 	};
 
 	const loadPdfJs = () => {
@@ -76,6 +75,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			msg: { type: 'unsuccessful', text: 'webcam_error' }
 		};
 		renderUI();
+		if(window.mereos.globalCallback) {
+			window.mereos.globalCallback({ 
+				type:'error',
+				message: 'webcam_error',
+				code:40030
+			});
+		}
 		registerEvent({
 			eventType: 'error',
 			notify: true,
@@ -125,12 +131,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const handleRestart = () => {
-		// Clear any pending timeout
 		if (cameraInitTimeout) {
 			clearTimeout(cameraInitTimeout);
 		}
 		
-		// Stop existing webcam stream if it exists
 		if (window.mereos.globalStream?.getTracks()) {
 			window.mereos.globalStream.getTracks().forEach(track => {
 				track.stop();
@@ -138,7 +142,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			window.mereos.globalStream = null;
 		}
 		
-		// Stop the photo reference
 		if (photo) {
 			if (photo.srcObject) {
 				const tracks = photo.srcObject.getTracks();
@@ -183,6 +186,11 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
 			const pdf = await loadingTask.promise;
 			
+			if (pdf.numPages > 1) {
+				processingPDF = false;
+				throw new Error('pdf_has_multiple_pages');
+			}
+			
 			const page = await pdf.getPage(1);
 			
 			const scale = 2.0;
@@ -210,13 +218,37 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		} catch (error) {
 			console.error('Error extracting image from PDF:', error);
 			processingPDF = false;
-			registerEvent({
-				eventType: 'error',
-				notify: true,
-				eventName: 'pdf_extraction_error'
-			});
-			sentryExceptioMessage(error,{type:'error',message:'PDF extraction error'});
-			throw new Error('error_processing_pdf');
+			
+			if (error.message === 'pdf_has_multiple_pages') {
+				if(window.mereos.globalCallback) {
+					window.mereos.globalCallback({ 
+						type:'error',
+						message: 'pdf_multiple_pages_error',
+						code:40035
+					});
+				}
+				registerEvent({
+					eventType: 'error',
+					notify: true,
+					eventName: 'pdf_multiple_pages_error'
+				});
+				throw new Error('pdf_multiple_pages_error');
+			} else {
+				if(window.mereos.globalCallback) {
+					window.mereos.globalCallback({ 
+						type:'error',
+						message: 'pdf_extraction_error',
+						code:40034
+					});
+				}
+				registerEvent({
+					eventType: 'error',
+					notify: true,
+					eventName: 'pdf_extraction_error'
+				});
+				sentryExceptioMessage(error,{type:'error',message:'PDF extraction error'});
+				throw new Error('error_processing_pdf');
+			}
 		}
 	};
 
@@ -312,10 +344,29 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				const isFourthTry = failedAttempts >= 3;
 				
 				if (userImageData && !isFourthTry) {
-					const isValidID = acceptableLabels(userImageData?.label, 80) && 
-									acceptableText(userImageData?.text, 59) && 
-									userImageData?.face?.FaceDetails.length > 0;
-					
+					const faceDetails = userImageData?.face?.FaceDetails || [];
+					const faceCount = faceDetails.length;
+
+					const getFaceArea = (face) => {
+						const box = face?.BoundingBox;
+						if (!box || typeof box.Width !== 'number' || typeof box.Height !== 'number') return null;
+						return box.Width * box.Height;
+					};
+
+					const twoFacesLookLikeSameCard = () => {
+						if (faceCount !== 2) return false;
+						const areas = faceDetails.map(getFaceArea);
+						if (areas.some((area) => area === null)) return true;
+						const smaller = Math.min(areas[0], areas[1]);
+						const larger = Math.max(areas[0], areas[1]);
+						return larger > 0 && smaller / larger <= 0.5;
+					};
+
+					const hasTooManyFaces = faceCount > 2 || (faceCount === 2 && !twoFacesLookLikeSameCard());
+					const isValidID = acceptableLabels(userImageData?.label, 80) &&
+									acceptableText(userImageData?.text, 59) &&
+									faceCount >= 1 && !hasTooManyFaces;
+
 					if (isValidID) {
 						currentState = {
 							...currentState,
@@ -326,20 +377,34 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 							}
 						};
 						disabledBtn = false;
+						if(window.mereos.globalCallback) {
+							window.mereos.globalCallback({
+								type:'success',
+								message: 'id_successfully_verified',
+								code:50008
+							});
+						}
 						registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
 					} else {
 						failedAttempts++;
-						
+
 						currentState = {
 							...currentState,
 							captureMode: 'retake',
 							msg: {
 								type: 'unsuccessful',
-								text: 'id_not_verified'
+								text: hasTooManyFaces ? 'multiple_id_card_detected' : 'id_not_verified'
 							}
 						};
 						disabledBtn = false;
-						registerEvent({eventType: 'success', notify: false, eventName: 'id_not_verified'});
+						if(window.mereos.globalCallback) {
+							window.mereos.globalCallback({
+								type:'error',
+								message: hasTooManyFaces ? 'multiple_id_card_detected' : 'id_not_verified',
+								code: hasTooManyFaces ? 40067 : 40031
+							});
+						}
+						registerEvent({eventType: 'error', notify: false, eventName: hasTooManyFaces ? 'multiple_id_card_detected' : 'id_not_verified'});
 					}
 				} else if (isFourthTry) {
 					currentState = {
@@ -351,6 +416,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						}
 					};
 					disabledBtn = false;
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'success',
+							message: 'id_successfully_verified',
+							code:50008
+						});
+					}
 					registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
 				}
 			} catch (error) {
@@ -369,6 +441,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						}
 					};
 					disabledBtn = false;
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'success',
+							message: 'id_successfully_verified',
+							code:50008
+						});
+					}
 					registerEvent({eventType: 'success', notify: false, eventName: 'id_successfully_verified'});
 				} else {
 					currentState = {
@@ -380,6 +459,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						}
 					};
 					disabledBtn = false;
+					if(window.mereos.globalCallback) {
+						window.mereos.globalCallback({ 
+							type:'error',
+							message: 'api_verification_failed',
+							code:40032
+						});
+					}
 					registerEvent({
 						eventType: 'error',
 						notify: false,
@@ -420,8 +506,20 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				file: dataURIToBlob(currentState.imageSrc)
 			});
 
-			if (resp?.data?.file_url) {
-				updatePersistData('session', { identityCard: resp.data.file_url });
+			if (resp?.data?.file_key) {
+				updatePersistData('session', { identityCard: `https://mereos-corder.s3.eu-west-3.amazonaws.com/${resp?.data?.file_key}` });
+				
+				const updatedSession = convertDataIntoParse('session');
+				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+				
+				try {
+					const sectionRecordResp = await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+					logger.info('Section session record added successfully:', sectionRecordResp);
+				} catch (sectionError) {
+					logger.error('Error adding section session record:', sectionError);
+					sentryExceptioMessage(sectionError, { type: 'error', message: 'Failed to add section session record' });
+				}
+				
 				currentState = {
 					...currentState,
 					captureMode: 'uploaded_photo',
@@ -431,6 +529,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 						text: 'candidate_id_is_uploaded_successfully'
 					}
 				};
+				if(window.mereos.globalCallback) {
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'identity_card_uploaded_successfully',
+						code:50009
+					});
+				}
 				registerEvent({eventType: 'success', notify: false, eventName: 'identity_card_uploaded_successfully'});
 			} else {
 				throw 'something_went_wrong_please_upload_again';
@@ -444,6 +549,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 					text: 'something_went_wrong_please_upload_again'
 				}
 			};
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'internet_connection_unstable',
+					code:40033
+				});
+			}
 			sentryExceptioMessage(error);
 			registerEvent({eventType: 'success', notify: false, eventName: 'internet_connection_unstable'});
 		}
@@ -460,6 +572,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	const triggerFileUpload = () => {
 		if (inputFile) inputFile.click();
 	};
+	
 	const setupEventListeners = () => {
 		const uploadEl = window.mereos.shadowRoot.querySelector('#upload-identity-card');
 		if (uploadEl) {
@@ -602,12 +715,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		}
 
 		if (!currentState.imageSrc && !webcamError && webcamLoading) {
-			// Clear any existing timeout
 			if (cameraInitTimeout) {
 				clearTimeout(cameraInitTimeout);
 			}
 			
-			// Check if we already have an active stream
 			const hasActiveTracks = window.mereos.globalStream?.getTracks?.()?.some(track => 
 				track.readyState === 'live' || track.readyState === 'playing'
 			);
@@ -625,7 +736,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 							if (window.mereos.globalStream) {
 								webcamLoading = false;
 								
-								// Create video element if it doesn't exist
 								if (!videoElement) {
 									const newVideo = document.createElement('video');
 									newVideo.width = videoConstraints.width;
@@ -638,7 +748,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 									gridOverlay.className = 'ivst-screen-grid';
 									gridOverlay.alt = 'screen-centered-grid';
 									
-									// Get the container
 									const imgContainer = container.querySelector('.ivst-header-img-container');
 									if (imgContainer) {
 										imgContainer.innerHTML = '';
@@ -648,7 +757,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 										newVideo.srcObject = window.mereos.globalStream;
 										photo = newVideo;
 										
-										// Play the video
 										newVideo.play().then(() => {
 											renderUI(); // Re-render to show video
 										}).catch((error) => {
@@ -658,7 +766,6 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 									}
 								}
 								
-								// Add error handling for tracks
 								const tracks = window.mereos.globalStream.getTracks();
 								tracks.forEach(track => {
 									track.addEventListener('ended', () => {
@@ -672,13 +779,11 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 							handleWebcamError();
 						}
 					} else if (videoElement && window.mereos.globalStream && hasActiveTracks) {
-						// If we already have video element and active stream, update loading state
 						webcamLoading = false;
 						renderUI();
 					}
 				}, 100);
 			} else {
-				// Stream already exists and is active
 				webcamLoading = false;
 				renderUI();
 			}

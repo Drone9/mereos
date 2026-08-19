@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import { closeModal, showTab } from '../ExamsPrechecks';
 import { initSocket } from '../utils/socket';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
-import { convertDataIntoParse, getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, sentryExceptioMessage, showToast, updatePersistData } from '../utils/functions';
+import { convertDataIntoParse, getAuthenticationToken, getDateTime, getSecureFeatures, logger, registerEvent, releaseAllMediaStreams, sentryExceptioMessage, showToast, updatePersistData } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { connectSocketConnection } from '../StartRecording/index.js';
 
@@ -110,13 +110,18 @@ export const MobileProctoring = async (tabContent) => {
 						mobileSteps = 'tokenCode';
 						checkedVideo = false;
 						showToast('error', 'mobile_phone_disconnected');
+						if(window.mereos.globalCallback) {
+							window.mereos.globalCallback({ 
+								type:'error',
+								message: 'mobile_phone_disconnected',
+								code:40055
+							});
+						}
 						updatePersistData('session', {
 							sessionStatus:'Terminated'
 						});
 						window.mereos.precheckCompleted=false;
-						if(window.mereos.mobileStream){
-							window.mereos.mobileStream.getTracks().forEach(track => track.stop());
-						}
+						void releaseAllMediaStreams();
 						renderUI();
 					} else {
 						logger.error(eventData?.message?.message);
@@ -142,6 +147,7 @@ export const MobileProctoring = async (tabContent) => {
 		try {
 			if (peerInstance) {
 				peerInstance.destroy();
+				peerInstance = null;
 			}
 
 			const groupName = v4();
@@ -149,6 +155,7 @@ export const MobileProctoring = async (tabContent) => {
 			const peer = new Peer(groupName);
 
 			peerInstance = peer;
+			window.mereos.peerInstance = peer;
 
 			peer.on('open', (id) => {
 				logger.success('Peer connection opened with ID:', id);
@@ -174,6 +181,13 @@ export const MobileProctoring = async (tabContent) => {
 			});
 		} catch (error) {
 			sentryExceptioMessage(error,{type:'error',message:'Failed to create Peer instance'});
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'failed_connect_with_mobile_video',
+					code:40053
+				});
+			}
 			logger.error('Failed to create Peer instance:', error);
 		}
 	};
@@ -239,7 +253,13 @@ export const MobileProctoring = async (tabContent) => {
 						connectSocketConnection();		
 						closeModal();
 						registerEvent({ eventType: 'success', notify: false, eventName: 'mobile_phone_reconnected', eventValue: getDateTime() });
-						
+						if(window.mereos.globalCallback) {
+							window.mereos.globalCallback({ 
+								type:'success',
+								message: 'mobile_phone_reconnected',
+								code:50016
+							});
+						}
 						if(window.mereos.startRecordingCallBack){
 							window.mereos.startRecordingCallBack({ 
 								type:'success',
@@ -493,6 +513,13 @@ export const MobileProctoring = async (tabContent) => {
 	window.addEventListener('offline', () => {
 		if (window.mereos.socket) {
 			showToast('error','internet_connection_lost');
+			if(window.mereos.globalCallback) {
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'internet_connection_lost_during_mobile_connection',
+					code:40054
+				});
+			}
 			window.mereos.socket.close();
 		}
 	});

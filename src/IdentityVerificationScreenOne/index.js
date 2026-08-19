@@ -3,9 +3,9 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { dataURIToBlob, logger, registerEvent, sentryExceptioMessage, updatePersistData, userRekognitionInfo } from '../utils/functions';
+import { dataURIToBlob, logger, registerEvent, sentryExceptioMessage, updatePersistData, convertDataIntoParse, addSectionSessionRecord } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { uploadFileInS3Folder } from '../services/general.services.js';
+import { uploadFileInS3Folder, userRekognitionInfo } from '../services/general.services.js';
 
 export const IdentityVerificationScreenOne = async (tabContent) => {
 	let state = {
@@ -58,14 +58,12 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 			window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(state.videoConstraints);
 			videoElement.srcObject = window.mereos.globalStream;
 			
-			// Wait for video to be ready
 			await new Promise((resolve) => {
 				videoElement.onloadedmetadata = () => {
 					resolve();
 				};
 			});
 			
-			// Add track ended listener
 			const tracks = window.mereos.globalStream.getTracks();
 			tracks.forEach(track => {
 				track.addEventListener('ended', () => {
@@ -73,7 +71,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				});
 			});
             
-			// Reset webcamError and set loading to false when camera starts successfully
 			state.webcamError = false;
 			state.webcamLoading = false;
 			
@@ -134,7 +131,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				const predictions = resp?.data?.face?.FaceDetails;
     
 				img.onload = async function () {
-					// Reset processing flag when done
 					state.isProcessing = false;
 					
 					if (predictions?.length && predictions.length === 1) {
@@ -156,6 +152,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 									text: 'detected_face_successfully',
 								},
 							};
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'success',
+									message: 'detected_face_successfully',
+									code:50007
+								});
+							}
 							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 						} else {
 							state.failedAttempts++;
@@ -169,6 +172,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 										text: 'detected_face_successfully',
 									},
 								};
+								if(window.mereos.globalCallback){
+									window.mereos.globalCallback({ 
+										type:'success',
+										message: 'detected_face_successfully',
+										code:50007
+									});
+								}
 								registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 							} else {
 								state = {
@@ -180,6 +190,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 										text: 'face_not_detected',
 									},
 								};
+								if(window.mereos.globalCallback){
+									window.mereos.globalCallback({ 
+										type:'error',
+										message: 'face_not_detected',
+										code:40029
+									});
+								}
 								startWebcam();
 								registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
 							}
@@ -196,6 +213,14 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 									text: 'detected_face_successfully',
 								},
 							};
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'success',
+									message: 'detected_face_successfully',
+									code:50007
+								});
+							}
+						
 							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 						} else {
 							state = {
@@ -208,6 +233,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 								},
 							};
 							startWebcam();
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'error',
+									message: 'multiple_face_detected',
+									code:40028
+								});
+							}
 							registerEvent({ eventType: 'error', notify: true, eventName: 'multiple_face_detected' });
 						}
 					} else {
@@ -222,6 +254,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 									text: 'detected_face_successfully',
 								},
 							};
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'success',
+									message: 'detected_face_successfully',
+									code:50007
+								});
+							}
 							registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 						} else {
 							state = {
@@ -234,6 +273,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 								},
 							};
 							startWebcam();
+							if(window.mereos.globalCallback){
+								window.mereos.globalCallback({ 
+									type:'error',
+									message: 'face_not_detected',
+									code:40027
+								});
+							}
 							registerEvent({ eventType: 'error', notify: true, eventName: 'face_not_detected' });
 						}
 					}
@@ -245,7 +291,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				sentryExceptioMessage(error,{type:'error',message:'Error processing the image'});
 				logger.error('Error processing the image:', error);
 				
-				// Reset processing flag on error
 				state.isProcessing = false;
 				state.failedAttempts++;
 				
@@ -258,12 +303,19 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 							text: 'detected_face_successfully',
 						},
 					};
+					if(window.mereos.globalCallback){
+						window.mereos.globalCallback({ 
+							type:'success',
+							message: 'detected_face_successfully',
+							code:50007
+						});
+					}
 					registerEvent({ eventType: 'success', notify: false, eventName: 'detected_face_successfully' });
 				} else {
 					state = {
 						...state,
 						msg: {
-							type: 'error',
+							type: 'unsuccessful',
 							text: 'face_processing_failed',
 						},
 					};
@@ -300,8 +352,19 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 				file: blob,
 			});
     
-			if (resp?.data?.file_url) {
-				updatePersistData('session', { candidatePhoto: resp.data.file_url });
+			if (resp?.data?.file_key) {
+				updatePersistData('session', { candidatePhoto: `https://mereos-corder.s3.eu-west-3.amazonaws.com/${resp.data.file_key}` });
+				
+				const updatedSession = convertDataIntoParse('session');
+				const candidateInviteAssessmentSection = convertDataIntoParse('candidateAssessment');
+				
+				try {
+					const sectionRecordResp = await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
+					logger.info('Section session record added successfully:', sectionRecordResp);
+				} catch (sectionError) {
+					sentryExceptioMessage(sectionError, { type: 'error', message: 'Failed to add section session record' });
+				}
+				
 				state = {
 					...state,
 					captureMode: 'uploaded_photo',
@@ -310,6 +373,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 						text: 'candidate_photo_uploaded_successfully',
 					},
 				};
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'success',
+						message: 'candidate_photo_uploaded_successfully',
+						code:50007 
+					});
+				}
 				registerEvent({ eventType: 'success', notify: false, eventName: 'candidate_photo_uploaded_successfully' });
 			}
 		} catch (e) {
@@ -324,6 +394,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 					text: 'something_went_wrong_please_upload_again',
 				},
 			};
+			if(window.mereos.globalCallback){
+				window.mereos.globalCallback({ 
+					type:'error',
+					message: 'internet_connection_unstable',
+					code:40026
+				});
+			}
 			registerEvent({ eventType: 'error', notify: false, eventName: 'internet_connection_unstable' });
 			sentryExceptioMessage(e,{type:'error',message:'Image Upload failed'});
 		} finally {
@@ -441,7 +518,6 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
         
 		ivsoContainer.insertAdjacentHTML('beforeend', contentHTML);
         
-		// Add event listeners only when elements exist
 		const retakeBtn = window.mereos.shadowRoot.getElementById('retake-btn');
 		if (retakeBtn) {
 			retakeBtn.addEventListener('click', () => {

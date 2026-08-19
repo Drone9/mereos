@@ -140,6 +140,13 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 					msg.text = 'audio_test_passed';
 					updateUIText();
 					updateButtons();
+					if(window.mereos.globalCallback){
+						window.mereos.globalCallback({ 
+							type:'success',
+							message: 'audio_test_passed',
+							code:50013
+						});
+					}
 				} else if (counter >= 15) {
 					throw 'timeout';
 				}
@@ -150,6 +157,13 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 				disabledBtn = false;
 				msg.type = 'unsuccessful';
 				msg.text = 'audio_test_failed';
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({ 
+						type:'error',
+						message: 'audio_test_failed',
+						code:40048
+					});
+				}
 				updateUIText();
 				updateButtons();
 			}

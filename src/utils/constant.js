@@ -1,4 +1,4 @@
-export const ASSET_URL = 'https://mereos-corder.s3.eu-west-3.amazonaws.com/library_icons';
+export const ASSET_URL = 'https://d2lxkizvrhu4im.cloudfront.net/library_icons';
 
 export const BASE_URL = 'https://corder-api.mereos-datasafe.com/v1.1.3';
 

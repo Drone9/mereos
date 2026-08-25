@@ -23,7 +23,6 @@ const isLocalHost = () => {
 	}
 	if (hostname.endsWith('.local')) return true;
 
-	// RFC1918 private ranges commonly used for local dev servers.
 	if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
 	if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
 	if (/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
@@ -36,10 +35,7 @@ const initSentry = (environment = 'production') => {
 		return;
 	}
 
-	if (isLocalHost()) {
-		console.info('[mereos] Sentry disabled on local/dev host:', window.location.hostname);
-		return;
-	}
+	const resolvedEnvironment = isLocalHost() ? 'development' : environment;
 
 	Sentry.init({
 		dsn: 'https://edb36d1ddfd737dbf7b6d291a63d192a@o4507933105389568.ingest.de.sentry.io/4510827301634128',
@@ -52,7 +48,7 @@ const initSentry = (environment = 'production') => {
 			Sentry.replayIntegration(),
 		],
 
-		environment: environment,
+		environment: resolvedEnvironment,
 
 		profileSessionSampleRate: 0.5,
 		tracesSampleRate: 0.1,

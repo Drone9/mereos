@@ -12,7 +12,7 @@ import { destroyPrechecksUi, initShadowDOM, openModal, startSession } from './sr
 import { getRoomToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings, cleanupSessionMediaMonitoring } from './src/StartRecording';
-import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
+import { browserMinVersions, initialSessionData, MEREOS_STORAGE_KEYS, preChecksSteps, tokenExpiredError } from './src/utils/constant';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
@@ -44,7 +44,7 @@ async function init(token, candidateData, profileId, assessmentData, schoolTheme
 	try {
 		resetSessionAttemptFlags();
 		destroyPrechecksUi();
-		localStorage.clear();
+		MEREOS_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 
 		const checkMobile = isMobileDevice();
 		if (checkMobile === 'mobile') {
@@ -608,12 +608,7 @@ async function stop_session(callback) {
 			const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 
 			if (resp) {
-				const keysToRemove = [
-					'candidateAssessment', 'mereosToken', 'session', 'preChecksSteps',
-					'secureFeatures', 'schoolTheme', 'conversationId', 'precheckSetting',
-					'socketGroupId', 'navHistory', 'deviceId', 'microphoneID',
-				];
-				keysToRemove.forEach((key) => localStorage.removeItem(key));
+				MEREOS_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 
 				respond({
 					type: 'success',

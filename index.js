@@ -20,7 +20,7 @@ import i18next from 'i18next';
 import { initSentry } from './src/utils/sentry';
 import * as Sentry from '@sentry/browser';
 
-initSentry('production');
+initSentry('development');
 
 const safeInvokeCallback = (callback, payload) => {
 	try {

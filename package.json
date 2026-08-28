@@ -24,7 +24,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Drone9/mereos.git"
+		"url": "git+https://github.com/Drone9/mereos.git"
 	},
 	"dependencies": {
 		"@babel/plugin-transform-optional-chaining": "^7.28.6",

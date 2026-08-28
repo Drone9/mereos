@@ -9,6 +9,24 @@ export const CONTENT_TYPE = Object.freeze({
 	FORM_DATA: 'multipart/form-data'
 });
 
+export const MEREOS_STORAGE_KEYS = [
+	'mereosToken',
+	'candidateAssessment',
+	'session',
+	'preChecksSteps',
+	'socketGroupId',
+	'schoolTheme',
+	'conversationId',
+	'secureFeatures',
+	'navHistory',
+	'precheckSetting',
+	'deviceId',
+	'microphoneID',
+	'failedEvents',
+	'failedAIEvents',
+	'examLeaveTime',
+];
+
 export const initialSessionData = {
 	aiEvents:[],
 	browserEvents:[],

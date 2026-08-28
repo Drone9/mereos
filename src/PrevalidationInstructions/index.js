@@ -364,7 +364,11 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 				let resp = null;
 				if (shouldCheckBitrate) {
-					resp = await fetchIceServers();
+					try {
+						resp = await fetchIceServers();
+					} catch (iceError) {
+						sentryExceptioMessage(iceError, { type: 'error', message: 'Failed to fetch ICE servers' });
+					}
 				}
 
 				const hasObjectDetection = findConfigs(['object_detection', 'multiple_people_detection', 'person_missing'], secureFeatures.entities).length > 0;

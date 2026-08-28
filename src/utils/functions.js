@@ -846,44 +846,6 @@ export const stopUnusedMediaStreamTracks = (stream, usedTracks = []) => {
 	});
 };
 
-const stopAllAcquiredMediaStreams = () => {
-	const mereos = window.mereos || {};
-	mereos.acquiredMediaStreams?.forEach((stream) => {
-		stream.getTracks?.().forEach(forceStopMediaStreamTrack);
-	});
-	mereos.acquiredMediaStreams?.clear();
-};
-
-const stopManagedLocalTracks = () => {
-	const mereos = window.mereos || {};
-	mereos.managedLocalTracks?.forEach((track) => {
-		try {
-			registerActiveTracks(track);
-			track.disable?.();
-			stopMediaStreamTrack(track.mediaStreamTrack);
-			track.stop?.();
-		} catch (error) {
-			logger.error('Failed to stop managed local track:', error);
-		}
-	});
-	mereos.managedLocalTracks?.clear();
-};
-
-const stopAllManagedMediaStreamTracks = () => {
-	const mereos = window.mereos || {};
-	mereos.managedMediaStreamTracks?.forEach((track) => {
-		forceStopMediaStreamTrack(track);
-	});
-	mereos.managedMediaStreamTracks?.clear();
-};
-
-const stopAllSessionMediaStreamTracks = () => {
-	const mereos = window.mereos || {};
-	mereos.allSessionMediaStreamTracks?.forEach((track) => {
-		forceStopMediaStreamTrack(track);
-	});
-	mereos.allSessionMediaStreamTracks?.clear();
-};
 
 const collectLocalTwilioTracks = (localParticipant) => {
 	if (!localParticipant) return [];
@@ -924,11 +886,6 @@ const unbindMediaElements = () => {
 };
 
 let releasingMediaStreams = null;
-
-const stopAllActiveTracks = () => {
-	Array.from(activeMediaTracks).forEach(forceStopMediaStreamTrack);
-	activeMediaTracks.clear();
-};
 
 const detachTwilioRoomListeners = (room) => {
 	if (!room) return;
@@ -1097,80 +1054,6 @@ const snapshotAllMediaStreamTracks = (mereos) => {
 
 const forceStopTrackedMediaStreamTracks = (tracks) => {
 	tracks.forEach((track) => forceStopMediaStreamTrack(track));
-};
-
-const stopTwilioLocalTrack = async (room, track) => {
-	if (!track) return;
-
-	const localParticipant = room?.localParticipant;
-	if (localParticipant) {
-		try {
-			await localParticipant.unpublishTrack(track);
-		} catch (error) {
-			logger.error('Failed to unpublish Twilio track during session stop:', error);
-		}
-	}
-
-	try {
-		track.disable?.();
-		forceStopMediaStreamTrack(track.mediaStreamTrack);
-		track.stop?.();
-	} catch (error) {
-		logger.error('Failed to stop Twilio local track:', error);
-	}
-};
-
-const stopSessionCapturedMedia = async (mereos) => {
-	const rooms = new Set([
-		...(mereos.allTwilioRooms || []),
-		mereos.roomInstance,
-		mereos.mobileRoomInstance,
-	].filter(Boolean));
-
-	const twilioTracks = new Set();
-	[
-		mereos.sessionTwilioAudioTrack,
-		mereos.sessionTwilioVideoTrack,
-	].forEach((track) => {
-		if (track) twilioTracks.add(track);
-	});
-
-	rooms.forEach((room) => {
-		collectLocalTwilioTracks(room?.localParticipant).forEach((track) => twilioTracks.add(track));
-	});
-
-	for (const room of rooms) {
-		for (const track of twilioTracks) {
-			await stopTwilioLocalTrack(room, track);
-		}
-		try {
-			room.disconnect();
-		} catch (error) {
-			logger.error('Failed to disconnect Twilio room during session stop:', error);
-		}
-	}
-
-	for (const track of twilioTracks) {
-		try {
-			track.disable?.();
-			forceStopMediaStreamTrack(track.mediaStreamTrack);
-			track.stop?.();
-		} catch (error) {
-			logger.error('Failed to stop pinned Twilio track:', error);
-		}
-	}
-
-	[
-		mereos.sessionAudioStream,
-		mereos.sessionVideoStream,
-	].forEach((stream) => {
-		stream?.getTracks?.().forEach(forceStopMediaStreamTrack);
-	});
-
-	[
-		mereos.sessionAudioMediaTrack,
-		mereos.sessionVideoMediaTrack,
-	].forEach(forceStopMediaStreamTrack);
 };
 
 const unpublishAndStopLocalTwilioTracks = async (room) => {
@@ -2711,7 +2594,7 @@ const measureDownloadOnce = async (bytes) => {
 	let startTime = null;
 
 	if (reader) {
-		while (true) {
+		for (;;) {
 			const { done, value } = await reader.read();
 			if (done) break;
 			if (!startTime) startTime = performance.now();
@@ -2751,44 +2634,42 @@ const sampleDownloadSpeed = async (bytes, count) => {
 	- Uses 4 strategic sizes (512KB → 10MB) and stops once upload duration >= 0.8s.
 	- Falls back to the longest-duration attempt for very fast connections.
 */
-export const getNetworkUploadSpeed = () => {
-	return new Promise(async (resolve) => {
-		try {
-			const url = `${BASE_URL}/general/candidate_info/`;
-			let best = null;
+export const getNetworkUploadSpeed = async () => {
+	try {
+		const url = `${BASE_URL}/general/candidate_info/`;
+		let best = null;
 
-			for (const size of UPLOAD_PAYLOAD_SIZES_KB) {
-				const data = { name: 'a'.repeat(size * 1024) };
-				const result = await sendUploadRequest(url, data);
+		for (const size of UPLOAD_PAYLOAD_SIZES_KB) {
+			const data = { name: 'a'.repeat(size * 1024) };
+			const result = await sendUploadRequest(url, data);
 
-				if (!result) continue;
+			if (!result) continue;
 
-				const { duration, bitsLoaded } = result;
-				if (!duration || duration <= 0 || !bitsLoaded) continue;
+			const { duration, bitsLoaded } = result;
+			if (!duration || duration <= 0 || !bitsLoaded) continue;
 
-				const speedBps = (bitsLoaded / duration).toFixed(2);
-				const speedKbps = (speedBps / 1024).toFixed(2);
-				const speedMbps = (speedKbps / 1024).toFixed(2);
-				const candidate = { speedBps, speedKbps, speedMbps, duration };
+			const speedBps = (bitsLoaded / duration).toFixed(2);
+			const speedKbps = (speedBps / 1024).toFixed(2);
+			const speedMbps = (speedKbps / 1024).toFixed(2);
+			const candidate = { speedBps, speedKbps, speedMbps, duration };
 
-				if (!best || candidate.duration > best.duration) best = candidate;
+			if (!best || candidate.duration > best.duration) best = candidate;
 
-				if (duration >= MIN_UPLOAD_DURATION_SEC) {
-					return resolve({ speedBps, speedKbps, speedMbps });
-				}
+			if (duration >= MIN_UPLOAD_DURATION_SEC) {
+				return { speedBps, speedKbps, speedMbps };
 			}
-
-			if (best) {
-				const { speedBps, speedKbps, speedMbps } = best;
-				return resolve({ speedBps, speedKbps, speedMbps });
-			}
-
-			resolve(false);
-		} catch (error) {
-			console.log('Upload speed check failed:', error);
-			resolve(false);
 		}
-	});
+
+		if (best) {
+			const { speedBps, speedKbps, speedMbps } = best;
+			return { speedBps, speedKbps, speedMbps };
+		}
+
+		return false;
+	} catch (error) {
+		console.log('Upload speed check failed:', error);
+		return false;
+	}
 };
 
 /*
@@ -2811,11 +2692,12 @@ export const getNetworkUploadSpeed = () => {
 	- resolve({ duration, bitsLoaded }) when the measurement is valid
 	- resolve(null) when the attempt should be ignored (failed request, non-200, unreliable timing, etc.)
 */
-function sendUploadRequest(url, data) {
-	return new Promise(async (resolve) => {
+async function sendUploadRequest(url, data) {
+	const token = await Promise.resolve(getAuthenticationToken());
+
+	return new Promise((resolve) => {
 		// Using XHR because it gives us upload progress + upload lifecycle events.
 		const http = new XMLHttpRequest();
-		const token = await Promise.resolve(getAuthenticationToken());
 
 		// Async POST request.
 		http.open('POST', url, true);

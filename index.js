@@ -1,5 +1,5 @@
 /** @license mereos v1.0.0
- * mereos.production.min.js
+ * mereos.min.js
  *
  * Copyright (c) DT Education and its affiliates.
  *
@@ -12,7 +12,7 @@ import { destroyPrechecksUi, initShadowDOM, openModal, startSession } from './sr
 import { getRoomToken } from './src/services/twilio.services';
 import { createCandidate } from './src/services/candidate.services';
 import { startRecording, stopAllRecordings, cleanupSessionMediaMonitoring } from './src/StartRecording';
-import { browserMinVersions, initialSessionData, preChecksSteps, tokenExpiredError } from './src/utils/constant';
+import { browserMinVersions, initialSessionData, MEREOS_STORAGE_KEYS, preChecksSteps, tokenExpiredError } from './src/utils/constant';
 import { createCandidateAssessment } from './src/services/assessment.services';
 import { v4 } from 'uuid';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
@@ -20,17 +20,35 @@ import i18next from 'i18next';
 import { initSentry } from './src/utils/sentry';
 import * as Sentry from '@sentry/browser';
 
-initSentry('production');
+initSentry('development');
+
+const safeInvokeCallback = (callback, payload) => {
+	try {
+		if (typeof callback === 'function') callback(payload);
+	} catch (callbackError) {
+		sentryExceptioMessage(callbackError, {
+			type: 'error',
+			message: 'Integrator callback threw',
+			details: callbackError,
+		});
+	}
+};
 
 async function init(token, candidateData, profileId, assessmentData, schoolTheme, callback) {
+	let callbackFired = false;
+	const respond = (payload) => {
+		callbackFired = true;
+		safeInvokeCallback(callback, payload);
+	};
+
 	try {
 		resetSessionAttemptFlags();
 		destroyPrechecksUi();
-		localStorage.clear();
+		MEREOS_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 
 		const checkMobile = isMobileDevice();
 		if (checkMobile === 'mobile') {
-			return callback({
+			return respond({
 				type: 'error',
 				message: 'mobile_devices_are_not_supported_use_desktop',
 				code: 40024,
@@ -41,7 +59,7 @@ async function init(token, candidateData, profileId, assessmentData, schoolTheme
 
 		if (detectedBrowser?.browser.toLowerCase() === 'chrome' || detectedBrowser?.browser.toLowerCase() === 'edge' || detectedBrowser?.browser.toLowerCase() === 'firefox') {
 			if (detectedBrowser.version && browserMinVersions[detectedBrowser.browser] && detectedBrowser.version < browserMinVersions[detectedBrowser.browser]) {
-				return callback({
+				return respond({
 					type: 'error',
 					message: 'your_browser_version_is_not_compatible',
 					code: 40025,
@@ -51,7 +69,7 @@ async function init(token, candidateData, profileId, assessmentData, schoolTheme
 		}
 
 		if (!token || typeof token !== 'string') {
-			return callback({
+			return respond({
 				type: 'error',
 				message: 'invalid_or_missing_token',
 				code: 40020,
@@ -71,7 +89,7 @@ async function init(token, candidateData, profileId, assessmentData, schoolTheme
 				code: 40021,
 			});
 			localStorage.removeItem('mereosToken');
-			return callback({
+			return respond({
 				type: 'error',
 				message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 				code: 40021,
@@ -112,7 +130,7 @@ async function init(token, candidateData, profileId, assessmentData, schoolTheme
 				code: 40021,
 				details: error,
 			});
-			return callback({
+			return respond({
 				type: 'error',
 				message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 				code: 40021,
@@ -140,7 +158,7 @@ async function init(token, candidateData, profileId, assessmentData, schoolTheme
 					code: 40021,
 					details: error,
 				});
-				return callback({
+				return respond({
 					type: 'error',
 					message: error?.response?.data?.key === 'serialization_error' ? 'some_fields_are_wrong_or_data_is_incorrect' : message,
 					code: 40021,
@@ -159,24 +177,35 @@ async function init(token, candidateData, profileId, assessmentData, schoolTheme
 			localStorage.setItem('secureFeatures', JSON.stringify(candidateAssessmentResp?.data?.profile));
 		}
 
-		callback({
+		respond({
 			type: 'success',
 			message: 'init_function_complete',
 			code: 50004,
 		});
 	} catch (error) {
-		sentryExceptioMessage(error, {
-			type: 'error',
-			message: 'Error in init function',
-			code: 40022,
-			details: error,
-		});
-		return callback({
+		try {
+			sentryExceptioMessage(error, {
+				type: 'error',
+				message: 'Error in init function',
+				code: 40022,
+				details: error,
+			});
+		} catch (sentryError) {
+		}
+		respond({
 			type: 'error',
 			message: 'error_in_init_function',
 			code: 40022,
 			details: error,
 		});
+	} finally {
+		if (!callbackFired) {
+			safeInvokeCallback(callback, {
+				type: 'error',
+				message: 'error_in_init_function',
+				code: 40022,
+			});
+		}
 	}
 }
 
@@ -190,7 +219,7 @@ async function start_prechecks(callback, setting) {
 			window.mereos?.pendingSessionStart ||
 			window.mereos?.roomInstance
 		) {
-			return callback({
+			return safeInvokeCallback(callback, {
 				type: 'error',
 				message: 'session_already_in_progress',
 				code: 40066,
@@ -199,12 +228,12 @@ async function start_prechecks(callback, setting) {
 
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData) {
-			return callback(tokenExpiredError);
+			return safeInvokeCallback(callback, tokenExpiredError);
 		}
 		const { expiresAt } = JSON.parse(tokenData);
 		if (expiresAt && Date.now() > expiresAt) {
 			localStorage.removeItem('mereosToken');
-			return callback(tokenExpiredError);
+			return safeInvokeCallback(callback, tokenExpiredError);
 		}
 
 		if (!setting) {
@@ -223,16 +252,19 @@ async function start_prechecks(callback, setting) {
 		resetSessionAttemptFlags();
 		destroyPrechecksUi();
 	} catch (error) {
-		resetSessionAttemptFlags();
-		destroyPrechecksUi();
-		showToast('error', 'error_in_prechecks_setup');
-		sentryExceptioMessage(error, {
-			type: 'error',
-			message: 'Error in prechecks setup',
-			code: 40000,
-			details: error,
-		});
-		callback({
+		try {
+			resetSessionAttemptFlags();
+			destroyPrechecksUi();
+			showToast('error', 'error_in_prechecks_setup');
+			sentryExceptioMessage(error, {
+				type: 'error',
+				message: 'Error in prechecks setup',
+				code: 40000,
+				details: error,
+			});
+		} catch (reportingError) {
+		}
+		safeInvokeCallback(callback, {
 			type: 'error',
 			message: 'error_in_prechecks_setup',
 			code: 40000,
@@ -242,6 +274,12 @@ async function start_prechecks(callback, setting) {
 }
 
 async function stop_prechecks(callback) {
+	let callbackFired = false;
+	const respond = (payload) => {
+		callbackFired = true;
+		safeInvokeCallback(callback, payload);
+	};
+
 	try {
 		window.mereos.stopPrecheckCallBack = callback;
 		const sessionSetting = localStorage.getItem('precheckSetting');
@@ -257,27 +295,34 @@ async function stop_prechecks(callback) {
 		hideZendeskWidget();
 		destroyPrechecksUi();
 
-		if (typeof callback === 'function') {
-			callback({
-				type: 'success',
-				message: 'prechecks_stopped',
-				code: 50002
-			});
-		}
+		respond({
+			type: 'success',
+			message: 'prechecks_stopped',
+			code: 50002
+		});
 	} catch (error) {
-		resetSessionAttemptFlags();
-		destroyPrechecksUi();
-		sentryExceptioMessage(error, {
+		try {
+			resetSessionAttemptFlags();
+			destroyPrechecksUi();
+			sentryExceptioMessage(error, {
+				type: 'error',
+				message: 'Error in stop prechecks',
+				details: error,
+				code: 40001
+			});
+		} catch (reportingError) {
+		}
+		respond({
 			type: 'error',
-			message: 'Error in stop prechecks',
+			message: 'error_in_stop_prechecks',
 			details: error,
 			code: 40001
 		});
-		if (typeof callback === 'function') {
-			callback({
+	} finally {
+		if (!callbackFired) {
+			safeInvokeCallback(callback, {
 				type: 'error',
 				message: 'error_in_stop_prechecks',
-				details: error,
 				code: 40001
 			});
 		}
@@ -296,19 +341,12 @@ async function stop_prechecks(callback) {
  * 6. await startRecording() — final success/error callback fires inside that function
  */
 async function start_session(callback) {
-	/*
-	 * LMS callback helper: always notify the integrator even if startRecordingCallBack
-	 * was cleared elsewhere. Falls back to the callback argument passed into start_session.
-	 */
 	const invokeCallback = (payload) => {
 		const cb = window.mereos.startRecordingCallBack || callback;
-		if (typeof cb === 'function') {
-			cb(payload);
-		}
+		safeInvokeCallback(cb, payload);
 	};
 
 	try {
-		// Store callback for async paths inside startRecording (Twilio, media, etc.).
 		window.mereos.startRecordingCallBack = callback;
 		await detectBrowserActions();
 		const secureFeatures = getSecureFeatures();
@@ -366,10 +404,8 @@ async function start_session(callback) {
 		const currentTimeInSeconds = Math.abs(getTimeInSeconds({ isUTC: true, inputDate: dateTime }));
 
 		const previousSessionData = convertDataIntoParse('session') || {};
-		// session_resume is set by start_prechecks(callback, 'session_resume') after reload/interruption.
 		const sessionSetting = localStorage.getItem('precheckSetting');
 
-		// Preserve quiz start time across resume; only set on first start.
 		let quizStartTime = previousSessionData.quizStartTime;
 		if (!quizStartTime || quizStartTime <= 0) {
 			quizStartTime = currentTimeInSeconds;
@@ -427,7 +463,6 @@ async function start_session(callback) {
 					});
 					return;
 				}
-				// session_resume: re-send stored mobile token to the signaling socket.
 			} else if (canReuseMobileToken && window.mereos.socket && window.mereos.socket.readyState === WebSocket.OPEN) {
 				window.mereos.socket.send(
 					JSON.stringify({
@@ -439,7 +474,6 @@ async function start_session(callback) {
 
 			const roomCreation = ['record_screen', 'record_audio', 'record_video', 'mobile_proctoring'];
 			const needsWebRoom = secureFeatures?.entities.filter((entity) => roomCreation.includes(entity.key)).length > 0;
-			// Web recording room token (skip fetch when resuming with stored token)
 			if (needsWebRoom && !canReuseTwilioToken) {
 				try {
 					const resp = await getRoomToken({ room_name: newRoomSessionId, identity: newRoomSessionId });
@@ -450,7 +484,6 @@ async function start_session(callback) {
 							twilioToken: twilioToken,
 							sessionId: newRoomSessionId,
 						});
-						// No token in API response and none stored — cannot connect.
 					} else if (!previousSessionData.twilioToken) {
 						window.mereos.recordingStart = false;
 						showToast('error', 'something_went_wrong_please_contact_support');
@@ -481,7 +514,6 @@ async function start_session(callback) {
 				}
 			}
 
-			// Final guard before Twilio connect inside startRecording.
 			if (needsWebRoom) {
 				const sessionWithToken = convertDataIntoParse('session');
 				if (!sessionWithToken?.twilioToken) {
@@ -502,7 +534,6 @@ async function start_session(callback) {
 			 */
 			await startRecording();
 		} else {
-			// No proctoring features — session starts immediately with success callback.
 			invokeCallback({
 				type: 'success',
 				message: 'recording_started_successfully',
@@ -510,25 +541,26 @@ async function start_session(callback) {
 			});
 		}
 	} catch (err) {
-		// Allow retry after unexpected failure in this function.
-		window.mereos.recordingStart = false;
-		window.mereos.sessionActive = false;
-		window.mereos.pendingSessionStart = false;
-		console.log('err_________', err);
-		showToast('error', 'error_in_starting_the_session');
-		if (typeof registerEvent !== 'undefined' && typeof registerEvent === 'function') {
-			registerEvent({
-				eventType: 'success',
-				notify: false,
-				eventName: 'error_starting_session',
+		try {
+			window.mereos.recordingStart = false;
+			window.mereos.sessionActive = false;
+			window.mereos.pendingSessionStart = false;
+			showToast('error', 'error_in_starting_the_session');
+			if (typeof registerEvent === 'function') {
+				registerEvent({
+					eventType: 'success',
+					notify: false,
+					eventName: 'error_starting_session',
+				});
+			}
+			sentryExceptioMessage(err, {
+				type: 'error',
+				message: 'Error in starting the session',
+				details: err,
+				code: 40004
 			});
+		} catch (reportingError) {
 		}
-		sentryExceptioMessage(err, {
-			type: 'error',
-			message: 'Error in starting the session',
-			details: err,
-			code: 40004
-		});
 		invokeCallback({
 			type: 'error',
 			message: 'error_in_starting_the_session',
@@ -539,6 +571,12 @@ async function start_session(callback) {
 }
 
 async function stop_session(callback) {
+	let callbackFired = false;
+	const respond = (payload) => {
+		callbackFired = true;
+		safeInvokeCallback(callback, payload);
+	};
+
 	try {
 		window.mereos.isStoppingSession = true;
 		window.mereos.isReleasingMedia = true;
@@ -554,12 +592,12 @@ async function stop_session(callback) {
 		window.mereos.stopRecordingCallBack = callback;
 		const tokenData = localStorage.getItem('mereosToken');
 		if (!tokenData) {
-			return callback(tokenExpiredError);
+			return respond(tokenExpiredError);
 		}
 		const { expiresAt } = JSON.parse(tokenData);
 		if (expiresAt && Date.now() > expiresAt) {
 			localStorage.removeItem('mereosToken');
-			return callback(tokenExpiredError);
+			return respond(tokenExpiredError);
 		}
 		const stopSessionResp = await stopAllRecordings();
 
@@ -570,14 +608,9 @@ async function stop_session(callback) {
 			const resp = await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 
 			if (resp) {
-				const keysToRemove = [
-					'candidateAssessment', 'mereosToken', 'session', 'preChecksSteps',
-					'secureFeatures', 'schoolTheme', 'conversationId', 'precheckSetting',
-					'socketGroupId', 'navHistory', 'deviceId', 'microphoneID',
-				];
-				keysToRemove.forEach((key) => localStorage.removeItem(key));
+				MEREOS_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 
-				callback({
+				respond({
 					type: 'success',
 					message: 'session_finished_successfully',
 					code: 50003
@@ -586,21 +619,33 @@ async function stop_session(callback) {
 				throw new Error('Session can\'t be added');
 			}
 		} else {
-			throw 'session can\'t add';
+			throw new Error('session can\'t add');
 		}
 	} catch (err) {
-		sentryExceptioMessage(err, {
-			type: 'error',
-			message: 'Error in stopping the session',
-			code: 40016
-		});
-		callback({
+		try {
+			sentryExceptioMessage(err, {
+				type: 'error',
+				message: 'Error in stopping the session',
+				code: 40016
+			});
+		} catch (reportingError) {
+			// Swallow -- reporting failing must never be the reason the callback below doesn't
+			// fire.
+		}
+		respond({
 			type: 'error',
 			message: 'error_in_stopping_the_session',
 			code: 40016
 		});
 	} finally {
 		window.mereos.isStoppingSession = false;
+		if (!callbackFired) {
+			safeInvokeCallback(callback, {
+				type: 'error',
+				message: 'error_in_stopping_the_session',
+				code: 40016
+			});
+		}
 	}
 }
 

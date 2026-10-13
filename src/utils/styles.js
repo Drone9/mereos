@@ -393,27 +393,7 @@ body {
     border-radius: 0; 
   }
 }
-.dropdown-option{
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 20px;
-  margin-top: 12px;
-  padding-left: 12px;
-  padding-bottom: 5px;
-  font-style:var(--font-style);
-}
 
-.flag-icon-img{
-  width: 25px;
-}
-.dropdown-content .text{
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  cursor: pointer;
-  color: var(--text-color);
-  font-style:var(--font-style);
-}
 .close {
   color: #aaa;
   font-size: 28px;
@@ -498,7 +478,7 @@ body {
     top: calc(100% + 8px);
     width: 350px;
     right: 10px;
-    background: var(--theme-mode);
+    background: var(--dropdown-bg, var(--theme-mode));
     border: 1px solid #999;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -556,14 +536,6 @@ body {
     transition: all 0.2s;
     font-style:var(--font-style);
 }
-.dropdown {
-  position: relative;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  margin-left: -13px;
-  cursor: pointer;
-}
 .live-chat-container{
   position: fixed;
   bottom: 87px;
@@ -572,29 +544,7 @@ body {
   z-index: 99999999;
 }
 
-.dropdown .select {
-  display: flex;
-  align-items: center;
-  padding: 5px;
-  column-gap: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-  max-width: 182px;
-  justify-content: space-between;
-  z-index: 99999;
-  font-style:var(--font-style);
-}
-.dropdown .select label{
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--text-color);
-  font-style:var(--font-style);
-}
 
-.dropdown .select div {
-  margin-right: 5px;
-}
 
 body.modal-active iframe:not(.modal iframe) {
     visibility: hidden !important;
@@ -605,31 +555,130 @@ body.modal-active object:not(.modal object),
 body.modal-active applet:not(.modal applet) {
     visibility: hidden !important;
 }
-.dropdown-content {
-  position: absolute;
-  top: 42px;
-  right: -65px;
-  background-color: var(--theme-mode);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+/* Language dropdown (matches the candidate dashboard's LanguageDropdown) */
+.language-dropdown-menu {
+  position: relative;
+  display: inline-block;
+  font-style: var(--font-style);
+}
+
+.language-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+  padding: 6px 4px;
   border-radius: 8px;
-  overflow: hidden;
-  display: none;
-  border: 1px solid white;
-}
-
-.dropdown-content.active {
-  display: block;
-  z-index: 999;
-}
-
-.dropdown .option {
-  padding: 8px 12px;
   cursor: pointer;
-  font-style:var(--font-style);
+  user-select: none;
 }
 
-.dropdown .option:hover {
-  background-color: #f0f0f0;
+.language-dropdown-trigger:focus-visible {
+  outline: 2px solid var(--theme-color);
+  outline-offset: 2px;
+}
+
+.current-language-flag {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.current-language-name {
+  color: var(--text-color);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.dropdown-caret {
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  color: #A7ABB2;
+  transition: transform 0.15s ease;
+}
+
+.language-dropdown-menu.open .dropdown-caret {
+  transform: rotate(180deg);
+}
+
+.language-dropdown-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1000;
+  width: 180px;
+  box-sizing: border-box;
+  padding: 6px;
+  background-color: var(--dropdown-bg, var(--theme-mode));
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.language-dropdown-menu.open .language-dropdown-panel {
+  display: block;
+}
+
+.custom-dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  margin: 0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-color);
+  white-space: nowrap;
+  cursor: pointer;
+  background-color: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.custom-dropdown-item:hover,
+.custom-dropdown-item:focus-visible {
+  background-color: rgba(127, 127, 127, 0.15);
+  outline: none;
+}
+
+.custom-dropdown-item.selected {
+  font-weight: 600;
+  background-color: rgba(255, 150, 27, 0.1);
+}
+
+@supports (background-color: color-mix(in srgb, red 10%, transparent)) {
+  .custom-dropdown-item.selected {
+    background-color: color-mix(in srgb, var(--theme-color) 12%, transparent);
+  }
+}
+
+.language-flag {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.language-name {
+  flex: 1;
+}
+
+.language-check {
+  color: var(--theme-color);
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+@media screen and (max-width: 500px) {
+  .language-dropdown-panel {
+    width: 160px;
+  }
 }`;
 
 export const systemRequirementCss = `
@@ -1222,7 +1271,21 @@ font-style:var(--font-style);}
 	}
 
 	&:active {
-		transform: scale(0.98); 
+		transform: scale(0.98);
+	}
+}
+
+/* Flat fallback: browsers without CSS nesting / relative colors drop the nested
+   :disabled rules above, making disabled buttons look clickable. */
+.orange-filled-btn:disabled,
+.orange-hollow-btn:disabled {
+	cursor: not-allowed;
+}
+
+@supports not (color: rgb(from red r g b)) {
+	.orange-filled-btn:disabled,
+	.orange-hollow-btn:disabled {
+		opacity: 0.5;
 	}
 }`;
 

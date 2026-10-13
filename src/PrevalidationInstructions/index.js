@@ -6,8 +6,15 @@ import { fetchIceServers } from '../services/twilio.services';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import { ASSET_URL } from '../utils/constant';
 
+let currentLanguageHandler = null;
+
 export const PrevalidationInstructions = async (tabContent) => {
 	try {
+		if (currentLanguageHandler) {
+			i18next.off('languageChanged', currentLanguageHandler);
+			currentLanguageHandler = null;
+		}
+
 		if (window.mereos?.cleanupPrevalidationTimers) {
 			window.mereos.cleanupPrevalidationTimers();
 			window.mereos.cleanupPrevalidationTimers = null;
@@ -683,7 +690,10 @@ export const PrevalidationInstructions = async (tabContent) => {
 			}
 		};
 
-		const handleLanguageChange = async () => {    
+		const handleLanguageChange = async () => {
+			// This screen restarts the webcam below; never do that while another screen is shown.
+			if (!tabContent?.classList?.contains('active')) return;
+
 			const streamExists = window.mereos.globalStream;
 			const streamActive = streamExists && window.mereos.globalStream.active;
 
@@ -802,7 +812,8 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 		init();
 
-		i18next.on('languageChanged', handleLanguageChange);
+		currentLanguageHandler = handleLanguageChange;
+		i18next.on('languageChanged', currentLanguageHandler);
 	} catch (error) {
 		sentryExceptioMessage(error, { type: 'error', message: 'Failed to initialize Language' });
 		logger.error('Failed to initialize; error: ' + error);

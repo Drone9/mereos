@@ -5,17 +5,34 @@ import { showTab } from '../ExamsPrechecks';
 import { acceptableLabels, acceptableText, dataURIToBlob, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, sentryExceptioMessage, srcToData, updatePersistData, convertDataIntoParse, logger, addSectionSessionRecord } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
+import { CAMERA_FRAME_TIMEOUT_MS, isStreamLive, requestCameraStream, stopStream } from '../utils/camera';
 
 import { uploadFileInS3Folder, userRekognitionInfo } from '../services/general.services.js';
 
+let currentLanguageHandler = null;
+let stopPreviousCamera = null;
+// Shared across screen instances so a newer visit invalidates an older pending camera request.
+let cameraRequestId = 0;
+
 export const IdentityVerificationScreenTwo = async (tabContent) => {
-	let photo;
+	if (currentLanguageHandler) {
+		i18next.off('languageChanged', currentLanguageHandler);
+		currentLanguageHandler = null;
+	}
+	if (stopPreviousCamera) {
+		stopPreviousCamera();
+		stopPreviousCamera = null;
+	}
+
+	let photo = null;
+	let stream = null;
+	let cameraFrameTimeout = null;
 	let inputFile;
 	let disabledBtn = false;
 	let fileObj;
 	let failedAttempts = 0;
 	let webcamError = false;
-	let webcamLoading = true; // Track webcam loading state
+	let webcamLoading = true;
 	let processingPDF = false;
 	let pdfLibLoaded = false;
 	let currentState = {
@@ -27,14 +44,90 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 	const getSecureFeature = getSecureFeatures();
 	const secureFeatures = getSecureFeature?.entities || [];
-	
-	let cameraInitTimeout;
 
 	const videoConstraints = {
 		width: 350,
 		height: 280,
-		facingMode: 'user',
-		deviceId: localStorage.getItem('deviceId') ? { deviceId: { exact: localStorage.getItem('deviceId') } } : true,
+		facingMode: 'user'
+	};
+
+	const stopCamera = () => {
+		cameraRequestId++;
+		clearTimeout(cameraFrameTimeout);
+		stopStream(stream);
+		stream = null;
+		photo = null;
+	};
+
+	const startCamera = async () => {
+		const requestId = ++cameraRequestId;
+		webcamError = false;
+		webcamLoading = true;
+		renderUI();
+
+		try {
+			const newStream = await requestCameraStream(videoConstraints);
+			if (requestId !== cameraRequestId) {
+				stopStream(newStream);
+				return;
+			}
+
+			stream = newStream;
+			window.mereos.globalStream = newStream;
+			newStream.getVideoTracks().forEach(track => {
+				track.addEventListener('ended', () => {
+					if (stream === newStream) handleWebcamError();
+				});
+			});
+
+			webcamLoading = false;
+			renderUI();
+		} catch (error) {
+			if (requestId !== cameraRequestId) return;
+			sentryExceptioMessage(error, { type: 'error', message: 'Webcam error in ID card' });
+			console.error('Webcam error:', error);
+			handleWebcamError();
+		}
+	};
+
+	const isTakePhotoDisabled = () =>
+		disabledBtn ||
+		!!currentState.imageSrc ||
+		webcamError ||
+		webcamLoading ||
+		processingPDF ||
+		!photo ||
+		photo.readyState < HTMLMediaElement.HAVE_CURRENT_DATA;
+
+	const updateTakePhotoButton = () => {
+		const takePhotoBtn = tabContent.querySelector('[data-action="take-photo"]');
+		if (takePhotoBtn) takePhotoBtn.disabled = isTakePhotoDisabled();
+	};
+
+	// Enable "Take ID photo" only once the video shows a frame, instead of relying on play() resolving.
+	const attachStreamToVideo = (video) => {
+		video.muted = true;
+		video.playsInline = true;
+		video.srcObject = stream;
+		photo = video;
+		video.play().catch(() => {});
+
+		clearTimeout(cameraFrameTimeout);
+		if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+			updateTakePhotoButton();
+			return;
+		}
+
+		video.addEventListener('loadeddata', () => {
+			clearTimeout(cameraFrameTimeout);
+			updateTakePhotoButton();
+		}, { once: true });
+
+		cameraFrameTimeout = setTimeout(() => {
+			if (photo === video && video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+				handleWebcamError();
+			}
+		}, CAMERA_FRAME_TIMEOUT_MS);
 	};
 
 	const loadPdfJs = () => {
@@ -67,6 +160,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	loadPdfJs();
 
 	const handleWebcamError = () => {
+		stopCamera();
 		webcamError = true;
 		webcamLoading = false;
 		currentState = {
@@ -90,6 +184,8 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const capturePhoto = () => {
+		if (isTakePhotoDisabled()) return;
+
 		const canvas = document.createElement('canvas');
 		canvas.width = videoConstraints.width;
 		canvas.height = videoConstraints.height;
@@ -131,31 +227,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const handleRestart = () => {
-		if (cameraInitTimeout) {
-			clearTimeout(cameraInitTimeout);
-		}
-		
-		if (window.mereos.globalStream?.getTracks()) {
-			window.mereos.globalStream.getTracks().forEach(track => {
-				track.stop();
-			});
-			window.mereos.globalStream = null;
-		}
-		
-		if (photo) {
-			if (photo.srcObject) {
-				const tracks = photo.srcObject.getTracks();
-				tracks.forEach(track => track.stop());
-			}
-			photo = null;
-		}
-	
 		if (inputFile) {
 			inputFile.value = '';
 		}
-	
-		webcamError = false;
-		webcamLoading = true;
+
 		processingPDF = false;
 		currentState = {
 			...currentState,
@@ -166,7 +241,15 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 				text: ''
 			}
 		};
-		renderUI();
+
+		// Reuse the running camera on retake; only reopen it if it was lost.
+		if (isStreamLive(stream)) {
+			webcamError = false;
+			webcamLoading = false;
+			renderUI();
+		} else {
+			startCamera();
+		}
 	};
 
 	const extractImageFromPDF = async (file) => {
@@ -478,6 +561,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const nextStep = async () => {
+		stopCamera();
 		if(window.mereos.globalStream?.getTracks()){
 			window.mereos.globalStream.getTracks().forEach(track => track.stop());
 		}
@@ -563,6 +647,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 
 	const prevStep = () => {
+		stopCamera();
 		const previousRoute = findLastVisitedRoute('IdentityVerificationScreenTwo');
 		const previousStep = findPreviousPrecheckStep('IdentityVerificationScreenTwo');
 		updatePersistData('preChecksSteps',{ [previousStep]:false });
@@ -574,13 +659,13 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 	};
 	
 	const setupEventListeners = () => {
-		const uploadEl = window.mereos.shadowRoot.querySelector('#upload-identity-card');
+		const uploadEl = tabContent.querySelector('#upload-identity-card');
 		if (uploadEl) {
 			uploadEl.removeEventListener('click', triggerFileUpload);
 			uploadEl.addEventListener('click', triggerFileUpload);
 		}
 
-		window.mereos.shadowRoot.querySelectorAll('.orange-filled-btn, .orange-hollow-btn').forEach(button => {
+		tabContent.querySelectorAll('.orange-filled-btn, .orange-hollow-btn').forEach(button => {
 			const action = button.getAttribute('data-action');
 			if (action === 'take-photo') button.addEventListener('click', capturePhoto);
 			if (action === 'restart') button.addEventListener('click', handleRestart);
@@ -590,7 +675,10 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		});
 	};
 
-	const renderUI = async () => {
+	const renderUI = () => {
+		photo = null;
+		clearTimeout(cameraFrameTimeout);
+
 		let container = tabContent.querySelector('.id-card-container');
 		if (!container) {
 			tabContent.insertAdjacentHTML('beforeend', `
@@ -639,7 +727,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			`;
 		} else {
 			headerImgHTML = `
-                <video width="${videoConstraints.width}" height="${videoConstraints.height}" autoplay></video>
+                <video width="${videoConstraints.width}" height="${videoConstraints.height}" autoplay muted playsinline></video>
                 <img src="${ASSET_URL}/screen-centered-grid.svg" class="ivst-screen-grid" alt="screen-centered-grid">
             `;
 		}
@@ -670,7 +758,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			buttonsHTML = `
                 ${secureFeatures.find(entity => entity.key === 'verify_candidate') ? 
 		`<button class="orange-hollow-btn" data-action="prev">${i18next.t('previous_step')}</button>` : ''}
-                <button class="orange-filled-btn" data-action="take-photo" ${disabledBtn || !!currentState.imageSrc || webcamError || webcamLoading || processingPDF ? 'disabled' : ''}>
+                <button class="orange-filled-btn" data-action="take-photo" ${isTakePhotoDisabled() ? 'disabled' : ''}>
                     ${i18next.t('take_id_photo')}
                 </button>
             `;
@@ -714,93 +802,21 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			container.appendChild(inputFile);
 		}
 
-		if (!currentState.imageSrc && !webcamError && webcamLoading) {
-			if (cameraInitTimeout) {
-				clearTimeout(cameraInitTimeout);
-			}
-			
-			const hasActiveTracks = window.mereos.globalStream?.getTracks?.()?.some(track => 
-				track.readyState === 'live' || track.readyState === 'playing'
-			);
-			
-			if (!window.mereos.globalStream || !hasActiveTracks) {
-				cameraInitTimeout = setTimeout(async () => {
-					const videoElement = container.querySelector('video');
-					if (!videoElement && !currentState.imageSrc && webcamLoading) {
-						try {
-							window.mereos.globalStream = await navigator.mediaDevices.getUserMedia({ 
-								video: videoConstraints, 
-								audio: false 
-							});
-							
-							if (window.mereos.globalStream) {
-								webcamLoading = false;
-								
-								if (!videoElement) {
-									const newVideo = document.createElement('video');
-									newVideo.width = videoConstraints.width;
-									newVideo.height = videoConstraints.height;
-									newVideo.autoplay = true;
-									newVideo.playsinline = true;
-									
-									const gridOverlay = document.createElement('img');
-									gridOverlay.src = `${ASSET_URL}/screen-centered-grid.svg`;
-									gridOverlay.className = 'ivst-screen-grid';
-									gridOverlay.alt = 'screen-centered-grid';
-									
-									const imgContainer = container.querySelector('.ivst-header-img-container');
-									if (imgContainer) {
-										imgContainer.innerHTML = '';
-										imgContainer.appendChild(newVideo);
-										imgContainer.appendChild(gridOverlay);
-										
-										newVideo.srcObject = window.mereos.globalStream;
-										photo = newVideo;
-										
-										newVideo.play().then(() => {
-											renderUI(); // Re-render to show video
-										}).catch((error) => {
-											console.error('Error playing video:', error);
-											handleWebcamError();
-										});
-									}
-								}
-								
-								const tracks = window.mereos.globalStream.getTracks();
-								tracks.forEach(track => {
-									track.addEventListener('ended', () => {
-										handleWebcamError();
-									});
-								});
-							}
-						} catch (error) {
-							sentryExceptioMessage(error,{type:'error',message:'Webcam error in ID card'});
-							console.error('Webcam error:', error);
-							handleWebcamError();
-						}
-					} else if (videoElement && window.mereos.globalStream && hasActiveTracks) {
-						webcamLoading = false;
-						renderUI();
-					}
-				}, 100);
-			} else {
-				webcamLoading = false;
-				renderUI();
-			}
-		} else if (!currentState.imageSrc && !webcamError && !webcamLoading) {
+		if (!currentState.imageSrc && !webcamError && !webcamLoading) {
 			const videoElement = container.querySelector('video');
-			if (videoElement && window.mereos.globalStream) {
-				videoElement.srcObject = window.mereos.globalStream;
-				photo = videoElement;
+			if (videoElement && stream) {
+				attachStreamToVideo(videoElement);
 			}
 		}
 
 		setupEventListeners();
 	};
 
-	renderUI();
+	stopPreviousCamera = stopCamera;
+	startCamera();
 
-	i18next.on('languageChanged', () => {
-		renderUI();
-	});
+	currentLanguageHandler = () => {
+		if (tabContent.classList.contains('active')) renderUI();
+	};
+	i18next.on('languageChanged', currentLanguageHandler);
 };

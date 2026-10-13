@@ -621,6 +621,7 @@ export const updateThemeColor = () => {
 
 	document.documentElement.style.setProperty('--theme-color', themeColor);
 	document.documentElement.style.setProperty('--theme-mode', isDarkMode ? '#000' : '#fff');
+	document.documentElement.style.setProperty('--dropdown-bg', isDarkMode ? '#2C2C2E' : '#fff');
 	document.documentElement.style.setProperty('--text-color', isDarkMode ? '#fff' : '#000');
 	document.documentElement.style.setProperty('--font-style', fontStyle);
 	document.documentElement.style.setProperty('--video-style', isDarkMode ? '#000' : '#e7ebef');
@@ -2406,6 +2407,16 @@ const logWithStyle = (message, style, object = null) => {
 export const initializeI18next = () => {
 	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolLanguage?.language || 'en';
+
+	// Re-running init() emits 'languageChanged', which re-runs every screen's listener
+	// (including hidden screens that restart the webcam), so only switch when needed.
+	if (i18next.isInitialized) {
+		const language = normalizeLanguage(defaultLanguage);
+		if (i18next.language !== language) {
+			i18next.changeLanguage(language);
+		}
+		return;
+	}
 
 	i18next.init({
 		lng: normalizeLanguage(defaultLanguage),

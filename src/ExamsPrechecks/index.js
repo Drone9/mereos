@@ -351,6 +351,20 @@ const navigate = (newTabId) => {
 	showTab(newTabId);
 };
 
+// The header is rebuilt on every tab change; keep a single outside-click listener on document.
+let closeLanguageDropdownOnOutsideClick = null;
+
+const renderLanguageOptions = (selectedLanguage) => languages.map((lang, index) => {
+	const isSelected = lang.keyword === selectedLanguage.keyword;
+	return `
+		<div data-index="${index}" role="option" tabindex="-1" aria-selected="${isSelected}" class="custom-dropdown-item${isSelected ? ' selected' : ''}">
+			<img src="${lang.src}" alt="" class="language-flag">
+			<span class="language-name">${i18next.t(lang.value)}</span>
+			${isSelected ? '<span class="language-check">✓</span>' : ''}
+		</div>
+	`;
+}).join('');
+
 const createLanguageDropdown = (currentStep) => {
 	const modalContent = window.mereos.shadowRoot.querySelector('.modal-content');
 	if(modalContent){
@@ -362,8 +376,8 @@ const createLanguageDropdown = (currentStep) => {
 
 	const schoolTheme = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolTheme?.language || 'en';
-	const filterLanguage = normalizeLanguage(defaultLanguage);
-	let selectedLanguage = languages.find(lang => lang.keyword === filterLanguage.trim());
+	const filterLanguage = normalizeLanguage(i18next.language || defaultLanguage);
+	const selectedLanguage = languages.find(lang => lang.keyword === filterLanguage.trim()) || languages[0];
 
 	const videoId = getVideoIdForStep(currentStep);
 	const hasVideo = !!videoId;
@@ -375,20 +389,17 @@ const createLanguageDropdown = (currentStep) => {
 	
 	const headerHTML = `
     <div class="header">
-      <section class="dropdown">
-        <div class="select">
-          <img src="${selectedLanguage.src}" alt="${selectedLanguage.alt}" class="flag-icon-img">
-          <label class="language">${i18next.t(selectedLanguage.value)}</label>
-          <img src="${ASSET_URL}/dropdown-btn.svg">
+      <section class="language-dropdown-menu">
+        <div class="language-dropdown-trigger" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false">
+          <img src="${selectedLanguage.src}" alt="" title="${i18next.t(selectedLanguage.value)}" class="current-language-flag">
+          <span class="current-language-name">${i18next.t(selectedLanguage.value)}</span>
+          <svg class="dropdown-caret" viewBox="0 0 10 6" aria-hidden="true">
+            <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
-        <section class="dropdown-content">
-          ${languages.map((lang, index) => `
-            <div data-index="${index}" class="dropdown-option ${lang.keyword === selectedLanguage.keyword ? 'selected' : ''}">
-              <img src="${lang.src}" alt="${lang.alt}" class="flag-icon-img">
-              <div class="text" id="dropdown-text-language">${i18next.t(lang.value)}</div>
-            </div>
-          `).join('')}
-        </section>
+        <div class="language-dropdown-panel" role="listbox">
+          ${renderLanguageOptions(selectedLanguage)}
+        </div>
       </section>
       
       ${hasVideo ? `
@@ -446,77 +457,94 @@ const createLanguageDropdown = (currentStep) => {
 		modalContent.insertAdjacentHTML('afterbegin', headerHTML);
 	}
 
-	const selectContainer = modalContent.querySelector('.select');
-	const languageDropdown = modalContent.querySelector('.dropdown-content');
-	const flagImg = modalContent.querySelector('.select .flag-icon-img');
-	const label = modalContent.querySelector('.language');
-  
-	selectContainer.addEventListener('click', (e) => {
-		e.stopPropagation();
-		languageDropdown.classList.toggle('active');
-	});
+	const menu = modalContent.querySelector('.language-dropdown-menu');
+	const trigger = menu.querySelector('.language-dropdown-trigger');
+	const panel = menu.querySelector('.language-dropdown-panel');
+	const flagImg = trigger.querySelector('.current-language-flag');
+	const label = trigger.querySelector('.current-language-name');
 
-	const closeLanguageDropdown = (e) => {
-		const dropdown = modalContent.querySelector('.dropdown');
-		if (dropdown && !dropdown.contains(e.target) && languageDropdown.classList.contains('active')) {
-			languageDropdown.classList.remove('active');
-		}
+	const setLanguageDropdownOpen = (open) => {
+		menu.classList.toggle('open', open);
+		trigger.setAttribute('aria-expanded', String(open));
 	};
 
-	document.addEventListener('click', closeLanguageDropdown);
+	const selectLanguage = (selectedLang) => {
+		setLanguageDropdownOpen(false);
 
-	const optionDivs = languageDropdown.querySelectorAll('.dropdown-option');
-	optionDivs.forEach(optionDiv => {
-		optionDiv.addEventListener('click', function(e) {
-			e.stopPropagation();
-			const index = parseInt(this.getAttribute('data-index'));
-			const selectedLang = languages[index];
-        
-			i18next.changeLanguage(selectedLang.keyword)
-				.then(() => {
-					flagImg.src = selectedLang.src;
-					label.textContent = i18next.t(selectedLang.value);
-                
-					optionDivs.forEach((div, i) => {
-						const optionText = div.querySelector('.text');
-						optionText.textContent = i18next.t(languages[i].value);
-                    
-						if (i === index) {
-							div.classList.add('selected');
-						} else {
-							div.classList.remove('selected');
-						}
-					});
-                
-					const helpButtonText = modalContent.querySelector('.help-btn p');
-					if (helpButtonText) {
-						helpButtonText.textContent = i18next.t('need_help');
-					}
-                
-					const helpDropdownTitle = modalContent.querySelector('.help-dropdown-content h3');
-					if (helpDropdownTitle) {
-						helpDropdownTitle.textContent = i18next.t('need_help');
-					}
-				})
-				.catch(err => logger.error(err));
-        
-			languageDropdown.classList.remove('active');
-        
-			if (typeof window?.mereos?.globalCallback === 'function') {
-				window.mereos.globalCallback({ 
-					type:'success',
-					message: 'language_changed',
-					code:50005, 
-					details:selectedLang.keyword 
-				});
-			}
-			updatePersistData('schoolTheme', { language: selectedLang.keyword });
-		});
+		i18next.changeLanguage(selectedLang.keyword)
+			.then(() => {
+				const languageName = i18next.t(selectedLang.value);
+				flagImg.src = selectedLang.src;
+				flagImg.title = languageName;
+				label.textContent = languageName;
+				panel.innerHTML = renderLanguageOptions(selectedLang);
+
+				const helpButtonText = modalContent.querySelector('.help-btn p');
+				if (helpButtonText) {
+					helpButtonText.textContent = i18next.t('need_help');
+				}
+
+				const helpDropdownTitle = modalContent.querySelector('.help-dropdown-content h3');
+				if (helpDropdownTitle) {
+					helpDropdownTitle.textContent = i18next.t('need_help');
+				}
+			})
+			.catch(err => logger.error(err));
+
+		if (typeof window?.mereos?.globalCallback === 'function') {
+			window.mereos.globalCallback({ 
+				type:'success',
+				message: 'language_changed',
+				code:50005, 
+				details:selectedLang.keyword 
+			});
+		}
+		updatePersistData('schoolTheme', { language: selectedLang.keyword });
+	};
+
+	trigger.addEventListener('click', () => {
+		setLanguageDropdownOpen(!menu.classList.contains('open'));
 	});
 
-	languageDropdown.addEventListener('click', (e) => {
-		e.stopPropagation();
+	trigger.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			setLanguageDropdownOpen(!menu.classList.contains('open'));
+		} else if (e.key === 'Escape') {
+			setLanguageDropdownOpen(false);
+		}
 	});
+
+	panel.addEventListener('click', (e) => {
+		const item = e.target.closest('.custom-dropdown-item');
+		if (item) {
+			selectLanguage(languages[Number(item.dataset.index)]);
+		}
+	});
+
+	panel.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape') {
+			setLanguageDropdownOpen(false);
+			trigger.focus();
+		}
+	});
+
+	// The shadow root is 'closed', so a document listener can't see which shadow node was
+	// clicked (composedPath() hides them). Instead, mark clicks that pass through the menu.
+	const clicksInsideMenu = new WeakSet();
+	menu.addEventListener('click', (e) => {
+		clicksInsideMenu.add(e);
+	});
+
+	if (closeLanguageDropdownOnOutsideClick) {
+		document.removeEventListener('click', closeLanguageDropdownOnOutsideClick);
+	}
+	closeLanguageDropdownOnOutsideClick = (e) => {
+		if (!clicksInsideMenu.has(e)) {
+			setLanguageDropdownOpen(false);
+		}
+	};
+	document.addEventListener('click', closeLanguageDropdownOnOutsideClick);
 
 	if (hasVideo && VIDEO_URL) {
 		const helpButton = modalContent.querySelector('.help-btn');
@@ -621,7 +649,7 @@ const createLanguageDropdown = (currentStep) => {
 		});
 
 		const cleanup = () => {
-			document.removeEventListener('click', closeLanguageDropdown);
+			document.removeEventListener('click', closeLanguageDropdownOnOutsideClick);
 			document.removeEventListener('click', handleOutsideClick);
 			if (helpVideo) {
 				pauseVideo();
@@ -638,7 +666,7 @@ const createLanguageDropdown = (currentStep) => {
 		}
 	} else {
 		const cleanup = () => {
-			document.removeEventListener('click', closeLanguageDropdown);
+			document.removeEventListener('click', closeLanguageDropdownOnOutsideClick);
 		};
 
 		if (window.mereos) {
@@ -919,56 +947,75 @@ export const startSession = async () => {
 
 let isModalClosed = false;
 
-window.addEventListener('storage', (event) => {
-	if (event.key === 'mereosToken' && event.newValue === null && !isModalClosed) {
-		closeModalOnce();
+const TOKEN_CHECK_INTERVAL_MS = 2000;
+
+const clearTokenCheckInterval = () => {
+	if (window.mereos?.checkTokenIntervalId) {
+		clearInterval(window.mereos.checkTokenIntervalId);
+		window.mereos.checkTokenIntervalId = null;
 	}
-});
+
+	if (window.mereos?.checkTokenInterval) {
+		clearInterval(window.mereos.checkTokenInterval);
+		window.mereos.checkTokenInterval = null;
+	}
+};
 
 function checkToken() {
-	const session = convertDataIntoParse('session');
-	
-	if (!getAuthenticationToken() && !isModalClosed && 
-		(session?.sessionStatus.toLowerCase() !== 'completed' && 
-			session?.sessionStatus.toLowerCase() !== 'terminated')) {
-		closeModalOnce();
+	try {
+		const session = convertDataIntoParse('session');
+		const sessionStatus = session?.sessionStatus?.toLowerCase();
+
+		if (!getAuthenticationToken() && !isModalClosed &&
+			sessionStatus !== 'completed' &&
+			sessionStatus !== 'terminated') {
+			closeModalOnce();
+		}
+	} catch (error) {
+		// Runs on a timer: never let one failure throw every 2s (and flood Sentry).
+		console.error('Error in checkToken', error);
 	}
 }
 
 function closeModalOnce() {
 	if (isModalClosed) return;
-	
+
 	isModalClosed = true;
-	
-	if (window.mereos.checkTokenIntervalId) {
-		clearInterval(window.mereos.checkTokenIntervalId);
-		window.mereos.checkTokenIntervalId = null;
-	}
-	
-	if (window.mereos?.checkTokenInterval) {
-		clearInterval(window.mereos.checkTokenInterval);
-		window.mereos.checkTokenInterval = null;
-	}
-	
+	clearTokenCheckInterval();
 	closeModal();
 }
 
-window.onload = checkToken;
-
-const checkInterval = 2000;
-
-function initializeWhenReady() {
-	if (window.mereos) {
-		window.mereos.checkTokenIntervalId = setInterval(() => {
-			checkToken();
-		}, checkInterval);
-		
-		window.mereos.checkTokenInterval = window.mereos.checkTokenIntervalId;
-	} else {
-		setTimeout(initializeWhenReady, 100);
+const handleTokenStorageChange = (event) => {
+	if (event.key === 'mereosToken' && event.newValue === null && !isModalClosed) {
+		closeModalOnce();
 	}
-}
+};
 
-initializeWhenReady();
+// This module starts timers/listeners on import, and they live on window. When the module is
+// evaluated again (dev hot reload, or the library loaded twice), remove the previous instance's
+// ones first. Otherwise the old interval keeps calling into a stale, half-initialised module and
+// throws "Cannot access 'convertDataIntoParse' before initialization" every 2 seconds.
+const startTokenCheck = () => {
+	window.mereos = window.mereos || {};
+
+	clearTokenCheckInterval();
+
+	if (window.mereos.tokenStorageListener) {
+		window.removeEventListener('storage', window.mereos.tokenStorageListener);
+	}
+	window.mereos.tokenStorageListener = handleTokenStorageChange;
+	window.addEventListener('storage', handleTokenStorageChange);
+
+	if (window.mereos.tokenCheckLoadListener) {
+		window.removeEventListener('load', window.mereos.tokenCheckLoadListener);
+	}
+	window.mereos.tokenCheckLoadListener = checkToken;
+	window.addEventListener('load', checkToken, { once: true });
+
+	window.mereos.checkTokenIntervalId = setInterval(checkToken, TOKEN_CHECK_INTERVAL_MS);
+	window.mereos.checkTokenInterval = window.mereos.checkTokenIntervalId;
+};
+
+startTokenCheck();
 
 export { openModal, closeModal, showTab };

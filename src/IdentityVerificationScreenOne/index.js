@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { dataURIToBlob, logger, registerEvent, sentryExceptioMessage, updatePersistData, convertDataIntoParse, addSectionSessionRecord } from '../utils/functions';
+import { dataURIToBlob, dataURLtoFile, logger, registerEvent, sentryExceptioMessage, updatePersistData, convertDataIntoParse, addSectionSessionRecord } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
 import { uploadFileInS3Folder, userRekognitionInfo } from '../services/general.services.js';
 import { hasVideoFrame, isStreamLive, requestCameraStream, stopStream, waitForVideoReady } from '../utils/camera';
@@ -144,20 +144,13 @@ export const IdentityVerificationScreenOne = async (tabContent) => {
 		handleImageProcessing();
 	};
 
-	const dataURLtoFile = async (dataurl, filename = 'screenshot.png') => {
-		const res = await fetch(dataurl);
-		const blob = await res.blob();
-		return new File([blob], filename, { type: blob.type });
-	};
-
 	const handleImageProcessing = async () => {
 		if (state.imageSrc) {
 			const img = new Image();
 			const data = new FormData();
-			const imageUrl = await dataURLtoFile(state.imageSrc);
-			data.append('image', imageUrl);
-            
 			try {
+				// Converted locally: fetch() of a data: URL is blocked by host pages whose CSP omits data:.
+				data.append('image', dataURLtoFile(state.imageSrc, 'screenshot.png'));
 				const resp = await userRekognitionInfo(data);
 				const predictions = resp?.data?.face?.FaceDetails;
     

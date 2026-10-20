@@ -1305,22 +1305,13 @@ export const convertDataIntoParse = (key) => {
 	return JSON.parse(localStorage.getItem(key));
 };
 
-export const srcToData = async (src) => {
-	let myPromise = await new Promise(resolve => {
-		fetch(src)
-			.then((res) => res.blob())
-			.then((blob) => {
-				const reader = new FileReader();
-				reader.onloadend = () => {
-					resolve(reader.result);
-					reader.result.replace('data:', '').replace(/^.+,/, '');
-				};
-				reader.readAsDataURL(blob);
-			});
-	});
-
-	return myPromise;
-};
+// Reads a local File without fetch(), so host pages whose CSP connect-src blocks blob:/data: still work.
+export const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
+	const reader = new FileReader();
+	reader.onload = () => resolve(reader.result);
+	reader.onerror = () => reject(new Error('error_with_uploading_file'));
+	reader.readAsDataURL(file);
+});
 
 export const acceptableLabels = (detectedLabels, acceptedValue = 80) => {
 	const acceptedLabels = ['cards', 'document', 'text', 'id cards', 'passport', 'driving license', 'license', 'id', 'identity', 'doc', 'cnic', 'nic'];

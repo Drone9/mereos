@@ -2,7 +2,7 @@ import i18next from 'i18next';
 
 import { showTab } from '../ExamsPrechecks';
 
-import { acceptableLabels, acceptableText, dataURIToBlob, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, sentryExceptioMessage, srcToData, updatePersistData, convertDataIntoParse, logger, addSectionSessionRecord } from '../utils/functions';
+import { acceptableLabels, acceptableText, dataURIToBlob, dataURLtoFile, findLastVisitedRoute, findPreviousPrecheckStep, getSecureFeatures, registerEvent, sentryExceptioMessage, readFileAsDataURL, updatePersistData, convertDataIntoParse, logger, addSectionSessionRecord } from '../utils/functions';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { ASSET_URL } from '../utils/constant';
 import { CAMERA_FRAME_TIMEOUT_MS, isStreamLive, requestCameraStream, stopStream } from '../utils/camera';
@@ -193,37 +193,37 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 		context.drawImage(photo, 0, 0, canvas.width, canvas.height);
 		const imageSrc = canvas.toDataURL('image/png');
 
-		dataURLtoFile(imageSrc).then(imageFile => {
-			fileObj = imageFile;
-			if (imageSrc) {
-				currentState = {
-					...currentState,
-					imageSrc: imageSrc,
-					msg: {
-						type: 'checking',
-						text: 'id_being_verified'
-					}
-				};
-				renderUI();
-				verifyImage();
-			} else {
-				currentState = {
-					...currentState,
-					captureMode: 'retake',
-					msg: {
-						type: 'unsuccessful',
-						text: 'error_capturing_picture'
-					}
-				};
-				renderUI();
-			}
-		});
-	};
+		// Converted locally: fetch() of a data: URL is blocked by host pages whose CSP omits data:.
+		let imageFile = null;
+		try {
+			imageFile = dataURLtoFile(imageSrc, 'screenshot.png');
+		} catch (error) {
+			logger.error('Error converting captured ID photo:', error);
+		}
 
-	const dataURLtoFile = async (dataurl, filename = 'screenshot.png') => {
-		const res = await fetch(dataurl);
-		const blob = await res.blob();
-		return new File([blob], filename, { type: blob.type });
+		fileObj = imageFile;
+		if (imageFile) {
+			currentState = {
+				...currentState,
+				imageSrc: imageSrc,
+				msg: {
+					type: 'checking',
+					text: 'id_being_verified'
+				}
+			};
+			renderUI();
+			verifyImage();
+		} else {
+			currentState = {
+				...currentState,
+				captureMode: 'retake',
+				msg: {
+					type: 'unsuccessful',
+					text: 'error_capturing_picture'
+				}
+			};
+			renderUI();
+		}
 	};
 
 	const handleRestart = () => {
@@ -292,7 +292,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 			
 			const imageDataUrl = canvas.toDataURL('image/jpeg', 0.95);
 			
-			const imageFile = await dataURLtoFile(imageDataUrl);
+			const imageFile = dataURLtoFile(imageDataUrl, 'screenshot.png');
 			fileObj = imageFile;
 			
 			processingPDF = false;
@@ -371,8 +371,7 @@ export const IdentityVerificationScreenTwo = async (tabContent) => {
 					}
 				} else {
 					fileObj = file;
-					const src = URL.createObjectURL(file);
-					let imageSrc = await srcToData(src);
+					let imageSrc = await readFileAsDataURL(file);
 					
 					if (imageSrc) {
 						currentState = {

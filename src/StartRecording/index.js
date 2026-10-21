@@ -1769,7 +1769,7 @@ const startRecordingInternal = async () => {
 						if (window.mereos.startRecordingCallBack) {
 							window.mereos.startRecordingCallBack({
 								type: 'error',
-								message: 'session_is_terminated_due_to_slow_internet_connection',
+								message: 'slow_internet_detected',
 								code: 40013
 							});
 						}

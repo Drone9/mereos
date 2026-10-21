@@ -1110,5 +1110,10 @@
 	"lighting_too_bright": "La iluminación es demasiado brillante. Evite la luz directa detrás de usted.",
 	"lighting_ok": "La iluminación se ve bien",
 	"pdf_multiple_pages_error": "Cargue un archivo PDF de una sola página. No se aceptan PDF de varias páginas para la verificación de identidad.",
-  "face_processing_failed": "No pudimos detectar un rostro en la imagen. Asegúrate de que tu rostro sea claramente visible e inténtalo de nuevo."
+  "face_processing_failed": "No pudimos detectar un rostro en la imagen. Asegúrate de que tu rostro sea claramente visible e inténtalo de nuevo.",
+	"reload_page": "Recargar página",
+	"assessment_in_progress_in_another_tab_title": "Evaluación en Progreso",
+	"assessment_in_progress_in_another_tab_message": "Esta evaluación ya está abierta y en progreso en otra pestaña del navegador. Continúe allí. Esta pestaña se reanudará automáticamente si se cierra esa pestaña.",
+	"assessment_already_completed_in_another_tab_title": "Evaluación Ya Completada",
+	"assessment_already_completed_in_another_tab_message": "Esta evaluación ya ha sido completada en otra pestaña del navegador. Puede cerrar esta pestaña."
 }

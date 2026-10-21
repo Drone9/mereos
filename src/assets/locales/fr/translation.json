@@ -1110,5 +1110,10 @@
 	"lighting_too_bright": "L'éclairage est trop brillant. Évitez la lumière directe derrière vous.",
 	"lighting_ok": "L'éclairage semble bon",
 	"pdf_multiple_pages_error": "Veuillez télécharger un fichier PDF d'une seule page. Les PDF multipages ne sont pas acceptés pour la vérification d'identité.",
-  "face_processing_failed": "Nous n'avons pas pu détecter de visage sur l'image. Assurez-vous que votre visage est bien visible et réessayez."
+  "face_processing_failed": "Nous n'avons pas pu détecter de visage sur l'image. Assurez-vous que votre visage est bien visible et réessayez.",
+	"reload_page": "Recharger la page",
+	"assessment_in_progress_in_another_tab_title": "Évaluation en cours",
+	"assessment_in_progress_in_another_tab_message": "Cette évaluation est déjà ouverte et en cours dans un autre onglet du navigateur. Veuillez continuer là-bas. Cet onglet reprendra automatiquement si l'autre onglet est fermé.",
+	"assessment_already_completed_in_another_tab_title": "Évaluation déjà terminée",
+	"assessment_already_completed_in_another_tab_message": "Cette évaluation a déjà été terminée dans un autre onglet du navigateur. Vous pouvez fermer cet onglet."
 }

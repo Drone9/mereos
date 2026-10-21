@@ -1110,5 +1110,10 @@
 	"lighting_too_bright": "De verlichting is te fel. Vermijd direct licht achter u.",
 	"lighting_ok": "Verlichting ziet er goed uit",
 	"pdf_multiple_pages_error": "Upload een PDF-bestand van één pagina. PDF's met meerdere pagina's worden niet geaccepteerd voor identiteitsverificatie.",
-  "face_processing_failed": "We konden geen gezicht op de afbeelding detecteren. Zorg ervoor dat je gezicht duidelijk zichtbaar is en probeer het opnieuw."
+  "face_processing_failed": "We konden geen gezicht op de afbeelding detecteren. Zorg ervoor dat je gezicht duidelijk zichtbaar is en probeer het opnieuw.",
+	"reload_page": "Pagina opnieuw laden",
+	"assessment_in_progress_in_another_tab_title": "Beoordeling Bezig",
+	"assessment_in_progress_in_another_tab_message": "Deze beoordeling is al geopend en bezig in een ander browsertabblad. Ga daar verder. Dit tabblad wordt automatisch hervat als dat tabblad wordt gesloten.",
+	"assessment_already_completed_in_another_tab_title": "Beoordeling Al Voltooid",
+	"assessment_already_completed_in_another_tab_message": "Deze beoordeling is al voltooid in een ander browsertabblad. U kunt dit tabblad sluiten."
 }

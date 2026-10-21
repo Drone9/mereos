@@ -1111,5 +1111,10 @@
 	"lighting_too_bright" : "Lighting is too bright. Avoid direct light behind you.",
 	"lighting_ok": "Lighting looks good",
 	"pdf_multiple_pages_error": "Please upload a single-page PDF file. Multi-page PDFs are not accepted for identity verification.",
-	"face_processing_failed": "We couldn't detect a face in the image. Please make sure your face is clearly visible and try again."
+	"face_processing_failed": "We couldn't detect a face in the image. Please make sure your face is clearly visible and try again.",
+	"reload_page": "Reload Page",
+	"assessment_in_progress_in_another_tab_title": "Assessment In Progress",
+	"assessment_in_progress_in_another_tab_message": "This assessment is already open and in progress in another browser tab. Please continue there. This tab will automatically resume if that tab is closed.",
+	"assessment_already_completed_in_another_tab_title": "Assessment Already Completed",
+	"assessment_already_completed_in_another_tab_message": "This assessment has already been completed in another browser tab. You can close this tab."
 }

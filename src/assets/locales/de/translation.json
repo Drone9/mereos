@@ -1110,5 +1110,10 @@
 	"lighting_too_bright": "Die Beleuchtung ist zu hell. Vermeiden Sie direktes Licht hinter Ihnen.",
 	"lighting_ok": "Die Beleuchtung sieht gut aus",
 	"pdf_multiple_pages_error": "Bitte laden Sie eine einseitige PDF-Datei hoch. Mehrseitige PDFs werden zur Identitätsüberprüfung nicht akzeptiert.",
-  "face_processing_failed": "Wir konnten kein Gesicht im Bild erkennen. Bitte stellen Sie sicher, dass Ihr Gesicht deutlich sichtbar ist, und versuchen Sie es erneut."
+  "face_processing_failed": "Wir konnten kein Gesicht im Bild erkennen. Bitte stellen Sie sicher, dass Ihr Gesicht deutlich sichtbar ist, und versuchen Sie es erneut.",
+	"reload_page": "Seite neu laden",
+	"assessment_in_progress_in_another_tab_title": "Bewertung läuft",
+	"assessment_in_progress_in_another_tab_message": "Diese Bewertung ist bereits in einem anderen Browser-Tab geöffnet und läuft. Bitte fahren Sie dort fort. Dieser Tab wird automatisch fortgesetzt, wenn der andere Tab geschlossen wird.",
+	"assessment_already_completed_in_another_tab_title": "Bewertung bereits abgeschlossen",
+	"assessment_already_completed_in_another_tab_message": "Diese Bewertung wurde bereits in einem anderen Browser-Tab abgeschlossen. Sie können diesen Tab schließen."
 }

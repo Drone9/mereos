@@ -14,9 +14,10 @@ import {
 	updatePersistData
 } from '../utils/functions';
 import { ASSET_URL } from '../utils/constant';
-import { showTab } from '../ExamsPrechecks';
+import { openModal, showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { publishCanvasScreenTrack, waitForActiveRecordingStart } from '../StartRecording';
+import { SCREEN_CAPTURE_NOT_READY } from '../utils/screenCapture';
 import { v4 } from 'uuid';
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
@@ -237,6 +238,22 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 						);
 					}
 				} catch (publishError) {
+					if (publishError?.message === SCREEN_CAPTURE_NOT_READY) {
+						// The new share never produced frames. The old track is already unpublished,
+						// so ask for the screen again instead of continuing without a recording.
+						window.mereos.newStream?.getTracks().forEach(track => track.stop());
+						window.mereos.newStream = null;
+						updatePersistData('preChecksSteps', { screenSharing: false });
+						if (window.mereos.startRecordingCallBack) {
+							window.mereos.startRecordingCallBack({
+								type: 'error',
+								message: 'please_share_your_screen',
+								code: 40011
+							});
+						}
+						openModal();
+						return;
+					}
 					console.error('Error publishing screen track:', publishError);
 					showToast('error', 'screen_share_publish_failed');
 					sentryExceptioMessage(publishError,{

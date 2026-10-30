@@ -44,6 +44,7 @@ import * as tf from '@tensorflow/tfjs';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
+import { createScreenFrameSource, sampleCanvasPixels, sampleSourcePixels, SCREEN_CAPTURE_NOT_READY } from '../utils/screenCapture';
 import { initializeLiveChat, initShadowDOM, openModal } from '../ExamsPrechecks';
 import { cleanupForceFullscreen, initializeForceFullscreen } from '../utils/fullscreen';
 import { permissionModalStyle } from '../utils/styles';
@@ -61,20 +62,25 @@ const resolvePermissionType = (trackType, kind) => {
 	return 'camera';
 };
 
+// Split out so the screen canvas can draw the pause slate without a video element.
+const drawPausedSlate = (ctx, width, height, label) => {
+	const iconSize = Math.round(height * 0.14);
+	const textSize = Math.round(height * 0.07);
+
+	ctx.fillStyle = '#1a1a1a';
+	ctx.fillRect(0, 0, width, height);
+	ctx.fillStyle = '#ffffff';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.font = `bold ${iconSize}px sans-serif`;
+	ctx.fillText('❚❚', width / 2, height / 2 - iconSize * 0.7);
+	ctx.font = `${textSize}px sans-serif`;
+	ctx.fillText(label, width / 2, height / 2 + textSize);
+};
+
 const drawPausedFrame = (ctx, videoEl, width, height, isPaused, label) => {
 	if (isPaused) {
-		const iconSize = Math.round(height * 0.14);
-		const textSize = Math.round(height * 0.07);
-
-		ctx.fillStyle = '#1a1a1a';
-		ctx.fillRect(0, 0, width, height);
-		ctx.fillStyle = '#ffffff';
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-		ctx.font = `bold ${iconSize}px sans-serif`;
-		ctx.fillText('❚❚', width / 2, height / 2 - iconSize * 0.7);
-		ctx.font = `${textSize}px sans-serif`;
-		ctx.fillText(label, width / 2, height / 2 + textSize);
+		drawPausedSlate(ctx, width, height, label);
 	} else {
 		ctx.drawImage(videoEl, 0, 0, width, height);
 	}
@@ -1001,7 +1007,31 @@ const publishCanvasVideoTrack = async (room, preAcquiredStream = null) => {
 	return { publication, localVideoTrack, videoStream, rawVideoTrack, canvasStream };
 };
 
+let screenCanvasSetupInFlight = null;
+
+// A second setup (e.g. reshare while the first is still starting) must wait, or its cleanup
+// tears down the capture the first one is building.
 export const publishCanvasScreenTrack = async (room, screenStream) => {
+	if (screenCanvasSetupInFlight) {
+		await screenCanvasSetupInFlight.catch(() => {});
+	}
+
+	const run = runCanvasScreenTrackSetup(room, screenStream);
+	screenCanvasSetupInFlight = run;
+	try {
+		return await run;
+	} finally {
+		if (screenCanvasSetupInFlight === run) {
+			screenCanvasSetupInFlight = null;
+		}
+	}
+};
+
+const SCREEN_WATCHDOG_INITIAL_CHECKS_MS = [1500, 5000];
+const SCREEN_WATCHDOG_INTERVAL_MS = 15000;
+const SCREEN_WATCHDOG_MAX_REBUILDS = 3;
+
+const runCanvasScreenTrackSetup = async (room, screenStream) => {
 	const rawScreenTrack = screenStream.getVideoTracks()[0];
 	if (!rawScreenTrack) {
 		throw new Error('No screen track available');
@@ -1012,14 +1042,15 @@ export const publishCanvasScreenTrack = async (room, screenStream) => {
 		window.mereos.pauseScreenCanvasState = null;
 	}
 
-	const videoEl = document.createElement('video');
-	videoEl.autoplay = true;
-	videoEl.muted = true;
-	videoEl.playsInline = true;
-	videoEl.srcObject = screenStream;
-	videoEl.style.display = 'none';
-	document.body.appendChild(videoEl);
-	videoEl.play().catch((error) => logger.error('publishCanvasScreenTrack: video.play() failed', error));
+	// Chrome/Edge read frames straight from the share track; other browsers use a rendered video.
+	const initialFrameSource = await createScreenFrameSource(rawScreenTrack, screenStream);
+	if (!initialFrameSource) {
+		registerEvent({ eventType: 'error', notify: false, eventName: SCREEN_CAPTURE_NOT_READY });
+		sentryExceptioMessage(new Error(SCREEN_CAPTURE_NOT_READY), { type: 'error', message: 'Screen capture produced no frames' });
+		throw new Error(SCREEN_CAPTURE_NOT_READY);
+	}
+
+	registerEvent({ eventType: 'success', notify: false, eventName: 'screen_capture_source_started' });
 
 	const settings = rawScreenTrack.getSettings?.() || {};
 	const width = settings.width || 1280;
@@ -1028,38 +1059,119 @@ export const publishCanvasScreenTrack = async (room, screenStream) => {
 	const canvas = document.createElement('canvas');
 	canvas.width = width;
 	canvas.height = height;
-	const ctx = canvas.getContext('2d');
+	const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-	const pauseState = { canvasStream: null, cleanup: null };
+	const pauseState = { canvasStream: null, cleanup: null, frameSource: initialFrameSource, rebuildCount: 0 };
 	window.mereos.pauseScreenCanvasState = pauseState;
 
 	let rafId = null;
 	const renderLoop = () => {
-		drawPausedFrame(ctx, videoEl, width, height, Boolean(window.mereos.recordingPaused), i18next.t('recording_paused'));
+		try {
+			if (window.mereos.recordingPaused) {
+				drawPausedSlate(ctx, width, height, i18next.t('recording_paused'));
+			} else {
+				pauseState.frameSource?.draw(ctx, width, height);
+			}
+		} catch (error) {
+			logger.error('Screen capture draw failed:', error);
+		}
 		rafId = requestAnimationFrame(renderLoop);
 	};
 	renderLoop();
 
 	const canvasStream = canvas.captureStream(15);
 	const canvasScreenTrack = canvasStream.getVideoTracks()[0];
-	const twilioScreenTrack = new TwilioVideo.LocalVideoTrack(canvasScreenTrack, {
-		name: `screen-share-${v4()}`,
-	});
-	registerManagedLocalTrack(twilioScreenTrack);
-	const publication = await room.localParticipant.publishTrack(twilioScreenTrack);
-	registerManagedLocalTrack(publication.track || twilioScreenTrack);
 
-	pauseState.canvasStream = canvasStream;
-	pauseState.cleanup = () => {
-		if (rafId) cancelAnimationFrame(rafId);
-		videoEl.pause();
-		videoEl.srcObject = null;
-		videoEl.remove();
+	// Watchdog: if the canvas is black while the share itself has a picture, only the canvas copy
+	// broke, so replace the frame reader (up to a few times) instead of recording a black screen.
+	const watchdogTimeouts = [];
+	let watchdogInterval = null;
+	let watchdogInFlight = false;
+	let captureCleanedUp = false;
+
+	const stopWatchdog = () => {
+		watchdogTimeouts.forEach((timerId) => clearTimeout(timerId));
+		watchdogTimeouts.length = 0;
+		if (watchdogInterval) {
+			clearInterval(watchdogInterval);
+			watchdogInterval = null;
+		}
 	};
 
-	setupStandalonePauseResumeButton();
+	const rebuildFrameSource = async () => {
+		pauseState.frameSource?.dispose();
+		pauseState.frameSource = null;
 
-	return { publication, canvasStream };
+		const nextSource = await createScreenFrameSource(rawScreenTrack, screenStream);
+		if (!nextSource) return false;
+
+		if (captureCleanedUp) {
+			nextSource.dispose();
+			return false;
+		}
+		pauseState.frameSource = nextSource;
+		return true;
+	};
+
+	const checkBlackFrames = async () => {
+		if (captureCleanedUp || watchdogInFlight || window.mereos.recordingPaused) return;
+		if (!pauseState.frameSource) return;
+
+		watchdogInFlight = true;
+		try {
+			if (!sampleCanvasPixels(ctx, width, height).canvasBlack) return;
+
+			const sourceSample = await sampleSourcePixels(rawScreenTrack);
+			if (captureCleanedUp || sourceSample.sourceBlack !== false) return;
+			if (pauseState.rebuildCount >= SCREEN_WATCHDOG_MAX_REBUILDS) return;
+
+			logger.warn('Screen canvas is black while the share has a picture; rebuilding frame source');
+			pauseState.rebuildCount += 1;
+			await rebuildFrameSource();
+		} finally {
+			watchdogInFlight = false;
+		}
+	};
+
+	const startWatchdog = () => {
+		SCREEN_WATCHDOG_INITIAL_CHECKS_MS.forEach((delayMs) => {
+			watchdogTimeouts.push(setTimeout(checkBlackFrames, delayMs));
+		});
+		watchdogInterval = setInterval(checkBlackFrames, SCREEN_WATCHDOG_INTERVAL_MS);
+	};
+
+	pauseState.canvasStream = canvasStream;
+	// Stops drawing only. The candidate's screen share and the published canvas track are left to
+	// the callers (reshare unpublishes the old track, stop_session releases everything).
+	pauseState.cleanup = () => {
+		captureCleanedUp = true;
+		stopWatchdog();
+		if (rafId) cancelAnimationFrame(rafId);
+		pauseState.frameSource?.dispose();
+		pauseState.frameSource = null;
+	};
+
+	try {
+		const twilioScreenTrack = new TwilioVideo.LocalVideoTrack(canvasScreenTrack, {
+			name: `screen-share-${v4()}`,
+		});
+		registerManagedLocalTrack(twilioScreenTrack);
+		const publication = await room.localParticipant.publishTrack(twilioScreenTrack);
+		registerManagedLocalTrack(publication.track || twilioScreenTrack);
+		startWatchdog();
+
+		setupStandalonePauseResumeButton();
+
+		return { publication, canvasStream };
+	} catch (error) {
+		// Publishing failed: don't leave the render loop and frame reader running.
+		pauseState.cleanup();
+		canvasScreenTrack.stop();
+		if (window.mereos.pauseScreenCanvasState === pauseState) {
+			window.mereos.pauseScreenCanvasState = null;
+		}
+		throw error;
+	}
 };
 
 const publishIndependentAudioTrack = async (room, preAcquiredStream = null) => {
@@ -1729,7 +1841,20 @@ const startRecordingInternal = async () => {
 				if (session?.screenRecordingStream && findConfigs(['record_screen'], secureFeatures?.entities).length) {
 					if (window.mereos?.newStream?.getTracks()[0]) {
 						if (pauseAndResumeEnabled) {
-							const { publication } = await publishCanvasScreenTrack(room, window.mereos.newStream);
+							let publication;
+							try {
+								({ publication } = await publishCanvasScreenTrack(room, window.mereos.newStream));
+							} catch (screenError) {
+								if (screenError?.message !== SCREEN_CAPTURE_NOT_READY) throw screenError;
+								invokeStartSessionCallback({
+									type: 'error',
+									message: 'please_share_your_screen',
+									code: 40011
+								});
+								window.mereos.precheckCompleted = false;
+								window.mereos.recordingStart = false;
+								return;
+							}
 							window.mereos.screenTrackPublished = publication;
 						} else {
 							screenTrack = new TwilioVideo.LocalVideoTrack(window?.mereos?.newStream?.getTracks()[0], {

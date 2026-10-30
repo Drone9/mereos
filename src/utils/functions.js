@@ -624,7 +624,8 @@ export const updateThemeColor = () => {
 	document.documentElement.style.setProperty('--dropdown-bg', isDarkMode ? '#2C2C2E' : '#fff');
 	document.documentElement.style.setProperty('--text-color', isDarkMode ? '#fff' : '#000');
 	document.documentElement.style.setProperty('--font-style', fontStyle);
-	document.documentElement.style.setProperty('--video-style', isDarkMode ? '#000' : '#e7ebef');
+	// Camera box background, same as dashboard-candidate.
+	document.documentElement.style.setProperty('--video-style', isDarkMode ? 'rgb(88 88 88)' : '#e9e9e9');
 	document.documentElement.style.setProperty('--filter-color', isDarkMode ? 'invert(1)' : 'none');
 };
 
@@ -1362,6 +1363,8 @@ export const shareScreenFromContent = () => {
 
 				track.addEventListener('ended', () => {
 					window.mereos.isScreenShare = false;
+					// Screen Five hides "Previous step" while the candidate must reshare.
+					window.mereos.screenShareStopped = true;
 					registerEvent({ notify: false, eventName: 'screen_shared_stopped', eventType: 'error' });
 					if (window.mereos.startRecordingCallBack) {
 						window.mereos.startRecordingCallBack({
@@ -2451,6 +2454,7 @@ export const resetSessionAttemptFlags = () => {
 	window.mereos.pendingSessionStart = false;
 	window.mereos.roomInstance = null;
 	window.mereos.precheckCompleted = false;
+	window.mereos.screenShareStopped = false;
 };
 
 export const showToast = (type, message) => {

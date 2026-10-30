@@ -2276,6 +2276,12 @@ const setupWebcam = async (mediaStream) => {
 				webcamContainer = document.createElement('div');
 				webcamContainer.id = 'webcam-container';
 				webcamContainer.className = 'user-videos-remote';
+				// Position it before it is added to the page, so it never shows up anywhere but top-left.
+				Object.assign(webcamContainer.style, {
+					position: 'fixed',
+					top: '20px',
+					left: '20px'
+				});
 				if (cameraViewEnabled) {
 					window.mereos.shadowRoot.appendChild(webcamContainer);
 				}
@@ -2313,10 +2319,11 @@ const setupWebcam = async (mediaStream) => {
 			remoteVideoRef.classList.add('remote-video');
 			remoteVideoRef.id = 'remote-video';
 
-			// Initialize dimensions
+			// Same sizing as dashboard-candidate's camera box: 200px wide, zoom in steps of 64 up to 600.
 			let currentWidth = 200;
-			const MIN_WIDTH = 180;
+			const MIN_WIDTH = 200;
 			const MAX_WIDTH = 600;
+			const ZOOM_STEP = 64;
 
 			let mediaWrapper = webcamContainer.querySelector('#user-video-element');
 			if (!mediaWrapper) {
@@ -2324,12 +2331,8 @@ const setupWebcam = async (mediaStream) => {
 				mediaWrapper.id = 'user-video-element';
 				Object.assign(mediaWrapper.style, {
 					position: 'relative',
-					marginLeft: 'auto',
-					marginRight: 'auto',
-					width: `${currentWidth}px`,
-					height: '142px',
-					objectFit: 'cover',
-					transition: 'width 0.3s ease, height 0.3s ease',
+					width: '100%',
+					height: 'auto',
 					overflow: 'hidden'
 				});
 				webcamContainer.appendChild(mediaWrapper);
@@ -2338,17 +2341,17 @@ const setupWebcam = async (mediaStream) => {
 				mediaWrapper.style.display = 'block';
 			}
 
+			// Full width, natural height (no cropping), like the candidate's webcam.
 			const videoElement = document.createElement('video');
 			videoElement.autoplay = true;
 			videoElement.muted = true;
+			videoElement.playsInline = true;
 			videoElement.srcObject = mediaStream;
 			Object.assign(videoElement.style, {
-				position: 'absolute',
-				top: '0',
-				left: '0',
+				display: 'block',
 				width: '100%',
-				height: '100%',
-				objectFit: 'cover'
+				height: 'auto',
+				maxWidth: '100%'
 			});
 
 			const canvas = document.createElement('canvas');
@@ -2370,84 +2373,36 @@ const setupWebcam = async (mediaStream) => {
 
 			let videoFooterContainer = webcamContainer.querySelector('#user-video-footer');
 			if (!videoFooterContainer && cameraViewEnabled) {
+				// Overlaid on the bottom of the video: − on the left, + on the right (styles in startRecordingCSS).
 				videoFooterContainer = document.createElement('div');
 				videoFooterContainer.className = 'user-view-footer';
 				videoFooterContainer.id = 'user-video-footer';
-				Object.assign(videoFooterContainer.style, {
-					display: 'flex',
-					justifyContent: 'space-between',
-					alignItems: 'center',
-					gap: '8px',
-					padding: '8px',
-					background: 'transparent'
-				});
 
 				const zoomOutBtn = document.createElement('button');
 				zoomOutBtn.className = 'zoom-btns';
 				zoomOutBtn.textContent = '−';
-				Object.assign(zoomOutBtn.style, {
-					padding: '4px 12px',
-					cursor: 'pointer',
-					border: '1px solid #ccc',
-					borderRadius: '4px',
-					background: '#fff',
-					fontSize: '18px',
-					fontWeight: 'bold'
-				});
 
 				const zoomInBtn = document.createElement('button');
 				zoomInBtn.className = 'zoom-btns';
 				zoomInBtn.textContent = '+';
-				Object.assign(zoomInBtn.style, {
-					padding: '4px 12px',
-					cursor: 'pointer',
-					border: '1px solid #ccc',
-					borderRadius: '4px',
-					background: '#fff',
-					fontSize: '18px',
-					fontWeight: 'bold'
-				});
+
+				// The video and canvas fill the box width, so only the box needs resizing.
+				const setCameraBoxWidth = (width) => {
+					currentWidth = Math.min(Math.max(width, MIN_WIDTH), MAX_WIDTH);
+					webcamContainer.style.width = `${currentWidth}px`;
+				};
 
 				zoomInBtn.addEventListener('click', (e) => {
 					e.stopPropagation();
-					if (currentWidth < MAX_WIDTH) {
-						currentWidth = Math.min(currentWidth + 64, MAX_WIDTH);
-						const aspectRatio = 142 / 180;
-						const newHeight = Math.round(currentWidth * aspectRatio);
-
-						webcamContainer.style.width = `${currentWidth}px`;
-						mediaWrapper.style.width = `${currentWidth}px`;
-						mediaWrapper.style.height = `${newHeight}px`;
-
-						const remoteVideo = webcamContainer.querySelector('#remote-video');
-						if (remoteVideo) {
-							remoteVideo.style.width = `${currentWidth}px`;
-							remoteVideo.style.height = `${newHeight}px`;
-						}
-					}
+					setCameraBoxWidth(currentWidth + ZOOM_STEP);
 				});
 
 				zoomOutBtn.addEventListener('click', (e) => {
 					e.stopPropagation();
-					if (currentWidth > MIN_WIDTH) {
-						currentWidth = Math.max(currentWidth - 64, MIN_WIDTH);
-						const aspectRatio = 142 / 180;
-						const newHeight = Math.round(currentWidth * aspectRatio);
-
-						webcamContainer.style.width = `${currentWidth}px`;
-						mediaWrapper.style.width = `${currentWidth}px`;
-						mediaWrapper.style.height = `${newHeight}px`;
-
-						const remoteVideo = webcamContainer.querySelector('#remote-video');
-						if (remoteVideo) {
-							remoteVideo.style.width = `${currentWidth}px`;
-							remoteVideo.style.height = `${newHeight}px`;
-						}
-					}
+					setCameraBoxWidth(currentWidth - ZOOM_STEP);
 				});
 
 				videoFooterContainer.appendChild(zoomOutBtn);
-				videoFooterContainer.appendChild(zoomInBtn);
 
 				if (pauseAndResumeEnabled) {
 					const pauseResumeBtn = document.createElement('button');
@@ -2467,6 +2422,7 @@ const setupWebcam = async (mediaStream) => {
 					videoFooterContainer.appendChild(pauseResumeBtn);
 				}
 
+				videoFooterContainer.appendChild(zoomInBtn);
 				webcamContainer.appendChild(videoFooterContainer);
 			}
 
@@ -2482,7 +2438,7 @@ const setupWebcam = async (mediaStream) => {
 			Object.assign(webcamContainer.style, {
 				position: 'fixed',
 				top: '20px',
-				right: '20px',
+				left: '20px',
 				zIndex: '9999',
 				cursor: 'move',
 				transition: 'width 0.3s ease, height 0.3s ease',
@@ -2823,7 +2779,7 @@ export function VideoChat(room) {
 		Object.assign(webcamContainer.style, {
 			position: 'fixed',
 			top: '20px',
-			right: '20px',
+			left: '20px',
 			zIndex: '9999',
 			cursor: 'move',
 			transition: 'width 0.3s ease, height 0.3s ease',

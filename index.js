@@ -632,6 +632,8 @@ async function stop_session(callback) {
 			if (resp) {
 				MEREOS_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 				releaseAssessmentTabLock({ completed: true });
+				// The session is over: don't leave a prechecks/reshare modal open for it.
+				destroyPrechecksUi();
 
 				respond({
 					type: 'success',

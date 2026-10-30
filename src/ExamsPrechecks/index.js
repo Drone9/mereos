@@ -713,8 +713,11 @@ function closeModal() {
 		return;
 	}
 	const { modal } = window.mereos.dom;
-	if (typeof window?.mereos?.globalCallback === 'function') {
-		window.mereos.precheckCompleted = true;
+	window.mereos.precheckCompleted = true;
+	// During a running session this modal only closes after a screen reshare. Screen Five
+	// reports that as 'screen_shared_again'; sending 'precheck_completed' again would make
+	// integrators call start_session a second time for a session that is already running.
+	if (typeof window?.mereos?.globalCallback === 'function' && !window.mereos.sessionActive) {
 		window.mereos.globalCallback({ type:'success',message: 'precheck_completed',code:50001 });
 	}
 	if(modal){

@@ -182,6 +182,8 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 	const nextStep = async () => {
 		try {
+			// The candidate confirmed a new share, so going back is allowed again.
+			window.mereos.screenShareStopped = false;
 			updatePersistData('preChecksSteps', { screenSharing: true });
 			if(window.mereos.globalCallback){
 				window.mereos.globalCallback({ 
@@ -241,6 +243,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					if (publishError?.message === SCREEN_CAPTURE_NOT_READY) {
 						// The new share never produced frames. The old track is already unpublished,
 						// so ask for the screen again instead of continuing without a recording.
+						window.mereos.screenShareStopped = true;
 						window.mereos.newStream?.getTracks().forEach(track => track.stop());
 						window.mereos.newStream = null;
 						updatePersistData('preChecksSteps', { screenSharing: false });
@@ -373,9 +376,17 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		const isSessionResume = convertDataIntoParse('session')?.room_id;
 
+		// No "Previous step" during a session, a resume, or after the candidate stopped sharing:
+		// the only way forward from here is sharing the screen again.
+		const canGoBack = showPrevButton &&
+			mode === 'startScreenRecording' &&
+			!window.mereos.roomInstance &&
+			!isSessionResume &&
+			!window.mereos.screenShareStopped;
+
 		let buttonsHTML = '';
 
-		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance && !isSessionResume) {
+		if (canGoBack) {
 			buttonsHTML += `<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>`;
 		}
 
@@ -387,7 +398,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		btnContainer.insertAdjacentHTML('beforeend', buttonsHTML);
 
-		if (showPrevButton && mode === 'startScreenRecording' && !window.mereos.roomInstance && !isSessionResume) {
+		if (canGoBack) {
 			btnContainer.querySelector('.orange-hollow-btn').addEventListener('click', prevStep);
 		}
 	

@@ -3161,42 +3161,40 @@ body{
   justify-content: center;
 }
 .remote-video .video-attached{
-  width: 180px;
-  height: 140px;
-  object-fit: cover;
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
+/* Camera box: same design as dashboard-candidate's VideoRecordingContainer */
 .user-videos-remote{
   display: flex;
-  position: absolute;
-  bottom: 10px;
+  position: fixed;
+  top: 20px;
+  left: 20px;
   column-gap: 10px;
-  row-gap: 9px;
   flex-direction: column;
-  width: 220px;
+  box-sizing: border-box;
+  width: 200px;
+  padding: 8px;
   background: var(--video-style);
   border-radius: 10px;
-  box-shadow: 1px 1px 5px 1px #f1f1f1;
   z-index: 9999999;
-  left: 10px;
-  max-height:fit-content;
-  padding-bottom:10px;
+  cursor: move;
 }
 
 .user-videos-remote .user-video-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-left: 10px;
 }
 .user-videos-remote .user-video-header .recording-heading{
-  font-size: 12px;
+  max-width: calc(100% - 70px);
+  font-size: 13px;
   margin-bottom: 9px;
-  width: 96px;
-  white-space: break-spaces;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
   color: var(--text-color);
   font-style:var(--font-style);
 }
@@ -3204,15 +3202,15 @@ body{
 .recording-badge-container-header {
     position: absolute;
     right: 10px;
-    width: 71px;
+    width: 61px;
     white-space: nowrap;
     background-color: #e95e5e;
     border-radius: 5px;
     color: #fff;
     display: flex;
     align-items: center;
-    font-size: 9px;
-    column-gap: 0px;
+    font-size: 10px;
+    column-gap: 4px;
     padding: 5px 5px;
     text-transform: lowercase;
     text-overflow: ellipsis;
@@ -3456,36 +3454,43 @@ body{
   border-top: 1px solid #d1d9e6;
 }
 
+/* Controls overlaid on the bottom of the video: − left, + right (pause in between) */
 .user-view-footer {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 16px;
   display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 0;
+  justify-content: space-between;
+  align-items: center;
+  column-gap: 12px;
+  z-index: 1000000000;
 }
 
 .zoom-btns {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: 1px solid #ccd5e2;
-  background: white;
-  color: #333;
-  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: rgb(0 0 0 / 15%);
+  color: white;
+  font-size: 18px;
   font-weight: bold;
+  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .zoom-btns:hover {
-  background: #f5f5f5;
-  border-color: #999;
+  background: rgb(0 0 0 / 40%);
 }
 
 .zoom-btns:active {
-  background: #e9e9e9;
+  background: rgb(0 0 0 / 50%);
 }
 
 .zoom-btns:disabled {
@@ -3518,6 +3523,24 @@ body{
   background: #e9e9e9;
 }
 
+.user-view-footer .pause-resume-btn {
+  height: 24px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 15%);
+  color: white;
+  font-size: 11px;
+}
+
+.user-view-footer .pause-resume-btn:hover {
+  background: rgb(0 0 0 / 40%);
+}
+
+.user-view-footer .pause-resume-btn:active {
+  background: rgb(0 0 0 / 50%);
+}
+
 .pause-resume-btn--standalone {
   position: fixed;
   top: 20px;
@@ -3543,7 +3566,7 @@ body{
 }
 
 .recording-badge-container-header--paused {
-  background-color: #6b7280;
+  background-color: #4a90d9;
 }
 
 .pause-modal-overlay {

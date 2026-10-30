@@ -109,7 +109,23 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 		stream = null;
 	};
 
+	// Revoking the blob URL doesn't stop a <video> that already loaded it, so pause and empty
+	// every video in this tab; otherwise the recorded room scan keeps playing on the next step.
+	const stopVideoPlayback = () => {
+		tabContent.querySelectorAll('video').forEach((video) => {
+			video.pause();
+			video.removeAttribute('src');
+			video.srcObject = null;
+			video.load();
+		});
+	};
+
+	let tabActiveObserver = null;
+
 	const cleanup = () => {
+		tabActiveObserver?.disconnect();
+		tabActiveObserver = null;
+		stopVideoPlayback();
 		clearRecordingTimers();
 		discardRecorder();
 		stopCamera();
@@ -544,6 +560,19 @@ export const IdentityVerificationScreenFour = async (tabContent) => {
 	};
 
 	cleanupPreviousScreen = cleanup;
+
+	// Leaving this step any other way than its own Next/Previous buttons (e.g. clicking another
+	// step) only hides the tab. Clean up as soon as it stops being the active tab; coming back
+	// re-runs this screen from scratch.
+	let wasTabActive = tabContent.classList.contains('active');
+	tabActiveObserver = new MutationObserver(() => {
+		const isTabActive = tabContent.classList.contains('active');
+		if (wasTabActive && !isTabActive) {
+			cleanup();
+		}
+		wasTabActive = isTabActive;
+	});
+	tabActiveObserver.observe(tabContent, { attributes: true, attributeFilter: ['class'] });
 	startCamera();
 
 	currentLanguageHandler = () => {

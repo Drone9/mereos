@@ -418,6 +418,7 @@ export const checkCamera = () => {
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({ video: true })
 				.then((stream) => {
+					registerAcquiredMediaStream(stream);
 					resolve(stream);
 				})
 				.catch((e) => {
@@ -498,6 +499,7 @@ export const checkMicrophone = () => {
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({ audio: true })
 				.then((stream) => {
+					registerAcquiredMediaStream(stream);
 					resolve(stream);
 				})
 				.catch(() => {
@@ -797,8 +799,11 @@ const stopMediaStreamTrack = (track) => {
 	}
 };
 
+// Tracks a release call was asked to keep alive (see releaseAllMediaStreams' keepScreenShare).
+const preservedMediaTracks = new Set();
+
 const forceStopMediaStreamTrack = (track) => {
-	if (!track || typeof track.stop !== 'function') return;
+	if (!track || typeof track.stop !== 'function' || preservedMediaTracks.has(track)) return;
 	try {
 		track.enabled = false;
 		track.stop();
@@ -975,6 +980,7 @@ const forceStopLiveMediaTracks = (mereos) => {
 	});
 
 	liveTracks.forEach((track) => {
+		if (preservedMediaTracks.has(track)) return;
 		try {
 			track.enabled = false;
 			track.stop();
@@ -1131,6 +1137,14 @@ export const releaseAllMediaStreams = async (options = {}) => {
 	const mereos = window.mereos || (window.mereos = {});
 	mereos.isReleasingMedia = true;
 
+	// keepScreenShare: release camera/mic/rooms but leave the candidate's shared screen running,
+	// so a failed session start can be retried without asking them to share again.
+	const keptScreenStream = options.keepScreenShare
+		&& mereos.newStream?.getTracks?.().some((track) => track.readyState === 'live')
+		? mereos.newStream
+		: null;
+	keptScreenStream?.getTracks().forEach((track) => preservedMediaTracks.add(track));
+
 	releasingMediaStreams = (async () => {
 		const snapshottedTracks = snapshotAllMediaStreamTracks(mereos);
 		const managedTwilioTracks = [...(mereos.managedLocalTracks || [])];
@@ -1247,6 +1261,13 @@ export const releaseAllMediaStreams = async (options = {}) => {
 	try {
 		await releasingMediaStreams;
 	} finally {
+		preservedMediaTracks.clear();
+		if (keptScreenStream) {
+			// Re-register it so the next full release (stop_session) still stops it.
+			mereos.newStream = keptScreenStream;
+			registerActiveTracks(keptScreenStream);
+			registerAcquiredMediaStream(keptScreenStream);
+		}
 		mereos.isReleasingMedia = false;
 		releasingMediaStreams = null;
 	}

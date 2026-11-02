@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { getMultipleCameraDevices, checkForMultipleMicrophones, registerEvent, updatePersistData, logger, findConfigs, getSecureFeatures, sentryExceptioMessage } from '../utils/functions';
+import { getMultipleCameraDevices, checkForMultipleMicrophones, registerAcquiredMediaStream, registerEvent, updatePersistData, logger, findConfigs, getSecureFeatures, sentryExceptioMessage } from '../utils/functions';
 import { showTab } from '../ExamsPrechecks';
 import { checkMediaInputs } from '../utils/checkMedia';
 import { fetchIceServers } from '../services/twilio.services';
@@ -632,6 +632,7 @@ export const PrevalidationInstructions = async (tabContent) => {
 
 				if (shouldShowVideo || isAudioEnabled) {
 					window.mereos.globalStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+					registerAcquiredMediaStream(window.mereos.globalStream);
 					
 					const tracks = window.mereos.globalStream.getTracks();
 					tracks.forEach(track => {

@@ -288,7 +288,8 @@ const showMediaPermissionError = async (permissionType, duringSession = false) =
 				await stopRoomMediaAndDisconnect(room);
 				window.mereos.roomInstance = null;
 			}
-			await releaseAllMediaStreams();
+			// Keep the shared screen: Reconnect restarts the session with it once permission is granted.
+			await releaseAllMediaStreams({ keepScreenShare: true });
 			window.mereos.pendingSessionStart = false;
 		} else {
 			window.mereos.pendingSessionStart = true;
@@ -1430,6 +1431,16 @@ const reconnectCamera = async () => {
 			|| document.getElementById('permissionModal');
 		reconnectType = modal?.getAttribute('data-permission-type') || 'camera';
 
+		// Permission was denied while start_session was still starting, so the room, the
+		// session record and the screen track were never set up. Re-run the full start;
+		// it reports success or shows this modal again on its own.
+		if (!window.mereos.sessionActive && !window.mereos.pendingSessionStart) {
+			hidePermissionModal();
+			window.mereos.lostPermissionTypes = null;
+			await startRecording();
+			return;
+		}
+
 		const secureFeatures = getSecureFeatures();
 		const session = convertDataIntoParse('session');
 		const { needsVideo, needsAudio } = buildReconnectMediaConstraints(
@@ -1669,6 +1680,8 @@ const startRecordingInternal = async () => {
 		}
 
 		if (fullscreenRequired) {
+			// A retried start (e.g. Reconnect after a denied camera) must not stack monitors.
+			window.mereos.cleanupForceFullscreen?.();
 			const cleanupForceFullscreen = initializeForceFullscreen();
 
 			window.mereos.cleanupForceFullscreen = cleanupForceFullscreen;

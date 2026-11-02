@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { showTab } from '../ExamsPrechecks';
 
-import { findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerEvent, sentryExceptioMessage, updatePersistData } from '../utils/functions';
+import { findLastVisitedRoute, findPreviousPrecheckStep, getDateTime, getSecureFeatures, logger, registerAcquiredMediaStream, registerEvent, sentryExceptioMessage, updatePersistData } from '../utils/functions';
 
 export const IdentityVerificationScreenThree = async (tabContent) => {
 	let canvasRef = null;
@@ -27,7 +27,16 @@ export const IdentityVerificationScreenThree = async (tabContent) => {
 		try {
 			const audioPermission = await navigator.permissions.query({ name: 'microphone' });
 			if (audioPermission.state === 'granted') {
+				// This runs when the screen opens and again on "Start recording". Release the previous
+				// stream and audio context first; otherwise the first microphone stream is orphaned and
+				// keeps the microphone on even after the session ends.
+				window.mereos.audioStream?.getTracks().forEach(track => track.stop());
+				if (audioContext && audioContext.state !== 'closed') {
+					audioContext.close();
+				}
+
 				window.mereos.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+				registerAcquiredMediaStream(window.mereos.audioStream);
 
 				audioContext = new AudioContext();
 				analyserNode = audioContext.createAnalyser();

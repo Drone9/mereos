@@ -314,9 +314,14 @@ const updateRefreshButtonVisibility = () => {
 	}
 };
 
+// A missing extension fails almost instantly, so this only matters for installed ones: with
+// many probes in flight an installed extension can take well over 50ms to answer, and a short
+// timeout made detection flaky (sometimes detected, sometimes not).
+const EXTENSION_PROBE_TIMEOUT_MS = 1500;
+
 const detectExtension = async (extension) => {
 	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), 50);
+	const timeoutId = setTimeout(() => controller.abort(), EXTENSION_PROBE_TIMEOUT_MS);
 	
 	try {
 		const url = `chrome-extension://${extension.id}/${extension.file}`;
@@ -334,12 +339,10 @@ const detectExtension = async (extension) => {
 			status: response.status 
 		};
 	} catch (error) {
+		// Expected for every extension that isn't installed (thousands per check): not an error,
+		// so it is not sent to Sentry.
 		clearTimeout(timeoutId); 
 		controller.abort(); 
-		sentryExceptioMessage(error,{
-			type: 'error', 
-			message: error.name  , 
-		});
 		return { 
 			...extension, 
 			detected: false,
@@ -394,10 +397,8 @@ const detectExtensionsBatch = async (extensions, batchSize = 50) => {
 			
 			detected.push(...batchDetected);
 			
-			if (detected.length > 0) {
-				break;
-			}
-			
+			// Keep scanning: stopping at the first hit reported only part of the installed
+			// extensions, so after disabling those a retry found the next ones.
 			await new Promise(resolve => setTimeout(resolve, 0));
 		}
 	} finally {
@@ -423,7 +424,8 @@ const checkExtensions = async () => {
 		const detected = await detectExtensionsBatch(extensionArray, 50);
 
 		if (detected.length > 0) {
-			detectedExtensionNames = detected.map(ext => ext.name);
+			// Several names are listed under more than one id (e.g. "Dark Mode").
+			detectedExtensionNames = [...new Set(detected.map(ext => ext.name))];
 			extensionError = 'please_disable_your_browser_extensions';
 			displayErrorMessage();
 			window.mereos.globalCallback({ 

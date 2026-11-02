@@ -1,3 +1,5 @@
+import { registerAcquiredMediaStream } from './functions';
+
 export const CAMERA_FRAME_TIMEOUT_MS = 10000;
 const CAMERA_BUSY_RETRY_DELAY_MS = 800;
 
@@ -27,7 +29,12 @@ export const requestCameraStream = async (videoConstraints, { audio = false } = 
 		video: useSelectedDevices && cameraId ? { ...videoConstraints, deviceId: { exact: cameraId } } : videoConstraints,
 		audio: audio ? (useSelectedDevices && microphoneId ? { deviceId: { exact: microphoneId } } : true) : false
 	});
-	const getMedia = (useSelectedDevices) => navigator.mediaDevices.getUserMedia(buildConstraints(useSelectedDevices));
+	// Registered so stop_session/stop_prechecks release it even if a screen misses it.
+	const getMedia = async (useSelectedDevices) => {
+		const stream = await navigator.mediaDevices.getUserMedia(buildConstraints(useSelectedDevices));
+		registerAcquiredMediaStream(stream);
+		return stream;
+	};
 
 	try {
 		return await getMedia(true);

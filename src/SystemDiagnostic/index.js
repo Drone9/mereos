@@ -239,10 +239,16 @@ const retryDiagnosticItem = async (id) => {
 	
 	try {
 		let result;
+		// Keep retry streams in the same variables as the first check (stopped when leaving this
+		// screen) and stop the previous one, so a retry never leaves the camera/microphone on.
 		if (id === 'webcam') {
 			result = await checkCamera();
+			cameraStream?.getTracks?.().forEach(track => track.stop());
+			cameraStream = result || null;
 		} else if (id === 'microphone') {
 			result = await checkMicrophone();
+			audioStream?.getTracks?.().forEach(track => track.stop());
+			audioStream = result || null;
 		} else if (id === 'location') {
 			result = await getLocation();
 		} else if (id === 'desktop') {

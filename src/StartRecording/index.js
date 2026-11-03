@@ -39,8 +39,7 @@ import {
 import * as TwilioVideo from 'twilio-video';
 import i18next from 'i18next';
 import { v4 } from 'uuid';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import * as tf from '@tensorflow/tfjs';
+import { loadAiModel } from '../utils/aiModel';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
@@ -57,6 +56,8 @@ let isSignalingError = false;
 let isPauseResumeBusy = false;
 let isReconnectingDevice = false;
 const CANVAS_CAPTURE_FPS = 15;
+const AI_MAX_DETECTIONS = 10;
+const AI_MIN_SCORE = 0.5;
 
 const resolvePermissionType = (trackType, kind) => {
 	if (trackType === 'microphone' || kind === 'audio') return 'microphone';
@@ -2610,19 +2611,7 @@ const startAIWebcam = async (room, mediaStream) => {
 		const personMissingFeature = findConfigs(['person_missing'], secureFeatures?.entities).length > 0;
 		const objectDetectionFeature = findConfigs(['object_detection'], secureFeatures?.entities).length > 0;
 
-		try {
-			await tf.setBackend('webgl');
-			await tf.ready();
-		} catch (webglError) {
-			logger.warn('WebGL not supported. Falling back to CPU.', webglError);
-			await tf.setBackend('cpu');
-			await tf.ready();
-		}
-
-
-		if (!window.mereos.net) {
-			window.mereos.net = await cocoSsd.load();
-		}
+		const net = await loadAiModel();
 
 		const localParticipant = room.localParticipant;
 		const videoTrackPublications = Array.from(localParticipant.videoTracks.values());
@@ -2660,15 +2649,19 @@ const startAIWebcam = async (room, mediaStream) => {
 			object_detected: null
 		};
 
+		// Skip a tick while the previous detection is still running, so slow devices don't pile
+		// detections up.
+		let isDetecting = false;
 		window.mereos.aiProcessingInterval = setInterval(async () => {
+			seconds = seconds + 1;
+			if (isDetecting) return;
+			isDetecting = true;
 			try {
-				seconds = seconds + 1;
 				if (processingVideo.readyState !== 4) return;
 				if (window.mereos.recordingPaused) return;
 
-				const image = tf.browser.fromPixels(processingVideo);
-				const predictions = await window.mereos.net.detect(image);
-				tf.dispose(image);
+				// detect() reads the video directly and frees its own tensors.
+				const predictions = await net.detect(processingVideo, AI_MAX_DETECTIONS, AI_MIN_SCORE);
 
 				context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -2774,6 +2767,8 @@ const startAIWebcam = async (room, mediaStream) => {
 			} catch (error) {
 				sentryExceptioMessage(error, { type: 'error', message: 'Error in AI processing' });
 				logger.error('Error in AI processing:', error);
+			} finally {
+				isDetecting = false;
 			}
 		}, 1000);
 

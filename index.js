@@ -20,6 +20,7 @@ import i18next from 'i18next';
 import { initSentry } from './src/utils/sentry';
 import { acquireAssessmentTabLock, assessmentTabBlockedError, ensureAssessmentTabLock, releaseAssessmentTabLock } from './src/utils/tabLock';
 import * as Sentry from '@sentry/browser';
+import { disposeAiModel, preloadAiModel } from './src/utils/aiModel';
 
 initSentry('production');
 
@@ -258,6 +259,9 @@ async function start_prechecks(callback, setting) {
 		}
 
 		localStorage.setItem('precheckSetting', setting);
+		// Download the AI model in the background only while the prevalidation check is still
+		// ahead of the candidate; plain page reloads and resumes don't load it.
+		preloadAiModel();
 		initShadowDOM();
 		window.mereos.precheckCompleted = false;
 		const savedData = await startSession();
@@ -671,6 +675,8 @@ async function stop_session(callback) {
 		});
 	} finally {
 		window.mereos.isStoppingSession = false;
+		// The exam is over: give the integrator's page its GPU memory back.
+		disposeAiModel();
 		if (!callbackFired) {
 			safeInvokeCallback(callback, {
 				type: 'error',

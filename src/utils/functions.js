@@ -17,6 +17,7 @@ import { notifyTokenExpired } from './axios';
 import { stop_prechecks } from '../..';
 import pkg from '../../package.json';
 import { detectWindowResize } from './fullscreen';
+import { watchSharedDisplay } from './screenShareMonitor';
 import * as Sentry from '@sentry/browser';
 
 export function sentryExceptioMessage(error, extra = {}) {
@@ -1396,6 +1397,16 @@ export const shareScreenFromContent = () => {
 					}
 					openModal();
 				});
+
+				watchSharedDisplay(track, {
+					onLost: () => {
+						registerEvent({ notify: false, eventName: 'screen_share_display_disconnected', eventType: 'error' });
+						track.stop();
+						// stop() doesn't fire 'ended'; dispatch it so every listener runs the normal
+						// "screen share stopped" flow (callback 40012 + reshare modal).
+						track.dispatchEvent(new Event('ended'));
+					}
+				});
 				resolve(stream);
 			})
 			.catch(err => reject(err));
@@ -1462,6 +1473,33 @@ export const updatePersistData = (key, updates) => {
 	}
 };
 
+const RECORDING_LOOKUP_RETRY_DELAYS_MS = [2000];
+
+const fetchRecordingsWithRetry = async (sourceSids) => {
+	const found = new Map();
+	let missing = [...new Set(sourceSids)];
+
+	for (let attempt = 0; attempt <= RECORDING_LOOKUP_RETRY_DELAYS_MS.length && missing.length; attempt++) {
+		if (attempt > 0) {
+			await new Promise((resolve) => setTimeout(resolve, RECORDING_LOOKUP_RETRY_DELAYS_MS[attempt - 1]));
+		}
+		try {
+			const response = await getRecordingSid({ 'source_id': missing });
+			if (!Array.isArray(response?.data)) {
+				throw new Error('Invalid response from recordings API');
+			}
+			response.data.forEach((recording) => {
+				if (recording?.source_sid) found.set(recording.source_sid, recording);
+			});
+		} catch (error) {
+			logger.error(`Recording lookup attempt ${attempt + 1} failed:`, error);
+		}
+		missing = missing.filter((sid) => !found.has(sid));
+	}
+
+	return { data: [...found.values()], missing };
+};
+
 export const addSectionSessionRecord = async (session) => {
 	try {
 		const {
@@ -1484,18 +1522,22 @@ export const addSectionSessionRecord = async (session) => {
 		hasRecordings = allRecordings.length > 0;
 
 		if (hasRecordings) {
-			try {
-				recordings = await getRecordingSid({ 'source_id': allRecordings });
+			const { data, missing } = await fetchRecordingsWithRetry(allRecordings);
+			recordings = { data };
 
-				if (!recordings || !recordings.data) {
-					throw new Error('Invalid response from recordings API');
-				}
-			} catch (recordingError) {
-				sentryExceptioMessage(recordingError, { type: 'error', message: `Failed to fetch recording SIDs` });
-				logger.error('Failed to fetch recording SIDs:', recordingError);
-				recordings = { data: [] };
+			if (missing.length) {
+				registerEvent({
+					eventType: 'error',
+					notify: false,
+					eventName: 'recordings_not_found',
+					eventValue: JSON.stringify(missing)
+				});
+				sentryExceptioMessage(new Error('Recordings not found after retries'), {
+					type: 'error',
+					message: `Failed to fetch recording SIDs: ${missing.join(', ')}`
+				});
 
-				if (window.mereos?.globalCallback) {
+				if (!data.length && window.mereos?.globalCallback) {
 					window.mereos.globalCallback({
 						type: 'warning',
 						message: 'recording_info_unavailable',

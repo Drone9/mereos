@@ -645,6 +645,8 @@
 	"please_enable_force_submission": "Bitte aktivieren Sie die erzwungene Übermittlung",
 	"please_scan_this_qr_code": "Bitte scannen Sie dies QR-Code mit Ihrem Telefongerät, um die Mereos Mobile-Anwendung herunterzuladen.",
 	"please_share_entire_screen": "Bitte geben Sie den gesamten Bildschirm frei.",
+	"share_assessment_screen_notice": "Mehrere Bildschirme erkannt. Bitte geben Sie den Bildschirm frei, auf dem Ihre Prüfung geöffnet ist.",
+	"screen_share_incomplete": "Ihre Bildschirmfreigabe erfasst nicht den gesamten Bildschirm. Erlauben Sie auf einem Mac Ihren Browser unter Systemeinstellungen > Datenschutz & Sicherheit > Bildschirmaufnahme, starten Sie den Browser neu und geben Sie den gesamten Bildschirm erneut frei.",
 	"please_take_picture_or": "Bitte mach ein Foto oder",
 	"please_unselect_time_region_from_template": "Bitte deaktivieren Sie die Zeitregion in der Vorlage",
 	"please_wait": "Bitte warten...",

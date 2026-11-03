@@ -23,17 +23,24 @@ import * as Sentry from '@sentry/browser';
 
 initSentry('production');
 
-const safeInvokeCallback = (callback, payload) => {
+// A function declaration (hoisted), not a const: dev hot reload can leave this module half
+// evaluated through its circular import with functions.js, and init/stop_session then crashed
+// with "Cannot access 'safeInvokeCallback' before initialization" instead of answering.
+function safeInvokeCallback(callback, payload) {
 	try {
 		if (typeof callback === 'function') callback(payload);
 	} catch (callbackError) {
-		sentryExceptioMessage(callbackError, {
-			type: 'error',
-			message: 'Integrator callback threw',
-			details: callbackError,
-		});
+		try {
+			sentryExceptioMessage(callbackError, {
+				type: 'error',
+				message: 'Integrator callback threw',
+				details: callbackError,
+			});
+		} catch {
+			// Reporting must never stop the callback flow.
+		}
 	}
-};
+}
 
 async function init(token, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	let callbackFired = false;

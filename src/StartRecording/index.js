@@ -44,7 +44,7 @@ import * as tf from '@tensorflow/tfjs';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
-import { createScreenFrameSource, sampleCanvasPixels, sampleSourcePixels, SCREEN_CAPTURE_NOT_READY } from '../utils/screenCapture';
+import { createScreenFrameSource, sampleCanvasPixels, sampleSourcePixels, SCREEN_CAPTURE_NOT_READY, startFrameTicker } from '../utils/screenCapture';
 import { initializeLiveChat, initShadowDOM, openModal } from '../ExamsPrechecks';
 import { cleanupForceFullscreen, initializeForceFullscreen } from '../utils/fullscreen';
 import { permissionModalStyle } from '../utils/styles';
@@ -56,6 +56,7 @@ let isMediaError = false;
 let isSignalingError = false;
 let isPauseResumeBusy = false;
 let isReconnectingDevice = false;
+const CANVAS_CAPTURE_FPS = 15;
 
 const resolvePermissionType = (trackType, kind) => {
 	if (trackType === 'microphone' || kind === 'audio') return 'microphone';
@@ -964,14 +965,13 @@ const publishCanvasVideoTrack = async (room, preAcquiredStream = null) => {
 	const pauseState = { canvasStream: null, cleanup: null };
 	window.mereos.pauseCanvasState = pauseState;
 
-	let rafId = null;
-	const renderLoop = () => {
+	const renderFrame = () => {
 		drawPausedFrame(ctx, videoEl, width, height, Boolean(window.mereos.recordingPaused), i18next.t('recording_paused'));
-		rafId = requestAnimationFrame(renderLoop);
 	};
-	renderLoop();
+	renderFrame();
+	const stopTicker = startFrameTicker(renderFrame, CANVAS_CAPTURE_FPS);
 
-	const canvasStream = canvas.captureStream(15);
+	const canvasStream = canvas.captureStream(CANVAS_CAPTURE_FPS);
 	const canvasVideoTrack = canvasStream.getVideoTracks()[0];
 	const twilioVideoTrack = new TwilioVideo.LocalVideoTrack(canvasVideoTrack, {
 		name: `camera-${v4()}`,
@@ -998,7 +998,7 @@ const publishCanvasVideoTrack = async (room, preAcquiredStream = null) => {
 
 	pauseState.canvasStream = canvasStream;
 	pauseState.cleanup = () => {
-		if (rafId) cancelAnimationFrame(rafId);
+		stopTicker();
 		rawVideoTrack.removeEventListener('ended', onRawTrackEnded);
 		videoEl.pause();
 		videoEl.srcObject = null;
@@ -1065,8 +1065,7 @@ const runCanvasScreenTrackSetup = async (room, screenStream) => {
 	const pauseState = { canvasStream: null, cleanup: null, frameSource: initialFrameSource, rebuildCount: 0 };
 	window.mereos.pauseScreenCanvasState = pauseState;
 
-	let rafId = null;
-	const renderLoop = () => {
+	const renderFrame = () => {
 		try {
 			if (window.mereos.recordingPaused) {
 				drawPausedSlate(ctx, width, height, i18next.t('recording_paused'));
@@ -1076,11 +1075,11 @@ const runCanvasScreenTrackSetup = async (room, screenStream) => {
 		} catch (error) {
 			logger.error('Screen capture draw failed:', error);
 		}
-		rafId = requestAnimationFrame(renderLoop);
 	};
-	renderLoop();
+	renderFrame();
+	const stopTicker = startFrameTicker(renderFrame, CANVAS_CAPTURE_FPS);
 
-	const canvasStream = canvas.captureStream(15);
+	const canvasStream = canvas.captureStream(CANVAS_CAPTURE_FPS);
 	const canvasScreenTrack = canvasStream.getVideoTracks()[0];
 
 	// Watchdog: if the canvas is black while the share itself has a picture, only the canvas copy
@@ -1089,6 +1088,7 @@ const runCanvasScreenTrackSetup = async (room, screenStream) => {
 	let watchdogInterval = null;
 	let watchdogInFlight = false;
 	let captureCleanedUp = false;
+	let blackReported = false;
 
 	const stopWatchdog = () => {
 		watchdogTimeouts.forEach((timerId) => clearTimeout(timerId));
@@ -1120,10 +1120,34 @@ const runCanvasScreenTrackSetup = async (room, screenStream) => {
 
 		watchdogInFlight = true;
 		try {
-			if (!sampleCanvasPixels(ctx, width, height).canvasBlack) return;
+			if (!sampleCanvasPixels(ctx, width, height).canvasBlack) {
+				blackReported = false;
+				return;
+			}
 
 			const sourceSample = await sampleSourcePixels(rawScreenTrack);
-			if (captureCleanedUp || sourceSample.sourceBlack !== false) return;
+			if (captureCleanedUp) return;
+
+			// Once per black stretch, so intermittent black recordings leave a trace in the session
+			// events: sourceBlack true = the shared screen itself was black (lock screen, UAC, DRM),
+			// false = only our canvas copy was, null = couldn't sample the share.
+			if (!blackReported) {
+				blackReported = true;
+				registerEvent({
+					eventType: 'error',
+					notify: false,
+					eventName: 'screen_recording_black_frames_detected',
+					eventValue: JSON.stringify({
+						sourceBlack: sourceSample.sourceBlack,
+						frameSource: pauseState.frameSource?.kind,
+						rebuildCount: pauseState.rebuildCount,
+						visibility: document.visibilityState,
+						...(sourceSample.sourceSampleError ? { sourceSampleError: sourceSample.sourceSampleError } : {})
+					})
+				});
+			}
+
+			if (sourceSample.sourceBlack !== false) return;
 			if (pauseState.rebuildCount >= SCREEN_WATCHDOG_MAX_REBUILDS) return;
 
 			logger.warn('Screen canvas is black while the share has a picture; rebuilding frame source');
@@ -1147,7 +1171,7 @@ const runCanvasScreenTrackSetup = async (room, screenStream) => {
 	pauseState.cleanup = () => {
 		captureCleanedUp = true;
 		stopWatchdog();
-		if (rafId) cancelAnimationFrame(rafId);
+		stopTicker();
 		pauseState.frameSource?.dispose();
 		pauseState.frameSource = null;
 	};
@@ -1172,6 +1196,45 @@ const runCanvasScreenTrackSetup = async (room, screenStream) => {
 			window.mereos.pauseScreenCanvasState = null;
 		}
 		throw error;
+	}
+};
+
+// A Twilio reconnect can come back without the screen track. Nothing republished it, so the rest
+// of the screen recording was missing (black) although the candidate was still sharing.
+const republishScreenTrackIfMissing = async (room, pauseAndResumeEnabled) => {
+	if (room.state !== 'connected') return;
+
+	const stillPublished = Array.from(room.localParticipant.videoTracks.values())
+		.some(({ track }) => track?.name?.includes('screen-share'));
+	if (stillPublished) return;
+
+	const screenStream = window.mereos?.newStream;
+	const screenTrack = screenStream?.getVideoTracks()[0];
+	if (screenTrack?.readyState !== 'live') {
+		// The share itself ended; its 'ended' handler already asks the candidate to share again.
+		registerEvent({ eventType: 'error', notify: false, eventName: 'screen_recording_lost_after_reconnect' });
+		return;
+	}
+
+	try {
+		let publication;
+		if (pauseAndResumeEnabled) {
+			({ publication } = await publishCanvasScreenTrack(room, screenStream));
+		} else {
+			const twilioScreenTrack = new TwilioVideo.LocalVideoTrack(screenTrack, { name: `screen-share-${v4()}` });
+			publication = await room.localParticipant.publishTrack(twilioScreenTrack);
+		}
+		window.mereos.screenTrackPublished = publication;
+
+		const session = convertDataIntoParse('session');
+		updatePersistData('session', {
+			screen_sharing_video_name: [...(session?.screen_sharing_video_name || []), publication.trackSid]
+		});
+		registerEvent({ eventType: 'success', notify: false, eventName: 'screen_recording_republished_after_reconnect' });
+	} catch (error) {
+		logger.error('Failed to republish screen track after reconnect:', error);
+		sentryExceptioMessage(error, { type: 'error', message: 'Screen track republish after reconnect failed' });
+		registerEvent({ eventType: 'error', notify: false, eventName: 'screen_recording_republish_failed' });
 	}
 };
 
@@ -2037,6 +2100,9 @@ const startRecordingInternal = async () => {
 							message: 'video_recording_reconnected',
 							code: 50020
 						});
+					}
+					if (findConfigs(['record_screen'], secureFeatures?.entities).length) {
+						await republishScreenTrackIfMissing(room, pauseAndResumeEnabled);
 					}
 				};
 

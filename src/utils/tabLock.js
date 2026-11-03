@@ -2,11 +2,6 @@ import i18next from 'i18next';
 
 import { initializeI18next, updateThemeColor } from './functions';
 
-// Prevents the library from running in two tabs at once. All library state (token, session,
-// prechecks...) lives in shared localStorage keys and init() wipes them, so a second tab would
-// destroy the session running in the first one. Same approach as dashboard-candidate's
-// useAssessmentTabLock: a heartbeat lock in localStorage plus a BroadcastChannel.
-
 const LOCK_KEY = 'mereosAssessmentTabLock';
 const CHANNEL_NAME = 'mereos_assessment_tab_lock';
 const HEARTBEAT_INTERVAL_MS = 4000;
@@ -19,10 +14,6 @@ export const assessmentTabBlockedError = {
 	code: 40069
 };
 
-// One id per page load, kept in memory on purpose: "Duplicate tab" copies sessionStorage, which
-// would make the duplicate look like the tab that owns the lock. State lives on window so that
-// re-evaluating this module (dev hot reload) keeps the same tab id and replaces old timers
-// instead of leaving them running.
 const previousState = window.mereosTabLockState;
 const state = {
 	tabId: previousState?.tabId ||
@@ -174,14 +165,11 @@ const renderOverlay = () => {
 	state.overlayRoot.querySelector('.tab-blocked-modal-button')?.addEventListener('click', () => window.location.reload());
 };
 
-// Not dismissible: no close button, and Escape / clicking the backdrop do nothing. It only goes
-// away when the other tab releases the lock (this tab then resumes) or after a reload.
 const showOverlay = (mode) => {
 	if (!i18next.isInitialized) {
 		initializeI18next();
 	}
-	// A fresh tab hasn't rendered any library UI yet, so apply the school theme (button colour,
-	// light/dark mode, font) from the stored schoolTheme.
+
 	try {
 		updateThemeColor();
 	} catch (error) {
@@ -264,8 +252,6 @@ const startWatching = () => {
 	}, HEARTBEAT_INTERVAL_MS);
 };
 
-// `notify`: tell the integrator through globalCallback. Off when the caller (init) already
-// returns the error through its own callback.
 const block = ({ notify = true } = {}) => {
 	const wasBlocked = state.status === 'blocked';
 	state.status = 'blocked';
@@ -281,7 +267,6 @@ const block = ({ notify = true } = {}) => {
 const startHeartbeat = () => {
 	stopHeartbeat();
 	state.heartbeatTimer = setInterval(() => {
-		// Another tab took the lock (e.g. both claimed at the same moment): yield to it.
 		if (isHeldByOtherTab(readLock())) {
 			block();
 			return;
@@ -290,10 +275,6 @@ const startHeartbeat = () => {
 	}, HEARTBEAT_INTERVAL_MS);
 };
 
-/**
- * Claims the lock for this tab. Returns false (and shows the blocked overlay) when the library
- * is already running in another tab. Must run before init() touches shared localStorage.
- */
 export const acquireAssessmentTabLock = () => {
 	if (isHeldByOtherTab(readLock())) {
 		block({ notify: false });
@@ -319,17 +300,11 @@ export const acquireAssessmentTabLock = () => {
 
 export const isAssessmentTabBlocked = () => state.status === 'blocked';
 
-/**
- * For every public API call: keeps the lock if this tab owns it, otherwise claims it when free.
- * This covers flows that never call init() in this tab (session resume after a reload,
- * start_session on a new tab...). Returns false when another tab owns it.
- */
+
 export const ensureAssessmentTabLock = () =>
 	state.status === 'owner' || acquireAssessmentTabLock();
 
-/**
- * Releases the lock. With `completed`, other tabs show "already completed" instead of resuming.
- */
+
 export const releaseAssessmentTabLock = ({ completed = false } = {}) => {
 	if (state.status !== 'owner') return;
 
@@ -348,7 +323,6 @@ export const releaseAssessmentTabLock = ({ completed = false } = {}) => {
 state.pagehideListener = () => releaseAssessmentTabLock();
 window.addEventListener('pagehide', state.pagehideListener);
 
-// After a hot reload the tab may still own the lock; keep its heartbeat going.
 if (state.status === 'owner') {
 	getChannel();
 	startHeartbeat();
@@ -356,9 +330,6 @@ if (state.status === 'owner') {
 	block({ notify: false });
 }
 
-// Like dashboard-candidate: opening the exam page in a new tab while a session runs elsewhere
-// shows the blocked screen right away, even if the host page doesn't call the library yet.
-// Deferred until all modules have finished evaluating (this module is part of an import cycle).
 const checkLockOnLoad = () => {
 	if (state.status === 'idle' && isHeldByOtherTab(readLock())) {
 		block({ notify: false });

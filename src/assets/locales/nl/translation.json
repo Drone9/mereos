@@ -645,6 +645,8 @@
 	"please_enable_force_submission": "Geforceerd indienen inschakelen",
 	"please_scan_this_qr_code": "Scan deze QR-code met uw telefoon om de Mereos mobiele applicatie te downloaden.",
 	"please_share_entire_screen": "Deel het volledige scherm",
+	"share_assessment_screen_notice": "Meerdere schermen gedetecteerd. Deel het scherm waarop uw beoordeling geopend is.",
+	"screen_share_incomplete": "Uw schermdeling legt niet uw volledige scherm vast. Sta op een Mac uw browser toe via Systeeminstellingen > Privacy en beveiliging > Schermopname, start de browser opnieuw en deel uw volledige scherm opnieuw.",
 	"please_take_picture_or": "Maak een foto of",
 	"please_unselect_time_region_from_template": "Deselecteer de tijdzone uit de sjabloon",
 	"please_wait": "Even geduld...",

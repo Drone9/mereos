@@ -2914,6 +2914,19 @@ export const MobileProctoringCss = `.mobile-conection-container {
   color: #8D979F;
 }
 
+.ivsf-multi-screen-notice {
+  max-width: 480px;
+  margin: 12px auto 0px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgb(233 162 59 / 12%);
+  color: #E9A23B;
+  font-family: Poppins;
+  font-size: 13px;
+  line-height: 19px;
+  text-align: center;
+}
+
 .mobile-broadcastin-container{
   display: flex;
   align-items: center;
@@ -2990,13 +3003,14 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 }
 
 .screen-share-dummy {
-	height: 230px;
+	/* Shrinks on short windows so the step fits without a scrollbar. */
+	height: clamp(150px, 33vh, 260px);
 	display: flex;
 	border-radius: 5px;
 	align-items: center;
 	justify-content: center;
-	margin-top: 5px;
-	margin-bottom: 5px;
+	margin-top: 4px;
+	margin-bottom: 0;
   filter:var(--filter-color);
 }
 
@@ -3015,7 +3029,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	align-items: center;
 	text-align: center;
 	color: var(--text-color);
-	margin: 22px auto 0;
+	margin: 12px auto 0;
 }
 
 .screen-desc {
@@ -3027,7 +3041,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 10px auto 0;
+	margin: 6px auto 0;
 }
 
 .ivsf-instructions-container {
@@ -3072,7 +3086,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 .ivsf-btn-container {
 	display: flex;
 	justify-content: center;
-	margin: 35px auto 55px;
+	margin: 24px auto 28px;
 	gap: 20px;
 }
 
@@ -3083,11 +3097,12 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	}
 }
 
-.ivsf-query-msg {
+/* Scoped + !important: another screen's .ivsf-query-msg forces margin 0 !important in the same shadow root. */
+.screen-share-container .ivsf-query-msg {
 	font-size: 14px;
-	margin: 20px auto 0;
+	max-width: 760px;
+	margin: 22px auto 0 !important;
 	color: #8D979F;
-  padding-top:8px;
 }
 `;
 

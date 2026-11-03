@@ -5,6 +5,81 @@ const PLAY_TIMEOUT_MS = 2000;
 
 export const SCREEN_CAPTURE_NOT_READY = 'screen_capture_stream_not_ready';
 
+// The widest real monitors are 32:9 (~3.6). A share thinner than this, or tiny, isn't a whole
+// screen: e.g. Firefox on macOS without the Screen Recording permission shares only its own
+// "You are sharing your entire screen" bar (~12:1), and the whole session recorded just that.
+const MIN_SCREEN_SIDE_PX = 200;
+const MAX_SCREEN_ASPECT_RATIO = 4;
+
+// Size of a share from the track settings, or from its first frame when the browser doesn't
+// report it. Null if it can't be read (the caller then lets the share through).
+export const getShareDimensions = async (stream) => {
+	const track = stream?.getVideoTracks()[0];
+	const { width, height } = track?.getSettings?.() || {};
+	if (width && height) return { width, height };
+
+	const videoEl = document.createElement('video');
+	videoEl.autoplay = true;
+	videoEl.muted = true;
+	videoEl.playsInline = true;
+	videoEl.srcObject = stream;
+	const loaded = await waitForLoadedData(videoEl, SOURCE_START_TIMEOUT_MS);
+	const dimensions = loaded && videoEl.videoWidth && videoEl.videoHeight
+		? { width: videoEl.videoWidth, height: videoEl.videoHeight }
+		: null;
+	videoEl.srcObject = null;
+	return dimensions;
+};
+
+export const isWholeScreenShape = ({ width, height }) => {
+	const shortSide = Math.min(width, height);
+	return shortSide >= MIN_SCREEN_SIDE_PX && Math.max(width, height) / shortSide <= MAX_SCREEN_ASPECT_RATIO;
+};
+
+const FRAME_TICKER_WORKER_SOURCE = 'let id=null;onmessage=(e)=>{clearInterval(id);id=e.data>0?setInterval(()=>postMessage(0),e.data):null;};';
+
+export const startFrameTicker = (onTick, fps) => {
+	const intervalMs = Math.round(1000 / fps);
+	let worker = null;
+	let workerUrl = null;
+	let intervalId = null;
+
+	const startInterval = () => {
+		if (!intervalId) intervalId = setInterval(onTick, intervalMs);
+	};
+	const stopWorker = () => {
+		worker?.terminate();
+		worker = null;
+		if (workerUrl) {
+			URL.revokeObjectURL(workerUrl);
+			workerUrl = null;
+		}
+	};
+
+	try {
+		workerUrl = URL.createObjectURL(new Blob([FRAME_TICKER_WORKER_SOURCE], { type: 'text/javascript' }));
+		worker = new Worker(workerUrl);
+		worker.onmessage = () => onTick();
+		worker.onerror = () => {
+			stopWorker();
+			startInterval();
+		};
+		worker.postMessage(intervalMs);
+	} catch (error) {
+		logger.warn('Frame ticker worker unavailable, using setInterval:', error);
+		stopWorker();
+		startInterval();
+	}
+
+	return () => {
+		stopWorker();
+		if (intervalId) {
+			clearInterval(intervalId);
+			intervalId = null;
+		}
+	};
+};
+
 const waitForLoadedData = (videoEl, timeoutMs) => new Promise((resolve) => {
 	if (videoEl.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
 		resolve(true);

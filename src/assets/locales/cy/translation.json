@@ -642,6 +642,8 @@
 	"please_enable_force_submission": "Galluogwch gyflwyno gorfodol",
 	"please_scan_this_qr_code": "Sganiwch y cod QR hwn gyda'ch dyfais ffôn i lawrlwytho'r cymhwysiad Mereos Mobile.",
 	"please_share_entire_screen": "Rhannwch y sgrin gyfan os gwelwch yn dda.",
+	"share_assessment_screen_notice": "Wedi canfod sawl sgrin. Rhannwch y sgrin lle mae eich asesiad ar agor.",
+	"screen_share_incomplete": "Nid yw eich rhannu sgrin yn dal eich sgrin gyfan. Ar Mac, caniatewch eich porwr yn Gosodiadau'r System > Preifatrwydd a Diogelwch > Recordio Sgrin, ailgychwynnwch y porwr a rhannwch eich sgrin gyfan eto.",
 	"please_take_picture_or": "Tynnwch lun neu os gwelwch yn dda",
 	"please_unselect_time_region_from_template": "Dad-ddewiswch y Rhanbarth Amser o'r templed",
 	"please_wait": "Arhoswch...",

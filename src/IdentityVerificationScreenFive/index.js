@@ -17,8 +17,11 @@ import { ASSET_URL } from '../utils/constant';
 import { openModal, showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { publishCanvasScreenTrack, waitForActiveRecordingStart } from '../StartRecording';
-import { SCREEN_CAPTURE_NOT_READY } from '../utils/screenCapture';
+import { getShareDimensions, isWholeScreenShape, SCREEN_CAPTURE_NOT_READY } from '../utils/screenCapture';
 import { v4 } from 'uuid';
+
+const SCREEN_LAYOUT_POLL_MS = 2000;
+let stopScreenLayoutWatch = null;
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	if(window.mereos.isScreenShare){
@@ -43,21 +46,62 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		text: i18next.t('please_share_entire_screen')
 	};
 
-	const checkMultipleScreens = async () => {
-		const resp = await detectMultipleScreens();
-		if (resp) {
-			multipleScreens = true;
-			if(window.mereos.globalCallback){
-				window.mereos.globalCallback({ 
-					type:'error',
-					message: 'multiple_screens_detected',
-					code:40037
-				});
-			}
-			registerEvent({ eventType: 'error', notify: false, eventName: 'multiple_screens_detected' });
-		} else {
-			multipleScreens = false;
+	const verifyDesktop = secureFeatures.some(entity => entity.key === 'verify_desktop');
+
+	let otherScreensConnected = false;
+
+	const reportMultipleScreens = () => {
+		if(window.mereos.globalCallback){
+			window.mereos.globalCallback({
+				type:'error',
+				message: 'multiple_screens_detected',
+				code:40037
+			});
 		}
+		registerEvent({ eventType: 'error', notify: false, eventName: 'multiple_screens_detected' });
+	};
+
+	const applyMultipleScreens = (detected) => {
+		if (detected === Boolean(multipleScreens)) return;
+		multipleScreens = detected;
+
+		if (detected) {
+			reportMultipleScreens();
+		} else {
+
+			const shareLive = isScreenAlreadyShared && window.mereos.newStream?.getVideoTracks()[0]?.readyState === 'live';
+			mode = shareLive ? 'startScreenRecording' : 'share-screen-again';
+		}
+	};
+
+	const watchScreenLayout = () => {
+		stopScreenLayoutWatch?.();
+
+		const onScreenLayoutChange = async () => {
+			if (!tabContent.classList.contains('active')) {
+				stopScreenLayoutWatch?.();
+				return;
+			}
+			const detected = await detectMultipleScreens();
+			if (verifyDesktop) {
+				if (detected !== Boolean(multipleScreens)) {
+					applyMultipleScreens(detected);
+					updateUI();
+				}
+			} else if (detected !== otherScreensConnected) {
+				otherScreensConnected = detected;
+				if (detected) reportMultipleScreens();
+				updateUI();
+			}
+		};
+
+		const intervalId = setInterval(onScreenLayoutChange, SCREEN_LAYOUT_POLL_MS);
+		window.screen.addEventListener?.('change', onScreenLayoutChange);
+		stopScreenLayoutWatch = () => {
+			clearInterval(intervalId);
+			window.screen.removeEventListener?.('change', onScreenLayoutChange);
+			stopScreenLayoutWatch = null;
+		};
 	};
 
 	const initSocketConnection = () => {
@@ -112,11 +156,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		}
 		
 	};
-	
-	let multipleScreensCheck = secureFeatures.find(entity => entity.key === 'verify_desktop');
-	multipleScreensCheck && checkMultipleScreens();
+
+	const isShareLive = () => window.mereos.newStream?.getVideoTracks()[0]?.readyState === 'live';
 
 	const shareScreen = async () => {
+		if (multipleScreens) return;
 		if (isScreenAlreadyShared && window.mereos.newStream && 
 			window.mereos.newStream.getVideoTracks()[0] && 
 			window.mereos.newStream.getVideoTracks()[0].readyState === 'live') {
@@ -144,6 +188,31 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			const isScreenShared = isFirefox ? true
 				: trackSettings.displaySurface === 'monitor';
 
+			// Firefox doesn't report what was shared, so also check the share is screen-shaped.
+			const dimensions = isScreenShared ? await getShareDimensions(window.mereos.newStream) : null;
+			if (dimensions && !isWholeScreenShape(dimensions)) {
+				registerEvent({
+					eventType: 'error',
+					notify: false,
+					eventName: 'screen_share_incomplete',
+					eventValue: JSON.stringify({ ...dimensions, firefox: isFirefox })
+				});
+				if(window.mereos.globalCallback){
+					window.mereos.globalCallback({
+						type:'error',
+						message: 'screen_share_incomplete',
+						code:40070
+					});
+				}
+				videoTrack.stop();
+				window.mereos.newStream = null;
+				stream = null;
+				isScreenAlreadyShared = false;
+				mode = 'incomplete-share';
+				updateUI();
+				return;
+			}
+
 			if (isScreenShared) {
 				stream = window.mereos.newStream;
 				mode = 'startScreenRecording';
@@ -155,6 +224,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 				videoTrack.addEventListener('ended', () => {
 					isScreenAlreadyShared = false;
+					// Still on this step: swap Done for Reshare instead of leaving a dead button.
+					if (tabContent.classList.contains('active') && mode === 'startScreenRecording') {
+						mode = 'rerecordScreen';
+						updateUI();
+					}
 				});
 
 			} else {
@@ -181,8 +255,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const nextStep = async () => {
+		if (multipleScreens || !isShareLive()) return;
+		stopScreenLayoutWatch?.();
 		try {
-			// The candidate confirmed a new share, so going back is allowed again.
 			window.mereos.screenShareStopped = false;
 			updatePersistData('preChecksSteps', { screenSharing: true });
 			if(window.mereos.globalCallback){
@@ -241,8 +316,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					}
 				} catch (publishError) {
 					if (publishError?.message === SCREEN_CAPTURE_NOT_READY) {
-						// The new share never produced frames. The old track is already unpublished,
-						// so ask for the screen again instead of continuing without a recording.
 						window.mereos.screenShareStopped = true;
 						window.mereos.newStream?.getTracks().forEach(track => track.stop());
 						window.mereos.newStream = null;
@@ -306,6 +379,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const prevStep = () => {
+		stopScreenLayoutWatch?.();
 		if (stream) {
 			stream.getVideoTracks()[0].stop();
 		}
@@ -321,7 +395,17 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	};
 
 	const updateUI = () => {
-		if (mode === 'startScreenRecording') {
+		// Also covers a share that finished while a second screen was being connected.
+		if (multipleScreens) {
+			mode = 'multiple-screens';
+		}
+
+		if (mode === 'multiple-screens') {
+			msg = {
+				type: 'unsuccessful',
+				text: 'desktop_error'
+			};
+		} else if (mode === 'startScreenRecording') {
 			msg = {
 				type: 'successful',
 				text: i18next.t('screen_shared_successfully')
@@ -335,6 +419,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			msg = {
 				type: 'unsuccessful',
 				text: i18next.t('please_share_entire_screen')
+			};
+		} else if (mode === 'incomplete-share') {
+			msg = {
+				type: 'unsuccessful',
+				text: 'screen_share_incomplete'
 			};
 		}
 
@@ -353,6 +442,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				queryMsg.textContent = i18next.t(msg.text);
 				queryMsg.style.color = msg.type === 'unsuccessful' ? '#E95E5E' : '';
 			}
+			updateScreenNotice(existingContainer);
 
 			const headerImg = existingContainer.querySelector('.screen-share-dummy');
 			if (headerImg) {
@@ -363,6 +453,13 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		} else {
 			createInitialUI();
 		}
+	};
+
+	const updateScreenNotice = (container) => {
+		const notice = container.querySelector('#multi-screen-notice');
+		if (!notice) return;
+		notice.textContent = i18next.t('share_assessment_screen_notice');
+		notice.style.display = !verifyDesktop && otherScreensConnected ? '' : 'none';
 	};
 
 	const updateButtons = (container) => {
@@ -376,8 +473,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 
 		const isSessionResume = convertDataIntoParse('session')?.room_id;
 
-		// No "Previous step" during a session, a resume, or after the candidate stopped sharing:
-		// the only way forward from here is sharing the screen again.
 		const canGoBack = showPrevButton &&
 			mode === 'startScreenRecording' &&
 			!window.mereos.roomInstance &&
@@ -390,9 +485,12 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			buttonsHTML += `<button class="orange-hollow-btn">${i18next.t('previous_step')}</button>`;
 		}
 
-		if (mode === 'startScreenRecording') {
-			buttonsHTML += `<button class="orange-filled-btn" ${multipleScreens ? 'disabled' : ''}>${i18next.t('done')}</button>`;
-		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again') {
+		if (mode === 'multiple-screens') {
+			buttonsHTML += `<button class="orange-filled-btn" disabled>${i18next.t('reshare_screen')}</button>`;
+		} else if (mode === 'startScreenRecording') {
+			// Firefox's share picker doesn't block the page, so Done must wait for a live share.
+			buttonsHTML += `<button class="orange-filled-btn" ${isShareLive() ? '' : 'disabled'}>${i18next.t('done')}</button>`;
+		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again' || mode === 'incomplete-share') {
 			buttonsHTML += `<button class="orange-filled-btn">${i18next.t('reshare_screen')}</button>`;
 		}
 
@@ -404,7 +502,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 	
 		if (mode === 'startScreenRecording') {
 			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', nextStep);
-		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again') {
+		} else if (mode === 'rerecordScreen' || mode === 'share-screen-again' || mode === 'incomplete-share') {
 			btnContainer.querySelector('.orange-filled-btn').addEventListener('click', shareScreen);
 		}
 	};
@@ -423,6 +521,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 					<div class="steps-container"></div>
 					<img class="screen-share-dummy" src="${ASSET_URL}/share-screen-${i18next.language || 'en'}.svg" alt="camera-icon">
 					<div id="query-message-screen" class="ivsf-query-msg" ${msg.type === 'unsuccessful' ? 'style="color: #E95E5E;"' : ''}>${i18next.t(msg.text)}</div>
+					<div id="multi-screen-notice" class="ivsf-multi-screen-notice"></div>
 					<div class="ivsf-btn-container"></div>
 				</div>
 				<style></style>
@@ -431,7 +530,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		
 		const stepsPlaceholder = tabContent.querySelector('.steps-container');
 		stepsPlaceholder.appendChild(stepsContainer);
-		
+
+		updateScreenNotice(tabContent.querySelector('.screen-share-container'));
+
 		updateButtons(tabContent.querySelector('.screen-share-container'));
 	};
 
@@ -447,9 +548,21 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		};
 	}
 
-	createInitialUI();
-	
-	if (!isScreenAlreadyShared) {
+	if (verifyDesktop) {
+		applyMultipleScreens(await detectMultipleScreens());
+	} else {
+		otherScreensConnected = await detectMultipleScreens();
+		if (otherScreensConnected) reportMultipleScreens();
+	}
+	watchScreenLayout();
+
+	if (multipleScreens) {
+		updateUI();
+	} else {
+		createInitialUI();
+	}
+
+	if (!isScreenAlreadyShared && !multipleScreens) {
 		shareScreen();
 	}
 	

@@ -1,10 +1,10 @@
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as tf from '@tensorflow/tfjs';
-import { convertDataIntoParse, findConfigs, getSecureFeatures, logger } from './functions';
+import { findConfigs, getSecureFeatures, logger } from './functions';
 
 const AI_MODEL_ENTITIES = ['object_detection', 'multiple_people_detection', 'person_missing'];
+const MODEL_BASE = 'lite_mobilenet_v2';
 const MODEL_LOAD_TIMEOUT_MS = 30000;
-const WARMUP_SIZE_PX = 64;
 
 let modelPromise = null;
 let loadGeneration = 0;
@@ -33,26 +33,13 @@ const selectBackend = async () => {
 	}
 };
 
-const warmUp = async (net) => {
-	try {
-		const canvas = document.createElement('canvas');
-		canvas.width = WARMUP_SIZE_PX;
-		canvas.height = WARMUP_SIZE_PX;
-		await net.detect(canvas);
-	} catch (warmupError) {
-		logger.warn('AI model warm-up failed', warmupError);
-	}
-};
-
 export const loadAiModel = () => {
 	if (window.mereos.net) return Promise.resolve(window.mereos.net);
 	if (!modelPromise) {
 		const generation = ++loadGeneration;
 		modelPromise = withTimeout((async () => {
 			await selectBackend();
-			const net = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
-			await warmUp(net);
-			return net;
+			return cocoSsd.load({ base: MODEL_BASE });
 		})(), MODEL_LOAD_TIMEOUT_MS).then((net) => {
 			if (generation !== loadGeneration) {
 				net.dispose?.();
@@ -66,18 +53,6 @@ export const loadAiModel = () => {
 		});
 	}
 	return modelPromise;
-};
-
-export const preloadAiModel = () => {
-	try {
-		if (!needsAiModel()) return;
-		const secureFeatures = getSecureFeatures();
-		if (!findConfigs(['verify_multiple_devices'], secureFeatures?.entities || []).length) return;
-		if (convertDataIntoParse('preChecksSteps')?.preValidation) return;
-		loadAiModel().catch((error) => logger.warn('AI model preload failed', error));
-	} catch (error) {
-		logger.warn('AI model preload skipped', error);
-	}
 };
 
 export const disposeAiModel = () => {

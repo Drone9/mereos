@@ -1436,6 +1436,47 @@ const ensureActiveRoom = async (session) => {
 const hasActiveVideoTrack = (room) => Array.from(room?.localParticipant?.videoTracks?.values() || [])
 	.some(({ track }) => track && !track.name?.includes('screen-share'));
 
+const isPermissionStateDenied = async (permissionName) => {
+	try {
+		const status = await navigator.permissions.query({ name: permissionName });
+		return status.state === 'denied';
+	} catch {
+		return false;
+	}
+};
+
+const hasLiveDeviceTrack = (publications) => Array.from(publications?.values() || [])
+	.some(({ track }) => track
+		&& !track.name?.includes('screen-share')
+		&& track.mediaStreamTrack?.readyState === 'live');
+
+// Track listeners are attached only after start_session has published everything, so a camera or
+// microphone disabled mid-start ends its track unnoticed and the session "starts" without it (and
+// its recording never exists, so get_SID can't find it). Returns the lost permission type, if any.
+const findDeviceLostDuringStart = async (room, secureFeatures) => {
+	if (!room?.localParticipant) return null;
+
+	if (findConfigs(['record_audio'], secureFeatures?.entities).length
+		&& (!hasLiveDeviceTrack(room.localParticipant.audioTracks) || await isPermissionStateDenied('microphone'))) {
+		return 'microphone';
+	}
+	if (findConfigs(['record_video'], secureFeatures?.entities).length
+		&& (!hasLiveDeviceTrack(room.localParticipant.videoTracks) || await isPermissionStateDenied('camera'))) {
+		return 'camera';
+	}
+	return null;
+};
+
+// Same handling as a permission error while publishing: a lost microphone with a working camera
+// keeps the room and waits for Reconnect; anything else restarts the full start after Reconnect.
+const handleDeviceLostDuringStart = async (room, permissionType) => {
+	registerEvent({ eventType: 'error', notify: false, eventName: `${permissionType}_lost_during_session_start` });
+	if (permissionType === 'microphone' && hasActiveVideoTrack(room)) {
+		window.mereos.pendingSessionStart = true;
+	}
+	await showMediaPermissionError(permissionType);
+};
+
 const restoreCameraViewFromRoom = async (room, secureFeatures) => {
 	if (!room || !findConfigs(['record_video'], secureFeatures?.entities).length) return;
 
@@ -1466,6 +1507,12 @@ const completePendingSessionStart = async (room, secureFeatures) => {
 	if (needsAudio && room.localParticipant.audioTracks.size === 0) return;
 	if (needsVideo && !hasActiveVideoTrack(room)) return;
 
+	const lostDuringReconnect = await findDeviceLostDuringStart(room, secureFeatures);
+	if (lostDuringReconnect) {
+		await handleDeviceLostDuringStart(room, lostDuringReconnect);
+		return;
+	}
+
 	window.mereos.pendingSessionStart = false;
 	attachTrackMonitoring(room);
 	updatePersistData('session', { sessionStatus: 'Attending', room_id: room?.sid });
@@ -1495,10 +1542,18 @@ const reconnectCamera = async () => {
 			|| document.getElementById('permissionModal');
 		reconnectType = modal?.getAttribute('data-permission-type') || 'camera';
 
+		// A start_session still in flight must settle first: startRecording() would otherwise just
+		// join it, and that start finishes without the device the candidate just disabled.
+		await waitForActiveRecordingStart();
+
 		// Permission was denied while start_session was still starting, so the room, the
 		// session record and the screen track were never set up. Re-run the full start;
 		// it reports success or shows this modal again on its own.
 		if (!window.mereos.sessionActive && !window.mereos.pendingSessionStart) {
+			// Only dismiss the modal once the permission is really back; a denial throws into the
+			// catch below, which keeps the modal up and reports 40019.
+			const probeStream = await acquireIndependentMediaStream(reconnectType === 'microphone' ? 'audio' : 'video');
+			stopMediaStreamTracks(probeStream?.getTracks() || []);
 			hidePermissionModal();
 			window.mereos.lostPermissionTypes = null;
 			await startRecording();
@@ -2141,6 +2196,12 @@ const startRecordingInternal = async () => {
 			});
 		}
 
+		const lostDuringStart = await findDeviceLostDuringStart(window.mereos.roomInstance, secureFeatures);
+		if (lostDuringStart) {
+			await handleDeviceLostDuringStart(window.mereos.roomInstance, lostDuringStart);
+			return;
+		}
+
 		try {
 			const updatedSession = convertDataIntoParse('session');
 			const resp = await addSectionSessionRecord(updatedSession, candidateInviteAssessmentSection);
@@ -2604,6 +2665,33 @@ const handleVideoResize = (predictions, context) => {
 	});
 };
 
+// Stops the previous detection loop without stopping its camera track (the session still records it).
+const stopAiProcessingLoop = () => {
+	if (window.mereos.aiProcessingInterval) {
+		clearInterval(window.mereos.aiProcessingInterval);
+		window.mereos.aiProcessingInterval = null;
+	}
+	if (window.mereos.aiProcessingVideo) {
+		window.mereos.aiProcessingVideo.pause?.();
+		window.mereos.aiProcessingVideo.srcObject = null;
+		window.mereos.aiProcessingVideo = null;
+	}
+};
+
+// The camera track to run detection on: the stream this call was given, else the newest live
+// camera publication. Never the room's first publication: after a reconnect that is the screen
+// share or the camera track that just died.
+const findAiCameraTrack = (room, mediaStream) => {
+	const isLive = (track) => track?.readyState === 'live';
+	const givenTrack = mediaStream?.getVideoTracks?.()[0];
+	if (isLive(givenTrack)) return givenTrack;
+
+	return Array.from(room?.localParticipant?.videoTracks?.values() || [])
+		.map(({ track }) => track)
+		.filter((track) => track && !track.name?.includes('screen-share') && isLive(track.mediaStreamTrack))
+		.pop()?.mediaStreamTrack || null;
+};
+
 const startAIWebcam = async (room, mediaStream) => {
 	try {
 		const secureFeatures = getSecureFeatures();
@@ -2613,19 +2701,21 @@ const startAIWebcam = async (room, mediaStream) => {
 
 		const net = await loadAiModel();
 
-		const localParticipant = room.localParticipant;
-		const videoTrackPublications = Array.from(localParticipant.videoTracks.values());
-
-		if (videoTrackPublications.length === 0) {
-			throw new Error('No video track available from local participant');
+		const cameraTrack = findAiCameraTrack(room, mediaStream);
+		if (!cameraTrack) {
+			throw new Error('No live camera track available for AI detection');
 		}
+
+		// A reconnect or camera restore starts detection again: don't leave the old loop running on
+		// the old (often dead) track next to the new one.
+		stopAiProcessingLoop();
 
 		const { canvas } = await setupWebcam(mediaStream, window.mereos.shadowRoot);
 		const context = canvas.getContext('2d');
 
 		const processingVideo = document.createElement('video');
 		processingVideo.style.display = 'none';
-		processingVideo.srcObject = new MediaStream([videoTrackPublications[0].track.mediaStreamTrack]);
+		processingVideo.srcObject = new MediaStream([cameraTrack]);
 		processingVideo.autoplay = true;
 		processingVideo.playsInline = true;
 		window.mereos.aiProcessingVideo = processingVideo;

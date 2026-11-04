@@ -2999,6 +2999,8 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 @media (max-width: 720px) {
 	.screen-wrapper {
 		margin: 0;
+		/* The language selector and Need Help sit absolutely over the top of the modal. */
+		padding-top: 64px;
 	}
 }
 
@@ -3017,11 +3019,14 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 @media (max-width: 720px) {
 	.screen-share-dummy {
 		width: 100%;
+		height: auto;
+		max-height: 33vh;
+		object-fit: contain;
 	}
 }
 
 .ivsf-header-titles {
-	font-family: Poppins;
+	font-family: Poppins, sans-serif;
 	font-style: var(--font-style);
 	font-weight: bold;
 	font-size: 35px;
@@ -3033,7 +3038,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 }
 
 .screen-desc {
-	font-family: Poppins;
+	font-family: Poppins, sans-serif;
 	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 15px;
@@ -3064,7 +3069,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 .ivsf-instruction-step {
 	display: flex;
 	align-items: center;
-	font-family: Poppins;
+	font-family: Poppins, sans-serif;
 	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 13px;
@@ -3073,7 +3078,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 }
 
 .ivsf-instruction-txt {
-	font-family: Poppins;
+	font-family: Poppins, sans-serif;
 	font-style: var(--font-style);
 	font-weight: 500;
 	font-size: 16px;
@@ -3103,6 +3108,36 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	max-width: 760px;
 	margin: 22px auto 0 !important;
 	color: #8D979F;
+}
+
+@media (max-width: 720px) {
+	.screen-share-container .ivsf-header-titles {
+		font-size: 24px;
+		justify-content: center;
+	}
+
+	.screen-share-container .screen-desc {
+		font-size: 13px;
+		justify-content: center;
+		padding: 0 8px;
+	}
+
+	.screen-share-container .steps-container {
+		flex-wrap: wrap;
+		row-gap: 8px;
+	}
+
+	.screen-share-container .ivsf-query-msg {
+		font-size: 13px;
+		margin: 14px auto 0 !important;
+		padding: 0 8px;
+		text-align: center;
+	}
+
+	.screen-share-container .ivsf-btn-container {
+		align-items: center;
+		margin: 16px auto 20px;
+	}
 }
 `;
 

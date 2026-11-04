@@ -3,7 +3,7 @@ import { getMultipleCameraDevices, checkForMultipleMicrophones, registerAcquired
 import { showTab } from '../ExamsPrechecks';
 import { checkMediaInputs } from '../utils/checkMedia';
 import { fetchIceServers } from '../services/twilio.services';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import { loadAiModel, needsAiModel } from '../utils/aiModel';
 import { ASSET_URL } from '../utils/constant';
 
 let currentLanguageHandler = null;
@@ -369,6 +369,13 @@ export const PrevalidationInstructions = async (tabContent) => {
 				isCheckingMedia = true;
 				startTimer();
 
+				// The model loads alongside the ICE fetch and the media check (it is usually already
+				// preloaded). A failed attempt, including a failed background preload, is retried once.
+				const modelReady = needsAiModel()
+					? loadAiModel().catch(() => loadAiModel())
+					: Promise.resolve(null);
+				modelReady.catch(() => {});
+
 				let resp = null;
 				if (shouldCheckBitrate) {
 					try {
@@ -378,40 +385,40 @@ export const PrevalidationInstructions = async (tabContent) => {
 					}
 				}
 
-				const hasObjectDetection = findConfigs(['object_detection', 'multiple_people_detection', 'person_missing'], secureFeatures.entities).length > 0;
-				if (hasObjectDetection) {
-					try {
-						window.mereos.net = await cocoSsd.load();
-					} catch (cocoError) {
-						window.mereos.net = null;
-						stopTimer();
-						isCheckingMedia = false;
+				const mediaCheck = checkMediaInputs(shouldCheckBitrate && resp?.data);
+				mediaCheck.catch(() => {});
 
-						sentryExceptioMessage(cocoError, { type: 'error', message: 'COCO-SSD model failed to load' });
-						registerEvent({ notify: false, eventName: 'ai_model_failed_to_load' });
-						if (window.mereos.globalCallback) {
-							window.mereos.globalCallback({
-								type: 'error',
-								message: 'ai_model_failed_to_load',
-								code: 40068
-							});
-						}
+				try {
+					await modelReady;
+				} catch (cocoError) {
+					await mediaCheck.catch(() => {});
+					stopTimer();
+					isCheckingMedia = false;
 
-						if (messageElement) {
-							messageElement.textContent = i18next.t('ai_model_failed_to_load');
-							messageElement.style.color = '#ff4444';
-						}
-						if (checkButton) checkButton.style.display = 'block';
-						if (cameraDropdown)    cameraDropdown.disabled    = false;
-						if (microphoneDropdown) microphoneDropdown.disabled = false;
-						const continueBtnOnCocoFail = window.mereos.shadowRoot.getElementById('continue-btn');
-						if (continueBtnOnCocoFail) continueBtnOnCocoFail.style.display = 'none';
-
-						return;
+					sentryExceptioMessage(cocoError, { type: 'error', message: 'COCO-SSD model failed to load' });
+					registerEvent({ notify: false, eventName: 'ai_model_failed_to_load' });
+					if (window.mereos.globalCallback) {
+						window.mereos.globalCallback({
+							type: 'error',
+							message: 'ai_model_failed_to_load',
+							code: 40068
+						});
 					}
+
+					if (messageElement) {
+						messageElement.textContent = i18next.t('ai_model_failed_to_load');
+						messageElement.style.color = '#ff4444';
+					}
+					if (checkButton) checkButton.style.display = 'block';
+					if (cameraDropdown)    cameraDropdown.disabled    = false;
+					if (microphoneDropdown) microphoneDropdown.disabled = false;
+					const continueBtnOnCocoFail = window.mereos.shadowRoot.getElementById('continue-btn');
+					if (continueBtnOnCocoFail) continueBtnOnCocoFail.style.display = 'none';
+
+					return;
 				}
 
-				const result = await checkMediaInputs(shouldCheckBitrate && resp?.data);
+				const result = await mediaCheck;
 
 				stopTimer();
 				isCheckingMedia = false;

@@ -189,7 +189,14 @@ const retryAllFailedSecurityChecks = async () => {
 		
 		const originalText = refreshBtn.textContent;
 		refreshBtn.textContent = i18next.t('retrying');
-		
+
+		// Hide the previous error while retrying; the checks show it again if they still fail.
+		const errorMessageElement = window.mereos.shadowRoot.getElementById('errorMessage');
+		if (errorMessageElement) {
+			errorMessageElement.textContent = '';
+			errorMessageElement.style.display = 'none';
+		}
+
 		try {
 			const failedSecurityChecks = getFailedSecurityChecks();
 			

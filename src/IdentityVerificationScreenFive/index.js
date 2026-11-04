@@ -17,7 +17,7 @@ import { ASSET_URL } from '../utils/constant';
 import { openModal, showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { publishCanvasScreenTrack, waitForActiveRecordingStart } from '../StartRecording';
-import { getShareDimensions, isWholeScreenShape, SCREEN_CAPTURE_NOT_READY } from '../utils/screenCapture';
+import { getShareDimensions, isWholeScreenShape, matchesCurrentScreenShape, SCREEN_CAPTURE_NOT_READY } from '../utils/screenCapture';
 import { v4 } from 'uuid';
 
 const SCREEN_LAYOUT_POLL_MS = 2000;
@@ -185,8 +185,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			const videoTrack = window.mereos.newStream.getVideoTracks()[0];
 			const trackSettings = videoTrack.getSettings();
 
-			const isScreenShared = isFirefox ? true
-				: trackSettings.displaySurface === 'monitor';
+			// Firefox usually doesn't report displaySurface; it is checked by the share's shape below.
+			const surfaceUnknown = isFirefox && !trackSettings.displaySurface;
+			let isScreenShared = surfaceUnknown || trackSettings.displaySurface === 'monitor';
 
 			// Firefox doesn't report what was shared, so also check the share is screen-shaped.
 			const dimensions = isScreenShared ? await getShareDimensions(window.mereos.newStream) : null;
@@ -211,6 +212,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				mode = 'incomplete-share';
 				updateUI();
 				return;
+			}
+
+			// Firefox lets the candidate pick a window too: a window doesn't have the screen's shape.
+			if (surfaceUnknown && dimensions && !matchesCurrentScreenShape(dimensions)) {
+				isScreenShared = false;
 			}
 
 			if (isScreenShared) {
@@ -275,6 +281,17 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			await waitForActiveRecordingStart();
 
 			const room = window?.mereos?.roomInstance;
+
+			// Opened mid-session only because an extra screen was connected: the share never
+			// stopped and is still being recorded, so don't republish it as a new recording.
+			const unchangedShare = window.mereos.multiScreenModalStream;
+			window.mereos.multiScreenModalStream = null;
+			if (room && unchangedShare && unchangedShare === window.mereos.newStream
+				&& unchangedShare.getVideoTracks()[0]?.readyState === 'live'
+				&& window.mereos.screenTrackPublished?.track) {
+				return;
+			}
+
 			if (room) {
 				const videoTrack = window?.mereos?.newStream?.getVideoTracks()[0];
 

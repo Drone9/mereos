@@ -40,6 +40,7 @@ import * as TwilioVideo from 'twilio-video';
 import i18next from 'i18next';
 import { v4 } from 'uuid';
 import { loadAiModel } from '../utils/aiModel';
+import { getPreferredCameraId, getPreferredMicrophoneId } from '../utils/camera';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
@@ -88,20 +89,19 @@ const drawPausedFrame = (ctx, videoEl, width, height, isPaused, label) => {
 	}
 };
 
+// A missing (or empty / "null") saved device falls back to `true`: the browser's default device.
+const buildDeviceConstraint = (deviceId) => (deviceId ? { deviceId: { exact: deviceId } } : true);
+
 const buildIndependentMediaConstraints = (kind) => {
 	if (kind === 'video') {
 		return {
-			video: localStorage.getItem('deviceId')
-				? { deviceId: { exact: localStorage.getItem('deviceId') } }
-				: true,
+			video: buildDeviceConstraint(getPreferredCameraId()),
 			audio: false,
 		};
 	}
 
 	return {
-		audio: localStorage.getItem('microphoneID')
-			? { deviceId: { exact: localStorage.getItem('microphoneID') } }
-			: true,
+		audio: buildDeviceConstraint(getPreferredMicrophoneId()),
 		video: false,
 	};
 };
@@ -180,6 +180,37 @@ const abortFailedSessionStart = async (error) => {
 	});
 };
 
+const SESSION_SCREEN_POLL_MS = 2000;
+let stopSessionScreenWatch = null;
+
+const isPrechecksModalOpen = () => window.mereos?.dom?.modal?.style?.display === 'block';
+
+// verify_desktop during the session: an extra screen connected mid-exam opens the screen-share
+// modal, which applies the same multiple-screens validation as the prechecks.
+const startSessionScreenWatch = () => {
+	stopSessionScreenWatch?.();
+	if (typeof window.screen?.isExtended !== 'boolean') return;
+
+	const secureFeatures = getSecureFeatures();
+	if (!findConfigs(['record_screen'], secureFeatures?.entities || []).length) return;
+	if (!findConfigs(['verify_desktop'], secureFeatures?.entities || []).length) return;
+
+	const check = () => {
+		if (!window.mereos?.sessionActive || !window.screen.isExtended || isPrechecksModalOpen()) return;
+		window.mereos.multiScreenModalStream = window.mereos.newStream;
+		updatePersistData('preChecksSteps', { screenSharing: false });
+		openModal();
+	};
+
+	const intervalId = setInterval(check, SESSION_SCREEN_POLL_MS);
+	window.screen.addEventListener?.('change', check);
+	stopSessionScreenWatch = () => {
+		clearInterval(intervalId);
+		window.screen.removeEventListener?.('change', check);
+		stopSessionScreenWatch = null;
+	};
+};
+
 const finalizeSuccessfulSessionStart = async (session) => {
 	registerEvent({
 		eventType: 'success',
@@ -198,6 +229,7 @@ const finalizeSuccessfulSessionStart = async (session) => {
 		message: 'recording_started_successfully',
 		code: 50000,
 	});
+	startSessionScreenWatch();
 };
 
 const resolveStartPermissionType = async (error = null, hint = null) => {
@@ -219,19 +251,7 @@ const resolveStartPermissionType = async (error = null, hint = null) => {
 		} catch { /* Permissions API may be unavailable */ }
 
 		try {
-			const constraints = kind === 'audio'
-				? {
-					audio: localStorage.getItem('microphoneID')
-						? { deviceId: { exact: localStorage.getItem('microphoneID') } }
-						: true,
-					video: false,
-				}
-				: {
-					video: localStorage.getItem('deviceId')
-						? { deviceId: { exact: localStorage.getItem('deviceId') } }
-						: true,
-					audio: false,
-				};
+			const constraints = buildIndependentMediaConstraints(kind === 'audio' ? 'audio' : 'video');
 			const stream = await navigator.mediaDevices.getUserMedia(constraints);
 			stream.getTracks().forEach((track) => track.stop());
 			return false;
@@ -1376,6 +1396,7 @@ const detachAllTrackStoppedListeners = () => {
 };
 
 export const cleanupSessionMediaMonitoring = () => {
+	stopSessionScreenWatch?.();
 	hidePermissionModal();
 	detachAllTrackStoppedListeners();
 };
@@ -1820,18 +1841,12 @@ const startRecordingInternal = async () => {
 					local: 3,
 					remote: 3
 				},
-				audio: findConfigs(['record_audio'], secureFeatures?.entities).length ?
-					(localStorage.getItem('microphoneID') !== null ? {
-						deviceId: { exact: localStorage.getItem('microphoneID') },
-					} : true)
-					:
-					false,
-				video: findConfigs(['record_video'], secureFeatures?.entities).length ?
-					(localStorage.getItem('deviceId') !== null ? {
-						deviceId: { exact: localStorage.getItem('deviceId') },
-					} : true)
-					:
-					false
+				audio: findConfigs(['record_audio'], secureFeatures?.entities).length
+					? buildDeviceConstraint(getPreferredMicrophoneId())
+					: false,
+				video: findConfigs(['record_video'], secureFeatures?.entities).length
+					? buildDeviceConstraint(getPreferredCameraId())
+					: false
 			};
 
 			[window.mereos.globalStream, window.mereos.audioStream].forEach((stream) => {
@@ -3243,6 +3258,7 @@ export function VideoChat(room) {
 }
 
 export const stopAllRecordings = async () => {
+	stopSessionScreenWatch?.();
 	if (window.mereos.aiProcessingInterval) {
 		clearInterval(window.mereos.aiProcessingInterval);
 		window.mereos.aiProcessingInterval = null;

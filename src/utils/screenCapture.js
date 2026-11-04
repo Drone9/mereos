@@ -5,14 +5,9 @@ const PLAY_TIMEOUT_MS = 2000;
 
 export const SCREEN_CAPTURE_NOT_READY = 'screen_capture_stream_not_ready';
 
-// The widest real monitors are 32:9 (~3.6). A share thinner than this, or tiny, isn't a whole
-// screen: e.g. Firefox on macOS without the Screen Recording permission shares only its own
-// "You are sharing your entire screen" bar (~12:1), and the whole session recorded just that.
 const MIN_SCREEN_SIDE_PX = 200;
 const MAX_SCREEN_ASPECT_RATIO = 4;
 
-// Size of a share from the track settings, or from its first frame when the browser doesn't
-// report it. Null if it can't be read (the caller then lets the share through).
 export const getShareDimensions = async (stream) => {
 	const track = stream?.getVideoTracks()[0];
 	const { width, height } = track?.getSettings?.() || {};
@@ -34,6 +29,18 @@ export const getShareDimensions = async (stream) => {
 export const isWholeScreenShape = ({ width, height }) => {
 	const shortSide = Math.min(width, height);
 	return shortSide >= MIN_SCREEN_SIDE_PX && Math.max(width, height) / shortSide <= MAX_SCREEN_ASPECT_RATIO;
+};
+
+const SCREEN_ASPECT_TOLERANCE = 0.015;
+
+export const matchesCurrentScreenShape = ({ width, height }) => {
+	const screenWidth = window.screen?.width;
+	const screenHeight = window.screen?.height;
+	if (!screenWidth || !screenHeight) return true;
+
+	const screenRatio = screenWidth / screenHeight;
+	const shareRatio = width / height;
+	return Math.abs(shareRatio - screenRatio) / screenRatio <= SCREEN_ASPECT_TOLERANCE;
 };
 
 const FRAME_TICKER_WORKER_SOURCE = 'let id=null;onmessage=(e)=>{clearInterval(id);id=e.data>0?setInterval(()=>postMessage(0),e.data):null;};';

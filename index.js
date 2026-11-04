@@ -20,13 +20,12 @@ import i18next from 'i18next';
 import { initSentry } from './src/utils/sentry';
 import { acquireAssessmentTabLock, assessmentTabBlockedError, ensureAssessmentTabLock, releaseAssessmentTabLock } from './src/utils/tabLock';
 import * as Sentry from '@sentry/browser';
-import { disposeAiModel, preloadAiModel } from './src/utils/aiModel';
+import { disposeAiModel } from './src/utils/aiModel';
 
 initSentry('production');
 
-// A function declaration (hoisted), not a const: dev hot reload can leave this module half
-// evaluated through its circular import with functions.js, and init/stop_session then crashed
-// with "Cannot access 'safeInvokeCallback' before initialization" instead of answering.
+window.mereos.stopPrechecks = stop_prechecks;
+
 function safeInvokeCallback(callback, payload) {
 	try {
 		if (typeof callback === 'function') callback(payload);
@@ -259,9 +258,6 @@ async function start_prechecks(callback, setting) {
 		}
 
 		localStorage.setItem('precheckSetting', setting);
-		// Download the AI model in the background only while the prevalidation check is still
-		// ahead of the candidate; plain page reloads and resumes don't load it.
-		preloadAiModel();
 		initShadowDOM();
 		window.mereos.precheckCompleted = false;
 		const savedData = await startSession();
@@ -674,6 +670,17 @@ async function stop_session(callback) {
 			code: 40016
 		});
 	} finally {
+		// Second sweep: stopping the recordings can still be creating or cloning tracks after the
+		// first release, which left the browser showing the camera/mic as in use.
+		try {
+			await releaseAllMediaStreams({ force: true });
+		} catch (releaseError) {
+			try {
+				sentryExceptioMessage(releaseError, { type: 'error', message: 'Final media release failed' });
+			} catch {
+				// Reporting must never stop the callback flow.
+			}
+		}
 		window.mereos.isStoppingSession = false;
 		// The exam is over: give the integrator's page its GPU memory back.
 		disposeAiModel();

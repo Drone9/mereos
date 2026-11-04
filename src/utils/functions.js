@@ -14,7 +14,6 @@ import i18next from 'i18next';
 import { closeModal, openModal } from '../ExamsPrechecks';
 import { Notyf } from 'notyf';
 import { notifyTokenExpired } from './axios';
-import { stop_prechecks } from '../..';
 import pkg from '../../package.json';
 import { detectWindowResize } from './fullscreen';
 import { watchSharedDisplay } from './screenShareMonitor';
@@ -374,6 +373,15 @@ export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 	}
 };
 
+const INCIDENT_LEVEL_RANK = { low: 1, medium: 2, high: 3 };
+
+// Re-save the session record (which looks up every recording SID) only when the incident level
+// rises to medium or high, not on every event while it stays there.
+const isIncidentEscalation = (nextLevel, savedLevel) => {
+	const next = INCIDENT_LEVEL_RANK[nextLevel] || 0;
+	return next >= INCIDENT_LEVEL_RANK.medium && next > (INCIDENT_LEVEL_RANK[savedLevel] || 0);
+};
+
 export const checkForceClosureViolation = async () => {
 	const session = convertDataIntoParse('session');
 	if (!session || !session.browserEvents) {
@@ -389,9 +397,9 @@ export const checkForceClosureViolation = async () => {
 		secureFeatures
 	);
 
-	if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {
-		await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+	if (isIncidentEscalation(incidentLevel, incident_level)) {
 		updatePersistData('session', { incident_level: incidentLevel });
+		await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 	}
 	if (
 		incidentLevel === 'high' &&
@@ -768,6 +776,27 @@ const installActiveMediaTrackRegistry = () => {
 		const nativeGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
 		navigator.mediaDevices.getDisplayMedia = (constraints) =>
 			Promise.resolve(nativeGetDisplayMedia(constraints)).then(captureStream);
+	}
+
+	// Twilio publishes a clone of each local track (MediaTrackSender.clone), and a clone keeps the
+	// camera/mic in use even after the original is stopped. Track clones of our own tracks so the
+	// teardown stops them too; clones of the host page's own tracks are left alone.
+	const trackPrototype = typeof MediaStreamTrack !== 'undefined' ? MediaStreamTrack.prototype : null;
+	if (trackPrototype && typeof trackPrototype.clone === 'function') {
+		const nativeClone = trackPrototype.clone;
+		trackPrototype.clone = function (...args) {
+			const cloned = nativeClone.apply(this, args);
+			try {
+				const mereos = window.mereos;
+				if (cloned && mereos?.allSessionMediaStreamTracks?.has(this)) {
+					mereos.allSessionMediaStreamTracks.add(cloned);
+					activeMediaTracks.add(cloned);
+				}
+			} catch {
+				// Registering must never break cloning.
+			}
+			return cloned;
+		};
 	}
 
 	['getUserMedia', 'webkitGetUserMedia', 'mozGetUserMedia', 'msGetUserMedia'].forEach((methodName) => {
@@ -1278,7 +1307,8 @@ export const authenticatedRequest = async (apiCall, params = null) => {
 	const mereosToken = getAuthenticationToken();
 
 	if (!mereosToken) {
-		stop_prechecks(() => null);
+		// Registered by index.js; importing it from there created an import cycle that broke hot reload.
+		window.mereos?.stopPrechecks?.(() => null);
 		return {
 			type: 'error',
 			message: 'authentication_required',
@@ -1474,10 +1504,16 @@ export const updatePersistData = (key, updates) => {
 };
 
 const RECORDING_LOOKUP_RETRY_DELAYS_MS = [2000];
+// Recordings already returned by get_SID, by source SID: later saves only ask for the new ones.
+const knownRecordings = new Map();
 
 const fetchRecordingsWithRetry = async (sourceSids) => {
 	const found = new Map();
-	let missing = [...new Set(sourceSids)];
+	const uniqueSids = [...new Set(sourceSids)];
+	uniqueSids.forEach((sid) => {
+		if (knownRecordings.has(sid)) found.set(sid, knownRecordings.get(sid));
+	});
+	let missing = uniqueSids.filter((sid) => !found.has(sid));
 
 	for (let attempt = 0; attempt <= RECORDING_LOOKUP_RETRY_DELAYS_MS.length && missing.length; attempt++) {
 		if (attempt > 0) {
@@ -1489,7 +1525,10 @@ const fetchRecordingsWithRetry = async (sourceSids) => {
 				throw new Error('Invalid response from recordings API');
 			}
 			response.data.forEach((recording) => {
-				if (recording?.source_sid) found.set(recording.source_sid, recording);
+				if (recording?.source_sid) {
+					found.set(recording.source_sid, recording);
+					knownRecordings.set(recording.source_sid, recording);
+				}
 			});
 		} catch (error) {
 			logger.error(`Recording lookup attempt ${attempt + 1} failed:`, error);
@@ -1526,24 +1565,10 @@ export const addSectionSessionRecord = async (session) => {
 			recordings = { data };
 
 			if (missing.length) {
-				registerEvent({
-					eventType: 'error',
-					notify: false,
-					eventName: 'recordings_not_found',
-					eventValue: JSON.stringify(missing)
-				});
 				sentryExceptioMessage(new Error('Recordings not found after retries'), {
 					type: 'error',
 					message: `Failed to fetch recording SIDs: ${missing.join(', ')}`
 				});
-
-				if (!data.length && window.mereos?.globalCallback) {
-					window.mereos.globalCallback({
-						type: 'warning',
-						message: 'recording_info_unavailable',
-						code: 40019
-					});
-				}
 			}
 		}
 
@@ -1676,9 +1701,9 @@ export const registerAIEvent = async ({ eventName, startTime, endTime, eventValu
 		}
 
 		let incidentLevel = findIncidentLevel(updatedEvents, browserEvents, secureFeatures);
-		if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {
-			await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+		if (isIncidentEscalation(incidentLevel, incident_level)) {
 			updatePersistData('session', { incident_level: incidentLevel });
+			await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		}
 	} catch (e) {
 		sentryExceptioMessage(e, { type: 'error', message: `Error in registerAIEvent` });

@@ -110,7 +110,6 @@ export const defaultTheme = {
 };
 
 export const systemDiagnosticSteps = [
-	'verify_desktop', 
 	'record_video', 
 	'record_audio', 
 	'verify_connection', 

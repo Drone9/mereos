@@ -180,37 +180,6 @@ const abortFailedSessionStart = async (error) => {
 	});
 };
 
-const SESSION_SCREEN_POLL_MS = 2000;
-let stopSessionScreenWatch = null;
-
-const isPrechecksModalOpen = () => window.mereos?.dom?.modal?.style?.display === 'block';
-
-// verify_desktop during the session: an extra screen connected mid-exam opens the screen-share
-// modal, which applies the same multiple-screens validation as the prechecks.
-const startSessionScreenWatch = () => {
-	stopSessionScreenWatch?.();
-	if (typeof window.screen?.isExtended !== 'boolean') return;
-
-	const secureFeatures = getSecureFeatures();
-	if (!findConfigs(['record_screen'], secureFeatures?.entities || []).length) return;
-	if (!findConfigs(['verify_desktop'], secureFeatures?.entities || []).length) return;
-
-	const check = () => {
-		if (!window.mereos?.sessionActive || !window.screen.isExtended || isPrechecksModalOpen()) return;
-		window.mereos.multiScreenModalStream = window.mereos.newStream;
-		updatePersistData('preChecksSteps', { screenSharing: false });
-		openModal();
-	};
-
-	const intervalId = setInterval(check, SESSION_SCREEN_POLL_MS);
-	window.screen.addEventListener?.('change', check);
-	stopSessionScreenWatch = () => {
-		clearInterval(intervalId);
-		window.screen.removeEventListener?.('change', check);
-		stopSessionScreenWatch = null;
-	};
-};
-
 const finalizeSuccessfulSessionStart = async (session) => {
 	registerEvent({
 		eventType: 'success',
@@ -229,7 +198,6 @@ const finalizeSuccessfulSessionStart = async (session) => {
 		message: 'recording_started_successfully',
 		code: 50000,
 	});
-	startSessionScreenWatch();
 };
 
 const resolveStartPermissionType = async (error = null, hint = null) => {
@@ -1396,7 +1364,6 @@ const detachAllTrackStoppedListeners = () => {
 };
 
 export const cleanupSessionMediaMonitoring = () => {
-	stopSessionScreenWatch?.();
 	hidePermissionModal();
 	detachAllTrackStoppedListeners();
 };
@@ -3258,7 +3225,6 @@ export function VideoChat(room) {
 }
 
 export const stopAllRecordings = async () => {
-	stopSessionScreenWatch?.();
 	if (window.mereos.aiProcessingInterval) {
 		clearInterval(window.mereos.aiProcessingInterval);
 		window.mereos.aiProcessingInterval = null;

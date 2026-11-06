@@ -22,12 +22,23 @@ import { v4 } from 'uuid';
 
 const SCREEN_LAYOUT_POLL_MS = 2000;
 let stopScreenLayoutWatch = null;
+let latestOpeningId = 0;
+let currentLanguageHandler = null;
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	if(window.mereos.isScreenShare){
 		return;
 	}
 	window.mereos.isScreenShare=true;
+
+	// Every opening renders into the same tab. A previous opening's listeners must not touch it:
+	// they would replace the current message and bind Reshare to their outdated state.
+	const openingId = ++latestOpeningId;
+	if (currentLanguageHandler) {
+		i18next.off('languageChanged', currentLanguageHandler);
+		currentLanguageHandler = null;
+	}
+
 	let multipleScreens;
 	window.mereos.newStream = null;
 	const candidateAssessment = getSecureFeatures();
@@ -231,7 +242,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				videoTrack.addEventListener('ended', () => {
 					isScreenAlreadyShared = false;
 					// Still on this step: swap Done for Reshare instead of leaving a dead button.
-					if (tabContent.classList.contains('active') && mode === 'startScreenRecording') {
+					if (openingId === latestOpeningId && tabContent.classList.contains('active') && mode === 'startScreenRecording') {
 						mode = 'rerecordScreen';
 						updateUI();
 					}
@@ -281,17 +292,6 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			await waitForActiveRecordingStart();
 
 			const room = window?.mereos?.roomInstance;
-
-			// Opened mid-session only because an extra screen was connected: the share never
-			// stopped and is still being recorded, so don't republish it as a new recording.
-			const unchangedShare = window.mereos.multiScreenModalStream;
-			window.mereos.multiScreenModalStream = null;
-			if (room && unchangedShare && unchangedShare === window.mereos.newStream
-				&& unchangedShare.getVideoTracks()[0]?.readyState === 'live'
-				&& window.mereos.screenTrackPublished?.track) {
-				return;
-			}
-
 			if (room) {
 				const videoTrack = window?.mereos?.newStream?.getVideoTracks()[0];
 
@@ -587,6 +587,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		initSocketConnection();
 	}
 	
+	currentLanguageHandler = updateUI;
 	i18next.on('languageChanged', updateUI);
 	
 	return tabContent.querySelector('.screen-share-container');

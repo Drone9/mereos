@@ -3277,7 +3277,8 @@ body{
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
+  /* Above the integrator's own page loaders, one below the help chat so candidates can still reach it. */
+  z-index: 2147483646;
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -3682,7 +3683,7 @@ export const permissionModalStyle = `
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: 2147483646;
 }
 
 .permission-modal {

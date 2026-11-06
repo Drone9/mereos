@@ -14,9 +14,9 @@ import i18next from 'i18next';
 import { closeModal, openModal } from '../ExamsPrechecks';
 import { Notyf } from 'notyf';
 import { notifyTokenExpired } from './axios';
-import { stop_prechecks } from '../..';
 import pkg from '../../package.json';
 import { detectWindowResize } from './fullscreen';
+import { watchSharedDisplay } from './screenShareMonitor';
 import * as Sentry from '@sentry/browser';
 
 export function sentryExceptioMessage(error, extra = {}) {
@@ -373,6 +373,15 @@ export const findBrowserIncidentLevel = (browserEvents = [], settingLevel) => {
 	}
 };
 
+const INCIDENT_LEVEL_RANK = { low: 1, medium: 2, high: 3 };
+
+// Re-save the session record (which looks up every recording SID) only when the incident level
+// rises to medium or high, not on every event while it stays there.
+const isIncidentEscalation = (nextLevel, savedLevel) => {
+	const next = INCIDENT_LEVEL_RANK[nextLevel] || 0;
+	return next >= INCIDENT_LEVEL_RANK.medium && next > (INCIDENT_LEVEL_RANK[savedLevel] || 0);
+};
+
 export const checkForceClosureViolation = async () => {
 	const session = convertDataIntoParse('session');
 	if (!session || !session.browserEvents) {
@@ -388,9 +397,9 @@ export const checkForceClosureViolation = async () => {
 		secureFeatures
 	);
 
-	if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {
-		await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+	if (isIncidentEscalation(incidentLevel, incident_level)) {
 		updatePersistData('session', { incident_level: incidentLevel });
+		await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 	}
 	if (
 		incidentLevel === 'high' &&
@@ -418,6 +427,7 @@ export const checkCamera = () => {
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({ video: true })
 				.then((stream) => {
+					registerAcquiredMediaStream(stream);
 					resolve(stream);
 				})
 				.catch((e) => {
@@ -498,6 +508,7 @@ export const checkMicrophone = () => {
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({ audio: true })
 				.then((stream) => {
+					registerAcquiredMediaStream(stream);
 					resolve(stream);
 				})
 				.catch(() => {
@@ -621,9 +632,11 @@ export const updateThemeColor = () => {
 
 	document.documentElement.style.setProperty('--theme-color', themeColor);
 	document.documentElement.style.setProperty('--theme-mode', isDarkMode ? '#000' : '#fff');
+	document.documentElement.style.setProperty('--dropdown-bg', isDarkMode ? '#2C2C2E' : '#fff');
 	document.documentElement.style.setProperty('--text-color', isDarkMode ? '#fff' : '#000');
 	document.documentElement.style.setProperty('--font-style', fontStyle);
-	document.documentElement.style.setProperty('--video-style', isDarkMode ? '#000' : '#e7ebef');
+	// Camera box background, same as dashboard-candidate.
+	document.documentElement.style.setProperty('--video-style', isDarkMode ? 'rgb(88 88 88)' : '#e9e9e9');
 	document.documentElement.style.setProperty('--filter-color', isDarkMode ? 'invert(1)' : 'none');
 };
 
@@ -765,6 +778,27 @@ const installActiveMediaTrackRegistry = () => {
 			Promise.resolve(nativeGetDisplayMedia(constraints)).then(captureStream);
 	}
 
+	// Twilio publishes a clone of each local track (MediaTrackSender.clone), and a clone keeps the
+	// camera/mic in use even after the original is stopped. Track clones of our own tracks so the
+	// teardown stops them too; clones of the host page's own tracks are left alone.
+	const trackPrototype = typeof MediaStreamTrack !== 'undefined' ? MediaStreamTrack.prototype : null;
+	if (trackPrototype && typeof trackPrototype.clone === 'function') {
+		const nativeClone = trackPrototype.clone;
+		trackPrototype.clone = function (...args) {
+			const cloned = nativeClone.apply(this, args);
+			try {
+				const mereos = window.mereos;
+				if (cloned && mereos?.allSessionMediaStreamTracks?.has(this)) {
+					mereos.allSessionMediaStreamTracks.add(cloned);
+					activeMediaTracks.add(cloned);
+				}
+			} catch {
+				// Registering must never break cloning.
+			}
+			return cloned;
+		};
+	}
+
 	['getUserMedia', 'webkitGetUserMedia', 'mozGetUserMedia', 'msGetUserMedia'].forEach((methodName) => {
 		if (typeof navigator[methodName] !== 'function') return;
 		const nativeLegacy = navigator[methodName].bind(navigator);
@@ -795,8 +829,11 @@ const stopMediaStreamTrack = (track) => {
 	}
 };
 
+// Tracks a release call was asked to keep alive (see releaseAllMediaStreams' keepScreenShare).
+const preservedMediaTracks = new Set();
+
 const forceStopMediaStreamTrack = (track) => {
-	if (!track || typeof track.stop !== 'function') return;
+	if (!track || typeof track.stop !== 'function' || preservedMediaTracks.has(track)) return;
 	try {
 		track.enabled = false;
 		track.stop();
@@ -973,6 +1010,7 @@ const forceStopLiveMediaTracks = (mereos) => {
 	});
 
 	liveTracks.forEach((track) => {
+		if (preservedMediaTracks.has(track)) return;
 		try {
 			track.enabled = false;
 			track.stop();
@@ -1129,6 +1167,14 @@ export const releaseAllMediaStreams = async (options = {}) => {
 	const mereos = window.mereos || (window.mereos = {});
 	mereos.isReleasingMedia = true;
 
+	// keepScreenShare: release camera/mic/rooms but leave the candidate's shared screen running,
+	// so a failed session start can be retried without asking them to share again.
+	const keptScreenStream = options.keepScreenShare
+		&& mereos.newStream?.getTracks?.().some((track) => track.readyState === 'live')
+		? mereos.newStream
+		: null;
+	keptScreenStream?.getTracks().forEach((track) => preservedMediaTracks.add(track));
+
 	releasingMediaStreams = (async () => {
 		const snapshottedTracks = snapshotAllMediaStreamTracks(mereos);
 		const managedTwilioTracks = [...(mereos.managedLocalTracks || [])];
@@ -1245,6 +1291,13 @@ export const releaseAllMediaStreams = async (options = {}) => {
 	try {
 		await releasingMediaStreams;
 	} finally {
+		preservedMediaTracks.clear();
+		if (keptScreenStream) {
+			// Re-register it so the next full release (stop_session) still stops it.
+			mereos.newStream = keptScreenStream;
+			registerActiveTracks(keptScreenStream);
+			registerAcquiredMediaStream(keptScreenStream);
+		}
 		mereos.isReleasingMedia = false;
 		releasingMediaStreams = null;
 	}
@@ -1254,7 +1307,8 @@ export const authenticatedRequest = async (apiCall, params = null) => {
 	const mereosToken = getAuthenticationToken();
 
 	if (!mereosToken) {
-		stop_prechecks(() => null);
+		// Registered by index.js; importing it from there created an import cycle that broke hot reload.
+		window.mereos?.stopPrechecks?.(() => null);
 		return {
 			type: 'error',
 			message: 'authentication_required',
@@ -1304,22 +1358,13 @@ export const convertDataIntoParse = (key) => {
 	return JSON.parse(localStorage.getItem(key));
 };
 
-export const srcToData = async (src) => {
-	let myPromise = await new Promise(resolve => {
-		fetch(src)
-			.then((res) => res.blob())
-			.then((blob) => {
-				const reader = new FileReader();
-				reader.onloadend = () => {
-					resolve(reader.result);
-					reader.result.replace('data:', '').replace(/^.+,/, '');
-				};
-				reader.readAsDataURL(blob);
-			});
-	});
-
-	return myPromise;
-};
+// Reads a local File without fetch(), so host pages whose CSP connect-src blocks blob:/data: still work.
+export const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
+	const reader = new FileReader();
+	reader.onload = () => resolve(reader.result);
+	reader.onerror = () => reject(new Error('error_with_uploading_file'));
+	reader.readAsDataURL(file);
+});
 
 export const acceptableLabels = (detectedLabels, acceptedValue = 80) => {
 	const acceptedLabels = ['cards', 'document', 'text', 'id cards', 'passport', 'driving license', 'license', 'id', 'identity', 'doc', 'cnic', 'nic'];
@@ -1370,6 +1415,10 @@ export const shareScreenFromContent = () => {
 
 				track.addEventListener('ended', () => {
 					window.mereos.isScreenShare = false;
+					// Screen Five hides "Previous step" while the candidate must reshare.
+					window.mereos.screenShareStopped = true;
+					// Routes the modal below to Screen Five, whose checks (verify_desktop) must pass again.
+					updatePersistData('preChecksSteps', { screenSharing: false });
 					registerEvent({ notify: false, eventName: 'screen_shared_stopped', eventType: 'error' });
 					if (window.mereos.startRecordingCallBack) {
 						window.mereos.startRecordingCallBack({
@@ -1379,6 +1428,16 @@ export const shareScreenFromContent = () => {
 						});
 					}
 					openModal();
+				});
+
+				watchSharedDisplay(track, {
+					onLost: () => {
+						registerEvent({ notify: false, eventName: 'screen_share_display_disconnected', eventType: 'error' });
+						track.stop();
+						// stop() doesn't fire 'ended'; dispatch it so every listener runs the normal
+						// "screen share stopped" flow (callback 40012 + reshare modal).
+						track.dispatchEvent(new Event('ended'));
+					}
 				});
 				resolve(stream);
 			})
@@ -1446,6 +1505,42 @@ export const updatePersistData = (key, updates) => {
 	}
 };
 
+const RECORDING_LOOKUP_RETRY_DELAYS_MS = [2000];
+// Recordings already returned by get_SID, by source SID: later saves only ask for the new ones.
+const knownRecordings = new Map();
+
+const fetchRecordingsWithRetry = async (sourceSids) => {
+	const found = new Map();
+	const uniqueSids = [...new Set(sourceSids)];
+	uniqueSids.forEach((sid) => {
+		if (knownRecordings.has(sid)) found.set(sid, knownRecordings.get(sid));
+	});
+	let missing = uniqueSids.filter((sid) => !found.has(sid));
+
+	for (let attempt = 0; attempt <= RECORDING_LOOKUP_RETRY_DELAYS_MS.length && missing.length; attempt++) {
+		if (attempt > 0) {
+			await new Promise((resolve) => setTimeout(resolve, RECORDING_LOOKUP_RETRY_DELAYS_MS[attempt - 1]));
+		}
+		try {
+			const response = await getRecordingSid({ 'source_id': missing });
+			if (!Array.isArray(response?.data)) {
+				throw new Error('Invalid response from recordings API');
+			}
+			response.data.forEach((recording) => {
+				if (recording?.source_sid) {
+					found.set(recording.source_sid, recording);
+					knownRecordings.set(recording.source_sid, recording);
+				}
+			});
+		} catch (error) {
+			logger.error(`Recording lookup attempt ${attempt + 1} failed:`, error);
+		}
+		missing = missing.filter((sid) => !found.has(sid));
+	}
+
+	return { data: [...found.values()], missing };
+};
+
 export const addSectionSessionRecord = async (session) => {
 	try {
 		const {
@@ -1468,24 +1563,14 @@ export const addSectionSessionRecord = async (session) => {
 		hasRecordings = allRecordings.length > 0;
 
 		if (hasRecordings) {
-			try {
-				recordings = await getRecordingSid({ 'source_id': allRecordings });
+			const { data, missing } = await fetchRecordingsWithRetry(allRecordings);
+			recordings = { data };
 
-				if (!recordings || !recordings.data) {
-					throw new Error('Invalid response from recordings API');
-				}
-			} catch (recordingError) {
-				sentryExceptioMessage(recordingError, { type: 'error', message: `Failed to fetch recording SIDs` });
-				logger.error('Failed to fetch recording SIDs:', recordingError);
-				recordings = { data: [] };
-
-				if (window.mereos?.globalCallback) {
-					window.mereos.globalCallback({
-						type: 'warning',
-						message: 'recording_info_unavailable',
-						code: 40019
-					});
-				}
+			if (missing.length) {
+				sentryExceptioMessage(new Error('Recordings not found after retries'), {
+					type: 'error',
+					message: `Failed to fetch recording SIDs: ${missing.join(', ')}`
+				});
 			}
 		}
 
@@ -1618,9 +1703,9 @@ export const registerAIEvent = async ({ eventName, startTime, endTime, eventValu
 		}
 
 		let incidentLevel = findIncidentLevel(updatedEvents, browserEvents, secureFeatures);
-		if ((incidentLevel === 'high' || incidentLevel === 'medium') && incident_level !== 'high') {
-			await addSectionSessionRecord(session, candidateInviteAssessmentSection);
+		if (isIncidentEscalation(incidentLevel, incident_level)) {
 			updatePersistData('session', { incident_level: incidentLevel });
+			await addSectionSessionRecord(session, candidateInviteAssessmentSection);
 		}
 	} catch (e) {
 		sentryExceptioMessage(e, { type: 'error', message: `Error in registerAIEvent` });
@@ -2407,6 +2492,16 @@ export const initializeI18next = () => {
 	const schoolLanguage = localStorage.getItem('schoolTheme') !== undefined ? JSON.parse(localStorage.getItem('schoolTheme')) : {};
 	const defaultLanguage = schoolLanguage?.language || 'en';
 
+	// Re-running init() emits 'languageChanged', which re-runs every screen's listener
+	// (including hidden screens that restart the webcam), so only switch when needed.
+	if (i18next.isInitialized) {
+		const language = normalizeLanguage(defaultLanguage);
+		if (i18next.language !== language) {
+			i18next.changeLanguage(language);
+		}
+		return;
+	}
+
 	i18next.init({
 		lng: normalizeLanguage(defaultLanguage),
 		resources: {
@@ -2449,6 +2544,7 @@ export const resetSessionAttemptFlags = () => {
 	window.mereos.pendingSessionStart = false;
 	window.mereos.roomInstance = null;
 	window.mereos.precheckCompleted = false;
+	window.mereos.screenShareStopped = false;
 };
 
 export const showToast = (type, message) => {

@@ -18,21 +18,29 @@ import { v4 } from 'uuid';
 import { customCandidateAssessmentStatus } from './src/services/candidate-assessment.services';
 import i18next from 'i18next';
 import { initSentry } from './src/utils/sentry';
+import { acquireAssessmentTabLock, assessmentTabBlockedError, ensureAssessmentTabLock, releaseAssessmentTabLock } from './src/utils/tabLock';
 import * as Sentry from '@sentry/browser';
+import { disposeAiModel } from './src/utils/aiModel';
 
 initSentry('production');
 
-const safeInvokeCallback = (callback, payload) => {
+window.mereos.stopPrechecks = stop_prechecks;
+
+function safeInvokeCallback(callback, payload) {
 	try {
 		if (typeof callback === 'function') callback(payload);
 	} catch (callbackError) {
-		sentryExceptioMessage(callbackError, {
-			type: 'error',
-			message: 'Integrator callback threw',
-			details: callbackError,
-		});
+		try {
+			sentryExceptioMessage(callbackError, {
+				type: 'error',
+				message: 'Integrator callback threw',
+				details: callbackError,
+			});
+		} catch {
+			// Reporting must never stop the callback flow.
+		}
 	}
-};
+}
 
 async function init(token, candidateData, profileId, assessmentData, schoolTheme, callback) {
 	let callbackFired = false;
@@ -42,6 +50,11 @@ async function init(token, candidateData, profileId, assessmentData, schoolTheme
 	};
 
 	try {
+		// Must run before the storage wipe below: another tab may be running a session on it.
+		if (!acquireAssessmentTabLock()) {
+			return respond(assessmentTabBlockedError);
+		}
+
 		resetSessionAttemptFlags();
 		destroyPrechecksUi();
 		MEREOS_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
@@ -213,6 +226,10 @@ async function start_prechecks(callback, setting) {
 	try {
 		window.mereos.globalCallback = callback;
 
+		if (!ensureAssessmentTabLock()) {
+			return safeInvokeCallback(callback, assessmentTabBlockedError);
+		}
+
 		if (
 			window.mereos?.sessionActive ||
 			window.mereos?.recordingStart ||
@@ -281,6 +298,10 @@ async function stop_prechecks(callback) {
 	};
 
 	try {
+		if (!ensureAssessmentTabLock()) {
+			return respond(assessmentTabBlockedError);
+		}
+
 		window.mereos.stopPrecheckCallBack = callback;
 		const sessionSetting = localStorage.getItem('precheckSetting');
 
@@ -347,6 +368,10 @@ async function start_session(callback) {
 	};
 
 	try {
+		if (!ensureAssessmentTabLock()) {
+			return safeInvokeCallback(callback, assessmentTabBlockedError);
+		}
+
 		window.mereos.startRecordingCallBack = callback;
 		await detectBrowserActions();
 		const secureFeatures = getSecureFeatures();
@@ -578,6 +603,10 @@ async function stop_session(callback) {
 	};
 
 	try {
+		if (!ensureAssessmentTabLock()) {
+			return respond(assessmentTabBlockedError);
+		}
+
 		window.mereos.isStoppingSession = true;
 		window.mereos.isReleasingMedia = true;
 		window.mereos.sessionActive = false;
@@ -609,6 +638,9 @@ async function stop_session(callback) {
 
 			if (resp) {
 				MEREOS_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+				releaseAssessmentTabLock({ completed: true });
+				// The session is over: don't leave a prechecks/reshare modal open for it.
+				destroyPrechecksUi();
 
 				respond({
 					type: 'success',
@@ -638,7 +670,20 @@ async function stop_session(callback) {
 			code: 40016
 		});
 	} finally {
+		// Second sweep: stopping the recordings can still be creating or cloning tracks after the
+		// first release, which left the browser showing the camera/mic as in use.
+		try {
+			await releaseAllMediaStreams({ force: true });
+		} catch (releaseError) {
+			try {
+				sentryExceptioMessage(releaseError, { type: 'error', message: 'Final media release failed' });
+			} catch {
+				// Reporting must never stop the callback flow.
+			}
+		}
 		window.mereos.isStoppingSession = false;
+		// The exam is over: give the integrator's page its GPU memory back.
+		disposeAiModel();
 		if (!callbackFired) {
 			safeInvokeCallback(callback, {
 				type: 'error',

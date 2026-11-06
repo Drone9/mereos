@@ -644,7 +644,9 @@
 	"please_check_your_mic": "Controleer uw microfoon voordat u de opname start",
 	"please_enable_force_submission": "Geforceerd indienen inschakelen",
 	"please_scan_this_qr_code": "Scan deze QR-code met uw telefoon om de Mereos mobiele applicatie te downloaden.",
-	"please_share_entire_screen": "Deel het volledige scherm",
+	"please_share_entire_screen": "Deel je volledige scherm, niet een venster of tabblad.",
+	"share_assessment_screen_notice": "Meerdere schermen gedetecteerd. Deel het scherm waarop uw beoordeling geopend is.",
+	"screen_share_incomplete": "Uw schermdeling legt niet uw volledige scherm vast. Sta op een Mac uw browser toe via Systeeminstellingen > Privacy en beveiliging > Schermopname, start de browser opnieuw en deel uw volledige scherm opnieuw.",
 	"please_take_picture_or": "Maak een foto of",
 	"please_unselect_time_region_from_template": "Deselecteer de tijdzone uit de sjabloon",
 	"please_wait": "Even geduld...",
@@ -1110,5 +1112,10 @@
 	"lighting_too_bright": "De verlichting is te fel. Vermijd direct licht achter u.",
 	"lighting_ok": "Verlichting ziet er goed uit",
 	"pdf_multiple_pages_error": "Upload een PDF-bestand van één pagina. PDF's met meerdere pagina's worden niet geaccepteerd voor identiteitsverificatie.",
-  "face_processing_failed": "We konden geen gezicht op de afbeelding detecteren. Zorg ervoor dat je gezicht duidelijk zichtbaar is en probeer het opnieuw."
+  "face_processing_failed": "We konden geen gezicht op de afbeelding detecteren. Zorg ervoor dat je gezicht duidelijk zichtbaar is en probeer het opnieuw.",
+	"reload_page": "Pagina opnieuw laden",
+	"assessment_in_progress_in_another_tab_title": "Beoordeling Bezig",
+	"assessment_in_progress_in_another_tab_message": "Deze beoordeling is al geopend en bezig in een ander browsertabblad. Ga daar verder. Dit tabblad wordt automatisch hervat als dat tabblad wordt gesloten.",
+	"assessment_already_completed_in_another_tab_title": "Beoordeling Al Voltooid",
+	"assessment_already_completed_in_another_tab_message": "Deze beoordeling is al voltooid in een ander browsertabblad. U kunt dit tabblad sluiten."
 }

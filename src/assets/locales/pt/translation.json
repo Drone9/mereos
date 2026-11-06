@@ -644,7 +644,9 @@
 	"please_check_your_mic": "Verifique seu microfone antes de iniciar a gravação",
 	"please_enable_force_submission": "Ative o envio forçado",
 	"please_scan_this_qr_code": "Digite este código QR com seu dispositivo de telefone para baixar o aplicativo Mereos Mobile.",
-	"please_share_entire_screen": "Compartilhe a tela inteira.",
+	"please_share_entire_screen": "Compartilhe sua tela inteira, não uma janela ou aba.",
+	"share_assessment_screen_notice": "Várias telas detectadas. Compartilhe a tela onde sua avaliação está aberta.",
+	"screen_share_incomplete": "Seu compartilhamento não está capturando a tela inteira. No Mac, permita seu navegador em Ajustes do Sistema > Privacidade e Segurança > Gravação de Tela, reinicie o navegador e compartilhe a tela inteira novamente.",
 	"please_take_picture_or": "Tire uma foto ou",
 	"please_unselect_time_region_from_template": "Por favor, desmarque a Região de Horário do modelo",
 	"please_wait": "Aguarde...",
@@ -1110,5 +1112,10 @@
 	"lighting_too_bright": "A iluminação está muito brilhante. Evite luz direta atrás de si.",
 	"lighting_ok": "A iluminação parece boa",
 	"pdf_multiple_pages_error": "Carregue um ficheiro PDF de uma única página. PDFs com várias páginas não são aceites para verificação de identidade.",
-  "face_processing_failed": "Não foi possível detectar um rosto na imagem. Certifique-se de que o seu rosto está claramente visível e tente novamente."
+  "face_processing_failed": "Não foi possível detectar um rosto na imagem. Certifique-se de que o seu rosto está claramente visível e tente novamente.",
+	"reload_page": "Recarregar página",
+	"assessment_in_progress_in_another_tab_title": "Avaliação em Curso",
+	"assessment_in_progress_in_another_tab_message": "Esta avaliação já está aberta e em curso noutro separador do navegador. Continue lá. Este separador retomará automaticamente se esse separador for fechado.",
+	"assessment_already_completed_in_another_tab_title": "Avaliação Já Concluída",
+	"assessment_already_completed_in_another_tab_message": "Esta avaliação já foi concluída noutro separador do navegador. Pode fechar este separador."
 }

@@ -393,27 +393,7 @@ body {
     border-radius: 0; 
   }
 }
-.dropdown-option{
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 20px;
-  margin-top: 12px;
-  padding-left: 12px;
-  padding-bottom: 5px;
-  font-style:var(--font-style);
-}
 
-.flag-icon-img{
-  width: 25px;
-}
-.dropdown-content .text{
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  cursor: pointer;
-  color: var(--text-color);
-  font-style:var(--font-style);
-}
 .close {
   color: #aaa;
   font-size: 28px;
@@ -498,7 +478,7 @@ body {
     top: calc(100% + 8px);
     width: 350px;
     right: 10px;
-    background: var(--theme-mode);
+    background: var(--dropdown-bg, var(--theme-mode));
     border: 1px solid #999;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -556,14 +536,6 @@ body {
     transition: all 0.2s;
     font-style:var(--font-style);
 }
-.dropdown {
-  position: relative;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  margin-left: -13px;
-  cursor: pointer;
-}
 .live-chat-container{
   position: fixed;
   bottom: 87px;
@@ -572,29 +544,7 @@ body {
   z-index: 99999999;
 }
 
-.dropdown .select {
-  display: flex;
-  align-items: center;
-  padding: 5px;
-  column-gap: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-  max-width: 182px;
-  justify-content: space-between;
-  z-index: 99999;
-  font-style:var(--font-style);
-}
-.dropdown .select label{
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--text-color);
-  font-style:var(--font-style);
-}
 
-.dropdown .select div {
-  margin-right: 5px;
-}
 
 body.modal-active iframe:not(.modal iframe) {
     visibility: hidden !important;
@@ -605,31 +555,130 @@ body.modal-active object:not(.modal object),
 body.modal-active applet:not(.modal applet) {
     visibility: hidden !important;
 }
-.dropdown-content {
-  position: absolute;
-  top: 42px;
-  right: -65px;
-  background-color: var(--theme-mode);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+/* Language dropdown (matches the candidate dashboard's LanguageDropdown) */
+.language-dropdown-menu {
+  position: relative;
+  display: inline-block;
+  font-style: var(--font-style);
+}
+
+.language-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+  padding: 6px 4px;
   border-radius: 8px;
-  overflow: hidden;
-  display: none;
-  border: 1px solid white;
-}
-
-.dropdown-content.active {
-  display: block;
-  z-index: 999;
-}
-
-.dropdown .option {
-  padding: 8px 12px;
   cursor: pointer;
-  font-style:var(--font-style);
+  user-select: none;
 }
 
-.dropdown .option:hover {
-  background-color: #f0f0f0;
+.language-dropdown-trigger:focus-visible {
+  outline: 2px solid var(--theme-color);
+  outline-offset: 2px;
+}
+
+.current-language-flag {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.current-language-name {
+  color: var(--text-color);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.dropdown-caret {
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  color: #A7ABB2;
+  transition: transform 0.15s ease;
+}
+
+.language-dropdown-menu.open .dropdown-caret {
+  transform: rotate(180deg);
+}
+
+.language-dropdown-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1000;
+  width: 180px;
+  box-sizing: border-box;
+  padding: 6px;
+  background-color: var(--dropdown-bg, var(--theme-mode));
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.language-dropdown-menu.open .language-dropdown-panel {
+  display: block;
+}
+
+.custom-dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  margin: 0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-color);
+  white-space: nowrap;
+  cursor: pointer;
+  background-color: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.custom-dropdown-item:hover,
+.custom-dropdown-item:focus-visible {
+  background-color: rgba(127, 127, 127, 0.15);
+  outline: none;
+}
+
+.custom-dropdown-item.selected {
+  font-weight: 600;
+  background-color: rgba(255, 150, 27, 0.1);
+}
+
+@supports (background-color: color-mix(in srgb, red 10%, transparent)) {
+  .custom-dropdown-item.selected {
+    background-color: color-mix(in srgb, var(--theme-color) 12%, transparent);
+  }
+}
+
+.language-flag {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.language-name {
+  flex: 1;
+}
+
+.language-check {
+  color: var(--theme-color);
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+@media screen and (max-width: 500px) {
+  .language-dropdown-panel {
+    width: 160px;
+  }
 }`;
 
 export const systemRequirementCss = `
@@ -1222,7 +1271,21 @@ font-style:var(--font-style);}
 	}
 
 	&:active {
-		transform: scale(0.98); 
+		transform: scale(0.98);
+	}
+}
+
+/* Flat fallback: browsers without CSS nesting / relative colors drop the nested
+   :disabled rules above, making disabled buttons look clickable. */
+.orange-filled-btn:disabled,
+.orange-hollow-btn:disabled {
+	cursor: not-allowed;
+}
+
+@supports not (color: rgb(from red r g b)) {
+	.orange-filled-btn:disabled,
+	.orange-hollow-btn:disabled {
+		opacity: 0.5;
 	}
 }`;
 
@@ -2851,6 +2914,19 @@ export const MobileProctoringCss = `.mobile-conection-container {
   color: #8D979F;
 }
 
+.ivsf-multi-screen-notice {
+  max-width: 480px;
+  margin: 12px auto 0px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgb(233 162 59 / 12%);
+  color: #E9A23B;
+  font-family: Poppins;
+  font-size: 13px;
+  line-height: 19px;
+  text-align: center;
+}
+
 .mobile-broadcastin-container{
   display: flex;
   align-items: center;
@@ -2923,28 +2999,34 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 @media (max-width: 720px) {
 	.screen-wrapper {
 		margin: 0;
+		/* The language selector and Need Help sit absolutely over the top of the modal. */
+		padding-top: 64px;
 	}
 }
 
 .screen-share-dummy {
-	height: 230px;
+	/* Shrinks on short windows so the step fits without a scrollbar. */
+	height: clamp(150px, 33vh, 260px);
 	display: flex;
 	border-radius: 5px;
 	align-items: center;
 	justify-content: center;
-	margin-top: 5px;
-	margin-bottom: 5px;
+	margin-top: 4px;
+	margin-bottom: 0;
   filter:var(--filter-color);
 }
 
 @media (max-width: 720px) {
 	.screen-share-dummy {
 		width: 100%;
+		height: auto;
+		max-height: 33vh;
+		object-fit: contain;
 	}
 }
 
 .ivsf-header-titles {
-	font-family: Poppins;
+	font-family: Poppins, sans-serif;
 	font-style: var(--font-style);
 	font-weight: bold;
 	font-size: 35px;
@@ -2952,11 +3034,11 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	align-items: center;
 	text-align: center;
 	color: var(--text-color);
-	margin: 22px auto 0;
+	margin: 12px auto 0;
 }
 
 .screen-desc {
-	font-family: Poppins;
+	font-family: Poppins, sans-serif;
 	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 15px;
@@ -2964,7 +3046,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	align-items: center;
 	text-align: center;
 	color: #8D979F;
-	margin: 10px auto 0;
+	margin: 6px auto 0;
 }
 
 .ivsf-instructions-container {
@@ -2987,7 +3069,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 .ivsf-instruction-step {
 	display: flex;
 	align-items: center;
-	font-family: Poppins;
+	font-family: Poppins, sans-serif;
 	font-style: var(--font-style);
 	font-weight: normal;
 	font-size: 13px;
@@ -2996,7 +3078,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 }
 
 .ivsf-instruction-txt {
-	font-family: Poppins;
+	font-family: Poppins, sans-serif;
 	font-style: var(--font-style);
 	font-weight: 500;
 	font-size: 16px;
@@ -3009,7 +3091,7 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 .ivsf-btn-container {
 	display: flex;
 	justify-content: center;
-	margin: 35px auto 55px;
+	margin: 24px auto 28px;
 	gap: 20px;
 }
 
@@ -3020,11 +3102,42 @@ export const IdentityVerificationScreenFiveCss = `.screen-share-container {
 	}
 }
 
-.ivsf-query-msg {
+/* Scoped + !important: another screen's .ivsf-query-msg forces margin 0 !important in the same shadow root. */
+.screen-share-container .ivsf-query-msg {
 	font-size: 14px;
-	margin: 20px auto 0;
+	max-width: 760px;
+	margin: 22px auto 0 !important;
 	color: #8D979F;
-  padding-top:8px;
+}
+
+@media (max-width: 720px) {
+	.screen-share-container .ivsf-header-titles {
+		font-size: 24px;
+		justify-content: center;
+	}
+
+	.screen-share-container .screen-desc {
+		font-size: 13px;
+		justify-content: center;
+		padding: 0 8px;
+	}
+
+	.screen-share-container .steps-container {
+		flex-wrap: wrap;
+		row-gap: 8px;
+	}
+
+	.screen-share-container .ivsf-query-msg {
+		font-size: 13px;
+		margin: 14px auto 0 !important;
+		padding: 0 8px;
+		text-align: center;
+	}
+
+	.screen-share-container .ivsf-btn-container {
+		align-items: center;
+		margin: 16px auto 20px;
+	}
 }
 `;
 
@@ -3098,42 +3211,40 @@ body{
   justify-content: center;
 }
 .remote-video .video-attached{
-  width: 180px;
-  height: 140px;
-  object-fit: cover;
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
+/* Camera box: same design as dashboard-candidate's VideoRecordingContainer */
 .user-videos-remote{
   display: flex;
-  position: absolute;
-  bottom: 10px;
+  position: fixed;
+  top: 20px;
+  left: 20px;
   column-gap: 10px;
-  row-gap: 9px;
   flex-direction: column;
-  width: 220px;
+  box-sizing: border-box;
+  width: 200px;
+  padding: 8px;
   background: var(--video-style);
   border-radius: 10px;
-  box-shadow: 1px 1px 5px 1px #f1f1f1;
   z-index: 9999999;
-  left: 10px;
-  max-height:fit-content;
-  padding-bottom:10px;
+  cursor: move;
 }
 
 .user-videos-remote .user-video-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-left: 10px;
 }
 .user-videos-remote .user-video-header .recording-heading{
-  font-size: 12px;
+  max-width: calc(100% - 70px);
+  font-size: 13px;
   margin-bottom: 9px;
-  width: 96px;
-  white-space: break-spaces;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
   color: var(--text-color);
   font-style:var(--font-style);
 }
@@ -3141,15 +3252,15 @@ body{
 .recording-badge-container-header {
     position: absolute;
     right: 10px;
-    width: 71px;
+    width: 61px;
     white-space: nowrap;
     background-color: #e95e5e;
     border-radius: 5px;
     color: #fff;
     display: flex;
     align-items: center;
-    font-size: 9px;
-    column-gap: 0px;
+    font-size: 10px;
+    column-gap: 4px;
     padding: 5px 5px;
     text-transform: lowercase;
     text-overflow: ellipsis;
@@ -3166,7 +3277,8 @@ body{
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
+  /* Above the integrator's own page loaders, one below the help chat so candidates can still reach it. */
+  z-index: 2147483646;
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -3393,36 +3505,43 @@ body{
   border-top: 1px solid #d1d9e6;
 }
 
+/* Controls overlaid on the bottom of the video: − left, + right (pause in between) */
 .user-view-footer {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 16px;
   display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 0;
+  justify-content: space-between;
+  align-items: center;
+  column-gap: 12px;
+  z-index: 1000000000;
 }
 
 .zoom-btns {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: 1px solid #ccd5e2;
-  background: white;
-  color: #333;
-  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: rgb(0 0 0 / 15%);
+  color: white;
+  font-size: 18px;
   font-weight: bold;
+  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .zoom-btns:hover {
-  background: #f5f5f5;
-  border-color: #999;
+  background: rgb(0 0 0 / 40%);
 }
 
 .zoom-btns:active {
-  background: #e9e9e9;
+  background: rgb(0 0 0 / 50%);
 }
 
 .zoom-btns:disabled {
@@ -3455,6 +3574,24 @@ body{
   background: #e9e9e9;
 }
 
+.user-view-footer .pause-resume-btn {
+  height: 24px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 15%);
+  color: white;
+  font-size: 11px;
+}
+
+.user-view-footer .pause-resume-btn:hover {
+  background: rgb(0 0 0 / 40%);
+}
+
+.user-view-footer .pause-resume-btn:active {
+  background: rgb(0 0 0 / 50%);
+}
+
 .pause-resume-btn--standalone {
   position: fixed;
   top: 20px;
@@ -3480,7 +3617,7 @@ body{
 }
 
 .recording-badge-container-header--paused {
-  background-color: #6b7280;
+  background-color: #4a90d9;
 }
 
 .pause-modal-overlay {
@@ -3546,7 +3683,7 @@ export const permissionModalStyle = `
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: 2147483646;
 }
 
 .permission-modal {

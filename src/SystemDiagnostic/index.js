@@ -2,9 +2,8 @@ import i18next from 'i18next';
 
 import { 
 	checkCamera, 
-	checkMicrophone, 
-	detectMultipleScreens, 
-	getLocation, 
+	checkMicrophone,
+	getLocation,
 	getSecureFeatures, 
 	logger, 
 	registerEvent, 
@@ -16,38 +15,27 @@ import { showTab } from '../ExamsPrechecks';
 
 let cameraStream = null;
 let audioStream = null;
-let screenMonitorInterval = null; 
 let locationMonitorInterval = null;
 let locationErrorRegistered = false;
 
 const videoGreen = `${ASSET_URL}/video-camera-green.svg`;
 const microPhoneGreen = `${ASSET_URL}/microphone-green.svg`;
 const locationGreen = `${ASSET_URL}/location-pin-green.svg`;
-const multipleScreenGreen = `${ASSET_URL}/single-screen-green.svg`;
 const videoRed = `${ASSET_URL}/video-camera-red.svg`;
 const microPhoneRed = `${ASSET_URL}/microphone-red.svg`;
 const locationRed = `${ASSET_URL}/location-pin-red.svg`;
-const multipleScreenRed = `${ASSET_URL}/single-screen-red.svg`;
 
+// No "single screen" item here: verify_desktop is enforced on the screen-share step.
 const successIconMap = {
 	webcam: videoGreen,
 	microphone: microPhoneGreen,
-	location: locationGreen,
-	desktop: multipleScreenGreen
+	location: locationGreen
 };
 
 const failureIconMap = {
 	webcam: videoRed,
 	microphone: microPhoneRed,
-	location: locationRed,
-	desktop: multipleScreenRed
-};
-
-const stopScreenMonitoring = () => {
-	if (screenMonitorInterval) {
-		clearInterval(screenMonitorInterval);
-		screenMonitorInterval = null;
-	}
+	location: locationRed
 };
 
 const renderUI = (tab1Content) => {
@@ -56,7 +44,6 @@ const renderUI = (tab1Content) => {
 	const recordVideo = secureFeatures.some(entity => entity.key === 'record_video' || entity.key === 'record_room');
 	const recordAudio = secureFeatures.some(entity => entity.key === 'record_audio');
 	const trackLocation = secureFeatures.some(entity => entity.key === 'track_location');
-	const multipleScreensCheck = secureFeatures.some(entity => entity.key === 'verify_desktop');
 
 	let diagnosticItemsHTML = '';
     
@@ -68,9 +55,6 @@ const renderUI = (tab1Content) => {
 	}
 	if (trackLocation) {
 		diagnosticItemsHTML += createDiagnosticItemHTML('location', i18next.t('location'));
-	}
-	if (multipleScreensCheck) {
-		diagnosticItemsHTML += createDiagnosticItemHTML('desktop', i18next.t('single_screen'));
 	}
 
 	const html = `
@@ -105,7 +89,6 @@ const renderUI = (tab1Content) => {
 	window.mereos.shadowRoot.getElementById('diagnosticContinueBtn')?.addEventListener('click', () => {
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
 		if (audioStream) audioStream.getTracks().forEach(track => track.stop());
-		stopScreenMonitoring();
 		stopLocationMonitoring();
 
 		registerEvent({ eventType: 'success', notify: false, eventName: 'system_diagnostic_passed' });
@@ -120,8 +103,7 @@ const createDiagnosticItemHTML = (id, label) => {
 	const statusIconMap = {
 		webcam: 'video-camera-light-gray.svg',
 		microphone: 'microphone-light-gray.svg',
-		location: 'location-pin-black.svg',
-		desktop: 'single-screen-gray.svg'
+		location: 'location-pin-black.svg'
 	};
 
 	return `
@@ -140,7 +122,7 @@ const createDiagnosticItemHTML = (id, label) => {
 const addDiagnosticItemClickEvents = () => {
 	const handleDiagnosticItemClick = (id, checkFunction) => {
 		const element = window.mereos.shadowRoot.getElementById(`${id}DiagnosticItem`);
-		if (!element || id === 'desktop') {
+		if (!element) {
 			return;
 		}
         
@@ -175,8 +157,7 @@ const retryAllFailedDiagnostics = async () => {
 			const recordVideo = secureFeatures.some(entity => entity.key === 'record_video' || entity.key === 'record_room');
 			const recordAudio = secureFeatures.some(entity => entity.key === 'record_audio');
 			const trackLocation = secureFeatures.some(entity => entity.key === 'track_location');
-			const multipleScreensCheck = secureFeatures.some(entity => entity.key === 'verify_desktop');
-			
+
 			const retryPromises = [];
 			
 			const failedDiagnostics = getFailedDiagnostics();
@@ -192,11 +173,7 @@ const retryAllFailedDiagnostics = async () => {
 			if (failedDiagnostics.includes('location') && trackLocation) {
 				retryPromises.push(retryDiagnosticItem('location', getLocation));
 			}
-			
-			if (failedDiagnostics.includes('desktop') && multipleScreensCheck) {
-				retryPromises.push(retryDiagnosticItem('desktop', detectMultipleScreens));
-			}
-			
+
 			await Promise.all(retryPromises);
 			
 			registerEvent({ 
@@ -231,23 +208,25 @@ const retryDiagnosticItem = async (id) => {
 	const statusIconMap = {
 		webcam: 'video-camera-light-gray.svg',
 		microphone: 'microphone-light-gray.svg',
-		location: 'location-pin-black.svg',
-		desktop: 'single-screen-gray.svg'
+		location: 'location-pin-black.svg'
 	};
 	statusIcon.src = `${ASSET_URL}/${statusIconMap[id] || 'video-camera-light-gray.svg'}`;
 	statusLoading.src = `${ASSET_URL}/loading-gray.svg`;
 	
 	try {
 		let result;
+		// Keep retry streams in the same variables as the first check (stopped when leaving this
+		// screen) and stop the previous one, so a retry never leaves the camera/microphone on.
 		if (id === 'webcam') {
 			result = await checkCamera();
+			cameraStream?.getTracks?.().forEach(track => track.stop());
+			cameraStream = result || null;
 		} else if (id === 'microphone') {
 			result = await checkMicrophone();
+			audioStream?.getTracks?.().forEach(track => track.stop());
+			audioStream = result || null;
 		} else if (id === 'location') {
 			result = await getLocation();
-		} else if (id === 'desktop') {
-			const isDetected = await detectMultipleScreens();
-			result = !isDetected; 
 		}
 		
 		setElementStatus(id, { success: successIconMap[id], failure: failureIconMap[id] }, result);
@@ -292,7 +271,7 @@ const retryDiagnosticItem = async (id) => {
 
 const getFailedDiagnostics = () => {
 	const failedItems = [];
-	const diagnosticItems = ['webcam', 'microphone', 'location', 'desktop'];
+	const diagnosticItems = ['webcam', 'microphone', 'location'];
 	
 	diagnosticItems.forEach(itemId => {
 		const statusIcon = window.mereos.shadowRoot.getElementById(`${itemId}StatusIcon`);
@@ -407,40 +386,6 @@ const stopLocationMonitoring = () => {
 	}
 };
 
-const startScreenMonitoring = () => {
-	screenMonitorInterval = setInterval(async () => {
-		try {
-			const isDetected = await detectMultipleScreens();
-			const desktopElement = window.mereos.shadowRoot.getElementById('desktopDiagnosticItem');
-		
-			if (desktopElement) {
-				setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected);
-				
-				if (isDetected) {
-					if(window.mereos.globalCallback) {
-						window.mereos.globalCallback({ 
-							type:'error',
-							message: `multiple_screens_detected` ,
-							code:40037
-						});
-					}
-					registerEvent({
-						eventType: 'error', 
-						notify: false, 
-						eventName: 'multiple_screens_detected'
-					});
-				}
-				
-				updateContinueButtonState();
-				updateRefreshButtonVisibility();
-			}
-		} catch (error) {
-			sentryExceptioMessage(error,{type:'error',message:`Error during screen monitoring`});
-			logger.error('Error during screen monitoring:', error);
-		}
-	}, 2000);
-};
-
 export const SystemDiagnostics = async (tab1Content) => {
 	if (!tab1Content) {
 		logger.error('Element with id "runSystemDiagnostics" not found.');
@@ -454,7 +399,6 @@ export const SystemDiagnostics = async (tab1Content) => {
 		const recordVideo = secureFeatures.some(entity => entity.key === 'record_video' || entity.key === 'record_room');
 		const recordAudio = secureFeatures.some(entity => entity.key === 'record_audio');
 		const trackLocation = secureFeatures.some(entity => entity.key === 'track_location');
-		const multipleScreensCheck = secureFeatures.some(entity => entity.key === 'verify_desktop');
 
 		const promises = [];
 
@@ -520,26 +464,6 @@ export const SystemDiagnostics = async (tab1Content) => {
 			setElementStatus('location', { success: locationGreen, failure: locationRed }, true);
 		}
 
-		if (multipleScreensCheck) {
-			promises.push(detectMultipleScreens().then(isDetected => {
-				setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, !isDetected ? true : false);
-				if (isDetected) {
-					if(window.mereos.globalCallback) {
-						window.mereos.globalCallback({ 
-							type:'error',
-							message: `multiple_screens_detected` ,
-							code:40037
-						});
-					}
-					registerEvent({eventType: 'error', notify: false, eventName: 'multiple_screens_detected'});
-				}
-				startScreenMonitoring();
-				return isDetected;
-			}));
-		} else {
-			setElementStatus('desktop', { success: multipleScreenGreen, failure: multipleScreenRed }, true);
-		}
-
 		await Promise.all(promises);
         
 		if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
@@ -559,7 +483,7 @@ export const SystemDiagnostics = async (tab1Content) => {
 
 const updateDiagnosticText = () => {
 	if (!window.mereos || !window.mereos.shadowRoot) return;
-	const diagnosticItems = ['webcam', 'microphone', 'location', 'desktop'];
+	const diagnosticItems = ['webcam', 'microphone', 'location'];
 	let microphoneImg = window.mereos.shadowRoot.getElementById('microphone-img');
 
 	diagnosticItems.forEach(item => {

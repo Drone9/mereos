@@ -644,7 +644,9 @@
 	"please_check_your_mic": "Bitte überprüfen Sie Ihr Mikrofon, bevor Sie mit der Aufnahme beginnen",
 	"please_enable_force_submission": "Bitte aktivieren Sie die erzwungene Übermittlung",
 	"please_scan_this_qr_code": "Bitte scannen Sie dies QR-Code mit Ihrem Telefongerät, um die Mereos Mobile-Anwendung herunterzuladen.",
-	"please_share_entire_screen": "Bitte geben Sie den gesamten Bildschirm frei.",
+	"please_share_entire_screen": "Bitte geben Sie Ihren gesamten Bildschirm frei, nicht nur ein Fenster oder einen Tab.",
+	"share_assessment_screen_notice": "Mehrere Bildschirme erkannt. Bitte geben Sie den Bildschirm frei, auf dem Ihre Prüfung geöffnet ist.",
+	"screen_share_incomplete": "Ihre Bildschirmfreigabe erfasst nicht den gesamten Bildschirm. Erlauben Sie auf einem Mac Ihren Browser unter Systemeinstellungen > Datenschutz & Sicherheit > Bildschirmaufnahme, starten Sie den Browser neu und geben Sie den gesamten Bildschirm erneut frei.",
 	"please_take_picture_or": "Bitte mach ein Foto oder",
 	"please_unselect_time_region_from_template": "Bitte deaktivieren Sie die Zeitregion in der Vorlage",
 	"please_wait": "Bitte warten...",
@@ -1110,5 +1112,10 @@
 	"lighting_too_bright": "Die Beleuchtung ist zu hell. Vermeiden Sie direktes Licht hinter Ihnen.",
 	"lighting_ok": "Die Beleuchtung sieht gut aus",
 	"pdf_multiple_pages_error": "Bitte laden Sie eine einseitige PDF-Datei hoch. Mehrseitige PDFs werden zur Identitätsüberprüfung nicht akzeptiert.",
-  "face_processing_failed": "Wir konnten kein Gesicht im Bild erkennen. Bitte stellen Sie sicher, dass Ihr Gesicht deutlich sichtbar ist, und versuchen Sie es erneut."
+  "face_processing_failed": "Wir konnten kein Gesicht im Bild erkennen. Bitte stellen Sie sicher, dass Ihr Gesicht deutlich sichtbar ist, und versuchen Sie es erneut.",
+	"reload_page": "Seite neu laden",
+	"assessment_in_progress_in_another_tab_title": "Bewertung läuft",
+	"assessment_in_progress_in_another_tab_message": "Diese Bewertung ist bereits in einem anderen Browser-Tab geöffnet und läuft. Bitte fahren Sie dort fort. Dieser Tab wird automatisch fortgesetzt, wenn der andere Tab geschlossen wird.",
+	"assessment_already_completed_in_another_tab_title": "Bewertung bereits abgeschlossen",
+	"assessment_already_completed_in_another_tab_message": "Diese Bewertung wurde bereits in einem anderen Browser-Tab abgeschlossen. Sie können diesen Tab schließen."
 }

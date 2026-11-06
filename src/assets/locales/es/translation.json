@@ -644,7 +644,9 @@
 	"please_check_your_mic": "Por favor, revisa tu micrófono antes de comenzar la grabación",
 	"please_enable_force_submission": "Habilite el envío forzado",
 	"please_scan_this_qr_code": "Por favor, Escanee este código QR con su dispositivo móvil para descargar la aplicación Mereos Mobile.",
-	"please_share_entire_screen": "Comparte la pantalla completa",
+	"please_share_entire_screen": "Comparte tu pantalla completa, no una ventana ni una pestaña.",
+	"share_assessment_screen_notice": "Se detectaron varias pantallas. Comparte la pantalla donde está abierta tu evaluación.",
+	"screen_share_incomplete": "Tu pantalla compartida no está capturando toda la pantalla. En un Mac, permite tu navegador en Ajustes del Sistema > Privacidad y seguridad > Grabación de pantalla, reinicia el navegador y vuelve a compartir toda la pantalla.",
 	"please_take_picture_or": "Por favor, hazte una foto o",
 	"please_unselect_time_region_from_template": "Deseleccione la región horaria de la plantilla",
 	"please_wait": "Por favor, espera...",
@@ -1110,5 +1112,10 @@
 	"lighting_too_bright": "La iluminación es demasiado brillante. Evite la luz directa detrás de usted.",
 	"lighting_ok": "La iluminación se ve bien",
 	"pdf_multiple_pages_error": "Cargue un archivo PDF de una sola página. No se aceptan PDF de varias páginas para la verificación de identidad.",
-  "face_processing_failed": "No pudimos detectar un rostro en la imagen. Asegúrate de que tu rostro sea claramente visible e inténtalo de nuevo."
+  "face_processing_failed": "No pudimos detectar un rostro en la imagen. Asegúrate de que tu rostro sea claramente visible e inténtalo de nuevo.",
+	"reload_page": "Recargar página",
+	"assessment_in_progress_in_another_tab_title": "Evaluación en Progreso",
+	"assessment_in_progress_in_another_tab_message": "Esta evaluación ya está abierta y en progreso en otra pestaña del navegador. Continúe allí. Esta pestaña se reanudará automáticamente si se cierra esa pestaña.",
+	"assessment_already_completed_in_another_tab_title": "Evaluación Ya Completada",
+	"assessment_already_completed_in_another_tab_message": "Esta evaluación ya ha sido completada en otra pestaña del navegador. Puede cerrar esta pestaña."
 }

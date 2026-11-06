@@ -1,6 +1,6 @@
 export const ASSET_URL = 'https://d2lxkizvrhu4im.cloudfront.net/library_icons';
 
-export const BASE_URL = 'https://corder-api.mereos.eu/v1.1.3';
+export const BASE_URL = 'https://corder-api.mereos-datasafe.com/v1.1.3';
 
 export const SOCKET_URL = 'wss://mobile-socket.mereos.eu/websocket/';
 
@@ -110,7 +110,6 @@ export const defaultTheme = {
 };
 
 export const systemDiagnosticSteps = [
-	'verify_desktop', 
 	'record_video', 
 	'record_audio', 
 	'verify_connection', 

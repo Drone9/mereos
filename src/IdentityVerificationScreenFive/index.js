@@ -17,17 +17,28 @@ import { ASSET_URL } from '../utils/constant';
 import { openModal, showTab } from '../ExamsPrechecks';
 import { renderIdentityVerificationSteps } from '../IdentitySteps.js';
 import { publishCanvasScreenTrack, waitForActiveRecordingStart } from '../StartRecording';
-import { getShareDimensions, isWholeScreenShape, SCREEN_CAPTURE_NOT_READY } from '../utils/screenCapture';
+import { getShareDimensions, isWholeScreenShape, matchesCurrentScreenShape, SCREEN_CAPTURE_NOT_READY } from '../utils/screenCapture';
 import { v4 } from 'uuid';
 
 const SCREEN_LAYOUT_POLL_MS = 2000;
 let stopScreenLayoutWatch = null;
+let latestOpeningId = 0;
+let currentLanguageHandler = null;
 
 export const IdentityVerificationScreenFive = async (tabContent) => {
 	if(window.mereos.isScreenShare){
 		return;
 	}
 	window.mereos.isScreenShare=true;
+
+	// Every opening renders into the same tab. A previous opening's listeners must not touch it:
+	// they would replace the current message and bind Reshare to their outdated state.
+	const openingId = ++latestOpeningId;
+	if (currentLanguageHandler) {
+		i18next.off('languageChanged', currentLanguageHandler);
+		currentLanguageHandler = null;
+	}
+
 	let multipleScreens;
 	window.mereos.newStream = null;
 	const candidateAssessment = getSecureFeatures();
@@ -185,8 +196,9 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 			const videoTrack = window.mereos.newStream.getVideoTracks()[0];
 			const trackSettings = videoTrack.getSettings();
 
-			const isScreenShared = isFirefox ? true
-				: trackSettings.displaySurface === 'monitor';
+			// Firefox usually doesn't report displaySurface; it is checked by the share's shape below.
+			const surfaceUnknown = isFirefox && !trackSettings.displaySurface;
+			let isScreenShared = surfaceUnknown || trackSettings.displaySurface === 'monitor';
 
 			// Firefox doesn't report what was shared, so also check the share is screen-shaped.
 			const dimensions = isScreenShared ? await getShareDimensions(window.mereos.newStream) : null;
@@ -213,6 +225,11 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				return;
 			}
 
+			// Firefox lets the candidate pick a window too: a window doesn't have the screen's shape.
+			if (surfaceUnknown && dimensions && !matchesCurrentScreenShape(dimensions)) {
+				isScreenShared = false;
+			}
+
 			if (isScreenShared) {
 				stream = window.mereos.newStream;
 				mode = 'startScreenRecording';
@@ -225,7 +242,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 				videoTrack.addEventListener('ended', () => {
 					isScreenAlreadyShared = false;
 					// Still on this step: swap Done for Reshare instead of leaving a dead button.
-					if (tabContent.classList.contains('active') && mode === 'startScreenRecording') {
+					if (openingId === latestOpeningId && tabContent.classList.contains('active') && mode === 'startScreenRecording') {
 						mode = 'rerecordScreen';
 						updateUI();
 					}
@@ -570,6 +587,7 @@ export const IdentityVerificationScreenFive = async (tabContent) => {
 		initSocketConnection();
 	}
 	
+	currentLanguageHandler = updateUI;
 	i18next.on('languageChanged', updateUI);
 	
 	return tabContent.querySelector('.screen-share-container');

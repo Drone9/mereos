@@ -645,7 +645,7 @@
 	"please_check_your_mic": "Please check your Mic Before Start the recording",
 	"please_enable_force_submission": "Please enable force submisison",
 	"please_scan_this_qr_code": "Please scan this QR code with your phone device to download the Mereos Mobile application.",
-	"please_share_entire_screen": "Please share entire screen.",
+	"please_share_entire_screen": "Please share your entire screen, not a window or tab.",
 	"share_assessment_screen_notice": "Multiple screens detected. Please share the screen where your assessment is open.",
 	"screen_share_incomplete": "Your screen share isn't capturing your whole screen. On a Mac, allow your browser in System Settings > Privacy & Security > Screen Recording, restart the browser and share your entire screen again.",
 	"please_take_picture_or": "Please take a picture or",

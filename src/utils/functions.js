@@ -1417,6 +1417,8 @@ export const shareScreenFromContent = () => {
 					window.mereos.isScreenShare = false;
 					// Screen Five hides "Previous step" while the candidate must reshare.
 					window.mereos.screenShareStopped = true;
+					// Routes the modal below to Screen Five, whose checks (verify_desktop) must pass again.
+					updatePersistData('preChecksSteps', { screenSharing: false });
 					registerEvent({ notify: false, eventName: 'screen_shared_stopped', eventType: 'error' });
 					if (window.mereos.startRecordingCallBack) {
 						window.mereos.startRecordingCallBack({

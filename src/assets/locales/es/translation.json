@@ -644,7 +644,7 @@
 	"please_check_your_mic": "Por favor, revisa tu micrófono antes de comenzar la grabación",
 	"please_enable_force_submission": "Habilite el envío forzado",
 	"please_scan_this_qr_code": "Por favor, Escanee este código QR con su dispositivo móvil para descargar la aplicación Mereos Mobile.",
-	"please_share_entire_screen": "Comparte la pantalla completa",
+	"please_share_entire_screen": "Comparte tu pantalla completa, no una ventana ni una pestaña.",
 	"share_assessment_screen_notice": "Se detectaron varias pantallas. Comparte la pantalla donde está abierta tu evaluación.",
 	"screen_share_incomplete": "Tu pantalla compartida no está capturando toda la pantalla. En un Mac, permite tu navegador en Ajustes del Sistema > Privacidad y seguridad > Grabación de pantalla, reinicia el navegador y vuelve a compartir toda la pantalla.",
 	"please_take_picture_or": "Por favor, hazte una foto o",

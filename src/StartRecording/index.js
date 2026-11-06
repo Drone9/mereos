@@ -40,6 +40,7 @@ import * as TwilioVideo from 'twilio-video';
 import i18next from 'i18next';
 import { v4 } from 'uuid';
 import { loadAiModel } from '../utils/aiModel';
+import { getPreferredCameraId, getPreferredMicrophoneId } from '../utils/camera';
 import { getCreateRoom } from '../services/twilio.services';
 import { aiEventsFeatures, ASSET_URL, LockDownOptions, recordingEvents } from '../utils/constant';
 import { changeCandidateAssessmentStatus } from '../services/candidate-assessment.services';
@@ -88,20 +89,19 @@ const drawPausedFrame = (ctx, videoEl, width, height, isPaused, label) => {
 	}
 };
 
+// A missing (or empty / "null") saved device falls back to `true`: the browser's default device.
+const buildDeviceConstraint = (deviceId) => (deviceId ? { deviceId: { exact: deviceId } } : true);
+
 const buildIndependentMediaConstraints = (kind) => {
 	if (kind === 'video') {
 		return {
-			video: localStorage.getItem('deviceId')
-				? { deviceId: { exact: localStorage.getItem('deviceId') } }
-				: true,
+			video: buildDeviceConstraint(getPreferredCameraId()),
 			audio: false,
 		};
 	}
 
 	return {
-		audio: localStorage.getItem('microphoneID')
-			? { deviceId: { exact: localStorage.getItem('microphoneID') } }
-			: true,
+		audio: buildDeviceConstraint(getPreferredMicrophoneId()),
 		video: false,
 	};
 };
@@ -219,19 +219,7 @@ const resolveStartPermissionType = async (error = null, hint = null) => {
 		} catch { /* Permissions API may be unavailable */ }
 
 		try {
-			const constraints = kind === 'audio'
-				? {
-					audio: localStorage.getItem('microphoneID')
-						? { deviceId: { exact: localStorage.getItem('microphoneID') } }
-						: true,
-					video: false,
-				}
-				: {
-					video: localStorage.getItem('deviceId')
-						? { deviceId: { exact: localStorage.getItem('deviceId') } }
-						: true,
-					audio: false,
-				};
+			const constraints = buildIndependentMediaConstraints(kind === 'audio' ? 'audio' : 'video');
 			const stream = await navigator.mediaDevices.getUserMedia(constraints);
 			stream.getTracks().forEach((track) => track.stop());
 			return false;
@@ -1820,18 +1808,12 @@ const startRecordingInternal = async () => {
 					local: 3,
 					remote: 3
 				},
-				audio: findConfigs(['record_audio'], secureFeatures?.entities).length ?
-					(localStorage.getItem('microphoneID') !== null ? {
-						deviceId: { exact: localStorage.getItem('microphoneID') },
-					} : true)
-					:
-					false,
-				video: findConfigs(['record_video'], secureFeatures?.entities).length ?
-					(localStorage.getItem('deviceId') !== null ? {
-						deviceId: { exact: localStorage.getItem('deviceId') },
-					} : true)
-					:
-					false
+				audio: findConfigs(['record_audio'], secureFeatures?.entities).length
+					? buildDeviceConstraint(getPreferredMicrophoneId())
+					: false,
+				video: findConfigs(['record_video'], secureFeatures?.entities).length
+					? buildDeviceConstraint(getPreferredCameraId())
+					: false
 			};
 
 			[window.mereos.globalStream, window.mereos.audioStream].forEach((stream) => {

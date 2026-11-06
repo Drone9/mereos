@@ -644,7 +644,7 @@
 	"please_check_your_mic": "Veuillez vérifier votre micro avant de commencer l'enregistrement",
 	"please_enable_force_submission": "Veuillez activer la soumission forcée",
 	"please_scan_this_qr_code": "Veuillez scanner ce QR-code avec l’appareil de votre téléphone afin de téléchager l’application Mereos Mobile.",
-	"please_share_entire_screen": "Veuillez partager tout l'écran.",
+	"please_share_entire_screen": "Veuillez partager votre écran entier, pas une fenêtre ni un onglet.",
 	"share_assessment_screen_notice": "Plusieurs écrans détectés. Veuillez partager l'écran sur lequel votre évaluation est ouverte.",
 	"screen_share_incomplete": "Votre partage d'écran ne capture pas tout votre écran. Sur Mac, autorisez votre navigateur dans Réglages Système > Confidentialité et sécurité > Enregistrement de l'écran, redémarrez le navigateur et partagez à nouveau tout votre écran.",
 	"please_take_picture_or": "Veuillez prendre en photo ou",
